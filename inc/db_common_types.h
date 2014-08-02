@@ -59,5 +59,19 @@ typedef int hal_ifindex_t;
  */
 typedef unsigned int hal_vlan_id_t;
 
+/**
+ * This is the object type of anything contained within the database.
+ * this object type has no instance or key data within it.. it is
+ * just a generic object type.  To create an object ID, use the API
+ * in db_object_catagory.h
+ */
+typedef uint64_t db_object_type_t;
+
+/**
+ * This is the object subtype.  There are two elements to an object ID
+ * The object catagory and object subtype.
+ */
+typedef uint32_t db_object_sub_type_t;
+
 
 #endif /* DB_COMMON_TYPES_H_ */
