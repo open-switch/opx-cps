@@ -46,7 +46,7 @@ typedef uint32_t port_t;
 /** Type used to refer to a physical NPU port in the lower HAL API */
 typedef port_t npu_port_t;
 
-/** The type of an ethernet address */
+/** The type of an Ethernet address */
 typedef uint8_t hal_mac_addr_t[HAL_MAC_ADDR_LEN];
 
 /**

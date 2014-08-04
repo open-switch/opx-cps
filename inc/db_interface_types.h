@@ -25,14 +25,14 @@ typedef enum {
     ADDR_DEFAULT,
     ADDR_ADD,
     ADDR_DEL
-}dn_if_addr_msg_type_t ;
+}db_if_addr_msg_type_t ;
 
 typedef enum {
     ROUTE_DEFAULT,
     ROUTE_ADD,
     ROUTE_DEL,
     ROUTE_UPD
-}dn_route_msg_t;
+}db_route_msg_t;
 
 
 typedef enum {
@@ -78,7 +78,7 @@ typedef struct  {
     long            namelen;
     db_ipaddress_t         if_addr;
     db_ipaddress_t         if_mask;
-    dn_if_addr_msg_type_t        if_msgtype;
+    db_if_addr_msg_type_t        if_msgtype;
 } db_if_addr_t;
 
 typedef struct  {
@@ -92,11 +92,11 @@ typedef struct  {
     db_interface_state_t  if_astate;
     db_interface_operational_state_t   if_ostate;
     unsigned int               mtu;
-}hal_if_t;
+}db_if_t;
 
 
 typedef struct  {
-    dn_route_msg_t  msg_type;
+    db_route_msg_t  msg_type;
     unsigned short  distance;
     unsigned short  protocol;
     unsigned long   vrfid;
@@ -105,7 +105,7 @@ typedef struct  {
     hal_ifindex_t   nh_if_index;
     unsigned long   nh_vrfid;
     db_ipaddress_t         nh_addr;
-}hal_route_t;
+}db_route_t;
 
 
 typedef struct  {
@@ -119,7 +119,7 @@ typedef struct  {
     unsigned long   expire;
     unsigned long   flags;
     unsigned long   state;
-}hal_neighbour_entry_t;
+}db_neighbour_entry_t;
 
 struct db_qos_qdisc_entry_s {
     db_qdisc_msg_type_t msg_type;
@@ -129,20 +129,20 @@ struct db_qos_qdisc_entry_s {
     uint32_t        parent;
 };
 
-typedef struct class_rate_info {
+typedef struct db_class_rate_info_s {
     // Rate info of the node
     uint32_t minBw;
     uint32_t maxBw;
     uint32_t burst;
     uint32_t cburst;
-} hal_qos_class_rate_info_t;
+} db_qos_class_rate_info_t;
 
-struct class_entry {
+struct db_qos_class_entry_s {
     db_qos_class_msg_type_t msg_type;
     hal_ifindex_t   ifindex;
     uint32_t        class;
     uint16_t        qdisc;
-    hal_qos_class_rate_info_t rinfo;
+    db_qos_class_rate_info_t rinfo;
 };
 
 #endif /* DB_EVENT_INTERFACE_H_ */

@@ -120,7 +120,7 @@ typedef void(*db_list_convert_function)(db_common_list_t list,db_list_entry_t *e
  * @param list the list to convert
  * @param data the data to convert
  * @param len the length of the data reserved for the operation
- * @param fun the funciton to conver each entry
+ * @param fun the function to convert each entry
  * @param space_calc the function that will calculate the space for each entry to make sure there is enough space reserved
  * @return true if passed otherwise fail...
  */
