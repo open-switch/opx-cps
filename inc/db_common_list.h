@@ -93,5 +93,24 @@ size_t db_list_get_len(db_common_list_t list);
 db_list_entry_t *db_list_elem_next(db_common_list_t list,size_t *index);
 
 
+/**
+ * A template the function that will calculate how much space an entry would take
+ * @param entry
+ * @return
+ */
+typedef size_t (*db_list_elem_array_calc)(db_list_entry_t *entry);
+/**
+ * Determine how much space this array would occupy
+ * @param list
+ * @param optional_calc_fun
+ * @return
+ */
+size_t db_list_array_len(db_common_list_t list,db_list_elem_array_calc optional_calc_fun);
+
+typedef void(*db_list_convert_function)(db_common_list_t list,db_list_entry_t *entry,void *data, size_t space);
+
+size_t db_list_mk_array(db_common_list_t list,void *data, size_t len, db_list_convert_function fun);
+
+
 #endif /* DB_COMMON_LIST_H_ */
 
