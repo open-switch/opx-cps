@@ -28,7 +28,6 @@ typedef struct {
 
 void db_list_debug();
 
-
 /**
  * Create a list - don't use directly - use DB_LIST_ALLOC macro
  * @return the list that is allocated or NULL if not possible to create
@@ -95,8 +94,8 @@ db_list_entry_t *db_list_elem_next(db_common_list_t list,size_t *index);
 
 /**
  * A template the function that will calculate how much space an entry would take
- * @param entry
- * @return
+ * @param entry to calculate the size of an element
+ * @return size of entry on array
  */
 typedef size_t (*db_list_elem_array_calc)(db_list_entry_t *entry);
 /**
@@ -107,10 +106,36 @@ typedef size_t (*db_list_elem_array_calc)(db_list_entry_t *entry);
  */
 size_t db_list_array_len(db_common_list_t list,db_list_elem_array_calc optional_calc_fun);
 
-typedef void(*db_list_convert_function)(db_common_list_t list,db_list_entry_t *entry,void *data, size_t space);
+/**
+ * Convert an entry to another format..
+ * @param list the list to operate on
+ * @param entry to convert to a different format
+ * @param data[out] to write to and return a pointer to the next location
+ * @param space[out] reserved for the write and return amount of space remaining
+ */
+typedef void(*db_list_convert_function)(db_common_list_t list,db_list_entry_t *entry,void **data, size_t *space);
 
-size_t db_list_mk_array(db_common_list_t list,void *data, size_t len, db_list_convert_function fun);
+/**
+ * Make an array from a list
+ * @param list the list to convert
+ * @param data the data to convert
+ * @param len the length of the data reserved for the operation
+ * @param fun the funciton to conver each entry
+ * @param space_calc the function that will calculate the space for each entry to make sure there is enough space reserved
+ * @return true if passed otherwise fail...
+ */
+bool db_list_mk_array(db_common_list_t list,void *data, size_t len, db_list_convert_function fun, db_list_elem_array_calc space_calc);
 
+/**
+ * convert an array of something (strings, binary, etc..) to a list
+ * @param list the list to create
+ * @param data the actual data to load into the list
+ * @param len the length of the data
+ * @param fun the function that will be used
+ * @param deep_copy is true if a deep copy of each entry is required
+ * @return true if successful
+ */
+bool db_list_from_array(db_common_list_t list,void *data, size_t len, db_list_convert_function fun, bool deep_copy);
 
 #endif /* DB_COMMON_LIST_H_ */
 

@@ -28,6 +28,6 @@ t_std_error db_interface_admin_state_get(hal_ifindex_t ifIndex, db_interface_sta
 t_std_error db_interface_mac_addr_get(hal_ifindex_t ifIndex, hal_mac_addr_t *macAddr);
 
 
-void db_interface_event_print(db_common_list_t list);
+void db_interface_print(db_common_list_t list);
 
 #endif /* DB_INTERFACE_H_ */
