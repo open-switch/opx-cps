@@ -131,17 +131,25 @@ db_list_entry_t *db_list_elem_next(db_common_list_t l,size_t *index) {
     return p;
 }
 
-size_t db_list_array_len(db_common_list_t list,db_list_elem_array_calc optional_calc_fun) {
-    //TODO implement
-    return 0;
+size_t db_list_array_len(db_common_list_t l,db_list_elem_array_calc optional_calc_fun, void *context) {
+    tList &list = *(L(l));
+    size_t ix = 0;
+    size_t mx = list.size();
+    size_t amount = 0;
+    for ( ; ix < mx ; ++ix ) {
+        if (optional_calc_fun!=NULL) {
+            amount += optional_calc_fun(context,list[ix]);
+        } else amount+=list[ix]->len;
+    }
+    return amount;
 }
 
-bool db_list_mk_array(db_common_list_t list,void *data, size_t len, db_list_convert_function fun, db_list_elem_array_calc space_calc) {
+bool db_list_mk_array(db_common_list_t list,void *data, size_t len, db_list_convert_functions_t *converter) {
     //TODO implement
     return true;
 }
 
-bool db_list_from_array(db_common_list_t list,void *data, size_t len, db_list_convert_function fun, bool deep_copy) {
+bool db_list_from_array(db_common_list_t list,void *data, size_t len, db_list_convert_function fun,void * convert_context, bool deep_copy) {
 //TODO implement
     return true;
 }

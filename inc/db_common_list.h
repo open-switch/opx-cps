@@ -91,40 +91,62 @@ size_t db_list_get_len(db_common_list_t list);
  */
 db_list_entry_t *db_list_elem_next(db_common_list_t list,size_t *index);
 
-
 /**
  * A template the function that will calculate how much space an entry would take
+ * @param application defined context
  * @param entry to calculate the size of an element
  * @return size of entry on array
  */
-typedef size_t (*db_list_elem_array_calc)(db_list_entry_t *entry);
+typedef size_t (*db_list_elem_array_calc)(void *context,db_list_entry_t *entry);
 /**
  * Determine how much space this array would occupy
- * @param list
- * @param optional_calc_fun
+ * @param list the list to iterate over
+ * @param optional_calc_fun will be used to calculate the lenght of each element if not NULL.
+ *     if it is NULL, each data element will be added using the "len" field of the structure
+ * @param context the context to pass to the calculate function
  * @return
  */
-size_t db_list_array_len(db_common_list_t list,db_list_elem_array_calc optional_calc_fun);
+size_t db_list_array_len(db_common_list_t list,db_list_elem_array_calc optional_calc_fun, void *context);
 
 /**
+ *Structure that is passed to the convert entry function.
+ */
+typedef struct {
+    void * context; //! this is the ccontext passed to the db_list_mk_array function
+    db_common_list_t list; //! this is the list containing the entry
+    db_list_entry_t *entry;    //! this is the entry itself
+    void *data;            //!this is where to write the data.  Must be updated to point to the next free location on return
+    size_t space;    //!the remaining space - also must be updated and reduced after converting the current entry
+} db_list_convert_operation_t;
+/**
  * Convert an entry to another format..
+ * @param context a parameter passed to the function
  * @param list the list to operate on
  * @param entry to convert to a different format
  * @param data[out] to write to and return a pointer to the next location
  * @param space[out] reserved for the write and return amount of space remaining
  */
-typedef void(*db_list_convert_function)(db_common_list_t list,db_list_entry_t *entry,void **data, size_t *space);
+typedef void(*db_list_convert_function)(db_list_convert_operation_t *context);
+
+/**
+ * This structure is passed to the db_list_mk_array function and will perform the conversion from an element to a data field if specified
+ */
+typedef struct {
+    db_list_convert_function convert_fun;//! this will convert the entry
+    void *convert_fun_context; //!this is the context to that function
+    db_list_elem_array_calc space_calc; //!this will determine the space needed for a field
+    void *space_calc_context;    //! this is the context for the above function
+}db_list_convert_functions_t;
 
 /**
  * Make an array from a list
  * @param list the list to convert
  * @param data the data to convert
  * @param len the length of the data reserved for the operation
- * @param fun the function to convert each entry
- * @param space_calc the function that will calculate the space for each entry to make sure there is enough space reserved
+ * @param converter is the structure - can be NULL and then the data will be memcpy'ed into the array directly as a TLV
  * @return true if passed otherwise fail...
  */
-bool db_list_mk_array(db_common_list_t list,void *data, size_t len, db_list_convert_function fun, db_list_elem_array_calc space_calc);
+bool db_list_mk_array(db_common_list_t list,void *data, size_t len, db_list_convert_functions_t *converter);
 
 /**
  * convert an array of something (strings, binary, etc..) to a list
@@ -132,10 +154,11 @@ bool db_list_mk_array(db_common_list_t list,void *data, size_t len, db_list_conv
  * @param data the actual data to load into the list
  * @param len the length of the data
  * @param fun the function that will be used
+ * @param convert_context is the context passed to the function
  * @param deep_copy is true if a deep copy of each entry is required
  * @return true if successful
  */
-bool db_list_from_array(db_common_list_t list,void *data, size_t len, db_list_convert_function fun, bool deep_copy);
+bool db_list_from_array(db_common_list_t list,void *data, size_t len, db_list_convert_function fun,void * convert_context, bool deep_copy);
 
 #endif /* DB_COMMON_LIST_H_ */
 

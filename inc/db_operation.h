@@ -30,16 +30,16 @@ typedef struct {
     db_instance_t instance;
     db_object_type_t type;
     db_common_list_t *list;
-}db_operation_params_t;
+}db_function_params_t;
 
 /**
- * Get a database element or list of elements.  If the is a speific
+ * Get a database element or list of elements.  If the is a specific
  * element being queried, then the list must contain an array of keys
  * that are specific to the object queried otherwise all objects of the type will be queried
  * @param param the structure containing the object request
  * @return db_return_code_t
  */
-db_return_code_t db_get(db_operation_params_t * param);
+db_return_code_t db_get(db_function_params_t * param);
 
 /**
  * Set a database element or list of elements.  the list must
@@ -48,6 +48,6 @@ db_return_code_t db_get(db_operation_params_t * param);
  * @param param the structure containing the object request.
  * @return db_return_code_t
  */
-db_return_code_t db_commit(db_operation_params_t * param);
+db_return_code_t db_commit(db_function_params_t * param);
 
 #endif /* DB_OPERATION_H_ */
