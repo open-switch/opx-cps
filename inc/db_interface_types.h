@@ -152,7 +152,7 @@ typedef struct db_class_rate_info_s {
 struct db_qos_class_entry_s {
     db_qos_class_msg_type_t msg_type;
     hal_ifindex_t   ifindex;
-    uint32_t        class;
+    uint32_t        qos_class;
     uint16_t        qdisc;
     db_qos_class_rate_info_t rinfo;
 };
