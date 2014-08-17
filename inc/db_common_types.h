@@ -59,7 +59,6 @@ typedef int hal_ifindex_t;
  */
 typedef unsigned int hal_vlan_id_t;
 
-
 /**
  * HAL VRF ID type
  */
