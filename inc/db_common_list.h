@@ -6,10 +6,15 @@
 #ifndef DB_COMMON_LIST_H_
 #define DB_COMMON_LIST_H_
 
+
 #include "db_common_types.h"
 
 #include <stddef.h>
 #include <stdbool.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef void * db_common_list_t;
 
@@ -39,7 +44,7 @@ db_common_list_t db_list_create(const char *desc,unsigned int line);
  * @return a pointer to the list
  */
 #define DB_LIST_ALLOC \
-        db_list_create(__FUNCTION__,__LINE)
+        db_list_create(__FUNCTION__,__LINE__)
 
 /**
  * All lists have to be deleted after created.  The following removes any items from the created
@@ -159,6 +164,12 @@ bool db_list_mk_array(db_common_list_t list,void *data, size_t len, db_list_conv
  * @return true if successful
  */
 bool db_list_from_array(db_common_list_t list,void *data, size_t len, db_list_convert_function fun,void * convert_context, bool deep_copy);
+
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif /* DB_COMMON_LIST_H_ */
 

@@ -70,7 +70,7 @@ typedef enum {
 /**
  * The size of an interface name
  */
-typedef int8_t hal_ifname_t[HAL_IF_NAME_SZ];
+typedef char hal_ifname_t[HAL_IF_NAME_SZ];
 
 /**
  * IP address structure

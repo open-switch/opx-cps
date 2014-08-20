@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <map>
 
+extern "C" {
 
 typedef std::vector<db_list_entry_t *> tList;
 
@@ -26,11 +27,12 @@ struct tracker_detail {
 };
 typedef std::map<db_common_list_t,tracker_detail> tTrackerList;
 
-std_mutex_lock_create_static_init_rec(db_tracker_lock);
+static std_mutex_lock_create_static_init_rec(db_tracker_lock);
 static tTrackerList trackers;
 
 
 void db_list_tracker_add(db_common_list_t list, const char * label, unsigned int line) {
+    std_mutex_simple_lock_guard g(&db_tracker_lock);
     if (list==NULL) return ;
     try {
         tracker_detail d={label,line};
@@ -39,6 +41,7 @@ void db_list_tracker_add(db_common_list_t list, const char * label, unsigned int
 }
 
 void db_list_tracker_rm(db_common_list_t list) {
+    std_mutex_simple_lock_guard g(&db_tracker_lock);
     tTrackerList::iterator it = trackers.find(list);
     if (it!=trackers.end()) trackers.erase(it);
     //todo log if not found
@@ -46,6 +49,7 @@ void db_list_tracker_rm(db_common_list_t list) {
 
 void db_list_debug() {
     //TODO implement
+    std_mutex_simple_lock_guard g(&db_tracker_lock);
 }
 
 
@@ -125,7 +129,7 @@ size_t db_list_get_len(db_common_list_t l) {
 
 db_list_entry_t *db_list_elem_next(db_common_list_t l,size_t *index) {
     tList &list = *(L(l));
-    if (list.size()>*index) return NULL;
+    if ((*index)>=list.size()) return NULL;
     db_list_entry_t *p = db_list_elem_get(l,*index);
     ++(*index);
     return p;
@@ -154,3 +158,5 @@ bool db_list_from_array(db_common_list_t list,void *data, size_t len, db_list_co
     return true;
 }
 
+
+}
