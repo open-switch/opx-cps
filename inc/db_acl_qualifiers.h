@@ -6,10 +6,6 @@
 #ifndef DB_ACL_QUALIFIERS_H_
 #define DB_ACL_QUALIFIERS_H_
 
-#include "db_common_types.h"
-#include "std_error_codes.h"
-#include "db_common_list.h"
-
 typedef enum
 {
  db_acl_SRC_MAC = 0,
@@ -27,7 +23,6 @@ typedef enum
  db_acl_IP6_DST,
  db_acl_DST_L2_PORT,
  db_acl_DST_MAC,
- db_acl_SRC_MAC,
  db_acl_OUTER_VLAN,
  db_acl_SRC_L4_PORT,
  db_acl_DST_L4_PORT,
