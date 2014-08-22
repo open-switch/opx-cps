@@ -3,6 +3,8 @@
 
 #include "db_acl_qualifiers.h"
 #include "db_acl_actions.h"
+#include "db_acl_qualifier_masks.h"
+#include "db_acl_qualifier_mask_union.h"
 
 #define ACL_ALL_PORTS 0xffff
 
@@ -18,14 +20,9 @@ typedef struct {
 } db_acl_action_detail_t;
 
 typedef struct {
-    db_acl_port_type_t  port_type;
-    db_acl_qualifier_mask_t acl_qualmask;
-} db_acl_action_detail_t;
-
-typedef struct {
     int db_acl_num_qualifiers;
     int db_acl_num_actions;
-    int db_acl_num_ports;
+    uint16_t num_ports  ;
     int db_acl_entry_index;
     int db_acl_entry_virtual_index;
 } db_acl_entry_metadata_t; 
