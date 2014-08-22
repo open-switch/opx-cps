@@ -42,11 +42,4 @@ typedef enum
  db_acl_LAST_QUALIFIER
 }db_acl_qualifierinfo;
 
-typedef struct _action
-{
-    db_acl_qualifierinfo qualifier;
-    int param1;
-    int param2;
-}db_acl_qualifier_t;
-
 #endif /* DB_ACL_QUALIFIERS_H_ */

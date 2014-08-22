@@ -54,13 +54,5 @@ typedef enum
     db_acl_REDIRECT_L2MC    
 }db_acl_actioninfo;
 
-typedef struct _action
-{
-    db_acl_actioninfo action;
-    int param1;
-    int param2;
-}db_acl_action_t;
-
-
 
 #endif /* DB_ACL_ACTIONS_H_ */
