@@ -10,12 +10,12 @@
 
 typedef uint16_t port_no;
 typedef struct {
-    db_acl_qualifierinfo qual_enum;
+    db_acl_qualifier_enum_t qual_enum;
     db_acl_qualifier_mask_t acl_qualmask;
 } db_acl_qualmask_detail_t;
 
 typedef struct {
-    db_acl_actioninfo action_enum;
+    db_acl_action_enum_t action_enum;
     db_acl_action_t action;
 } db_acl_action_detail_t;
 
