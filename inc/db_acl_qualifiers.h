@@ -40,6 +40,6 @@ typedef enum
  db_acl_L2_STATION_MOVE,
  db_acl_TCP_CONTROL,
  db_acl_LAST_QUALIFIER
-}db_acl_qualifierinfo;
+}db_acl_qualifier_enum_t;
 
 #endif /* DB_ACL_QUALIFIERS_H_ */

@@ -52,7 +52,7 @@ typedef enum
     db_acl_MIRROR_EGRESS,
     db_acl_MIRROR_OVERRIDE,
     db_acl_REDIRECT_L2MC    
-}db_acl_actioninfo;
+}db_acl_action_enum_t;
 
 
 #endif /* DB_ACL_ACTIONS_H_ */
