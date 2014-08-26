@@ -1,4 +1,4 @@
-ACL,BCM,Types,Size
+Enum,BCM,Types,Size
 SRC_MAC,bcmFieldQualifySrcMac,db_acl_srcmac_mask_t,96
 DST_MAC,bcmFieldQualifyDstMac,db_acl_dstmac_mask_t,96
 ETHER_TYPE,bcmFieldQualifyEtherType,db_acl_ethertype_t,16
