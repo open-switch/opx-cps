@@ -7,7 +7,8 @@
 #include "db_acl_qualifier_mask_union.h"
 
 #define ACL_ALL_PORTS 0xffff
-#define  LOW_ACL_FEATURE_NAME_LEN_MAX 30
+#define  ACL_FEATURE_NAME_LEN_MAX 30
+#define ACL_ROOT_PATH  "/etc/dn/acl"
 
 
 typedef enum {
