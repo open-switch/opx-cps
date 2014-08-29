@@ -16,7 +16,7 @@ typedef enum {
     db_acl_STAGE_PRE_INGRESS,
 } db_acl_stage_t;
 
-typedef struct feature_info_s {
+typedef struct  {
     int feature_id;
     int size;
     void *params;

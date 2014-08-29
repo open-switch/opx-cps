@@ -218,16 +218,16 @@ typedef enum {
 
 /* Packet Result */
 typedef enum {
-    db_acl_BCAST_DATA = 3
-    db_acl_UCAST_DATA = 4
-    db_acl_DLF_DATA   = 5
-    db_acl_UNKNOWN_IPMC_DATA = 6
-    db_acl_KNOWN_IPMC_DATA = 7
-    db_acl_KNOWN_AND_UNKNOWN_L2MC_DATA = 8
-    db_acl_KNOWN_AND_UNKNOWN_L2MC_MASK = 30
-    db_acl_KNOWN_L3UC_DATA = 10
-    db_acl_UNKNOWN_L3UC_DATA = 11
-    db_acl_DEF_PKT_RES_MASK = 15
+    db_acl_BCAST_DATA = 3,
+    db_acl_UCAST_DATA = 4,
+    db_acl_DLF_DATA   = 5,
+    db_acl_UNKNOWN_IPMC_DATA = 6,
+    db_acl_KNOWN_IPMC_DATA = 7,
+    db_acl_KNOWN_AND_UNKNOWN_L2MC_DATA = 8,
+    db_acl_KNOWN_AND_UNKNOWN_L2MC_MASK = 30,
+    db_acl_KNOWN_L3UC_DATA = 10,
+    db_acl_UNKNOWN_L3UC_DATA = 11,
+    db_acl_DEF_PKT_RES_MASK = 15,
 }db_acl_packetres_t;
 
 #endif /*__DB_ACL_QUAL_MASKS_H */
