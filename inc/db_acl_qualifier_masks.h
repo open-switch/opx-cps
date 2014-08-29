@@ -129,9 +129,6 @@ typedef db_acl_valmask32_t db_acl_l4srcport_mask_t;
 /* L4 DST PORT */
 typedef db_acl_valmask32_t db_acl_l4dstport_mask_t;
 
-/* DST PORT*/
-typedef db_acl_valmask32_t db_acl_dstport_mask_t;
-
 /* DSCP */
 typedef db_acl_valmask8_t db_acl_dscp_mask_t;
 
