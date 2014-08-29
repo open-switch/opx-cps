@@ -45,7 +45,6 @@ typedef union {
   db_acl_dstport_mask_t dstport_mask;
   db_acl_l4srcport_mask_t l4srcport_mask;
   db_acl_l4dstport_mask_t l4dstport_mask;
-  db_acl_dstport_mask_t dstport_mask;
   db_acl_icmp_mask_t icmp_mask;
   db_acl_ethertype_t ethertype;
 
