@@ -11,8 +11,9 @@ echo "
  * This file is auto-generated.
  * Edits to this file will be lost when it is regenerated.
  */
-#ifndef __${target_file}__
-#define __${target_file}__
+var1= echo $target_file | cut -d '/' -f2
+#ifndef __${var1}__
+#define __${var1}__
 
 typedef union {
 " > $filen

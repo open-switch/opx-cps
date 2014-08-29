@@ -3,8 +3,8 @@
  * This file is auto-generated.
  * Edits to this file will be lost when it is regenerated.
  */
-#ifndef __inc/db_acl_qualifier_masks.h__
-#define __inc/db_acl_qualifier_masks.h__
+#ifndef __db_acl_qualifier_masks_h__
+#define __db_acl_qualifier_masks_h__
 
 typedef union {
 
