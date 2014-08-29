@@ -7,12 +7,20 @@
 #include "db_acl_qualifier_mask_union.h"
 
 #define ACL_ALL_PORTS 0xffff
+#define  LOW_ACL_FEATURE_NAME_LEN_MAX 30
+
 
 typedef enum {
     db_acl_STAGE_INGRESS=0,
     db_acl_STAGE_EGRESS,
     db_acl_STAGE_PRE_INGRESS,
 } db_acl_stage_t;
+
+typedef struct feature_info_s {
+    int feature_id;
+    int size;
+    void *params;
+} db_acl_feature_info_t;
 
 typedef uint16_t port_no;
 typedef uint16_t unit_no;
