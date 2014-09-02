@@ -48,7 +48,7 @@ typedef struct {
     uint16_t num_ports  ;
     int db_acl_entry_index;
     int db_acl_entry_virtual_index;
-    db_acl_entry_flag_t  entry_flags;
+    db_acl_entry_flags_t  entry_flags;
 } db_acl_entry_metadata_t; 
 
 #endif
