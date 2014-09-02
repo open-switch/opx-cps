@@ -21,7 +21,7 @@ typedef enum {
 typedef enum {
     db_acl_DELETE_ENTRY = 1,
     db_acl_ADD_STATS = 2,
-} db_acl_entry_flag_t;
+} db_acl_entry_flags_t;
 
 typedef struct  {
     int feature_id;
@@ -48,7 +48,7 @@ typedef struct {
     uint16_t num_ports  ;
     int db_acl_entry_index;
     int db_acl_entry_virtual_index;
-    db_acl_entry_flag_t  entry_flag;
+    db_acl_entry_flag_t  entry_flags;
 } db_acl_entry_metadata_t; 
 
 #endif
