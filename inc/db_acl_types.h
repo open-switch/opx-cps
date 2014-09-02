@@ -20,7 +20,7 @@ typedef enum {
 
 typedef enum {
     db_acl_DELETE_ENTRY = 1,
-    db_acl_ADD_STATA = 2,
+    db_acl_ADD_STATS = 2,
 } db_acl_entry_flag_t;
 
 typedef struct  {
