@@ -60,7 +60,7 @@ db_return_code_t db_get_add_key(db_get_params_t * param,db_object_type_t type,
 db_return_code_t db_get(db_get_params_t * param);
 
 
-db_return_code_t db_transaction_init(db_set_params_t *req);
+db_return_code_t db_transaction_init(db_set_params_t *req, db_instance_t db_type);
 db_return_code_t db_transaction_close(db_set_params_t *req);
 
 
@@ -70,7 +70,7 @@ db_return_code_t db_transaction_close(db_set_params_t *req);
  * @param type the object type of the data to set
  * @param data the actual data to set
  * @param len the length of the data to set
- * @param deep_copy true if the data will be contained by the transaction
+ * @param deep_copy true if the memory will be allocated for the data and it will stay until you close the transaction
  * @return standard db return code
  */
 db_return_code_t db_set(db_set_params_t * trans,db_object_type_t type,

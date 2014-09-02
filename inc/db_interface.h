@@ -36,6 +36,14 @@ typedef struct {
     } un;
 }db_interface_key_t;
 
+typedef struct {
+    db_interface_key_t key;
+    union {
+        hal_mac_addr_t mac;
+        db_interface_state_t astate;
+    }un;
+} db_if_set_request_t;
+
 #define DB_OBJ_IF_RECORD (DB_OBJ_MAKE(db_obj_cat_INTERFACE,db_int_obj_IF_OBJ))
 #define DB_OBJ_IF_MAC (DB_OBJ_MAKE(db_obj_cat_INTERFACE,db_int_obj_MAC))
 #define DB_OBJ_IF_ASTATE (DB_OBJ_MAKE(db_obj_cat_INTERFACE,db_int_obj_IF_ASTATE))

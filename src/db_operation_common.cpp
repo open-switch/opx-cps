@@ -94,10 +94,11 @@ db_return_code_t db_get_request_close(db_get_params_t *req) {
     return db_ret_code_OK;
 }
 
-db_return_code_t db_transaction_init(db_set_params_t *req) {
+db_return_code_t db_transaction_init(db_set_params_t *req, db_instance_t db_type) {
     memset(req,0,sizeof(*req));
     req->list = DB_LIST_ALLOC;
     if (req->list==NULL) return db_ret_code_ERR;
+    req->instance = db_type;
     return db_ret_code_OK;
 }
 
