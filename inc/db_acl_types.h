@@ -8,7 +8,7 @@
 
 #define ACL_ALL_PORTS 0xffff
 #define ACL_ALL_UNITS 0xff
-#define  ACL_FEATURE_NAME_LEN_MAX 30
+#define ACL_FEATURE_NAME_LEN_MAX 30
 #define ACL_ROOT_PATH  "/etc/dn/acl"
 
 
@@ -17,6 +17,11 @@ typedef enum {
     db_acl_STAGE_EGRESS,
     db_acl_STAGE_PRE_INGRESS,
 } db_acl_stage_t;
+
+typedef enum {
+    db_acl_DELETE_ENTRY = 1,
+    db_acl_ADD_STATA = 2,
+} db_acl_entry_flag_t;
 
 typedef struct  {
     int feature_id;
@@ -43,7 +48,7 @@ typedef struct {
     uint16_t num_ports  ;
     int db_acl_entry_index;
     int db_acl_entry_virtual_index;
-    uint16_t num_units;
+    db_acl_entry_flag_t  entry_flag;
 } db_acl_entry_metadata_t; 
 
 #endif
