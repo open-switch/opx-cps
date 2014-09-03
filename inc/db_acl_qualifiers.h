@@ -7,7 +7,7 @@
 #ifndef __DB_ACL_QUALIFIERS_H__
 #define __DB_ACL_QUALIFIERS_H__
 
-typedef struct {
+typedef enum {
 
 db_acl_SRC_MAC,
 db_acl_DST_MAC,

@@ -23,22 +23,22 @@ typedef struct
 /* MAC INFO */
 typedef struct
 {
-    uint8_t macaddr[6];
-    uint8_t macmask[6];
+    uint8_t data[6];
+    uint8_t mask[6];
 }db_acl_macinfo_valmask_t;
 
 /* IP ADDR */
 typedef struct 
 {
-    uint32_t ipaddr;
-    uint32_t ipmask;
+    uint32_t data;
+    uint32_t mask;
 }db_acl_ipaddr_valmask_t;
 
 /* IPv6 ADDR */
 typedef struct 
 {
-    uint16_t ipaddr[6];
-    uint16_t ipmask[6];
+    uint16_t data[6];
+    uint16_t mask[6];
 }db_acl_ip6addr_valmask_t;
 
 /* SRC MAC */
