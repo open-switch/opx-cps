@@ -7,7 +7,7 @@
 #ifndef __DB_ACL_ACTIONS_H__
 #define __DB_ACL_ACTIONS_H__
 
-typedef struct {
+typedef enum {
 
 db_acl_PERMIT,
 db_acl_DENY,
