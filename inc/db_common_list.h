@@ -1,3 +1,8 @@
+/**
+ * filename: db_common_list.h
+ * (c) Copyright 2014 Dell Inc. All Rights Reserved.
+ **/ 
+     
 /** OPENSOURCELICENSE */
 /*
  * db_common_list.h
