@@ -56,7 +56,7 @@ typedef enum
 
 typedef struct 
 {
-    db_acl_action_enum_t action;
+    db_acl_action_enum_t action_enum;
     int param1;
     int param2;
 }db_acl_action_t;

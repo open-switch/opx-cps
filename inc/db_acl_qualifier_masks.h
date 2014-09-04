@@ -37,8 +37,8 @@ typedef struct
 /* IPv6 ADDR */
 typedef struct 
 {
-    uint16_t data[6];
-    uint16_t mask[6];
+    uint8_t data[6];
+    uint8_t mask[6];
 }db_acl_ip6addr_valmask_t;
 
 /* SRC MAC */
