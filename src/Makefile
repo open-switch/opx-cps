@@ -8,7 +8,4 @@ db_common_SRCS=db_common_list.cpp db_interface_common.cpp db_operation_common.cp
 
 include ${PROJROOT}/tools/workspace.mak
 
-db_acl_qualifiers.h :
-	../../hal-acl/bin/csv_to_enum.sh ../../hal-acl/bin/acl_field_mapping.csv $@
-
 

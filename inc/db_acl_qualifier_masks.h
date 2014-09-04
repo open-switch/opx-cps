@@ -1,6 +1,6 @@
 
-#ifndef __DB_ACL_QUAL_MASKS_H
-#define __DB_ACL_QUAL_MASKS_H
+#ifndef __DB_ACL_QUAL_MASKS_H__
+#define __DB_ACL_QUAL_MASKS_H__
 
 typedef struct 
 {
@@ -48,7 +48,7 @@ typedef db_acl_macinfo_valmask_t db_acl_srcmac_mask_t;
 typedef db_acl_macinfo_valmask_t db_acl_dstmac_mask_t;
 
 /* ETHER TYPE */
-typedef uint16_t db_acl_ethertype_t;
+typedef db_acl_valmask8_t db_acl_ethertype_mask_t;
 
 /* VLAN INFO */
 typedef db_acl_valmask16_t db_acl_vlaninfo_valmask_t; 
@@ -132,6 +132,9 @@ typedef db_acl_valmask32_t db_acl_l4dstport_mask_t;
 /* DSCP */
 typedef db_acl_valmask8_t db_acl_dscp_mask_t;
 
+
+typedef db_acl_valmask32_t db_acl_iptype_t;
+
 /* IP FRAG */
 typedef enum {
     db_acl_IP_FRAG_NON,            /* Non-fragmented packet. */
@@ -214,17 +217,13 @@ typedef enum {
 }db_acl_tunnel_type_t;
 
 /* Packet Result */
-typedef enum {
-    db_acl_BCAST_DATA = 3,
-    db_acl_UCAST_DATA = 4,
-    db_acl_DLF_DATA   = 5,
-    db_acl_UNKNOWN_IPMC_DATA = 6,
-    db_acl_KNOWN_IPMC_DATA = 7,
-    db_acl_KNOWN_AND_UNKNOWN_L2MC_DATA = 8,
-    db_acl_KNOWN_AND_UNKNOWN_L2MC_MASK = 30,
-    db_acl_KNOWN_L3UC_DATA = 10,
-    db_acl_UNKNOWN_L3UC_DATA = 11,
-    db_acl_DEF_PKT_RES_MASK = 15,
-}db_acl_packetres_t;
+typedef db_acl_valmask8_t db_acl_packetres_bcast_mask_t;
+typedef db_acl_valmask8_t db_acl_packetres_ucast_mask_t;
+typedef db_acl_valmask8_t db_acl_packetres_dlf_mask_t;
+typedef db_acl_valmask8_t db_acl_packetres_unknown_ipmc_mask_t;
+typedef db_acl_valmask8_t db_acl_packetres_known_ipmc_mask_t;
+typedef db_acl_valmask8_t db_acl_packetres_l2mc_mask_t;
+typedef db_acl_valmask8_t db_acl_packetres_known_l3uc_mask_t;
+typedef db_acl_valmask8_t db_acl_packetres_unknown_l3uc_mask_t;
 
-#endif /*__DB_ACL_QUAL_MASKS_H */
+#endif /*__DB_ACL_QUAL_MASKS_H__ */

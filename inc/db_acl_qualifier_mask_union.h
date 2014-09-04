@@ -17,7 +17,6 @@ typedef union {
   db_acl_color_t color;
   db_acl_ip_frag_mask_t ip_frag_mask;
   db_acl_tunnel_type_t tunnelype;
-  db_acl_packetres_t packetres;
   db_acl_srcmac_mask_t srcmac_mask;
   db_acl_dstmac_mask_t dstmac_mask;
   db_acl_outervlan_mask_t outervlan_mask;
@@ -46,8 +45,16 @@ typedef union {
   db_acl_l4srcport_mask_t l4srcport_mask;
   db_acl_l4dstport_mask_t l4dstport_mask;
   db_acl_icmp_mask_t icmp_mask;
-  db_acl_ethertype_t ethertype;
+  db_acl_ethertype_mask_t ethertype;
   db_acl_ip_type_t ip_type;
+  db_acl_packetres_bcast_mask_t packetres_bcast_mask;
+  db_acl_packetres_ucast_mask_t packetres_ucast_mask;
+  db_acl_packetres_dlf_mask_t packetres_dlf_mask;
+  db_acl_packetres_unknown_ipmc_mask_t packetres_unknown_ipmc_mask;
+  db_acl_packetres_known_ipmc_mask_t packetres_known_ipmc_mask;
+  db_acl_packetres_l2mc_mask_t packetres_l2mc_mask;
+  db_acl_packetres_known_l3uc_mask_t packetres_known_l3uc_mask;
+  db_acl_packetres_unknown_l3uc_mask_t packetres_unknown_l3uc_mask;
 
 } db_acl_qualifier_mask_t;
 

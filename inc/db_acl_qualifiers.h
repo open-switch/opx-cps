@@ -38,7 +38,7 @@ db_acl_TCP_CONTROL,
 db_acl_TUNNEL_TYPE,
 db_acl_PACKET_RES 
 
-}db_acl_qualifier_enum_t;
+}db_acl_qualifiers_enum_t;
 
 #endif
 
