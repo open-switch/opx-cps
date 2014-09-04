@@ -31,22 +31,48 @@ typedef enum {
     db_inst_MAX
 } db_instance_t;
 
+/*
+ * The structure for a get request
+ */
 typedef struct {
-    db_instance_t instance;
-    db_object_type_t type;
-    db_common_list_t keys;
-    db_common_list_t list;
+    db_instance_t instance; //! instance to use (target or obs)
+    db_object_type_t type; //! type of object to query
+    db_common_list_t keys; //! list of keys to query (emptpy means all)
+    db_common_list_t list; //! list of discovered objects
 }db_get_params_t;
 
+/**
+ * The API for a set request
+ */
 typedef struct {
-    db_instance_t instance;
-    db_common_list_t list;
+    db_instance_t instance; //! db instance
+    db_common_list_t list; //! list of objects to modify
 }db_set_params_t;
 
-
+/**
+ * Initialize a get request
+ * @param req request to initialize
+ * @param db_type type of db (target/obs)
+ * @param objtype type of object to query
+ * @return db return code
+ */
 db_return_code_t db_get_request_init(db_get_params_t *req, db_instance_t db_type, db_object_type_t objtype);
+/**
+ * Clean up used get request
+ * @param req request to clean up
+ * @return db return code
+ */
 db_return_code_t db_get_request_close(db_get_params_t *req);
 
+/**
+ * Add a key to a get request
+ * @param param the get request to update
+ * @param type the type of db
+ * @param data key data to add
+ * @param len length of key data
+ * @param deep_copy if the key is deep copied
+ * @return db return code
+ */
 db_return_code_t db_get_add_key(db_get_params_t * param,db_object_type_t type,
         void *data, size_t len, bool deep_copy);
 
@@ -59,8 +85,20 @@ db_return_code_t db_get_add_key(db_get_params_t * param,db_object_type_t type,
  */
 db_return_code_t db_get(db_get_params_t * param);
 
-
+/**
+ * Initialize the db transaction for use with the set and commit API
+ * The idea is that you init a db request, add objects with "set" then finally commit
+ * @param req is the request to initialize
+ * @param db_type type of db to update
+ * @return db return code
+ */
 db_return_code_t db_transaction_init(db_set_params_t *req, db_instance_t db_type);
+/**
+ * Clean up after a transaction or close a pending transaction.  Before a commit is made
+ * this will cancel a uncommitted transaction.
+ * @param req is the transaction to cancel or clean up
+ * @return db return code
+ */
 db_return_code_t db_transaction_close(db_set_params_t *req);
 
 
@@ -85,16 +123,24 @@ db_return_code_t db_set(db_set_params_t * trans,db_object_type_t type,
  */
 db_return_code_t db_commit(db_set_params_t * param);
 
+/**
+ * A registration function for the database
+ */
 typedef struct {
-    void * context;
-    db_instance_t instance_type;
-    db_object_category_types_t object_category;
-    db_object_sub_type_t object_range_start;
-    db_object_sub_type_t object_range_end;
-    db_return_code_t (*db_read_function) (void * context, db_get_params_t * param);
-    db_return_code_t (*db_write_function)(void * context, db_list_entry_t * param);
+    void * context; //! some application specific context to pass to the read/write function
+    db_instance_t instance_type;//! the database instance type (obs/target)
+    db_object_category_types_t object_category; //! the object category - see db_object_category.h
+    db_object_sub_type_t object_range_start; //! the start object range (unused for now)
+    db_object_sub_type_t object_range_end;//! the start object range (unused for now)
+    db_return_code_t (*db_read_function) (void * context, db_get_params_t * param); //! the read db function
+    db_return_code_t (*db_write_function)(void * context, db_list_entry_t * param); //! the set db function
 }db_registration_functions_t;
 
+/**
+ * API used to register a db handler
+ * @param reg is the registration structure
+ * @return standard db return code
+ */
 db_return_code_t db_register(db_registration_functions_t * reg);
 
 #ifdef __cplusplus
