@@ -23,22 +23,22 @@ typedef struct
 /* MAC INFO */
 typedef struct
 {
-    uint8_t macaddr[6];
-    uint8_t macmask[6];
+    uint8_t data[6];
+    uint8_t mask[6];
 }db_acl_macinfo_valmask_t;
 
 /* IP ADDR */
 typedef struct 
 {
-    uint32_t ipaddr;
-    uint32_t ipmask;
+    uint32_t data;
+    uint32_t mask;
 }db_acl_ipaddr_valmask_t;
 
 /* IPv6 ADDR */
 typedef struct 
 {
-    uint16_t ipaddr[6];
-    uint16_t ipmask[6];
+    uint16_t data[6];
+    uint16_t mask[6];
 }db_acl_ip6addr_valmask_t;
 
 /* SRC MAC */
@@ -147,7 +147,7 @@ typedef enum {
     db_acl_IP_FRAG_NOT_FIRST,      /* Not the first fragment. */
     db_acl_IP_FRAG_ANY,            /* Any fragment of fragmented packet. */
     db_acl_IP_FRAG_COUNT           /* Always last. Not a usable value. */
-}db_acl_ip_frag_mask_t;
+}db_acl_ip_frag_mask_e;
 
 /* IP FRAG */
 typedef db_acl_valmask32_t db_acl_ip_frag_mask_t;
@@ -230,13 +230,6 @@ typedef enum {
 typedef db_acl_valmask32_t db_acl_tunnel_type_mask_t;
 
 /* Packet Result */
-typedef db_acl_valmask8_t db_acl_packetres_bcast_mask_t;
-typedef db_acl_valmask8_t db_acl_packetres_ucast_mask_t;
-typedef db_acl_valmask8_t db_acl_packetres_dlf_mask_t;
-typedef db_acl_valmask8_t db_acl_packetres_unknown_ipmc_mask_t;
-typedef db_acl_valmask8_t db_acl_packetres_known_ipmc_mask_t;
-typedef db_acl_valmask8_t db_acl_packetres_l2mc_mask_t;
-typedef db_acl_valmask8_t db_acl_packetres_known_l3uc_mask_t;
-typedef db_acl_valmask8_t db_acl_packetres_unknown_l3uc_mask_t;
+typedef db_acl_valmask8_t db_acl_packetres_mask_t;
 
 #endif /*__DB_ACL_QUAL_MASKS_H__ */
