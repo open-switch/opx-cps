@@ -59,7 +59,10 @@ typedef enum
     GREEN = 1,
     YELLOW,
     RED
-}db_acl_color_t;
+}db_acl_color_e;
+
+/* COLOR */
+typedef db_acl_valmask32_t db_acl_color_mask_t;
 
 /* OUTER VLAN */
 typedef db_acl_vlaninfo_valmask_t db_acl_outervlan_mask_t;
@@ -91,7 +94,11 @@ typedef enum {
     db_acl_L2FORMATMIM,            /* MAC-In-MAC. */
     db_acl_L2FORMATPPPOE,          /* PPPoE frame. */
     db_acl_L2FORMATCOUNT           /* Always Last. Not a usable value. */
-} db_acl_l2format_t;
+} db_acl_l2format_e;
+
+
+/* L2 FORMAT */
+typedef db_acl_valmask32_t db_acl_l2format_mask_t;
 
 /* IN PORT */
 typedef db_acl_valmask32_t db_acl_inport_mask_t;
@@ -142,6 +149,9 @@ typedef enum {
     db_acl_IP_FRAG_COUNT           /* Always last. Not a usable value. */
 }db_acl_ip_frag_mask_t;
 
+/* IP FRAG */
+typedef db_acl_valmask32_t db_acl_ip_frag_mask_t;
+
 /* IP Type */
 typedef enum {
     db_acl_IP_TYPE_ANY,              /* Don't care. */
@@ -168,7 +178,10 @@ typedef enum {
     db_acl_IP_TYPE_CFM,              /* CFM Packets (0x8902). */
     db_acl_IP_TYPE_FCOE,             /* Fiber Channel Packets (0x8906). */
     db_acl_IP_TYPE_COUNT             /* Always Last. Not a usable value. */
-} db_acl_ip_type_t;
+} db_acl_ip_type_e;
+
+/* IP TYPE */
+typedef db_acl_valmask32_t db_acl_ip_type_mask_t;
 
 /* SRC CLASS */
 typedef db_acl_valmask8_t db_acl_srcclass_mask_t;
@@ -211,7 +224,10 @@ typedef enum {
                                                           terminated. */
     db_acl_TUNNEL_TYPE_VXLAN,            /* Vxlan Tunnel Packet. */
     db_acl_TUNNEL_TYPE_COUNT             /* Always Last. Not a usable value. */
-}db_acl_tunnel_type_t;
+}db_acl_tunnel_type_e;
+
+/* TUNNEL TYPE */
+typedef db_acl_valmask32_t db_acl_tunnel_type_mask_t;
 
 /* Packet Result */
 typedef db_acl_valmask8_t db_acl_packetres_bcast_mask_t;
