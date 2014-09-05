@@ -178,10 +178,10 @@ typedef enum {
     db_acl_IP_TYPE_CFM,              /* CFM Packets (0x8902). */
     db_acl_IP_TYPE_FCOE,             /* Fiber Channel Packets (0x8906). */
     db_acl_IP_TYPE_COUNT             /* Always Last. Not a usable value. */
-} db_acl_ip_type_e;
+} db_acl_iptype_e;
 
 /* IP TYPE */
-typedef db_acl_valmask32_t db_acl_ip_type_mask_t;
+typedef db_acl_valmask32_t db_acl_iptype_mask_t;
 
 /* SRC CLASS */
 typedef db_acl_valmask8_t db_acl_srcclass_mask_t;
@@ -224,10 +224,10 @@ typedef enum {
                                                           terminated. */
     db_acl_TUNNEL_TYPE_VXLAN,            /* Vxlan Tunnel Packet. */
     db_acl_TUNNEL_TYPE_COUNT             /* Always Last. Not a usable value. */
-}db_acl_tunnel_type_e;
+}db_acl_tunneltype_e;
 
 /* TUNNEL TYPE */
-typedef db_acl_valmask32_t db_acl_tunnel_type_mask_t;
+typedef db_acl_valmask32_t db_acl_tunneltype_mask_t;
 
 /* Packet Result */
 typedef db_acl_valmask8_t db_acl_packetres_mask_t;

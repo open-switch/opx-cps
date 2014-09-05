@@ -14,7 +14,6 @@ typedef union {
   db_acl_macinfo_valmask_t macinfo_valmask;
   db_acl_ipaddr_valmask_t ipaddr_valmask;
   db_acl_ip6addr_valmask_t ip6addr_valmask;
-  db_acl_ip_frag_mask_t ip_frag_mask;
   db_acl_srcmac_mask_t srcmac_mask;
   db_acl_dstmac_mask_t dstmac_mask;
   db_acl_outervlan_mask_t outervlan_mask;
@@ -47,9 +46,9 @@ typedef union {
   db_acl_l4srcport_mask_t l4srcport_mask;
   db_acl_l4dstport_mask_t l4dstport_mask;
   db_acl_ip_frag_mask_t ip_frag_mask;
-  db_acl_ip_type_mask_t ipype_mask;
+  db_acl_iptype_mask_t iptype_mask;
   db_acl_icmp_mask_t icmp_mask;
-  db_acl_tunnel_type_mask_t tunnelype_mask;
+  db_acl_tunneltype_mask_t tunneltype_mask;
 
 } db_acl_qualifier_mask_t;
 
