@@ -1,6 +1,7 @@
 #ifndef __DB_ACL_TYPES_H
 #define __DB_ACL_TYPES_H
 
+#include <stdint.h>
 #include "db_acl_qualifiers.h"
 #include "db_acl_actions.h"
 #include "db_acl_qualifier_masks.h"
@@ -33,7 +34,7 @@ typedef struct  {
 } db_acl_feature_info_t;
 
 typedef struct {
-    db_acl_qualifiers_enum_t qual_enum;
+    db_acl_qualifier_enum_t qual_enum;
     db_acl_qualifier_mask_t acl_qualmask;
 } db_acl_qualmask_detail_t;
 
