@@ -50,7 +50,7 @@ typedef struct {
     int num_qualifiers;
     db_acl_qualmask_detail_t *qual_array;
     int num_actions;
-    db_acl_action_action_t *action_array;
+    db_acl_action_detail_t *action_array;
     uint16_t num_ports;
     uint16_t *port_array;
     int entry_index;

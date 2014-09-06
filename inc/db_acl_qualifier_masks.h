@@ -37,8 +37,8 @@ typedef struct
 /* IPv6 ADDR */
 typedef struct 
 {
-    uint8_t data[6];
-    uint8_t mask[6];
+    uint16_t data[6];
+    uint16_t mask[6];
 }db_acl_ip6addr_valmask_t;
 
 /* SRC MAC */
@@ -139,9 +139,6 @@ typedef db_acl_valmask32_t db_acl_l4dstport_mask_t;
 /* DSCP */
 typedef db_acl_valmask8_t db_acl_dscp_mask_t;
 
-
-typedef db_acl_valmask32_t db_acl_iptype_t;
-
 /* IP FRAG */
 typedef enum {
     db_acl_IP_FRAG_NON,            /* Non-fragmented packet. */
@@ -150,7 +147,7 @@ typedef enum {
     db_acl_IP_FRAG_NOT_FIRST,      /* Not the first fragment. */
     db_acl_IP_FRAG_ANY,            /* Any fragment of fragmented packet. */
     db_acl_IP_FRAG_COUNT           /* Always last. Not a usable value. */
-}db_acl_ip_frag_mask_t;
+}db_acl_ip_frag_mask_e;
 
 /* IP FRAG */
 typedef db_acl_valmask32_t db_acl_ip_frag_mask_t;
@@ -181,10 +178,10 @@ typedef enum {
     db_acl_IP_TYPE_CFM,              /* CFM Packets (0x8902). */
     db_acl_IP_TYPE_FCOE,             /* Fiber Channel Packets (0x8906). */
     db_acl_IP_TYPE_COUNT             /* Always Last. Not a usable value. */
-} db_acl_ip_type_e;
+} db_acl_iptype_e;
 
 /* IP TYPE */
-typedef db_acl_valmask32_t db_acl_ip_type_mask_t;
+typedef db_acl_valmask32_t db_acl_iptype_mask_t;
 
 /* SRC CLASS */
 typedef db_acl_valmask8_t db_acl_srcclass_mask_t;
@@ -227,19 +224,12 @@ typedef enum {
                                                           terminated. */
     db_acl_TUNNEL_TYPE_VXLAN,            /* Vxlan Tunnel Packet. */
     db_acl_TUNNEL_TYPE_COUNT             /* Always Last. Not a usable value. */
-}db_acl_tunnel_type_e;
+}db_acl_tunneltype_e;
 
 /* TUNNEL TYPE */
-typedef db_acl_valmask32_t db_acl_tunnel_type_mask_t;
+typedef db_acl_valmask32_t db_acl_tunneltype_mask_t;
 
 /* Packet Result */
-typedef db_acl_valmask8_t db_acl_packetres_bcast_mask_t;
-typedef db_acl_valmask8_t db_acl_packetres_ucast_mask_t;
-typedef db_acl_valmask8_t db_acl_packetres_dlf_mask_t;
-typedef db_acl_valmask8_t db_acl_packetres_unknown_ipmc_mask_t;
-typedef db_acl_valmask8_t db_acl_packetres_known_ipmc_mask_t;
-typedef db_acl_valmask8_t db_acl_packetres_l2mc_mask_t;
-typedef db_acl_valmask8_t db_acl_packetres_known_l3uc_mask_t;
-typedef db_acl_valmask8_t db_acl_packetres_unknown_l3uc_mask_t;
+typedef db_acl_valmask8_t db_acl_packetres_mask_t;
 
 #endif /*__DB_ACL_QUAL_MASKS_H__ */

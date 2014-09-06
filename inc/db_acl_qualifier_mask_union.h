@@ -14,7 +14,6 @@ typedef union {
   db_acl_macinfo_valmask_t macinfo_valmask;
   db_acl_ipaddr_valmask_t ipaddr_valmask;
   db_acl_ip6addr_valmask_t ip6addr_valmask;
-  db_acl_ip_frag_mask_t ip_frag_mask;
   db_acl_srcmac_mask_t srcmac_mask;
   db_acl_dstmac_mask_t dstmac_mask;
   db_acl_outervlan_mask_t outervlan_mask;
@@ -36,14 +35,7 @@ typedef union {
   db_acl_srctrunk_mask_t srctrunk_mask;
   db_acl_dsttrunk_mask_t dsttrunk_mask;
   db_acl_tcpcontrol_mask_t tcpcontrol_mask;
-  db_acl_packetres_bcast_mask_t packetres_bcast_mask;
-  db_acl_packetres_ucast_mask_t packetres_ucast_mask;
-  db_acl_packetres_dlf_mask_t packetres_dlf_mask;
-  db_acl_packetres_unknown_ipmc_mask_t packetres_unknown_ipmc_mask;
-  db_acl_packetres_known_ipmc_mask_t packetres_known_ipmc_mask;
-  db_acl_packetres_l2mc_mask_t packetres_l2mc_mask;
-  db_acl_packetres_known_l3uc_mask_t packetres_known_l3uc_mask;
-  db_acl_packetres_unknown_l3uc_mask_t packetres_unknown_l3uc_mask;
+  db_acl_packetres_mask_t packetres_mask;
   db_acl_vlaninfo_valmask_t vlaninfo_valmask;
   db_acl_color_mask_t color_mask;
   db_acl_l2_class_info_mask_t l2_class_info_mask;
@@ -54,9 +46,9 @@ typedef union {
   db_acl_l4srcport_mask_t l4srcport_mask;
   db_acl_l4dstport_mask_t l4dstport_mask;
   db_acl_ip_frag_mask_t ip_frag_mask;
-  db_acl_ip_type_mask_t ipype_mask;
+  db_acl_iptype_mask_t iptype_mask;
   db_acl_icmp_mask_t icmp_mask;
-  db_acl_tunnel_type_mask_t tunnelype_mask;
+  db_acl_tunneltype_mask_t tunneltype_mask;
 
 } db_acl_qualifier_mask_t;
 
