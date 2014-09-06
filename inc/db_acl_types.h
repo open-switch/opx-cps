@@ -48,8 +48,11 @@ typedef struct
 typedef struct {
     db_acl_stage_t acl_stage;
     int num_qualifiers;
+    db_acl_qualmask_detail_t *qual_array;
     int num_actions;
-    uint16_t num_ports  ;
+    db_acl_action_action_t *action_array;
+    uint16_t num_ports;
+    uint16_t *port_array;
     int entry_index;
     int entry_virtual_index;
     db_acl_entry_flags_t  entry_flags;
