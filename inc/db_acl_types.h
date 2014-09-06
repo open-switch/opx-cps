@@ -2,8 +2,8 @@
 #define __DB_ACL_TYPES_H
 
 #include <stdint.h>
-#include "db_acl_qualifiers.h"
-#include "db_acl_actions.h"
+#include "db_acl_qualifier.h"
+#include "db_acl_action.h"
 #include "db_acl_qualifier_masks.h"
 #include "db_acl_qualifier_mask_union.h"
 
@@ -47,11 +47,11 @@ typedef struct
 
 typedef struct {
     db_acl_stage_t acl_stage;
-    int db_acl_num_qualifiers;
-    int db_acl_num_actions;
+    int num_qualifiers;
+    int num_actions;
     uint16_t num_ports  ;
-    int db_acl_entry_index;
-    int db_acl_entry_virtual_index;
+    int entry_index;
+    int entry_virtual_index;
     db_acl_entry_flags_t  entry_flags;
 } db_acl_entry_metadata_t; 
 
