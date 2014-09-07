@@ -7,8 +7,10 @@
 #include "db_acl_qualifier_masks.h"
 #include "db_acl_qualifier_mask_union.h"
 
+
 #define ACL_ALL_PORTS 0xffff
 #define ACL_ALL_UNITS 0xff
+
 #define ACL_FEATURE_NAME_LEN_MAX 30
 #define ACL_ROOT_PATH  "/etc/dn/acl"
 
@@ -33,6 +35,10 @@ typedef struct  {
     void *params;
 } db_acl_feature_info_t;
 
+/*
+* qual_enum identifies the qualifier
+* acl_qualmask is union of all possible qualifiers
+*/
 typedef struct {
     db_acl_qualifier_enum_t qual_enum;
     db_acl_qualifier_mask_t acl_qualmask;
@@ -44,6 +50,10 @@ typedef struct
     int param1;
     int param2;
 }db_acl_action_detail_t;
+
+/*
+* details of the entry to be installed in TCAM
+*/
 
 typedef struct {
     db_acl_stage_t acl_stage;
