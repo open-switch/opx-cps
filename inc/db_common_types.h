@@ -1,3 +1,8 @@
+/**
+ * filename: db_common_types.h
+ * (c) Copyright 2014 Dell Inc. All Rights Reserved.
+ **/ 
+     
 /** OPENSOURCELICENSE */
 /*
  * db_common_types.h
@@ -59,7 +64,6 @@ typedef int hal_ifindex_t;
  */
 typedef unsigned int hal_vlan_id_t;
 
-
 /**
  * HAL VRF ID type
  */
@@ -69,7 +73,7 @@ typedef unsigned int hal_vrf_id_t;
  * This is the object type of anything contained within the database.
  * this object type has no instance or key data within it.. it is
  * just a generic object type.  To create an object ID, use the API
- * in db_object_catagory.h
+ * in db_object_catagory.h.
  */
 typedef uint64_t db_object_type_t;
 

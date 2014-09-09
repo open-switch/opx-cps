@@ -1,3 +1,8 @@
+/**
+ * filename: db_interface_types.h
+ * (c) Copyright 2014 Dell Inc. All Rights Reserved.
+ **/ 
+     
 /** OPENSOURCELICENSE */
 /*
  * db_event_interface.h
@@ -66,13 +71,25 @@ typedef enum {
     CLASS_DEL,
 } db_qos_class_msg_type_t;
 
+
+/**
+ * The size of an interface name
+ */
+typedef char hal_ifname_t[HAL_IF_NAME_SZ];
+
+/**
+ * IP address structure
+ */
 typedef struct  {
     unsigned int     family;//! type can be AF_INET6 AF_INET
     uint8_t          address[HAL_INET6_LEN];
 }db_ipaddress_t;
 
+/**
+ * Database structure for an interface
+ */
 typedef struct  {
-    char            if_name[HAL_IF_NAME_SZ+1];
+    char    if_name[HAL_IF_NAME_SZ+1];
     hal_ifindex_t   if_index;
     unsigned long   if_flags;
     long            namelen;
