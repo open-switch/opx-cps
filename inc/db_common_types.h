@@ -31,6 +31,16 @@
 #define HAL_INET4_LEN (4)
 
 /**
+ * The IPv4 address family.
+ */
+#define HAL_INET4_FAMILY (0)
+
+/**
+ * The IPv6 address family.
+ */
+#define HAL_INET6_FAMILY (1)
+
+/**
  * This the size of an ethernet address.  There are OS defines for this field but to make
  * The HAL OS independant it has been redefined
  */
@@ -82,16 +92,6 @@ typedef uint64_t db_object_type_t;
  * The object catagory and object subtype.
  */
 typedef uint32_t db_object_sub_type_t;
-
-/**
- * The IPv4 address family.
- */
-#define HAL_INET4_FAMILY (0)
-
-/**
- * The IPv6 address family.
- */
-#define HAL_INET6_FAMILY (1)
 
 /**
  * The IP address structure used by all the HAL components. Address family
