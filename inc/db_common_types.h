@@ -98,7 +98,7 @@ typedef uint32_t db_object_sub_type_t;
  * identifies the v4 or v6 address types. 
  */
 typedef struct _hal_ip_addr_t {
-    uint8_t      af_index; /* HAL_INET4_FAMILY or HAL_INET6_FAMILY */
+    uint32_t     af_index; /* HAL_INET4_FAMILY or HAL_INET6_FAMILY */
     union {
         uint32_t v4_addr;
         uint8_t  v6_addr [HAL_INET6_LEN];
