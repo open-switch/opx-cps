@@ -1,7 +1,7 @@
-/**
+/*
  * filename: db_acl_actions.h
  * (c) Copyright 2014 Dell Inc. All Rights Reserved.
- **/ 
+ */ 
      
 /** OPENSOURCELICENSE */
 /*

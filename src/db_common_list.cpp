@@ -1,7 +1,7 @@
-/**
+/*
  * filename: db_common_list.cpp
  * (c) Copyright 2014 Dell Inc. All Rights Reserved.
- **/ 
+ */ 
      
 /** OPENSOURCELICENSE */
 /*

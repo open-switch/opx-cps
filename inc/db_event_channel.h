@@ -1,7 +1,7 @@
-/**
+/*
  * filename: db_event_channel.h
  * (c) Copyright 2014 Dell Inc. All Rights Reserved.
- **/ 
+ */ 
      
 /** OPENSOURCELICENSE */
 /*

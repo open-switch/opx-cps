@@ -1,7 +1,7 @@
-/**
+/*
  * filename: db_event_api.h
  * (c) Copyright 2014 Dell Inc. All Rights Reserved.
- **/
+ */
 
 /** OPENSOURCELICENSE */
 #ifndef __HAL_EVENT_API_H
