@@ -1,3 +1,8 @@
+/**
+ * filename: db_interface_types.h
+ * (c) Copyright 2014 Dell Inc. All Rights Reserved.
+ **/ 
+     
 /** OPENSOURCELICENSE */
 /*
  * db_event_interface.h
