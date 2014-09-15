@@ -103,6 +103,9 @@ typedef db_acl_valmask32_t db_acl_l2format_mask_t;
 /* IN PORT */
 typedef db_acl_valmask32_t db_acl_inport_mask_t;
 
+/* IN PORTS */
+typedef db_acl_valmask32_t db_acl_inports_mask_t;
+
 /* OUT PORT */
 typedef db_acl_valmask32_t db_acl_outport_mask_t;
 

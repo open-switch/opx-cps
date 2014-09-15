@@ -41,6 +41,7 @@ typedef union {
   db_acl_l2_class_info_mask_t l2_class_info_mask;
   db_acl_l2format_mask_t l2format_mask;
   db_acl_inport_mask_t inport_mask;
+  db_acl_inports_mask_t inports_mask;
   db_acl_outport_mask_t outport_mask;
   db_acl_dstport_mask_t dstport_mask;
   db_acl_l4srcport_mask_t l4srcport_mask;
