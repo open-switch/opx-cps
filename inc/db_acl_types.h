@@ -2,6 +2,7 @@
 #define __DB_ACL_TYPES_H
 
 #include <stdint.h>
+#include "db_common_types.h"
 #include "db_acl_qualifier.h"
 #include "db_acl_action.h"
 #include "db_acl_qualifier_masks.h"
@@ -14,9 +15,11 @@
 #define ACL_FEATURE_NAME_LEN_MAX 30
 #define ACL_ROOT_PATH  "/etc/dn/acl"
 
-typedef uint16_t port_no;
+/* Physical Port */
+port_t port_no;
 
-typedef uint16_t unit_no;
+/* NPU unit no*/
+npu_id_t unit_no;
 
 typedef enum {
     db_acl_STAGE_INGRESS=0,
@@ -32,7 +35,6 @@ typedef enum {
 typedef struct  {
     int feature_id;
     int size;
-    void *params;
 } db_acl_feature_info_t;
 
 /*
@@ -47,8 +49,8 @@ typedef struct {
 typedef struct
 {
     db_acl_action_enum_t action_enum;
-    int param1;
-    int param2;
+    int action_arg1;
+    int action_arg2;
 }db_acl_action_detail_t;
 
 /*
@@ -61,8 +63,8 @@ typedef struct {
     db_acl_qualmask_detail_t *qual_array;
     int num_actions;
     db_acl_action_detail_t *action_array;
-    uint16_t num_ports;
-    uint16_t *port_array;
+    port_t num_ports;
+    port_t *port_array;
     int entry_index;
     int entry_virtual_index;
     db_acl_entry_flags_t  entry_flags;
