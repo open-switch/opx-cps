@@ -2,18 +2,28 @@
 #ifndef __DB_ACL_QUAL_MASKS_H__
 #define __DB_ACL_QUAL_MASKS_H__
 
+/*
+ * db_acl_valmask(8/16/32)_t are generic struct having data types of 8/16/32
+ * unsigned int.Most of the specific maks types (i.e., vlaninfo, inport, etc.,)
+ *  are aliases of generic valmask struct type.
+ */
+
+
+/* Generic data type*/
 typedef struct 
 {
     uint32_t data;
     uint32_t mask;
 }db_acl_valmask32_t;
 
+/* Generic data type*/
 typedef struct 
 {
     uint16_t data;
     uint16_t mask;
 }db_acl_valmask16_t;
 
+/* Generic data type*/
 typedef struct 
 {
     uint8_t data;
