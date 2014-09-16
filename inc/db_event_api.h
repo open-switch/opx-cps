@@ -56,7 +56,7 @@ t_std_error db_event_service_publish_direct_event( std_event_msg_t *msg ) ;
  * @param msg the message to send
  * @return standard return code
  */
-inline t_std_error db_event_service_publish_msg(std_event_client_handle handle, std_event_msg_t *msg) {
+static inline t_std_error db_event_service_publish_msg(std_event_client_handle handle, std_event_msg_t *msg) {
     return std_client_publish_msg(handle,msg);
 }
 
