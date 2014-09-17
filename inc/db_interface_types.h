@@ -1,8 +1,8 @@
 /**
  * filename: db_interface_types.h
  * (c) Copyright 2014 Dell Inc. All Rights Reserved.
- **/ 
-     
+ **/
+
 /** OPENSOURCELICENSE */
 /*
  * db_event_interface.h
@@ -18,6 +18,12 @@ typedef enum  {
     DB_ADMIN_STATE_UP,
     DB_ADMIN_STATE_DN
 }db_interface_state_t;
+
+typedef enum  {
+    DB_INTERFACE_OP_SET,
+    DB_INTERFACE_OP_CREATE,
+    DB_INTERFACE_OP_DELETE
+}db_interface_operation_t;
 
 typedef enum {
     OPER_DEF,
@@ -71,6 +77,11 @@ typedef enum {
     CLASS_DEL,
 } db_qos_class_msg_type_t;
 
+typedef enum {
+    DB_IF_TYPE_PHYS_INTER,
+    DB_IF_TYPE_VLAN_INTER,
+    DB_IF_TYPE_LAG_INTER
+} db_if_type_t;
 
 /**
  * The size of an interface name
@@ -109,8 +120,14 @@ typedef struct  {
     db_interface_state_t  if_astate;
     db_interface_operational_state_t   if_ostate;
     unsigned int               mtu;
+    db_if_type_t         if_type;
+    hal_vlan_id_t         if_vlan;
 }db_if_t;
 
+typedef struct {
+    db_if_t interface;
+    db_interface_operation_t operation;
+} db_if_event_t;
 
 typedef struct  {
     db_route_msg_t  msg_type;

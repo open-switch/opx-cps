@@ -1,8 +1,8 @@
 /**
  * filename: db_operation.h
  * (c) Copyright 2014 Dell Inc. All Rights Reserved.
- **/ 
-     
+ **/
+
 /** OPENSOURCELICENSE */
 /*
  * db_operation.h
@@ -36,6 +36,12 @@ typedef enum {
     db_inst_MAX
 } db_instance_t;
 
+typedef enum {
+    db_oper_DELETE=1,
+    db_oper_CREATE=2,
+    db_oper_SET=3
+}db_operation_types_t;
+
 /*
  * The structure for a get request
  */
@@ -52,7 +58,7 @@ typedef struct {
 typedef struct {
     db_instance_t instance; //! db instance
     db_common_list_t list; //! list of objects to modify
-}db_set_params_t;
+}db_transaction_params_t;
 
 /**
  * Initialize a get request
@@ -97,15 +103,23 @@ db_return_code_t db_get(db_get_params_t * param);
  * @param db_type type of db to update
  * @return db return code
  */
-db_return_code_t db_transaction_init(db_set_params_t *req, db_instance_t db_type);
+db_return_code_t db_transaction_init(db_transaction_params_t *req, db_instance_t db_type);
 /**
  * Clean up after a transaction or close a pending transaction.  Before a commit is made
  * this will cancel a uncommitted transaction.
  * @param req is the transaction to cancel or clean up
  * @return db return code
  */
-db_return_code_t db_transaction_close(db_set_params_t *req);
+db_return_code_t db_transaction_close(db_transaction_params_t *req);
 
+/**
+ * Return the db object type operation for a given object type.  This will be valid for components
+ * implementing the write db API.  A write function call will be executed and the type field
+ * will indicate if the write is due to a Create/Delete or Set
+ * @param obj the object type to check.
+ * @return
+ */
+db_operation_types_t db_object_type_operation(db_object_type_t obj) ;
 
 /**
  * Add a set to the existing transaction.  Do not apply the data at this time.
@@ -116,7 +130,31 @@ db_return_code_t db_transaction_close(db_set_params_t *req);
  * @param deep_copy true if the memory will be allocated for the data and it will stay until you close the transaction
  * @return standard db return code
  */
-db_return_code_t db_set(db_set_params_t * trans,db_object_type_t type,
+db_return_code_t db_set(db_transaction_params_t * trans,db_object_type_t type,
+        void *data, size_t len, bool deep_copy);
+
+/**
+ * Add a create to the existing transaction.  Do not apply the data at this time.
+ * @param trans the transaction id
+ * @param type the object type of the data to create
+ * @param data the actual data to create
+ * @param len the length of the data to create
+ * @param deep_copy true if the memory will be allocated for the data and it will stay until you close the transaction
+ * @return standard db return code
+ */
+db_return_code_t db_create(db_transaction_params_t * trans,db_object_type_t type,
+        void *data, size_t len, bool deep_copy);
+
+/**
+ * Add a delete to the existing transaction.  Do not apply the data at this time.
+ * @param trans the transaction id
+ * @param type the object/key type of the data to delete
+ * @param data the actual data containing a key
+ * @param len the length of the data
+ * @param deep_copy true if the memory will be allocated for the key and it will stay until you close the transaction
+ * @return standard db return code
+ */
+db_return_code_t db_delete(db_transaction_params_t * trans,db_object_type_t type,
         void *data, size_t len, bool deep_copy);
 
 /**
@@ -126,10 +164,12 @@ db_return_code_t db_set(db_set_params_t * trans,db_object_type_t type,
  * @param param the structure containing the object request.
  * @return db_return_code_t
  */
-db_return_code_t db_commit(db_set_params_t * param);
+db_return_code_t db_commit(db_transaction_params_t * param);
 
 /**
  * A registration function for the database
+ * Implementers of the write API need to handle the db operation types and as part of the type field
+ * in the db_list_entry structure.  This can be done by calling
  */
 typedef struct {
     void * context; //! some application specific context to pass to the read/write function

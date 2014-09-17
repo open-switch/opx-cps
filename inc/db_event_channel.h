@@ -1,8 +1,8 @@
 /**
  * filename: db_event_channel.h
  * (c) Copyright 2014 Dell Inc. All Rights Reserved.
- **/ 
-     
+ **/
+
 /** OPENSOURCELICENSE */
 /*
  * db_event_channel.h
@@ -35,9 +35,10 @@ typedef enum hal_event_types_e {
  * hal_event_t_INTERFACE sub classes
  */
 typedef enum hal_event_interface_types {
-    hal_event_interface_INTERFACE,     //!< hal_event_interface_INTERFACE
-    hal_event_interface_INTERFACE_ADDR,//!< hal_event_interface_INTERFACE_ADDR
-    hal_event_interface_HW_LINK_STATE, //!< hal_event_interface_HW_LINK_STATE
+    hal_event_interface_INTERFACE,         //!< hal_event_interface_INTERFACE
+    hal_event_interface_INTERFACE_ADDR,    //!< hal_event_interface_INTERFACE_ADDR
+    hal_event_interface_HW_LINK_STATE,     //!< hal_event_interface_HW_LINK_STATE
+    hal_event_interface_VLAN            //!< hal_event_interface_VLAN vlan changes
 }hal_event_interface_t;
 
 /**
