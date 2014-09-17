@@ -1,8 +1,8 @@
-/**
+/*
  * filename: db_acl_actions.h
  * (c) Copyright 2014 Dell Inc. All Rights Reserved.
- **/ 
-     
+ */
+
 /** OPENSOURCELICENSE */
 /*
  * db_acl_actions.h
@@ -32,7 +32,7 @@ typedef enum
     db_acl_YP_DROP_PRECEDENCE,
     db_acl_SWITCH_CANCEL,
     db_acl_PBRREDIRECT,
-    db_acl_COSQ_NEW, 
+    db_acl_COSQ_NEW,
     db_acl_RP_DROP,
     db_acl_REDIRECT_IPMC,
     db_acl_ECN_NEW,
@@ -56,7 +56,7 @@ typedef enum
     db_acl_MIRROR_INGRESS,
     db_acl_MIRROR_EGRESS,
     db_acl_MIRROR_OVERRIDE,
-    db_acl_REDIRECT_L2MC    
+    db_acl_REDIRECT_L2MC
 }db_acl_actioninfo;
 
 typedef struct _action

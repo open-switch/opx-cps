@@ -1,8 +1,8 @@
-/**
+/*
  * filename: db_common_types.h
  * (c) Copyright 2014 Dell Inc. All Rights Reserved.
- **/ 
-     
+ */
+
 /** OPENSOURCELICENSE */
 /*
  * db_common_types.h
@@ -29,6 +29,16 @@
  * The length in octets of an V4 IP address.
  */
 #define HAL_INET4_LEN (4)
+
+/**
+ * The IPv4 address family.
+ */
+#define HAL_INET4_FAMILY (0)
+
+/**
+ * The IPv6 address family.
+ */
+#define HAL_INET6_FAMILY (1)
 
 /**
  * This the size of an ethernet address.  There are OS defines for this field but to make
@@ -83,5 +93,16 @@ typedef uint64_t db_object_type_t;
  */
 typedef uint32_t db_object_sub_type_t;
 
+/**
+ * The IP address structure used by all the HAL components. Address family
+ * identifies the v4 or v6 address types.
+ */
+typedef struct _hal_ip_addr_t {
+    uint32_t     af_index; /* HAL_INET4_FAMILY or HAL_INET6_FAMILY */
+    union {
+        uint32_t v4_addr;
+        uint8_t  v6_addr [HAL_INET6_LEN];
+    } u;
+} hal_ip_addr_t;
 
 #endif /* DB_COMMON_TYPES_H_ */

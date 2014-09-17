@@ -1,7 +1,7 @@
-/**
+/*
  * filename: hal_event_service.c
  * (c) Copyright 2014 Dell Inc. All Rights Reserved.
- **/
+ */
 
 /** OPENSOURCELICENSE */
 
