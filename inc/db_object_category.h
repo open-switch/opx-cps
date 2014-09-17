@@ -62,6 +62,15 @@ static inline db_object_type_t DB_OBJ_MAKE(db_object_category_types_t cat,db_obj
 }
 
 /**
+ * Remove any parts of the object type that is not the category or sub category
+ * @param t the input object type
+ * @return the filtered object type
+ */
+static inline db_object_sub_type_t DB_OBJ(db_object_type_t t) {
+    return t & (~DB_CAT_RES_MASK);
+}
+
+/**
  * Get the object subtype from an object ID
  * @param t the object id
  * @return the object sub type
@@ -78,5 +87,6 @@ static inline db_object_sub_type_t DB_OBJ_SUBT(db_object_type_t t) {
 static inline db_object_category_types_t DB_OBJ_CAT(db_object_type_t t) {
     return (db_object_category_types_t) ((t & (DB_CAT_MASK)) >> DB_CAT_BIT_SHIFT);
 }
+
 
 #endif /* DB_OBJECT_CATEGORY_H_ */
