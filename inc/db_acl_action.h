@@ -4,8 +4,8 @@
  * Edits to this file will be lost when it is regenerated.
  */
 
-#ifndef __DB_ACL_ACTIONS_H__
-#define __DB_ACL_ACTIONS_H__
+#ifndef __DB_ACL_ACTION_H__
+#define __DB_ACL_ACTION_H__
 
 typedef enum {
 

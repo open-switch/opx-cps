@@ -4,8 +4,8 @@
  * Edits to this file will be lost when it is regenerated.
  */
 
-#ifndef __DB_ACL_QUALIFIERS_H__
-#define __DB_ACL_QUALIFIERS_H__
+#ifndef __DB_ACL_QUALIFIER_H__
+#define __DB_ACL_QUALIFIER_H__
 
 typedef enum {
 
