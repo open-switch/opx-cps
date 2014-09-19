@@ -1,3 +1,10 @@
+/**
+ * filename: db_acl_types.h
+ * (c) Copyright 2014 Dell Inc. All Rights Reserved.
+ **/
+
+/** OPENSOURCELICENSE */
+
 #ifndef __DB_ACL_TYPES_H
 #define __DB_ACL_TYPES_H
 

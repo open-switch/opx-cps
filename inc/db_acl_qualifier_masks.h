@@ -1,3 +1,9 @@
+/**
+ * filename: db_acl_qualifier_masks.h
+ * (c) Copyright 2014 Dell Inc. All Rights Reserved.
+ **/
+
+/** OPENSOURCELICENSE */
 
 #ifndef __DB_ACL_QUAL_MASKS_H__
 #define __DB_ACL_QUAL_MASKS_H__
