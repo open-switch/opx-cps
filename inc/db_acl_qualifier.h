@@ -14,6 +14,9 @@
 #ifndef __DB_ACL_QUALIFIER_H__
 #define __DB_ACL_QUALIFIER_H__
 
+/* Enum value not found in enum list */
+#define INVALID_ENUM (-1)
+
 typedef enum {
 
 db_acl_SRC_MAC,
