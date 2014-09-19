@@ -11,10 +11,10 @@
 #ifndef DB_INTERFACE_H_
 #define DB_INTERFACE_H_
 
-#include "db_interface_types.h"
-#include "db_common_types.h"
+#include "ds_interface_types.h"
+#include "ds_common_types.h"
 #include "std_error_codes.h"
-#include "db_common_list.h"
+#include "ds_common_list.h"
 
 /**
  * Interface Category subtypes

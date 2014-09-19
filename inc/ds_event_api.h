@@ -15,7 +15,7 @@
  */
 
 #include "std_event_service.h"
-#include "db_event_channel.h"
+#include "ds_event_channel.h"
 
 /**
  * @brief Create the HAL event service process

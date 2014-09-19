@@ -11,8 +11,8 @@
 #ifndef DB_OPERATION_H_
 #define DB_OPERATION_H_
 
-#include "db_object_category.h"
-#include "db_common_list.h"
+#include "ds_object_category.h"
+#include "ds_common_list.h"
 
 #ifdef __cplusplus
 extern "C" {
