@@ -9,6 +9,7 @@
 #define __DB_ACL_TYPES_H
 
 #include <stdint.h>
+#include "stddef.h"
 #include "db_common_types.h"
 #include "db_acl_qualifier.h"
 #include "db_acl_action.h"
@@ -40,8 +41,8 @@ typedef enum {
 } db_acl_entry_flags_t;
 
 typedef struct  {
-    int feature_id;
-    int size;
+    uint32_t feature_id;
+    size_t size;
 } db_acl_feature_info_t;
 
 /*
@@ -72,8 +73,8 @@ typedef struct {
     db_acl_action_detail_t *action_array;
     port_t num_ports;
     port_t *port_array;
-    int entry_index;
-    int entry_virtual_index;
+    uint32_t entry_index;
+    uint32_t entry_virtual_index;
     db_acl_entry_flags_t  entry_flags;
 } db_acl_entry_metadata_t; 
 
