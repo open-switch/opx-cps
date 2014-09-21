@@ -1,9 +1,8 @@
-/**
+/*
  * filename: db_operation_common.cpp
  * (c) Copyright 2014 Dell Inc. All Rights Reserved.
- **/
+ */
 
-/** OPENSOURCELICENSE */
 /** OPENSOURCELICENSE */
 /*
  * db_operation_common.cpp
