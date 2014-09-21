@@ -5,7 +5,7 @@
 
 /** OPENSOURCELICENSE */
 
-#include "db_event_api.h"
+#include "ds_event_api.h"
 #include <stdlib.h>
 
 static std_event_server_handle handle=NULL;

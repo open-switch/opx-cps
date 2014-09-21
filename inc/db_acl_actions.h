@@ -11,9 +11,9 @@
 #ifndef DB_ACL_ACTIONS_H_
 #define DB_ACL_ACTIONS_H_
 
-#include "db_common_types.h"
+#include "ds_common_types.h"
 #include "std_error_codes.h"
-#include "db_common_list.h"
+#include "ds_common_list.h"
 
 
 typedef enum

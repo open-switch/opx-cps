@@ -8,7 +8,7 @@
 /*
  * db_interface_common.cpp
  */
-#include "db_interface.h"
+#include "ds_interface.h"
 #include <string.h>
 
 void db_interface_ifname_copy(hal_ifname_t *out,const hal_ifname_t* const in) {

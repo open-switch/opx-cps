@@ -11,7 +11,7 @@
 #ifndef DB_OBJECT_CATEGORY_H_
 #define DB_OBJECT_CATEGORY_H_
 
-#include "db_common_types.h"
+#include "ds_common_types.h"
 #include <stdint.h>
 
 /**
@@ -24,7 +24,10 @@ typedef enum {
     db_obj_cat_QOS       //!< db_obj_cat_QOS
 }db_object_category_types_t;
 
-/* The following can change without notice to applications.  Ensrue use
+/* This is the definition of the DB API Object Category type
+ * (db_object_type_t)
+ *
+ * The following can change without notice to applications.  Ensure use
  * of the object category APIs
  * ******************************************************************
  * Object is made up of three pieces containing 64 bits

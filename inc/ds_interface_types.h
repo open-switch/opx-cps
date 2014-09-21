@@ -11,7 +11,7 @@
 #ifndef DB_EVENT_INTERFACE_H_
 #define DB_EVENT_INTERFACE_H_
 
-#include "db_common_types.h"
+#include "ds_common_types.h"
 
 typedef enum  {
     ADMIN_DEF,
