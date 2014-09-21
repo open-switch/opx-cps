@@ -20,15 +20,18 @@
  * Interface Category subtypes
  */
 typedef enum {
-    db_int_obj_INTERFACE,//!< db_int_obj_INTERFACE
-    db_int_obj_ROUTE,    //!< db_int_obj_ROUTE
-    db_int_obj_IP,       //!< db_int_obj_IP
-    db_int_obj_NEIGHBOUR,//!< db_int_obj_NEIGHBOUR
-    db_int_obj_MAC,      //!< db_int_obj_MAC
-    db_int_obj_IF_OBJ,   //!< db_int_obj_IF_OBJ
-    db_int_obj_IF_OSTATE,//!< db_int_obj_IF_OSTATE
-    db_int_obj_IF_ASTATE //!< db_int_obj_IF_ASTATE
-}db_interface_attr_types_t ;
+    ds_int_obj_INTERFACE,//!< db_int_obj_INTERFACE
+    ds_int_obj_ROUTE,    //!< db_int_obj_ROUTE
+    ds_int_obj_IP,       //!< db_int_obj_IP
+    ds_int_obj_NEIGHBOUR,//!< db_int_obj_NEIGHBOUR
+    ds_int_obj_MAC,      //!< db_int_obj_MAC
+    ds_int_obj_IF_OBJ,   //!< db_int_obj_IF_OBJ
+    ds_int_obj_IF_OSTATE,//!< db_int_obj_IF_OSTATE
+    ds_int_obj_IF_ASTATE, //!< db_int_obj_IF_ASTATE
+    ds_int_obj_VLAN_INTERFACE,
+    ds_int_obj_INTERFACE_ADDR,
+    ds_int_obj_HW_LINK_STATE
+}ds_interface_sub_category_t ;
 
 /**
  * The type of key to use
@@ -65,12 +68,12 @@ typedef struct {
 /**
  * A few wrappers to create common IF object IDs
  */
-#define DB_OBJ_IF_RECORD (DB_OBJ_MAKE(db_obj_cat_INTERFACE,db_int_obj_IF_OBJ))
-#define DB_OBJ_IF_MAC (DB_OBJ_MAKE(db_obj_cat_INTERFACE,db_int_obj_MAC))
-#define DB_OBJ_IF_ASTATE (DB_OBJ_MAKE(db_obj_cat_INTERFACE,db_int_obj_IF_ASTATE))
+#define DB_OBJ_IF_RECORD (DB_OBJ_MAKE(ds_obj_cat_INTERFACE,ds_int_obj_IF_OBJ))
+#define DB_OBJ_IF_MAC (DB_OBJ_MAKE(ds_obj_cat_INTERFACE,ds_int_obj_MAC))
+#define DB_OBJ_IF_ASTATE (DB_OBJ_MAKE(ds_obj_cat_INTERFACE,ds_int_obj_IF_ASTATE))
 
-#define DB_OBJ_IF_RECORD_KEY DB_OBJ_MAKE(db_obj_cat_KEY,db_obj_cat_INTERFACE)
-#define DB_OBJ_IF_RECORD_IFNAME_KEY DB_OBJ_MAKE(db_obj_cat_KEY,db_interface_key_IFNAME)
+#define DB_OBJ_IF_RECORD_KEY DB_OBJ_MAKE(ds_obj_cat_KEY,ds_obj_cat_INTERFACE)
+#define DB_OBJ_IF_RECORD_IFNAME_KEY DB_OBJ_MAKE(ds_obj_cat_KEY,ds_interface_key_IFNAME)
 
 
 /**
@@ -84,6 +87,6 @@ void db_interface_ifname_copy(hal_ifname_t *out,const hal_ifname_t* const in);
  * Print all interface structures in the list
  * @param list of objects (only the interface objects will be printed
  */
-void db_interface_print(db_common_list_t list);
+void db_interface_print(ds_common_list_t list);
 
 #endif /* DB_INTERFACE_H_ */

@@ -21,7 +21,7 @@
  * @brief Create the HAL event service process
  * @return standard event return code
  */
-t_std_error db_event_service_init(void);
+t_std_error ds_event_service_init(void);
 
 /**
  * @brief register a callback with the HAL event service.  remember that this will be executing in the context
@@ -29,14 +29,14 @@ t_std_error db_event_service_init(void);
  * @param reg the registration struct
  * @return standard return code
  */
-t_std_error db_events_register_cb(std_event_srv_reg_t *reg);
+t_std_error ds_events_register_cb(std_event_srv_reg_t *reg);
 
 /**
  * @brief connect to the event service - use the send and receive events from the std_event_service.h
  * @param handle the handle that is returned
  * @return standard return code
  */
-t_std_error db_event_service_client_connect(std_event_client_handle * handle);
+t_std_error ds_event_service_client_connect(std_event_client_handle * handle);
 
 
 /**
@@ -47,7 +47,7 @@ t_std_error db_event_service_client_connect(std_event_client_handle * handle);
  * @param msg the message to send
  * @return standard return code
  */
-t_std_error db_event_service_publish_direct_event( std_event_msg_t *msg ) ;
+t_std_error ds_event_service_publish_direct_event( std_event_msg_t *msg ) ;
 
 
 /**
@@ -56,7 +56,7 @@ t_std_error db_event_service_publish_direct_event( std_event_msg_t *msg ) ;
  * @param msg the message to send
  * @return standard return code
  */
-static inline t_std_error db_event_service_publish_msg(std_event_client_handle handle, std_event_msg_t *msg) {
+static inline t_std_error ds_event_service_publish_msg(std_event_client_handle handle, std_event_msg_t *msg) {
     return std_client_publish_msg(handle,msg);
 }
 

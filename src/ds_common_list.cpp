@@ -18,11 +18,11 @@
 
 extern "C" {
 
-typedef std::vector<db_list_entry_t *> tList;
+typedef std::vector<ds_list_entry_t *> tList;
 
 #define L(x) static_cast<tList *>(x)
 
-static void free_node(db_list_entry_t *p) {
+static void free_node(ds_list_entry_t *p) {
     if (p->allocated) free(p->data);
     free(p);
 }
@@ -30,13 +30,13 @@ struct tracker_detail {
     const char *desc;
     unsigned int ln;
 };
-typedef std::map<db_common_list_t,tracker_detail> tTrackerList;
+typedef std::map<ds_common_list_t,tracker_detail> tTrackerList;
 
 static std_mutex_lock_create_static_init_rec(db_tracker_lock);
 static tTrackerList trackers;
 
 
-void db_list_tracker_add(db_common_list_t list, const char * label, unsigned int line) {
+void db_list_tracker_add(ds_common_list_t list, const char * label, unsigned int line) {
     std_mutex_simple_lock_guard g(&db_tracker_lock);
     if (list==NULL) return ;
     try {
@@ -45,7 +45,7 @@ void db_list_tracker_add(db_common_list_t list, const char * label, unsigned int
     } catch (...) {}
 }
 
-void db_list_tracker_rm(db_common_list_t list) {
+void db_list_tracker_rm(ds_common_list_t list) {
     std_mutex_simple_lock_guard g(&db_tracker_lock);
     tTrackerList::iterator it = trackers.find(list);
     if (it!=trackers.end()) trackers.erase(it);
@@ -58,34 +58,34 @@ void db_list_debug() {
 }
 
 
-db_common_list_t db_list_create(const char *desc, unsigned int line) {
+ds_common_list_t ds_list_create(const char *desc, unsigned int line) {
     try {
-        db_common_list_t p = new tList;
+        ds_common_list_t p = new tList;
         db_list_tracker_add(p,desc,line);
         return p;
     } catch(...) {     }
     return NULL;
 }
 
-void db_list_destroy(db_common_list_t l) {
+void ds_list_destroy(ds_common_list_t l) {
     tList *list = L(l);
     size_t ix = 0;
     size_t mx = list->size();
     for ( ; ix < mx ; ++ix) {
-        db_list_entry_t *e = (*list)[ix];
+        ds_list_entry_t *e = (*list)[ix];
         free_node(e);
     }
     db_list_tracker_rm(list);
     delete(list);
 }
 
-db_list_entry_t *db_list_elem_get(db_common_list_t l,size_t ix) {
+ds_list_entry_t *ds_list_elem_get(ds_common_list_t l,size_t ix) {
     tList &list = *(L(l));
     if (list.size()>ix) return list[ix];
     return NULL;
 }
 
-void db_list_elem_del(db_common_list_t l,size_t ix) {
+void ds_list_elem_del(ds_common_list_t l,size_t ix) {
     tList &list = *(L(l));
     if (list.size()<=ix) return;
 
@@ -97,10 +97,10 @@ void db_list_elem_del(db_common_list_t l,size_t ix) {
 }
 
 
-bool db_list_elem_add(db_common_list_t l, db_object_type_t type,void *data, size_t len, bool deep_copy) {
+bool ds_list_elem_add(ds_common_list_t l, ds_object_type_t type,void *data, size_t len, bool deep_copy) {
     tList &list = *(L(l));
 
-    db_list_entry_t *p = (db_list_entry_t*)malloc(sizeof(db_list_entry_t));
+    ds_list_entry_t *p = (ds_list_entry_t*)malloc(sizeof(ds_list_entry_t));
     if (p==NULL) return false;
     if (deep_copy) {
         p->data = malloc(len);
@@ -127,20 +127,20 @@ bool db_list_elem_add(db_common_list_t l, db_object_type_t type,void *data, size
     return true;
 }
 
-size_t db_list_get_len(db_common_list_t l) {
+size_t ds_list_get_len(ds_common_list_t l) {
     tList &list = *(L(l));
     return list.size();
 }
 
-db_list_entry_t *db_list_elem_next(db_common_list_t l,size_t *index) {
+ds_list_entry_t *ds_list_elem_next(ds_common_list_t l,size_t *index) {
     tList &list = *(L(l));
     if ((*index)>=list.size()) return NULL;
-    db_list_entry_t *p = db_list_elem_get(l,*index);
+    ds_list_entry_t *p = ds_list_elem_get(l,*index);
     ++(*index);
     return p;
 }
 
-size_t db_list_array_len(db_common_list_t l,db_list_elem_array_calc optional_calc_fun, void *context) {
+size_t ds_list_array_len(ds_common_list_t l,ds_list_elem_array_calc optional_calc_fun, void *context) {
     tList &list = *(L(l));
     size_t ix = 0;
     size_t mx = list.size();
@@ -153,12 +153,12 @@ size_t db_list_array_len(db_common_list_t l,db_list_elem_array_calc optional_cal
     return amount;
 }
 
-bool db_list_mk_array(db_common_list_t list,void *data, size_t len, db_list_convert_functions_t *converter) {
+bool ds_list_mk_array(ds_common_list_t list,void *data, size_t len, ds_list_convert_functions_t *converter) {
     //TODO implement
     return true;
 }
 
-bool db_list_from_array(db_common_list_t list,void *data, size_t len, db_list_convert_function fun,void * convert_context, bool deep_copy) {
+bool ds_list_from_array(ds_common_list_t list,void *data, size_t len, ds_list_convert_function fun,void * convert_context, bool deep_copy) {
 //TODO implement
     return true;
 }

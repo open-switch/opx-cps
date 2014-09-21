@@ -23,42 +23,42 @@ extern "C" {
  * these APIs are isolated from the standard code base
  */
 typedef enum {
-    db_ret_code_OK, //!< db_ret_code_OK
-    db_ret_code_ERR,//!< db_ret_code_ERR
-} db_return_code_t;
+    ds_ret_code_OK, //!< db_ret_code_OK
+    ds_ret_code_ERR,//!< db_ret_code_ERR
+} ds_return_code_t;
 
 /**
  * These are the two database instances.
  */
 typedef enum {
-    db_inst_TARGET=0, //!< db_inst_TARGET the config database
-    db_inst_OBSERVED=1,//!< db_inst_OBSERVED the status or observed database
-    db_inst_MAX
-} db_instance_t;
+    ds_inst_TARGET=0, //!< db_inst_TARGET the config database
+    ds_inst_OBSERVED=1,//!< db_inst_OBSERVED the status or observed database
+    ds_inst_MAX
+} ds_instance_t;
 
 typedef enum {
-    db_oper_DELETE=1,
-    db_oper_CREATE=2,
-    db_oper_SET=3
-}db_operation_types_t;
+    ds_oper_DELETE=1,
+    ds_oper_CREATE=2,
+    ds_oper_SET=3
+}ds_operation_types_t;
 
 /*
  * The structure for a get request
  */
 typedef struct {
-    db_instance_t instance; //! instance to use (target or obs)
-    db_object_type_t type; //! type of object to query
-    db_common_list_t keys; //! list of keys to query (emptpy means all)
-    db_common_list_t list; //! list of discovered objects
-}db_get_params_t;
+    ds_instance_t instance; //! instance to use (target or obs)
+    ds_object_type_t type; //! type of object to query
+    ds_common_list_t keys; //! list of keys to query (emptpy means all)
+    ds_common_list_t list; //! list of discovered objects
+}ds_get_params_t;
 
 /**
  * The API for a set request
  */
 typedef struct {
-    db_instance_t instance; //! db instance
-    db_common_list_t list; //! list of objects to modify
-}db_transaction_params_t;
+    ds_instance_t instance; //! db instance
+    ds_common_list_t list; //! list of objects to modify
+}ds_transaction_params_t;
 
 /**
  * Initialize a get request
@@ -67,13 +67,13 @@ typedef struct {
  * @param objtype type of object to query
  * @return db return code
  */
-db_return_code_t db_get_request_init(db_get_params_t *req, db_instance_t db_type, db_object_type_t objtype);
+ds_return_code_t ds_get_request_init(ds_get_params_t *req, ds_instance_t db_type, ds_object_type_t objtype);
 /**
  * Clean up used get request
  * @param req request to clean up
  * @return db return code
  */
-db_return_code_t db_get_request_close(db_get_params_t *req);
+ds_return_code_t ds_get_request_close(ds_get_params_t *req);
 
 /**
  * Add a key to a get request
@@ -84,7 +84,7 @@ db_return_code_t db_get_request_close(db_get_params_t *req);
  * @param deep_copy if the key is deep copied
  * @return db return code
  */
-db_return_code_t db_get_add_key(db_get_params_t * param,db_object_type_t type,
+ds_return_code_t ds_get_add_key(ds_get_params_t * param,ds_object_type_t type,
         void *data, size_t len, bool deep_copy);
 
 /**
@@ -94,7 +94,7 @@ db_return_code_t db_get_add_key(db_get_params_t * param,db_object_type_t type,
  * @param param the structure containing the object request
  * @return db_return_code_t
  */
-db_return_code_t db_get(db_get_params_t * param);
+ds_return_code_t ds_get(ds_get_params_t * param);
 
 /**
  * Initialize the db transaction for use with the set and commit API
@@ -103,14 +103,14 @@ db_return_code_t db_get(db_get_params_t * param);
  * @param db_type type of db to update
  * @return db return code
  */
-db_return_code_t db_transaction_init(db_transaction_params_t *req, db_instance_t db_type);
+ds_return_code_t ds_transaction_init(ds_transaction_params_t *req, ds_instance_t db_type);
 /**
  * Clean up after a transaction or close a pending transaction.  Before a commit is made
  * this will cancel a uncommitted transaction.
  * @param req is the transaction to cancel or clean up
  * @return db return code
  */
-db_return_code_t db_transaction_close(db_transaction_params_t *req);
+ds_return_code_t ds_transaction_close(ds_transaction_params_t *req);
 
 /**
  * Return the db object type operation for a given object type.  This will be valid for components
@@ -119,7 +119,7 @@ db_return_code_t db_transaction_close(db_transaction_params_t *req);
  * @param obj the object type to check.
  * @return
  */
-db_operation_types_t db_object_type_operation(db_object_type_t obj) ;
+ds_operation_types_t ds_object_type_operation(ds_object_type_t obj) ;
 
 /**
  * Add a set to the existing transaction.  Do not apply the data at this time.
@@ -130,7 +130,7 @@ db_operation_types_t db_object_type_operation(db_object_type_t obj) ;
  * @param deep_copy true if the memory will be allocated for the data and it will stay until you close the transaction
  * @return standard db return code
  */
-db_return_code_t db_set(db_transaction_params_t * trans,db_object_type_t type,
+ds_return_code_t ds_set(ds_transaction_params_t * trans,ds_object_type_t type,
         void *data, size_t len, bool deep_copy);
 
 /**
@@ -142,7 +142,7 @@ db_return_code_t db_set(db_transaction_params_t * trans,db_object_type_t type,
  * @param deep_copy true if the memory will be allocated for the data and it will stay until you close the transaction
  * @return standard db return code
  */
-db_return_code_t db_create(db_transaction_params_t * trans,db_object_type_t type,
+ds_return_code_t ds_create(ds_transaction_params_t * trans,ds_object_type_t type,
         void *data, size_t len, bool deep_copy);
 
 /**
@@ -154,7 +154,7 @@ db_return_code_t db_create(db_transaction_params_t * trans,db_object_type_t type
  * @param deep_copy true if the memory will be allocated for the key and it will stay until you close the transaction
  * @return standard db return code
  */
-db_return_code_t db_delete(db_transaction_params_t * trans,db_object_type_t type,
+ds_return_code_t ds_delete(ds_transaction_params_t * trans,ds_object_type_t type,
         void *data, size_t len, bool deep_copy);
 
 /**
@@ -164,7 +164,7 @@ db_return_code_t db_delete(db_transaction_params_t * trans,db_object_type_t type
  * @param param the structure containing the object request.
  * @return db_return_code_t
  */
-db_return_code_t db_commit(db_transaction_params_t * param);
+ds_return_code_t ds_commit(ds_transaction_params_t * param);
 
 /**
  * A registration function for the database
@@ -173,20 +173,20 @@ db_return_code_t db_commit(db_transaction_params_t * param);
  */
 typedef struct {
     void * context; //! some application specific context to pass to the read/write function
-    db_instance_t instance_type;//! the database instance type (obs/target)
-    db_object_category_types_t object_category; //! the object category - see db_object_category.h
-    db_object_sub_type_t object_range_start; //! the start object range (unused for now)
-    db_object_sub_type_t object_range_end;//! the start object range (unused for now)
-    db_return_code_t (*db_read_function) (void * context, db_get_params_t * param); //! the read db function
-    db_return_code_t (*db_write_function)(void * context, db_list_entry_t * param); //! the set db function
-}db_registration_functions_t;
+    ds_instance_t instance_type;//! the database instance type (obs/target)
+    ds_object_category_types_t object_category; //! the object category - see db_object_category.h
+    ds_object_sub_type_t object_range_start; //! the start object range (unused for now)
+    ds_object_sub_type_t object_range_end;//! the start object range (unused for now)
+    ds_return_code_t (*db_read_function) (void * context, ds_get_params_t * param); //! the read db function
+    ds_return_code_t (*db_write_function)(void * context, ds_list_entry_t * param); //! the set db function
+}ds_registration_functions_t;
 
 /**
  * API used to register a db handler
  * @param reg is the registration structure
  * @return standard db return code
  */
-db_return_code_t db_register(db_registration_functions_t * reg);
+ds_return_code_t ds_register(ds_registration_functions_t * reg);
 
 #ifdef __cplusplus
 }
