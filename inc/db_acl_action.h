@@ -13,9 +13,6 @@
 #ifndef __DB_ACL_ACTION_H__
 #define __DB_ACL_ACTION_H__
 
-/* Enum value not found in enum list */
-#define INVALID_ENUM (-1)
-
 typedef enum {
 
 db_acl_PERMIT,
@@ -56,7 +53,8 @@ db_acl_MIRROR,
 db_acl_MIRROR_INGRESS,
 db_acl_MIRROR_EGRESS,
 db_acl_MIRROR_OVERRIDE,
-db_acl_REDIRECT_L2MC 
+db_acl_REDIRECT_L2MC,
+db_acl_ACTION_COUNT /* Always Last. Not a usable value.*/
 
 }db_acl_action_enum_t;
 

@@ -14,9 +14,6 @@
 #ifndef __DB_ACL_QUALIFIER_H__
 #define __DB_ACL_QUALIFIER_H__
 
-/* Enum value not found in enum list */
-#define INVALID_ENUM (-1)
-
 typedef enum {
 
 db_acl_SRC_MAC,
@@ -44,7 +41,8 @@ db_acl_SRC_L4_PORT,
 db_acl_DST_L4_PORT,
 db_acl_TCP_CONTROL,
 db_acl_TUNNEL_TYPE,
-db_acl_PACKET_RES 
+db_acl_PACKET_RES, 
+db_acl_QUALIFIER_COUNT /* Always Last. Not a usable value.*/
 
 }db_acl_qualifier_enum_t;
 
