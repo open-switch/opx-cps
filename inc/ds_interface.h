@@ -1,15 +1,13 @@
 /*
- * filename: db_interface.h
+ * filename: ds_interface.h
  * (c) Copyright 2014 Dell Inc. All Rights Reserved.
  */
 
 /** OPENSOURCELICENSE */
-/*
- * db_interface.h
- */
 
-#ifndef DB_INTERFACE_H_
-#define DB_INTERFACE_H_
+
+#ifndef DS_INTERFACE_H_
+#define DS_INTERFACE_H_
 
 #include "ds_interface_types.h"
 #include "ds_common_types.h"

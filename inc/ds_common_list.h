@@ -8,8 +8,8 @@
  * db_common_list.h
  */
 
-#ifndef DB_COMMON_LIST_H_
-#define DB_COMMON_LIST_H_
+#ifndef DS_COMMON_LIST_H_
+#define DS_COMMON_LIST_H_
 
 
 #include "ds_common_types.h"

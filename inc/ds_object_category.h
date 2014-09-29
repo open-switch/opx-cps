@@ -1,15 +1,13 @@
 /*
- * filename: db_object_category.h
+ * filename: ds_object_category.h
  * (c) Copyright 2014 Dell Inc. All Rights Reserved.
  */
 
 /** OPENSOURCELICENSE */
-/*
- * db_object_catagory.h
- */
 
-#ifndef DB_OBJECT_CATEGORY_H_
-#define DB_OBJECT_CATEGORY_H_
+
+#ifndef DS_OBJECT_CATEGORY_H_
+#define DS_OBJECT_CATEGORY_H_
 
 #include "ds_common_types.h"
 #include <stdint.h>
