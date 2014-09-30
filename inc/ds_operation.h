@@ -8,8 +8,8 @@
  * db_operation.h
  */
 
-#ifndef DB_OPERATION_H_
-#define DB_OPERATION_H_
+#ifndef DS_OPERATION_H_
+#define DS_OPERATION_H_
 
 #include "ds_object_category.h"
 #include "ds_common_list.h"

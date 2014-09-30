@@ -4,14 +4,10 @@
  */
 
 /** OPENSOURCELICENSE */
-#ifndef __HAL_EVENT_API_H
-#define __HAL_EVENT_API_H
+#ifndef __DS_EVENT_API_H
+#define __DS_EVENT_API_H
 /**
- * The following file compliments the std_event_service.h header file.
- *
- * All HAL event classes are defined in hal_event_types.h
- *
- * The handle for the HAL event service is not generally availiable and therefore wrapper functions are provided
+ * The following file compliments the ds_event_api.h header file.
  */
 
 #include "std_event_service.h"

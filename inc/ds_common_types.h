@@ -8,8 +8,8 @@
  * db_common_types.h
  */
 
-#ifndef DB_COMMON_TYPES_H_
-#define DB_COMMON_TYPES_H_
+#ifndef DS_COMMON_TYPES_H_
+#define DS_COMMON_TYPES_H_
 
 #include <stdint.h>
 
