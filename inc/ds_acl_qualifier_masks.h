@@ -66,7 +66,7 @@ typedef ds_acl_macinfo_valmask_t ds_acl_srcmac_mask_t;
 typedef ds_acl_macinfo_valmask_t ds_acl_dstmac_mask_t;
 
 /* ETHER TYPE */
-typedef ds_acl_valmask8_t ds_acl_ethertype_mask_t;
+typedef ds_acl_valmask16_t ds_acl_ethertype_mask_t;
 
 /* VLAN INFO */
 typedef ds_acl_valmask16_t ds_acl_vlaninfo_valmask_t;
@@ -208,7 +208,7 @@ typedef ds_acl_valmask32_t ds_acl_iptype_mask_t;
 typedef ds_acl_valmask8_t ds_acl_srcclass_mask_t;
 
 /* ICMP */
-typedef ds_acl_valmask32_t ds_acl_icmp_mask_t;
+typedef ds_acl_valmask16_t ds_acl_icmp_mask_t;
 
 /* SRC TRUNK */
 typedef ds_acl_valmask8_t ds_acl_srctrunk_mask_t;
