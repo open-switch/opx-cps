@@ -23,7 +23,7 @@
 #define ACL_FEATURE_NAME_LEN_MAX 30
 #define ACL_ROOT_PATH  "/etc/dn/acl"
 
-/*
+/**
  * Struct holding ACL Stage 
  */
 typedef enum {
@@ -32,7 +32,7 @@ typedef enum {
     ds_acl_STAGE_PRE_INGRESS,
 } ds_acl_stage_t;
 
-/*
+/**
  * Struct holding ACL Entry Flags
  */
 typedef enum {
@@ -40,7 +40,7 @@ typedef enum {
     ds_acl_ADD_STATS = 2,
 } ds_acl_entry_flags_t;
 
-/*
+/**
  * Struct holding ACL Feature info
  * 
  */
@@ -49,7 +49,7 @@ typedef struct  {
     size_t size;
 } ds_acl_feature_info_t;
 
-/*
+/**
 * qual_enum identifies the qualifier
 * acl_qualmask is union of all possible qualifiers
 */
@@ -58,7 +58,7 @@ typedef struct {
     ds_acl_qualifier_mask_t acl_qualmask;
 } ds_acl_qualmask_detail_t;
 
-/*
+/**
 * qual_enum identifies the qualifier
 * acl_qualmask is union of all possible qualifiers
 */
@@ -69,7 +69,7 @@ typedef struct
     int action_arg2;
 }ds_acl_action_detail_t;
 
-/*
+/**
 * details of the entry to be installed in TCAM
 */
 
