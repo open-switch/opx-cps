@@ -3,7 +3,7 @@
  * (c) Copyright 2014 Dell Inc. All Rights Reserved.
  **/
 
-/** OPENSOURCELICENSE */
+/* OPENSOURCELICENSE */
 
 #ifndef __DS_ACL_TYPES_H
 #define __DS_ACL_TYPES_H
