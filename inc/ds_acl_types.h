@@ -21,7 +21,6 @@
 #define ACL_ALL_UNITS 0xff
 
 #define ACL_FEATURE_NAME_LEN_MAX 30
-#define ACL_ROOT_PATH  "/etc/dn/acl"
 
 /**
  * Struct holding ACL Stage 
@@ -67,6 +66,8 @@ typedef struct
     ds_acl_action_enum_t action_enum;
     int action_arg1;
     int action_arg2;
+    int action_arg3;
+    int action_arg4;
 }ds_acl_action_detail_t;
 
 /**
