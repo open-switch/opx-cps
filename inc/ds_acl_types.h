@@ -20,7 +20,6 @@
 #define ACL_ALL_PORTS 0xffff
 #define ACL_ALL_UNITS 0xff
 
-#define ACL_FEATURE_NAME_LEN_MAX 30
 
 /**
  * Struct holding ACL Stage 
