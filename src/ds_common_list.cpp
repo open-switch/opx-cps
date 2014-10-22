@@ -26,15 +26,16 @@ static void free_node(ds_list_entry_t *p) {
     if (p->allocated) free(p->data);
     free(p);
 }
+
 struct tracker_detail {
     const char *desc;
     unsigned int ln;
 };
+
 typedef std::map<ds_common_list_t,tracker_detail> tTrackerList;
 
 static std_mutex_lock_create_static_init_rec(db_tracker_lock);
 static tTrackerList trackers;
-
 
 void db_list_tracker_add(ds_common_list_t list, const char * label, unsigned int line) {
     std_mutex_simple_lock_guard g(&db_tracker_lock);

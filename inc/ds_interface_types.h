@@ -98,7 +98,7 @@ typedef struct  {
  * Database structure for an interface
  */
 typedef struct  {
-    char    if_name[HAL_IF_NAME_SZ+1];
+    char if_name[HAL_IF_NAME_SZ+1];
     hal_ifindex_t   if_index;
     unsigned long   if_flags;
     long            namelen;
