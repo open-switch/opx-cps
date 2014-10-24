@@ -94,8 +94,8 @@ typedef struct  {
     hal_ifindex_t   if_index;
     unsigned long   if_flags;
     long            namelen;
-    hal_ip_addr_t         if_addr;
-    hal_ip_addr_t         if_mask;
+    hal_ip_addr_t   if_addr;
+    hal_ip_addr_t   if_mask;
     db_if_addr_msg_type_t        if_msgtype;
 } db_if_addr_t;
 
