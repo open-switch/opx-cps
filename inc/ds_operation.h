@@ -178,7 +178,7 @@ typedef struct {
     ds_object_sub_type_t object_range_start; //! the start object range (unused for now)
     ds_object_sub_type_t object_range_end;//! the start object range (unused for now)
     ds_return_code_t (*db_read_function) (void * context, ds_get_params_t * param); //! the read db function
-    ds_return_code_t (*db_write_function)(void * context, ds_list_entry_t * param); //! the set db function
+    ds_return_code_t (*db_write_function)(void * context, ds_transaction_params_t * param); //! the set db function
 }ds_registration_functions_t;
 
 /**

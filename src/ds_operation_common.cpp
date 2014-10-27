@@ -11,25 +11,47 @@
 
 #include "ds_operation.h"
 #include "std_mutex_lock.h"
+#include "std_assert.h"
+#include "std_rw_lock.h"
+#include "event_log.h"
 
+#include <algorithm>
 #include <vector>
 #include <string.h>
-
-
 
 typedef std::vector<ds_registration_functions_t> reg_functions_t;
 typedef std::vector<reg_functions_t> db_instances_t;
 
 static db_instances_t db_instance_handlers;
-//static std_mutex_lock_create_static_init_rec(db_handle_lock);
+static std_rw_lock_t db_list_lock;
+
 static std_mutex_lock_create_static_init_fast(db_init_lock);
 
-static db_instances_t &get() {
+typedef std::vector<ds_object_category_types_t> processed_objs_t;
+
+template  <typename T>
+inline bool push_back(std::vector<T> &list, const T &elem) {
+    try {
+        list.push_back(elem);
+    } catch (...) {
+        return false;
+    }
+    return true;
+}
+
+static void db_operation_init() {
     std_mutex_simple_lock_guard g(&db_init_lock);
     static bool inited = false;
     if (!inited) {
         db_instance_handlers.resize(ds_inst_MAX);
+        if (std_rw_lock_create_default(&db_list_lock)!=STD_ERR_OK) {
+            EV_LOG(ERR,DSAPI,0,"DB-INIT-FAILED","Failed to create rw lock");
+        }
     }
+}
+
+static db_instances_t &get() {
+    db_operation_init();
     return db_instance_handlers;
 }
 ds_object_type_t db_object_type_operation_add(ds_object_type_t obj, ds_operation_types_t type) {
@@ -39,20 +61,26 @@ ds_object_type_t db_object_type_operation_add(ds_object_type_t obj, ds_operation
 extern "C" {
 
 ds_return_code_t ds_register(ds_registration_functions_t * reg) {
+    db_operation_init();
+    std_rw_lock_write_guard g(&db_list_lock);
+    STD_ASSERT(reg->instance_type<get().size());
+    if (reg->instance_type>=get().size()) return ds_ret_code_ERR;
     get()[reg->instance_type].push_back(*reg);
     return ds_ret_code_OK;
 }
 
-//XXX todo add read/write lock to db list function calls - for now assume after init
-//no registration change
 ds_return_code_t ds_get(ds_get_params_t * param) {
+    db_operation_init();
+    std_rw_lock_read_guard g(&db_list_lock);
+    if (param->instance>=get().size()) return ds_ret_code_ERR;
+
     reg_functions_t & r = get()[param->instance];
+
     size_t ix = 0;
     size_t mx = r.size();
     ds_object_category_types_t cat = DB_OBJ_CAT(param->type);
     ds_return_code_t rc = ds_ret_code_OK;
     for ( ; ix < mx ; ++ix ) {
-
         if (r[ix].object_category == cat) {
             rc = r[ix].db_read_function(r[ix].context,param);
             if (rc!=ds_ret_code_OK) break;
@@ -62,18 +90,31 @@ ds_return_code_t ds_get(ds_get_params_t * param) {
 }
 
 ds_return_code_t ds_commit(ds_transaction_params_t * param) {
+    db_operation_init();
+    std_rw_lock_read_guard g(&db_list_lock);
+    if (param->instance>=get().size()) return ds_ret_code_ERR;
+
+    processed_objs_t objs;
+
     reg_functions_t & r = get()[param->instance];
     ds_return_code_t rc = ds_ret_code_OK;
     size_t len  = ds_list_get_len(param->list);
     size_t s_ix = 0;
     for ( ; s_ix < len ;++s_ix ) {
         ds_list_entry_t *l = ds_list_elem_get(param->list,s_ix);
-        size_t ix = 0;
-        size_t mx = r.size();
         ds_object_category_types_t oc = DB_OBJ_CAT(l->type);
-        for ( ; ix < mx ; ++ix ) {
-            if (r[ix].object_category == oc) {
-                rc = r[ix].db_write_function(r[ix].context,l);
+        processed_objs_t::iterator it = std::find(objs.begin(), objs.end(),oc);
+
+        if (it!=objs.end()) continue;
+
+        push_back(objs,oc);
+
+        size_t function_ix = 0;
+        size_t function_max = r.size();
+
+        for ( ; function_ix < function_max ; ++function_ix ) {
+            if (r[function_ix].object_category == oc) {
+                rc = r[function_ix].db_write_function(r[function_ix].context,param);
                 if (rc!=ds_ret_code_OK) {
                     /** @TODO implement rollback if any db write fails ... */
                     break;

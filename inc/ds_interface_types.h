@@ -87,23 +87,15 @@ typedef enum {
 typedef char hal_ifname_t[HAL_IF_NAME_SZ];
 
 /**
- * IP address structure
- */
-typedef struct  {
-    unsigned int     family;//! type can be AF_INET6 AF_INET
-    uint8_t          address[HAL_INET6_LEN];
-}db_ipaddress_t;
-
-/**
  * Database structure for an interface
  */
 typedef struct  {
-    char    if_name[HAL_IF_NAME_SZ+1];
+    char if_name[HAL_IF_NAME_SZ+1];
     hal_ifindex_t   if_index;
     unsigned long   if_flags;
     long            namelen;
-    db_ipaddress_t         if_addr;
-    db_ipaddress_t         if_mask;
+    hal_ip_addr_t   if_addr;
+    hal_ip_addr_t   if_mask;
     db_if_addr_msg_type_t        if_msgtype;
 } db_if_addr_t;
 
@@ -132,18 +124,18 @@ typedef struct  {
     unsigned short  distance;
     unsigned short  protocol;
     unsigned long   vrfid;
-    db_ipaddress_t         prefix;
+    hal_ip_addr_t         prefix;
     unsigned short  prefix_masklen;
     hal_ifindex_t   nh_if_index;
     unsigned long   nh_vrfid;
-    db_ipaddress_t         nh_addr;
+    hal_ip_addr_t         nh_addr;
 }db_route_t;
 
 
 typedef struct  {
     unsigned short  family;
     db_nbr_event_type_t    msg_type;
-    db_ipaddress_t         nbr_addr;
+    hal_ip_addr_t         nbr_addr;
     hal_mac_addr_t      nbr_hwaddr;
     hal_ifindex_t   if_index;
     hal_ifindex_t   phy_if_index;

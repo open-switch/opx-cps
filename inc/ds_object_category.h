@@ -22,6 +22,7 @@ typedef enum {
     ds_obj_cat_ROUTE,    //!< db_obj_cat_ROUTE
     ds_obj_cat_QOS,       //!< db_obj_cat_QOS
     ds_obj_cat_PHY,
+    ds_obj_cat_MAX,
 }ds_object_category_types_t;
 
 /* This is the definition of the DB API Object Category type
@@ -60,9 +61,9 @@ typedef enum {
  * @param subtype the category specific object
  * @return the object id
  */
-static inline ds_object_type_t DB_OBJ_MAKE(ds_object_category_types_t cat,ds_object_sub_type_t subtype ) {
-    return ((((ds_object_type_t)cat)<<(DB_CAT_BIT_SHIFT))&DB_CAT_MASK) | ((ds_object_type_t)subtype);
-}
+#define DB_OBJ_MAKE(cat,subtype ) \
+    (((((ds_object_type_t)cat)<<(DB_CAT_BIT_SHIFT))&DB_CAT_MASK) | ((ds_object_type_t)subtype))
+
 
 /**
  * Remove any parts of the object type that is not the category or sub category
