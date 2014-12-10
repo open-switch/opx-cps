@@ -12,7 +12,7 @@
 #include "ds_interface_types.h"
 #include "ds_common_types.h"
 #include "std_error_codes.h"
-#include "ds_common_list.h"
+#include "cps_api_object.h"
 
 /**
  * Interface Category subtypes
@@ -85,6 +85,6 @@ void db_interface_ifname_copy(hal_ifname_t *out,const hal_ifname_t* const in);
  * Print all interface structures in the list
  * @param list of objects (only the interface objects will be printed
  */
-void db_interface_print(ds_common_list_t list);
+void db_interface_print(cps_api_object_t list);
 
 #endif /* DB_INTERFACE_H_ */
