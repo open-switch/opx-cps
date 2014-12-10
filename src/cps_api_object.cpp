@@ -11,7 +11,6 @@
 
 #include "std_tlv.h"
 #include "cps_api_object.h"
-#include "cps_api_attributes.h"
 
 #include <endian.h>
 #include <string.h>
@@ -23,70 +22,70 @@
 #define DEF_OBJECT_REALLOC_STEP_SIZE (128)
 
 typedef struct {
-	cps_obj_key_t key;
+    cps_obj_key_t key;
 }cps_api_object_data_t;
 
 typedef struct {
-	size_t len;
-	size_t remain;
-	cps_api_object_data_t * data;
+    size_t len;
+    size_t remain;
+    cps_api_object_data_t * data;
 } cps_api_object_internal_t;
 
 static inline size_t obj_used_len(cps_api_object_internal_t *cur) {
-	return cur->len - cur->remain;
+    return cur->len - cur->remain;
 }
 
 static cps_api_object_internal_t * obj_realloc(cps_api_object_internal_t *cur, size_t  len) {
-	cps_api_object_data_t *p = (cps_api_object_data_t*)realloc(cur->data, len + sizeof(cps_api_object_data_t));
-	if (p == NULL) {
-		return NULL;
-	}
-	cur->data = p;
-	cur->remain += (len - cur->len);
-	cur->len = len;
-	return cur;
+    cps_api_object_data_t *p = (cps_api_object_data_t*)realloc(cur->data, len + sizeof(cps_api_object_data_t));
+    if (p == NULL) {
+        return NULL;
+    }
+    cur->data = p;
+    cur->remain += (len - cur->len);
+    cur->len = len;
+    return cur;
 }
 
 static cps_api_object_internal_t * obj_alloc(size_t  len) {
-	cps_api_object_internal_t *p = (cps_api_object_internal_t*)malloc(sizeof(cps_api_object_internal_t));
-	if (p == NULL) return NULL;
-	memset(p, 0, sizeof(*p));
-	p->data = (cps_api_object_data_t*)calloc(1, sizeof(cps_api_object_data_t) + len);
-	if (p->data == NULL) {
-		free(p);
-		return NULL;
-	}
-		
-	p->len = len;
-	p->remain = len;
-	return p;
+    cps_api_object_internal_t *p = (cps_api_object_internal_t*)malloc(sizeof(cps_api_object_internal_t));
+    if (p == NULL) return NULL;
+    memset(p, 0, sizeof(*p));
+    p->data = (cps_api_object_data_t*)calloc(1, sizeof(cps_api_object_data_t) + len);
+    if (p->data == NULL) {
+        free(p);
+        return NULL;
+    }
+
+    p->len = len;
+    p->remain = len;
+    return p;
 }
 
 static void obj_delloc(cps_api_object_internal_t *p) {
-	free(p->data);
-	free(p);
+    free(p->data);
+    free(p);
 }
 
 static void * obj_data(cps_api_object_internal_t *p) {
-	return ((uint8_t*)p->data) + sizeof(*p->data);
+    return ((uint8_t*)p->data) + sizeof(*p->data);
 }
 
 static size_t obj_data_offset(cps_api_object_internal_t *p, void * tlv) {
-	uint8_t* loc = (uint8_t*)tlv;
-	uint8_t* data = (uint8_t*)obj_data(p);
+    uint8_t* loc = (uint8_t*)tlv;
+    uint8_t* data = (uint8_t*)obj_data(p);
 
-	return loc - data;
+    return loc - data;
 }
 
 static bool add_attribute(cps_api_object_internal_t * p, uint64_t attr, uint64_t len, const void *data) {
-	if (p->remain >= (len + STD_TLV_HDR_LEN)) {
-		p = obj_realloc(p, (size_t)(len + obj_used_len(p) + STD_TLV_HDR_LEN) + DEF_OBJECT_REALLOC_STEP_SIZE);
-		if (p == NULL) return false;
-	}
-	void * ptr = std_tlv_offset(obj_data(p), obj_used_len(p));
-	ptr = std_tlv_add(ptr, &p->remain, attr, len, data);
-	if (ptr == NULL) return false;	
-	return true;
+    if (p->remain >= (len + STD_TLV_HDR_LEN)) {
+        p = obj_realloc(p, (size_t)(len + obj_used_len(p) + STD_TLV_HDR_LEN) + DEF_OBJECT_REALLOC_STEP_SIZE);
+        if (p == NULL) return false;
+    }
+    void * ptr = std_tlv_offset(obj_data(p), obj_used_len(p));
+    ptr = std_tlv_add(ptr, &p->remain, attr, len, data);
+    if (ptr == NULL) return false;
+    return true;
 }
 
 extern "C" {
@@ -123,157 +122,157 @@ void cps_api_list_debug() {
 }
 
 cps_api_object_t cps_api_object_create(const char *desc, unsigned int line) {
-	cps_api_object_t obj = obj_alloc(DEF_OBJECT_SIZE);
-	db_list_tracker_add(obj, desc, line);
-	return obj;
+    cps_api_object_t obj = obj_alloc(DEF_OBJECT_SIZE);
+    db_list_tracker_add(obj, desc, line);
+    return obj;
 
 }
 
 void cps_api_object_delete(cps_api_object_t o) {
-	db_list_tracker_rm(o);
-	obj_delloc((cps_api_object_internal_t*)o);
+    db_list_tracker_rm(o);
+    obj_delloc((cps_api_object_internal_t*)o);
 }
 
 void cps_api_object_set_key(cps_api_object_t obj, cps_obj_key_t *key) {
-	cps_api_object_internal_t *p = (cps_api_object_internal_t*)obj;
-	cps_api_key_copy(&p->data->key, key);
+    cps_api_object_internal_t *p = (cps_api_object_internal_t*)obj;
+    cps_api_key_copy(&p->data->key, key);
 }
 
 cps_api_object_attr_t cps_api_object_attr_get(cps_api_object_t obj, uint64_t attr) {
-	cps_api_object_internal_t *p = (cps_api_object_internal_t*)obj;
-	size_t len = obj_used_len(p);
-	void *tlv = obj_data(p);
-	while (len > STD_TLV_HDR_LEN) {
-		uint64_t tag = std_tlv_tag(tlv);
-		if (attr == tag) {
-			return (cps_api_object_attr_t)tlv;
-		}
-		tlv = std_tlv_next(tlv, &len);
-	}
-	return NULL;
+    cps_api_object_internal_t *p = (cps_api_object_internal_t*)obj;
+    size_t len = obj_used_len(p);
+    void *tlv = obj_data(p);
+    while (len > STD_TLV_HDR_LEN) {
+        uint64_t tag = std_tlv_tag(tlv);
+        if (attr == tag) {
+            return (cps_api_object_attr_t)tlv;
+        }
+        tlv = std_tlv_next(tlv, &len);
+    }
+    return NULL;
 }
 
 void cps_api_object_attr_delete(cps_api_object_t obj, cps_api_attr_id_t attr_id) {
-	cps_api_object_internal_t *p = (cps_api_object_internal_t*)obj;
+    cps_api_object_internal_t *p = (cps_api_object_internal_t*)obj;
 
-	cps_api_object_attr_t  attr = cps_api_object_attr_get(obj, attr_id);
-	if (attr != CPS_API_ATTR_NULL) {
-		void * tlv_end = (((uint8_t*)obj_data(p)) + obj_used_len(p));
-		size_t rm_len = std_tlv_total_len(attr);
-		void * tlv_rm_end = ((uint8_t*)attr) + rm_len;
-		size_t copy_len = (uint8_t*)tlv_end - (uint8_t*)tlv_rm_end;
+    cps_api_object_attr_t  attr = cps_api_object_attr_get(obj, attr_id);
+    if (attr != CPS_API_ATTR_NULL) {
+        void * tlv_end = (((uint8_t*)obj_data(p)) + obj_used_len(p));
+        size_t rm_len = std_tlv_total_len(attr);
+        void * tlv_rm_end = ((uint8_t*)attr) + rm_len;
+        size_t copy_len = (uint8_t*)tlv_end - (uint8_t*)tlv_rm_end;
 
-		memmove(attr, tlv_rm_end, copy_len);
-		p->remain += rm_len;
-	}
+        memmove(attr, tlv_rm_end, copy_len);
+        p->remain += rm_len;
+    }
 }
 
 bool cps_api_object_attr_add(cps_api_object_t o, cps_api_attr_id_t id,const void *data, size_t len) {
-	return add_attribute((cps_api_object_internal_t*)o, id, len, data);
+    return add_attribute((cps_api_object_internal_t*)o, id, len, data);
 }
 
 cps_api_object_attr_t cps_api_object_attr_start(cps_api_object_t obj) {
-	return (cps_api_object_attr_t)obj_data((cps_api_object_internal_t*)obj);
+    return (cps_api_object_attr_t)obj_data((cps_api_object_internal_t*)obj);
 }
 
 cps_api_object_attr_t cps_api_object_attr_next(cps_api_object_t obj,cps_api_object_attr_t attr) {
-	if (attr == NULL) return NULL;
-	cps_api_object_internal_t* obj_ptr = (cps_api_object_internal_t*)obj;
-	size_t offset = obj_data_offset(obj_ptr, attr);
-	size_t left = obj_used_len(obj_ptr) - offset;
-	 
-	 void * p = std_tlv_next(attr, &left);
-	 if (p != NULL) {
-		 if (!std_tlv_valid(p, left)) return NULL;
-	 }
-	 return p;
+    if (attr == NULL) return NULL;
+    cps_api_object_internal_t* obj_ptr = (cps_api_object_internal_t*)obj;
+    size_t offset = obj_data_offset(obj_ptr, attr);
+    size_t left = obj_used_len(obj_ptr) - offset;
+
+     void * p = std_tlv_next(attr, &left);
+     if (p != NULL) {
+         if (!std_tlv_valid(p, left)) return NULL;
+     }
+     return p;
 }
 
 cps_api_attr_id_t cps_api_object_attr_id(cps_api_object_attr_t attr) {
-	return std_tlv_tag(attr);
+    return std_tlv_tag(attr);
 }
 
 size_t cps_api_object_attr_len(cps_api_object_attr_t attr) {
-	return (size_t)std_tlv_len(attr);
+    return (size_t)std_tlv_len(attr);
 }
 
 uint16_t cps_api_object_attr_data_u16(cps_api_object_attr_t attr) {
-	return std_tlv_data_u16(attr);
+    return std_tlv_data_u16(attr);
 }
 
 uint32_t cps_api_object_attr_data_u32(cps_api_object_attr_t attr) {
-	return std_tlv_data_u32(attr);
+    return std_tlv_data_u32(attr);
 }
 
 uint64_t cps_api_object_attr_data_u64(cps_api_object_attr_t attr) {
-	return std_tlv_data_u64(attr);
+    return std_tlv_data_u64(attr);
 }
 
 void *cps_api_object_attr_data_bin(cps_api_object_attr_t attr) {
-	return std_tlv_data(attr);
+    return std_tlv_data(attr);
 }
 
 size_t cps_api_object_to_array_len(cps_api_object_t obj) {
-	cps_api_object_internal_t* p = (cps_api_object_internal_t*)obj;
-	return obj_used_len(p) + sizeof(*p->data);
+    cps_api_object_internal_t* p = (cps_api_object_internal_t*)obj;
+    return obj_used_len(p) + sizeof(*p->data);
 }
 
 void * cps_api_object_array(cps_api_object_t obj) {
-	cps_api_object_internal_t* p = (cps_api_object_internal_t*)obj;
-	return p->data;
+    cps_api_object_internal_t* p = (cps_api_object_internal_t*)obj;
+    return p->data;
 }
 
 cps_obj_key_t * cps_api_object_key(cps_api_object_t obj) {
-	return &(((cps_api_object_internal_t*)obj)->data->key);
+    return &(((cps_api_object_internal_t*)obj)->data->key);
 }
 
 bool cps_api_array_to_object(void * data, size_t len, cps_api_object_t obj) {
-	if (obj == NULL) return false;
+    if (obj == NULL) return false;
 
-	cps_api_object_internal_t * p = (cps_api_object_internal_t *)obj;
-	p->remain = p->len;
-	void *new_obj = obj_realloc((cps_api_object_internal_t*)obj, len);
-	if (new_obj == NULL) return false;
+    cps_api_object_internal_t * p = (cps_api_object_internal_t *)obj;
+    p->remain = p->len;
+    void *new_obj = obj_realloc((cps_api_object_internal_t*)obj, len);
+    if (new_obj == NULL) return false;
 
-	memcpy(p->data,data, len);
-	p->remain = (p->len - len) + sizeof(*p->data);
-	return true;
+    memcpy(p->data,data, len);
+    p->remain = (p->len - len) + sizeof(*p->data);
+    return true;
 }
 
 typedef std::vector<cps_api_object_t> tObjList;
 
 cps_api_object_list_t cps_api_object_list_create(void) {
-	tObjList * p = new tObjList;
-	return (cps_api_object_list_t)p;
+    tObjList * p = new tObjList;
+    return (cps_api_object_list_t)p;
 }
 
 void cps_api_object_list_destroy(cps_api_object_list_t list, bool delete_all_objects) {
-	STD_ASSERT(list!=NULL);
-	tObjList * p = (tObjList*)list;
-	if (delete_all_objects) {
-		size_t ix = 0;
-		size_t mx = p->size();
-		for ( ; ix < mx ; ++ix ) {
-			obj_delloc((cps_api_object_internal_t*)(*p)[ix]);
-		}
-	}
-	delete p;
+    STD_ASSERT(list!=NULL);
+    tObjList * p = (tObjList*)list;
+    if (delete_all_objects) {
+        size_t ix = 0;
+        size_t mx = p->size();
+        for ( ; ix < mx ; ++ix ) {
+            obj_delloc((cps_api_object_internal_t*)(*p)[ix]);
+        }
+    }
+    delete p;
 }
 
 bool cps_api_object_list_append(cps_api_object_list_t list, cps_api_object_t obj) {
-	STD_ASSERT(list!=NULL);
-	tObjList * p = (tObjList*)list;
-	try {
-		p->push_back(obj);
-	} catch (...) {
-		return false;
-	}
-	return true;
+    STD_ASSERT(list!=NULL);
+    tObjList * p = (tObjList*)list;
+    try {
+        p->push_back(obj);
+    } catch (...) {
+        return false;
+    }
+    return true;
 }
 
 void cps_api_object_list_remove(cps_api_object_list_t list, size_t ix) {
-	STD_ASSERT(list!=NULL);
-	tObjList * p = (tObjList*)list;
+    STD_ASSERT(list!=NULL);
+    tObjList * p = (tObjList*)list;
     if (p->size()<=ix) return;
 
     tObjList::iterator it = p->begin()+ix;
@@ -283,16 +282,16 @@ void cps_api_object_list_remove(cps_api_object_list_t list, size_t ix) {
 }
 
 cps_api_object_t cps_api_object_list_get(cps_api_object_list_t list,size_t ix) {
-	STD_ASSERT(list!=NULL);
-	tObjList * p = (tObjList*)list;
+    STD_ASSERT(list!=NULL);
+    tObjList * p = (tObjList*)list;
     if (p->size()<=ix) return NULL;
     return (*p)[ix];
 }
 
 size_t cps_api_object_list_size(cps_api_object_list_t list) {
-	STD_ASSERT(list!=NULL);
-	tObjList * p = (tObjList*)list;
-	return p->size();
+    STD_ASSERT(list!=NULL);
+    tObjList * p = (tObjList*)list;
+    return p->size();
 }
 
 
