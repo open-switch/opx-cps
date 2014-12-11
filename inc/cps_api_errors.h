@@ -8,12 +8,12 @@
 #define CPS_API_ERRORS_H_
 
 /**
- * These are the standard DB return codes.  These are different then the standard return codes for a reason -
- * these APIs are isolated from the standard code base
+ * These are the standard cps API return codes.  These are different then the standard return codes for a reason -
+ * these APIs are isolated from the standard code base error codes
  */
 typedef enum {
-    ds_ret_code_OK, //!< db_ret_code_OK
-    ds_ret_code_ERR,//!< db_ret_code_ERR
-} ds_return_code_t;
+    cps_api_ret_code_OK, //!< an OK return code
+    cps_api_ret_code_ERR,//!< a generic error return code
+} cps_api_return_code_t;
 
 #endif /* CPS_API_ERRORS_H_ */

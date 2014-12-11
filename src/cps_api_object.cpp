@@ -132,7 +132,7 @@ void cps_api_list_debug() {
     std_mutex_simple_lock_guard g(&db_tracker_lock);
 }
 
-cps_api_object_t cps_api_object_create(const char *desc, unsigned int line) {
+cps_api_object_t cps_api_object_create_int(const char *desc, unsigned int line) {
     cps_api_object_t obj = obj_alloc(DEF_OBJECT_SIZE);
     db_list_tracker_add(obj, desc, line);
     return obj;

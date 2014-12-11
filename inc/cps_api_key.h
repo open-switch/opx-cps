@@ -16,7 +16,13 @@
 #include <stdbool.h>
 #include <string.h>
 
-#include "endian.h"
+#include <endian.h>
+
+/** @defgroup CPSAPI The CPS API
+ *
+      This file consists of the utilities to create, and manage keys.
+@{
+*/
 
 #define CPS_OBJ_KEY_INST_POS (0)
 #define CPS_OBJ_KEY_CAT_POS (1)
@@ -40,7 +46,7 @@ extern "C" {
  * @return the number of elements in the key
  */
 static inline uint32_t cps_api_key_get_len(cps_obj_key_t *elem) {
-	return le32toh(((uint32_t*)elem)[CPS_OBJ_KEY_LEN_POS]);
+    return le32toh(((uint32_t*)elem)[CPS_OBJ_KEY_LEN_POS]);
 }
 
 /**
@@ -49,8 +55,8 @@ static inline uint32_t cps_api_key_get_len(cps_obj_key_t *elem) {
  * @param len the length of the key
  */
 static inline void cps_api_key_set_len(cps_obj_key_t *elem, uint32_t len) {
-	STD_ASSERT(len < CPS_OBJ_MAX_KEY_LEN);
-	((uint32_t*)elem)[CPS_OBJ_KEY_LEN_POS] = htole32(len);
+    STD_ASSERT(len < CPS_OBJ_MAX_KEY_LEN);
+    ((uint32_t*)elem)[CPS_OBJ_KEY_LEN_POS] = htole32(len);
 }
 
 /**
@@ -58,7 +64,7 @@ static inline void cps_api_key_set_len(cps_obj_key_t *elem, uint32_t len) {
  * @param elem the key to get the attributes from
  */
 static inline uint32_t cps_api_key_get_attr(cps_obj_key_t *elem) {
-	return le32toh(((uint32_t*)elem)[CPS_OBJ_KEY_ATTR_POS] );
+    return le32toh(((uint32_t*)elem)[CPS_OBJ_KEY_ATTR_POS] );
 }
 
 /**
@@ -67,7 +73,7 @@ static inline uint32_t cps_api_key_get_attr(cps_obj_key_t *elem) {
  * @param attr the attributes to set on the key
  */
 static inline void cps_api_key_set_attr(cps_obj_key_t *elem, uint32_t attr) {
-	((uint32_t*)elem)[CPS_OBJ_KEY_ATTR_POS] = htole32(attr);
+    ((uint32_t*)elem)[CPS_OBJ_KEY_ATTR_POS] = htole32(attr);
 }
 
 /**
@@ -76,7 +82,7 @@ static inline void cps_api_key_set_attr(cps_obj_key_t *elem, uint32_t attr) {
  * @return a pointer to the first element in the key
  */
 static inline uint32_t * cps_api_key_elem_start(cps_obj_key_t *elem) {
-	return ((uint32_t*)elem)+CPS_OBJ_KEY_ELEM_START;
+    return ((uint32_t*)elem)+CPS_OBJ_KEY_ELEM_START;
 }
 
 /**
@@ -86,8 +92,8 @@ static inline uint32_t * cps_api_key_elem_start(cps_obj_key_t *elem) {
  * @param field the uint32_t value to set
  */
 static inline void cps_api_key_set(cps_obj_key_t *elem, uint32_t offset, uint32_t field) {
-	STD_ASSERT(offset < CPS_OBJ_MAX_KEY_LEN);
-	cps_api_key_elem_start(elem)[offset] = htole32(field);
+    STD_ASSERT(offset < CPS_OBJ_MAX_KEY_LEN);
+    cps_api_key_elem_start(elem)[offset] = htole32(field);
 }
 
 /**
@@ -97,7 +103,7 @@ static inline void cps_api_key_set(cps_obj_key_t *elem, uint32_t offset, uint32_
  * @return true if the index is valid
  */
 static inline bool cps_api_key_valid_offset(cps_obj_key_t *elem, uint32_t offset) {
-	return offset < cps_api_key_get_len(elem);
+    return offset < cps_api_key_get_len(elem);
 }
 
 /**
@@ -107,7 +113,7 @@ static inline bool cps_api_key_valid_offset(cps_obj_key_t *elem, uint32_t offset
  * @return the uint32_t element at the position requested
  */
 static inline uint32_t cps_api_key_element_at(cps_obj_key_t *elem, uint32_t offset) {
-	return le32toh(cps_api_key_elem_start(elem)[offset]);
+    return le32toh(cps_api_key_elem_start(elem)[offset]);
 }
 
 /**
@@ -116,35 +122,41 @@ static inline uint32_t cps_api_key_element_at(cps_obj_key_t *elem, uint32_t offs
  * @param src of where to copy the key from
  */
 static inline void cps_api_key_copy(cps_obj_key_t *dest, cps_obj_key_t *src) {
-	size_t len = cps_api_key_get_len_in_bytes(src) + CPS_OBJ_KEY_HEADER_SIZE;
-	memcpy(dest,src,len);
+    size_t len = cps_api_key_get_len_in_bytes(src) + CPS_OBJ_KEY_HEADER_SIZE;
+    memcpy(dest,src,len);
 }
 
 /**
  * Return a comparison of keys.
- * 	if an exact match is required both keys must match exactly in size and contents
- * 	if an exact match is not required, the src must be larger then the comparison otherwise it is a failed match
+ *     if an exact match is required both keys must match exactly in size and contents
+ *     if an exact match is not required
+ *         the src must be larger then the prefix otherwise it is a failed match
  *
  * @param key the src key to compare against
- * @param comparison the destination key to compare against
+ * @param prefix the destination key to compare against
  * @param exact true if want to search all of the key other wise limit to the size of the
- * 				comparison
+ *                 comparison
  * @return  0 if there is a match
- * 		 	1 if the key is > then the comparison
- * 		 	-1 if the key is < then the comparison
+ *              1 if the key is > then the comparison
+ *              -1 if the key is < then the comparison
  */
-int cps_api_key_matches(cps_obj_key_t *key, cps_obj_key_t *comparison, bool exact) ;
+int cps_api_key_matches(cps_obj_key_t *key, cps_obj_key_t *prefix, bool exact) ;
 
 /**
- * Print the key into a passed in buffer
- * @param key
+ * A debug API to print the key into a passed in buffer.
+ * @param key to convert to string
  * @param buff the string buffer that will hold the text
  * @param len the length of the buffer
- * @return a pointer to buff
+ * @return a pointer to buff passed in
  */
 char * cps_api_key_print(cps_obj_key_t *key, char *buff, size_t len);
 
 #ifdef __cplusplus
 }
 #endif
+
+/**
+@}
+*/
+
 #endif /* CPS_API_KEY_H_ */

@@ -30,7 +30,7 @@ void print_attr(cps_api_object_attr_t it) {
 
 
 cps_api_object_t create_list() {
-    cps_api_object_t obj = CPS_API_OBJ_ALLOC;
+    cps_api_object_t obj = cps_api_object_create();
 
     size_t ix = 0;
     size_t mx = 10;
@@ -90,7 +90,7 @@ TEST(cps_api_object,create) {
 
         ASSERT_TRUE((memcmp(p, cps_api_object_array(o), al)== 0));
 
-        cps_api_object_t obj = CPS_API_OBJ_ALLOC;
+        cps_api_object_t obj = cps_api_object_create();
         if (cps_api_array_to_object(p, al, obj)) {
             ASSERT_TRUE((memcmp(cps_api_object_array(obj), cps_api_object_array(o), al)==0));
             print_obj(obj);

@@ -75,19 +75,23 @@ typedef uint64_t cps_api_attr_id_t;
 cps_api_object_t cps_api_object_init(void *data, size_t bufflen);
 
 /**
- * Create a object - don't use directly - use CPS_API_OBJ_ALLOC macro
- * @return the object that is allocated or NULL if not possible to create
- */
-cps_api_object_t cps_api_object_create(const char *desc,unsigned int line);
-
-/**
  * Allocate a cps api object
  *
  * @return a pointer to the object that is created.  The function and line
  *                 are passed in for debugging purposes
  */
-#define CPS_API_OBJ_ALLOC \
-        cps_api_object_create(__FUNCTION__,__LINE__)
+#define cps_api_object_create() \
+        cps_api_object_create_int(__FUNCTION__,__LINE__)
+
+/**
+ * Create a object - don't use directly - use CPS_API_OBJ_ALLOC macro
+ *
+ * @param desc the string description of the use of the object or the filename
+ * @param line the file line on which the allocation exists.
+ * @return the object that is allocated or NULL if not possible to create
+ */
+cps_api_object_t cps_api_object_create_int(const char *desc,unsigned int line);
+
 
 /**
  * This API will delete the object and remove any corresponding attributes
