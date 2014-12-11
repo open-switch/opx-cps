@@ -20,7 +20,7 @@
  * by an array of bytes
  */
 typedef struct {
-    cps_obj_key_t key;
+    cps_api_key_t key;
 }cps_api_object_data_t;
 
 /**

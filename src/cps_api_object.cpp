@@ -17,6 +17,7 @@
 #include <vector>
 #include <stdlib.h>
 #include <map>
+#include <stdio.h> //for snprintf
 
 #define DEF_OBJECT_SIZE (512)
 #define DEF_OBJECT_REALLOC_STEP_SIZE (128)
@@ -146,7 +147,7 @@ void cps_api_object_delete(cps_api_object_t o) {
     obj_delloc((cps_api_object_internal_t*)o);
 }
 
-void cps_api_object_set_key(cps_api_object_t obj, cps_obj_key_t *key) {
+void cps_api_object_set_key(cps_api_object_t obj, cps_api_key_t *key) {
     cps_api_object_internal_t *p = (cps_api_object_internal_t*)obj;
     cps_api_key_copy(&p->data->key, key);
 }
@@ -232,6 +233,12 @@ cps_api_object_attr_t cps_api_object_attr_next(cps_api_object_t obj,cps_api_obje
      return p;
 }
 
+const char * cps_api_object_attr_to_string(cps_api_object_attr_t attr, char *buff, size_t len) {
+    snprintf(buff,len,"Attr %X, Len %d",(int)cps_api_object_attr_id(attr),
+            (int)cps_api_object_attr_len(attr));
+    return buff;
+}
+
 cps_api_attr_id_t cps_api_object_attr_id(cps_api_object_attr_t attr) {
     return std_tlv_tag(attr);
 }
@@ -266,7 +273,7 @@ void * cps_api_object_array(cps_api_object_t obj) {
     return p->data;
 }
 
-cps_obj_key_t * cps_api_object_key(cps_api_object_t obj) {
+cps_api_key_t * cps_api_object_key(cps_api_object_t obj) {
     return &(((cps_api_object_internal_t*)obj)->data->key);
 }
 

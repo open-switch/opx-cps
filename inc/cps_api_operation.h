@@ -11,7 +11,7 @@
 #ifndef CPS_API_OPERATION_H_
 #define CPS_API_OPERATION_H_
 
-#include "ds_object_category.h"
+#include "cps_api_object_category.h"
 #include "cps_api_object.h"
 
 #ifdef __cplusplus
@@ -29,25 +29,72 @@ extern "C" {
  * These are the two database instances.
  */
 typedef enum {
-    ds_inst_TARGET=0, //!< db_inst_TARGET the config database
-    ds_inst_OBSERVED=1,//!< db_inst_OBSERVED the status or observed database
-    ds_inst_PROPOSED=2,
-    ds_inst_MAX
+    cps_api_inst_TARGET=0, //!<  cps_api_inst_TARGET the config database
+    cps_api_inst_OBSERVED=1,//!< cps_api_inst_OBSERVED the status or observed database
+    cps_api_inst_PROPOSED=2,
+    cps_api_inst_MAX
 } cps_api_instance_t;
 
+/**
+ * CPS API Key related indexes
+ */
+#define CPS_OBJ_KEY_INST_POS (0)
+#define CPS_OBJ_KEY_CAT_POS (1)
+#define CPS_OBJ_KEY_SUBCAT_POS (2)
+#define CPS_OBJ_KEY_APP_INST_POS (3)
+
+/**
+ * Setup the key for use with the CPS API.  Initialize the length of the key
+ *     to contain all of the default fields + the extra instance components that
+ *     are specified by the user in the len_of_inst_comps
+ *
+ * @param key the key to initialize
+ * @param len_of_inst_comps the extra fields that will be used as instances
+ *     these should be placed at CPS_OBJ_KEY_APP_INST_POS and beyond.
+ *     If any of the parameters for inst, cat or subcat are 0, then they will not
+ *     be included in the length.
+ *
+ *     @verbatim
+ *     cps_api_key_init(key, 0,cps_api_inst_TARGET,0,0) will initialize a key
+ *         with size set to the target instance only
+ *
+ *     cps_api_key_init(key, 0,cps_api_inst_TARGET,XXXX,0) will initialize a key
+ *         with size set to the target and XXX only
+ *
+ *     cps_api_key_init(key, 3,cps_api_inst_TARGET,XXX,YYY) will initialize a key
+ *         with size set with the target, cat of XXX and sub of yyy with three positions
+ *         for holding specific instances.  Then use
+ *             cps_api_key_set(key,CPS_OBJ_KEY_APP_INST_POS,INST1) and
+ *             cps_api_key_set(key,CPS_OBJ_KEY_APP_INST_POS+1,INST2) and
+ *             cps_api_key_set(key,CPS_OBJ_KEY_APP_INST_POS+2,INST3) to set the instance key values
+ *
+ * @endverbatim
+ * @param inst the CPS instance (prop, targ, obs)
+ * @param cat the CPS instance category
+ * @param subcat the CPS instance sub category
+ */
+void cps_api_key_init(cps_api_key_t * key, size_t len_of_inst_comps,
+        cps_api_instance_t inst,
+        cps_api_object_category_types_t cat,
+        cps_api_object_subcategory_types_t subcat);
+
+/**
+ * Attributes of the key in the CPS that will indicate the specific operation
+ */
 typedef enum {
-    ds_oper_DELETE=1,
-    ds_oper_CREATE=2,
-    ds_oper_SET=3
+    cps_api_oper_DELETE=1,//!< delete operation
+    cps_api_oper_CREATE=2,//!< create operation
+    cps_api_oper_SET=3,    //!< set operation
+    cps_api_oper_ACTION=4
 }cps_api_operation_types_t;
 
 /*
  * The structure for a get request
  */
 typedef struct {
-    cps_obj_key_t *keys;
-    size_t            key_count;
-    cps_api_object_list_t object;
+    cps_api_key_t      *keys;
+    size_t           key_count;
+    cps_api_object_list_t list;
 }cps_api_get_params_t;
 
 /**
@@ -57,6 +104,7 @@ typedef struct {
     cps_api_object_list_t list; //! list of objects to modify
     cps_api_object_list_t prev; //! the previous state of the object modified
 }cps_api_transaction_params_t;
+
 
 /**
  * Initialize a get request
@@ -104,7 +152,7 @@ cps_api_return_code_t cps_api_transaction_close(cps_api_transaction_params_t *re
  * @param obj the object type to check.
  * @return
  */
-cps_api_operation_types_t cps_api_object_type_operation(cps_obj_key_t *key) ;
+cps_api_operation_types_t cps_api_object_type_operation(cps_api_key_t *key) ;
 
 /**
  * Add a set to the existing transaction.  Do not apply the data at this time.
@@ -134,6 +182,15 @@ cps_api_return_code_t cps_api_delete(cps_api_transaction_params_t * trans,
         cps_api_object_t object);
 
 /**
+ * Add a action to the existing transaction.  Do not run the action at this time.
+ * @param trans the transaction struct
+ * @param object the object to delete - only the key required
+ * @return standard db return code
+ */
+cps_api_return_code_t cps_api_action(cps_api_transaction_params_t * trans,
+        cps_api_object_t object);
+
+/**
  * Set a database element or list of elements.  the list must
  * contain an array of objects.  Each object has it's own key.
  * The request is committed atomically... or rolled back atomically
@@ -149,10 +206,10 @@ cps_api_return_code_t cps_api_commit(cps_api_transaction_params_t * param);
  */
 typedef struct {
     void * context; //! some application specific context to pass to the read/write function
-    cps_obj_key_t key;
-    cps_api_return_code_t (*db_read_function) (void * context, cps_api_get_params_t * param, size_t key_ix); //! the read db function
-    cps_api_return_code_t (*db_write_function)(void * context, cps_api_transaction_params_t * param, size_t index_of_element_being_updated); //! the set db function
-    cps_api_return_code_t (*db_rollback_function)(void * context, cps_api_transaction_params_t * param, size_t index_of_element_being_updated); //! the set db function
+    cps_api_key_t key;
+    cps_api_return_code_t (*_read_function) (void * context, cps_api_get_params_t * param, size_t key_ix); //! the read db function
+    cps_api_return_code_t (*_write_function)(void * context, cps_api_transaction_params_t * param, size_t index_of_element_being_updated); //! the set db function
+    cps_api_return_code_t (*_rollback_function)(void * context, cps_api_transaction_params_t * param, size_t index_of_element_being_updated); //! the set db function
 }cps_api_registration_functions_t;
 
 /**

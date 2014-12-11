@@ -103,7 +103,7 @@ void cps_api_object_delete(cps_api_object_t obj);
 /**
  * Copy the key into the object
  */
-void cps_api_object_set_key(cps_api_object_t obj, cps_obj_key_t *key);
+void cps_api_object_set_key(cps_api_object_t obj, cps_api_key_t *key);
 
 /**
  * Get the first matching attribute that contains the attribute id
@@ -187,6 +187,15 @@ cps_api_object_attr_t cps_api_object_attr_start(cps_api_object_t obj);
 cps_api_object_attr_t cps_api_object_attr_next(cps_api_object_t obj, cps_api_object_attr_t attr);
 
 /**
+ *    Print the attribute into a human readable format - not the data just the header
+ * @param attr the attribute to print
+ * @param buff the buffer to use
+ * @param len the length of the buffer
+ * @return the pointer to the buffer passed in
+ */
+const char * cps_api_object_attr_to_string(cps_api_object_attr_t attr, char *buff, size_t len);
+
+/**
  * Get the attribute id for the object.
  * @param attr is the attribute to query
  * @return the attribute ID of the attribute
@@ -235,7 +244,7 @@ void *cps_api_object_attr_data_bin(cps_api_object_attr_t attr);
  * @param obj the object in question
  * @return the pointer to the object's key
  */
-cps_obj_key_t * cps_api_object_key(cps_api_object_t obj);
+cps_api_key_t * cps_api_object_key(cps_api_object_t obj);
 
 
 /**

@@ -21,12 +21,13 @@
 /** @defgroup CPSAPI The CPS API
  *
       This file consists of the utilities to create, and manage keys.
+      Important APIs are:
+            cps_api_key_set
+            cps_api_key_element_at
+            cps_api_key_get_len
+            cps_api_key_set_len
 @{
 */
-
-#define CPS_OBJ_KEY_INST_POS (0)
-#define CPS_OBJ_KEY_CAT_POS (1)
-#define CPS_OBJ_KEY_SUBCAT_POS (2)
 
 #ifdef __cplusplus
 extern "C" {
@@ -38,15 +39,25 @@ extern "C" {
  * and the size of the key is subtracted from the total number of available
  * element
  */
-#define CPS_OBJ_MAX_KEY_LEN ((sizeof(cps_obj_key_t)/CPS_OBJ_KEY_ELEM_SIZE)-CPS_OBJ_KEY_ELEM_START)
+#define CPS_OBJ_MAX_KEY_LEN ((sizeof(cps_api_key_t)/CPS_OBJ_KEY_ELEM_SIZE)-CPS_OBJ_KEY_ELEM_START)
 
 /**
  * Get the length of elements in the key
  * @param elem
  * @return the number of elements in the key
  */
-static inline uint32_t cps_api_key_get_len(cps_obj_key_t *elem) {
+static inline uint32_t cps_api_key_get_len(cps_api_key_t *elem) {
     return le32toh(((uint32_t*)elem)[CPS_OBJ_KEY_LEN_POS]);
+}
+
+/**
+ * Check the offset to ensure it is a valid key element position
+ * @param elem the key to validate against
+ * @param offset the position to validate
+ * @return true if the index is valid
+ */
+static inline bool cps_api_key_valid_offset(cps_api_key_t *elem, uint32_t offset) {
+    return offset < cps_api_key_get_len(elem);
 }
 
 /**
@@ -54,7 +65,7 @@ static inline uint32_t cps_api_key_get_len(cps_obj_key_t *elem) {
  * @param elem the key to update
  * @param len the length of the key
  */
-static inline void cps_api_key_set_len(cps_obj_key_t *elem, uint32_t len) {
+static inline void cps_api_key_set_len(cps_api_key_t *elem, uint32_t len) {
     STD_ASSERT(len < CPS_OBJ_MAX_KEY_LEN);
     ((uint32_t*)elem)[CPS_OBJ_KEY_LEN_POS] = htole32(len);
 }
@@ -63,7 +74,7 @@ static inline void cps_api_key_set_len(cps_obj_key_t *elem, uint32_t len) {
  * Get the attributes associated with a key
  * @param elem the key to get the attributes from
  */
-static inline uint32_t cps_api_key_get_attr(cps_obj_key_t *elem) {
+static inline uint32_t cps_api_key_get_attr(cps_api_key_t *elem) {
     return le32toh(((uint32_t*)elem)[CPS_OBJ_KEY_ATTR_POS] );
 }
 
@@ -72,7 +83,7 @@ static inline uint32_t cps_api_key_get_attr(cps_obj_key_t *elem) {
  * @param elem the key to set the attributes on
  * @param attr the attributes to set on the key
  */
-static inline void cps_api_key_set_attr(cps_obj_key_t *elem, uint32_t attr) {
+static inline void cps_api_key_set_attr(cps_api_key_t *elem, uint32_t attr) {
     ((uint32_t*)elem)[CPS_OBJ_KEY_ATTR_POS] = htole32(attr);
 }
 
@@ -81,7 +92,7 @@ static inline void cps_api_key_set_attr(cps_obj_key_t *elem, uint32_t attr) {
  * @param elem the key
  * @return a pointer to the first element in the key
  */
-static inline uint32_t * cps_api_key_elem_start(cps_obj_key_t *elem) {
+static inline uint32_t * cps_api_key_elem_start(cps_api_key_t *elem) {
     return ((uint32_t*)elem)+CPS_OBJ_KEY_ELEM_START;
 }
 
@@ -91,19 +102,9 @@ static inline uint32_t * cps_api_key_elem_start(cps_obj_key_t *elem) {
  * @param offset the offset of the field to update (must be less then CPS_OBJ_MAX_KEY_LEN)
  * @param field the uint32_t value to set
  */
-static inline void cps_api_key_set(cps_obj_key_t *elem, uint32_t offset, uint32_t field) {
+static inline void cps_api_key_set(cps_api_key_t *elem, uint32_t offset, uint32_t field) {
     STD_ASSERT(offset < CPS_OBJ_MAX_KEY_LEN);
     cps_api_key_elem_start(elem)[offset] = htole32(field);
-}
-
-/**
- * Check the offset to ensure it is a valid key element position
- * @param elem the key to validate against
- * @param offset the position to validate
- * @return true if the index is valid
- */
-static inline bool cps_api_key_valid_offset(cps_obj_key_t *elem, uint32_t offset) {
-    return offset < cps_api_key_get_len(elem);
 }
 
 /**
@@ -112,7 +113,7 @@ static inline bool cps_api_key_valid_offset(cps_obj_key_t *elem, uint32_t offset
  * @param offset the offset to check at
  * @return the uint32_t element at the position requested
  */
-static inline uint32_t cps_api_key_element_at(cps_obj_key_t *elem, uint32_t offset) {
+static inline uint32_t cps_api_key_element_at(cps_api_key_t *elem, uint32_t offset) {
     return le32toh(cps_api_key_elem_start(elem)[offset]);
 }
 
@@ -121,7 +122,7 @@ static inline uint32_t cps_api_key_element_at(cps_obj_key_t *elem, uint32_t offs
  * @param dest the destination where to copy the key to
  * @param src of where to copy the key from
  */
-static inline void cps_api_key_copy(cps_obj_key_t *dest, cps_obj_key_t *src) {
+static inline void cps_api_key_copy(cps_api_key_t *dest, cps_api_key_t *src) {
     size_t len = cps_api_key_get_len_in_bytes(src) + CPS_OBJ_KEY_HEADER_SIZE;
     memcpy(dest,src,len);
 }
@@ -140,7 +141,7 @@ static inline void cps_api_key_copy(cps_obj_key_t *dest, cps_obj_key_t *src) {
  *              1 if the key is > then the comparison
  *              -1 if the key is < then the comparison
  */
-int cps_api_key_matches(cps_obj_key_t *key, cps_obj_key_t *prefix, bool exact) ;
+int cps_api_key_matches(cps_api_key_t *key, cps_api_key_t *prefix, bool exact) ;
 
 /**
  * A debug API to print the key into a passed in buffer.
@@ -149,7 +150,7 @@ int cps_api_key_matches(cps_obj_key_t *key, cps_obj_key_t *prefix, bool exact) ;
  * @param len the length of the buffer
  * @return a pointer to buff passed in
  */
-char * cps_api_key_print(cps_obj_key_t *key, char *buff, size_t len);
+char * cps_api_key_print(cps_api_key_t *key, char *buff, size_t len);
 
 #ifdef __cplusplus
 }

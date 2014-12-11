@@ -66,12 +66,12 @@ typedef struct {
 /**
  * A few wrappers to create common IF object IDs
  */
-#define DB_OBJ_IF_RECORD (DB_OBJ_MAKE(ds_obj_cat_INTERFACE,ds_int_obj_IF_OBJ))
-#define DB_OBJ_IF_MAC (DB_OBJ_MAKE(ds_obj_cat_INTERFACE,ds_int_obj_MAC))
-#define DB_OBJ_IF_ASTATE (DB_OBJ_MAKE(ds_obj_cat_INTERFACE,ds_int_obj_IF_ASTATE))
+#define DB_OBJ_IF_RECORD (DB_OBJ_MAKE(cps_api_obj_cat_INTERFACE,ds_int_obj_IF_OBJ))
+#define DB_OBJ_IF_MAC (DB_OBJ_MAKE(cps_api_obj_cat_INTERFACE,ds_int_obj_MAC))
+#define DB_OBJ_IF_ASTATE (DB_OBJ_MAKE(cps_api_obj_cat_INTERFACE,ds_int_obj_IF_ASTATE))
 
-#define DB_OBJ_IF_RECORD_KEY DB_OBJ_MAKE(ds_obj_cat_KEY,ds_obj_cat_INTERFACE)
-#define DB_OBJ_IF_RECORD_IFNAME_KEY DB_OBJ_MAKE(ds_obj_cat_KEY,ds_interface_key_IFNAME)
+#define DB_OBJ_IF_RECORD_KEY DB_OBJ_MAKE(cps_api_obj_cat_KEY,cps_api_obj_cat_INTERFACE)
+#define DB_OBJ_IF_RECORD_IFNAME_KEY DB_OBJ_MAKE(cps_api_obj_cat_KEY,ds_interface_key_IFNAME)
 
 
 /**

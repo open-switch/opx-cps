@@ -6,9 +6,10 @@
 /** OPENSOURCELICENSE */
 
 #include "cps_api_event_init.h"
+#include "std_event_service.h"
+#include "cps_api_operation.h"
 
 #include <stdlib.h>
-#include "std_event_service.h"
 
 static std_event_server_handle _handle=NULL;
 

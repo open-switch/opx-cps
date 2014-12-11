@@ -36,7 +36,7 @@ typedef unsigned int cps_api_event_reg_prio_t;
  * the API provided.  Use the set data API to fill up the data
  */
 typedef struct {
-    cps_obj_key_t key;
+    cps_api_key_t key;
     unsigned int data_len;/** the length of the data */
     unsigned int max_data_len; /**the max buffer space contained by data */
 } cps_api_event_header_t;
@@ -54,7 +54,7 @@ static inline uint8_t * cps_api_event_msg_data(cps_api_event_header_t *p) {
  */
 typedef struct {
     cps_api_event_reg_prio_t priority; //! priority of the registration optional for the implementation
-    cps_obj_key_t *objects;    //! the objects
+    cps_api_key_t *objects;    //! the objects
     size_t number_of_objects;
 } cps_api_event_reg_t;
 

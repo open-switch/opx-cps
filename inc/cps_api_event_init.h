@@ -79,7 +79,7 @@ typedef cps_api_return_code_t (*cps_api_wait_for_event_t)(cps_api_event_service_
  * The registration method to handle the sending and receiving of events.
  */
 typedef struct {
-    cps_obj_key_t *keys;
+    cps_api_key_t *keys;
     size_t keys_len;
     cps_api_event_service_client_connect_t connect_function;
     cps_api_event_service_event_register_t register_function;
