@@ -20,6 +20,11 @@
 extern "C" {
 #endif
 
+/** @defgroup CPSAPI The CPS API
+ * This API handles the initialization of the event portion of the CPS API
+@{
+*/
+
 /**
  * This API handles client registration requests.  In this case, all event services will need to handle this call.
  * It will be up to the CPS API to use the appropriate handle for further requests
@@ -104,5 +109,8 @@ cps_api_return_code_t cps_api_event_method_register( cps_api_event_methods_reg_t
 #ifdef __cplusplus
 }
 #endif
+/**
+ * @}
+ */
 
 #endif /* DB_EVENT_CHANNEL_H_ */

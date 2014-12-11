@@ -20,6 +20,11 @@ extern "C" {
 
 #include "cps_api_errors.h"
 
+/** @defgroup CPSAPI The CPS API
+ * This file handles all public CRUD operations of the CPS API.
+@{
+*/
+
 /**
  * These are the two database instances.
  */
@@ -160,5 +165,7 @@ cps_api_return_code_t cps_api_register(cps_api_registration_functions_t * reg);
 #ifdef __cplusplus
 }
 #endif
-
+/**
+ * @}
+ */
 #endif /* DB_OPERATION_H_ */
