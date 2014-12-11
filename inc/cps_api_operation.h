@@ -29,7 +29,8 @@ extern "C" {
  * These are the two database instances.
  */
 typedef enum {
-    cps_api_inst_TARGET=0, //!<  cps_api_inst_TARGET the config database
+    cps_api_inst_NULL=0,
+    cps_api_inst_TARGET=1, //!<  cps_api_inst_TARGET the config database
     cps_api_inst_OBSERVED=1,//!< cps_api_inst_OBSERVED the status or observed database
     cps_api_inst_PROPOSED=2,
     cps_api_inst_MAX

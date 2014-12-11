@@ -42,16 +42,10 @@ static void db_operation_init() {
     std_mutex_simple_lock_guard g(&db_init_lock);
     static bool inited = false;
     if (!inited) {
-        db_functions.resize(cps_api_inst_MAX);
         if (std_rw_lock_create_default(&db_list_lock)!=STD_ERR_OK) {
             EV_LOG(ERR,DSAPI,0,"DB-INIT-FAILED","Failed to create rw lock");
         }
     }
-}
-
-static reg_functions_t &get() {
-    db_operation_init();
-    return db_functions;
 }
 
 extern "C" {
@@ -86,12 +80,6 @@ void cps_api_key_init(cps_api_key_t * key, size_t len_of_inst_comps,
 cps_api_return_code_t cps_api_register(cps_api_registration_functions_t * reg) {
     db_operation_init();
     std_rw_lock_write_guard g(&db_list_lock);
-    uint32_t inst = cps_api_key_element_at(&reg->key,CPS_OBJ_KEY_INST_POS);
-
-    STD_ASSERT(inst<get().size());
-
-    if (inst>=get().size()) return cps_api_ret_code_ERR;
-
     db_functions.push_back(*reg);
     return cps_api_ret_code_OK;
 }
@@ -100,18 +88,19 @@ cps_api_return_code_t cps_api_get(cps_api_get_params_t * param) {
     std_rw_lock_read_guard g(&db_list_lock);
     cps_api_return_code_t rc = cps_api_ret_code_ERR;
     size_t ix = 0;
-    size_t mx = db_functions.size();
+    size_t mx = param->key_count;
+
     for ( ; ix < mx ; ++ix ) {
-        size_t k_ix = 0;
-        size_t k_mx = param->key_count;
-        for ( ; k_ix < k_mx ; ++k_ix ) {
-            if (cps_api_key_matches(&param->keys[k_ix],&(db_functions[ix].key),false)==0) {
-                rc = db_functions[ix]._read_function(db_functions[ix].context,param,k_ix);
+        size_t func_ix = 0;
+        size_t func_mx = db_functions.size();
+        for ( ; func_ix < func_mx ; ++func_ix ) {
+            cps_api_registration_functions_t *p = &(db_functions[func_ix]);
+            if ((p->_read_function!=NULL) &&
+                    (cps_api_key_matches(&param->keys[ix],&p->key,false)==0)) {
+                rc = p->_read_function(p->context,param,ix);
                 if (rc!=cps_api_ret_code_OK) break;
             }
         }
-
-
     }
     return rc;
 }
@@ -120,6 +109,7 @@ cps_api_return_code_t cps_api_commit(cps_api_transaction_params_t * param) {
     db_operation_init();
     std_rw_lock_read_guard g(&db_list_lock);
     cps_api_return_code_t rc =cps_api_ret_code_OK;
+
     size_t ix = 0;
     size_t mx = cps_api_object_list_size(param->list);
     for ( ; ix < mx ; ++ix ) {
@@ -128,8 +118,10 @@ cps_api_return_code_t cps_api_commit(cps_api_transaction_params_t * param) {
         size_t func_ix = 0;
         size_t func_mx = db_functions.size();
         for ( ; func_ix < func_mx ; ++func_ix ) {
-            if (cps_api_key_matches(cps_api_object_key(l),&(db_functions[ix].key),false)==0) {
-                rc = db_functions[ix]._write_function(db_functions[func_ix].context,param,ix);
+            cps_api_registration_functions_t *p = &(db_functions[func_ix]);
+            if ((p->_write_function!=NULL) &&
+                    (cps_api_key_matches(cps_api_object_key(l),&p->key,false)==0)) {
+                rc = p->_write_function(p->context,param,ix);
                 if (rc!=cps_api_ret_code_OK) break;
             }
         }
@@ -141,9 +133,11 @@ cps_api_return_code_t cps_api_commit(cps_api_transaction_params_t * param) {
             size_t func_ix = 0;
             size_t func_mx = db_functions.size();
             for ( ; func_ix < func_mx ; ++func_ix ) {
-                if (cps_api_key_matches(cps_api_object_key(l),
-                        &(db_functions[ix].key),false)==0) {
-                    rc = db_functions[ix]._rollback_function(db_functions[func_ix].context,param,ix);
+                cps_api_registration_functions_t *p = &(db_functions[func_ix]);
+                if ((p->_rollback_function!=NULL) &&
+                        (cps_api_key_matches(cps_api_object_key(l),
+                        &p->key,false)==0)) {
+                    rc = p->_rollback_function(p->context,param,ix);
                     if (rc!=cps_api_ret_code_OK) break;
                 }
             }

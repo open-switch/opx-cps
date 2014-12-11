@@ -57,6 +57,7 @@ static cps_api_object_internal_t * obj_alloc(size_t  len) {
 }
 
 static void obj_delloc(cps_api_object_internal_t *p) {
+    if (!p->allocated) return;
     free(p->data);
     free(p);
 }
@@ -304,7 +305,7 @@ void cps_api_object_list_destroy(cps_api_object_list_t list, bool delete_all_obj
         size_t ix = 0;
         size_t mx = p->size();
         for ( ; ix < mx ; ++ix ) {
-            obj_delloc((cps_api_object_internal_t*)(*p)[ix]);
+            cps_api_object_delete((*p)[ix]);
         }
     }
     delete p;

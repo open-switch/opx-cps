@@ -18,7 +18,7 @@
 
 static cps_api_return_code_t db_read_function (void * context, cps_api_get_params_t * param, size_t key_ix) {
     STD_ASSERT(key_ix < param->key_count);
-    cps_api_key_t * the_key = param->keys[key_ix];
+    cps_api_key_t * the_key = &param->keys[key_ix];
 
     uint32_t inst = cps_api_key_element_at(the_key,CPS_OBJ_KEY_APP_INST_POS);
 
@@ -26,18 +26,20 @@ static cps_api_return_code_t db_read_function (void * context, cps_api_get_param
     cps_api_object_set_key(obj,the_key);
     cps_api_object_attr_add(obj,0,"Interface",strlen("Interface"));
     cps_api_object_attr_add(obj,inst,"Interface",strlen("Interface"));
-    cps_api_object_attr_add_u16(obj,1,(uint16_t)inst);
-    cps_api_object_attr_add_u32(obj,2,(uint32_t)inst);
     cps_api_object_attr_add_u64(obj,3,(uint64_t)inst);
+    cps_api_object_list_append(param->list,obj);
+
     return cps_api_ret_code_OK;
 }
 
 static cps_api_return_code_t db_write_function(void * context, cps_api_transaction_params_t * param, size_t index_of_element_being_updated) {
 
+    return cps_api_ret_code_OK;
 }
 
 static cps_api_return_code_t db_rollback_function(void * context, cps_api_transaction_params_t * param, size_t index_of_element_being_updated) {
 
+    return cps_api_ret_code_OK;
 }
 
 bool do_test_init() {
@@ -60,13 +62,13 @@ bool do_test_get() {
     cps_api_key_t keys[3];
 
     cps_api_key_init(&keys[0],1,cps_api_inst_TARGET,
-            cps_api_obj_cat_INTERFACE,0);
+            cps_api_obj_cat_INTERFACE,1);
 
     cps_api_key_init(&keys[1],1,cps_api_inst_TARGET,
-            cps_api_obj_cat_INTERFACE,0);
+            cps_api_obj_cat_INTERFACE,1);
 
     cps_api_key_init(&keys[2],1,cps_api_inst_TARGET,
-            cps_api_obj_cat_INTERFACE,0);
+            cps_api_obj_cat_INTERFACE,1);
 
     cps_api_key_set(&keys[0],CPS_OBJ_KEY_APP_INST_POS,0);
     cps_api_key_set(&keys[1],CPS_OBJ_KEY_APP_INST_POS,1);
@@ -88,7 +90,7 @@ bool do_test_get() {
             printf("Found attr %s \n",cps_api_object_attr_to_string(it,buff,sizeof(buff)));
         }
     }
-
+    cps_api_get_request_close(&get_req);
     return ix == 3;
 }
 
