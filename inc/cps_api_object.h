@@ -16,15 +16,17 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+#include "cps_api_object_internal.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/** @defgroup CPSAPI "The CPS API"
+/** @defgroup CPSAPI The CPS API
  *
- 	 This file consists of the utilities to create, and manage an object or list of
-	objects.  Each object contains a key and attributes.  Each attribute contains an attribute
-	id, attribute type and data.  The data can be either u16, u32, u64 or binary.
+      This file consists of the utilities to create, and manage an object or list of
+    objects.  Each object contains a key and attributes.  Each attribute contains an attribute
+    id, attribute type and data.  The data can be either u16, u32, u64 or binary.
 @{
 */
 
@@ -56,6 +58,21 @@ typedef void * cps_api_object_list_t;
  */
 typedef uint64_t cps_api_attr_id_t;
 
+#define CPS_API_MIN_OBJ_LEN (CPS_API_OBJECT_INTERNAL_SPACE_REQ + 256)
+
+/**
+ * Create a object from a piece of a array.  The memory for the object will be
+ * managed outside of the cps_api_object API but allows the object to be
+ * stack based.  The minimum size of the array should be
+ *    CPS_API_MIN_OBJ_LEN.
+ @verbatim
+ char buff[CPS_API_MIN_OBJ_LEN + 500];
+ cps_api_object_t obj = cps_api_object_init(buff,bufflen);
+ @endverbatim
+ *
+ * @return the object that is allocated or NULL if not possible to create
+ */
+cps_api_object_t cps_api_object_init(void *data, size_t bufflen);
 
 /**
  * Create a object - don't use directly - use CPS_API_OBJ_ALLOC macro
@@ -67,10 +84,10 @@ cps_api_object_t cps_api_object_create(const char *desc,unsigned int line);
  * Allocate a cps api object
  *
  * @return a pointer to the object that is created.  The function and line
- * 				are passed in for debugging purposes
+ *                 are passed in for debugging purposes
  */
 #define CPS_API_OBJ_ALLOC \
-		cps_api_object_create(__FUNCTION__,__LINE__)
+        cps_api_object_create(__FUNCTION__,__LINE__)
 
 /**
  * This API will delete the object and remove any corresponding attributes
@@ -111,21 +128,47 @@ void cps_api_object_attr_delete(cps_api_object_t obj, cps_api_attr_id_t attr);
 bool cps_api_object_attr_add(cps_api_object_t obj, cps_api_attr_id_t id,const void *data, size_t len);
 
 /**
+ * Add an attribute to the object.  The attribute will be copied into the object.
+ * @param object in which to add the attribute
+ * @param id of the attribute to add
+ * @param data the data to add
+ * @return true of the item is added otherwise false
+ */
+bool cps_api_object_attr_add_u16(cps_api_object_t obj, cps_api_attr_id_t id,uint16_t data);
+
+/**
+ * Add an attribute to the object.  The attribute will be copied into the object.
+ * @param object in which to add the attribute
+ * @param id of the attribute to add
+ * @param data the data to add
+ * @return true of the item is added otherwise false
+ */
+bool cps_api_object_attr_add_u32(cps_api_object_t obj, cps_api_attr_id_t id,uint32_t data);
+
+/**
+ * Add an attribute to the object.  The attribute will be copied into the object.
+ * @param object in which to add the attribute
+ * @param id of the attribute to add
+ * @param data the data to add
+ * @return true of the item is added otherwise false
+ */
+bool cps_api_object_attr_add_u64(cps_api_object_t obj, cps_api_attr_id_t id,uint64_t data);
+
+/**
  * Get the first attribute within the object.  This can be passed to cps_api_object_attr_next to walk through
  * the list of attributes.  For example...
  *
  @verbatim
-	cps_api_object_attr_t it = cps_api_object_attr_start(obj);
+    cps_api_object_attr_t it = cps_api_object_attr_start(obj);
 
-	while (it != CPS_API_ATTR_NULL) {
-		print_attr(it);
-		it = cps_api_object_attr_next(obj, it);
-		if (it == NULL) {
-			printf("Null\n");
-		}
-	}
+    while (it != CPS_API_ATTR_NULL) {
+        print_attr(it);
+        it = cps_api_object_attr_next(obj, it);
+        if (it == NULL) {
+            printf("Null\n");
+        }
+    }
  @endverbatim
-
  @param obj the object in question
  @return the first attribute in the object or CPS_API_ATTR_NULL if there are no objects
  */

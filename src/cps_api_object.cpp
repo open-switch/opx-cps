@@ -21,25 +21,19 @@
 #define DEF_OBJECT_SIZE (512)
 #define DEF_OBJECT_REALLOC_STEP_SIZE (128)
 
-typedef struct {
-    cps_obj_key_t key;
-}cps_api_object_data_t;
-
-typedef struct {
-    size_t len;
-    size_t remain;
-    cps_api_object_data_t * data;
-} cps_api_object_internal_t;
 
 static inline size_t obj_used_len(cps_api_object_internal_t *cur) {
     return cur->len - cur->remain;
 }
 
 static cps_api_object_internal_t * obj_realloc(cps_api_object_internal_t *cur, size_t  len) {
+    if (cur->allocated==false) return NULL;
+
     cps_api_object_data_t *p = (cps_api_object_data_t*)realloc(cur->data, len + sizeof(cps_api_object_data_t));
     if (p == NULL) {
         return NULL;
     }
+
     cur->data = p;
     cur->remain += (len - cur->len);
     cur->len = len;
@@ -55,7 +49,7 @@ static cps_api_object_internal_t * obj_alloc(size_t  len) {
         free(p);
         return NULL;
     }
-
+    p->allocated = true;
     p->len = len;
     p->remain = len;
     return p;
@@ -77,15 +71,20 @@ static size_t obj_data_offset(cps_api_object_internal_t *p, void * tlv) {
     return loc - data;
 }
 
-static bool add_attribute(cps_api_object_internal_t * p, uint64_t attr, uint64_t len, const void *data) {
-    if (p->remain >= (len + STD_TLV_HDR_LEN)) {
+static void * add_get_tlv_pos_with_enough_space(cps_api_object_internal_t * p, uint64_t attr, uint64_t len) {
+    if (p->remain < (len + STD_TLV_HDR_LEN)) {
         p = obj_realloc(p, (size_t)(len + obj_used_len(p) + STD_TLV_HDR_LEN) + DEF_OBJECT_REALLOC_STEP_SIZE);
-        if (p == NULL) return false;
+        if (p == NULL) return NULL;
     }
-    void * ptr = std_tlv_offset(obj_data(p), obj_used_len(p));
+    return std_tlv_offset(obj_data(p), obj_used_len(p));
+}
+
+
+static bool add_attribute(cps_api_object_internal_t * p, uint64_t attr, uint64_t len, const void *data) {
+    void * ptr = add_get_tlv_pos_with_enough_space(p,attr,len);
+    if (ptr==NULL) return false;
     ptr = std_tlv_add(ptr, &p->remain, attr, len, data);
-    if (ptr == NULL) return false;
-    return true;
+    return (ptr != NULL) ;
 }
 
 extern "C" {
@@ -99,6 +98,18 @@ typedef std::map<cps_api_object_t,tracker_detail> tTrackerList;
 
 static std_mutex_lock_create_static_init_rec(db_tracker_lock);
 static tTrackerList trackers;
+
+cps_api_object_t cps_api_object_init(void *data, size_t bufflen) {
+    if (bufflen < CPS_API_MIN_OBJ_LEN) return false;
+    cps_api_object_internal_t *p = (cps_api_object_internal_t*)data;
+    bufflen -= sizeof(cps_api_object_internal_t);
+    p->allocated = false;
+    p->data = (cps_api_object_data_t*)(p+1);
+    p->remain = bufflen - sizeof(cps_api_object_data_t);
+    p->len = p->remain;
+
+    return (cps_api_object_t)(data);
+}
 
 void db_list_tracker_add(cps_api_object_t obj, const char * label, unsigned int line) {
     std_mutex_simple_lock_guard g(&db_tracker_lock);
@@ -129,6 +140,8 @@ cps_api_object_t cps_api_object_create(const char *desc, unsigned int line) {
 }
 
 void cps_api_object_delete(cps_api_object_t o) {
+    cps_api_object_internal_t *p = (cps_api_object_internal_t*)o;
+    if(p->allocated==false) return;
     db_list_tracker_rm(o);
     obj_delloc((cps_api_object_internal_t*)o);
 }
@@ -167,12 +180,43 @@ void cps_api_object_attr_delete(cps_api_object_t obj, cps_api_attr_id_t attr_id)
     }
 }
 
+bool cps_api_object_attr_add_u16(cps_api_object_t obj, cps_api_attr_id_t id,uint16_t data) {
+    cps_api_object_internal_t* p = (cps_api_object_internal_t*)obj;
+
+    void * ptr = add_get_tlv_pos_with_enough_space(p,id,sizeof(data));
+    if (ptr==NULL) return false;
+
+    ptr = std_tlv_add_u16(ptr, &p->remain, id, data);
+    return (ptr != NULL);
+}
+
+bool cps_api_object_attr_add_u32(cps_api_object_t obj, cps_api_attr_id_t id,uint32_t data) {
+    cps_api_object_internal_t* p = (cps_api_object_internal_t*)obj;
+
+    void * ptr = add_get_tlv_pos_with_enough_space(p,id,sizeof(data));
+    if (ptr==NULL) return false;
+
+    ptr = std_tlv_add_u32(ptr, &p->remain, id, data);
+    return (ptr != NULL);
+}
+
+bool cps_api_object_attr_add_u64(cps_api_object_t obj, cps_api_attr_id_t id,uint64_t data) {
+    cps_api_object_internal_t* p = (cps_api_object_internal_t*)obj;
+
+    void * ptr = add_get_tlv_pos_with_enough_space(p,id,sizeof(data));
+    if (ptr==NULL) return false;
+
+    ptr = std_tlv_add_u64(ptr, &p->remain, id, data);
+    return (ptr != NULL);
+}
+
 bool cps_api_object_attr_add(cps_api_object_t o, cps_api_attr_id_t id,const void *data, size_t len) {
     return add_attribute((cps_api_object_internal_t*)o, id, len, data);
 }
 
 cps_api_object_attr_t cps_api_object_attr_start(cps_api_object_t obj) {
-    return (cps_api_object_attr_t)obj_data((cps_api_object_internal_t*)obj);
+    void * ptr = (cps_api_object_attr_t)obj_data((cps_api_object_internal_t*)obj);
+    return std_tlv_valid(ptr,obj_used_len((cps_api_object_internal_t*)obj)) ? ptr : NULL;
 }
 
 cps_api_object_attr_t cps_api_object_attr_next(cps_api_object_t obj,cps_api_object_attr_t attr) {
