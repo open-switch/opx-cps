@@ -42,7 +42,7 @@ static cps_api_return_code_t db_rollback_function(void * context, cps_api_transa
     return cps_api_ret_code_OK;
 }
 
-bool do_test_init() {
+bool do_test_init(void) {
     cps_api_registration_functions_t funcs;
 
     funcs.context = (void*)"Cliff";
@@ -56,7 +56,7 @@ bool do_test_init() {
     return (cps_api_register(&funcs)==cps_api_ret_code_OK);
 }
 
-bool do_test_get() {
+bool do_test_get(void) {
     cps_api_get_params_t get_req;
     if (cps_api_get_request_init(&get_req)!=cps_api_ret_code_OK) return false;
     cps_api_key_t keys[3];
@@ -92,6 +92,12 @@ bool do_test_get() {
     }
     cps_api_get_request_close(&get_req);
     return ix == 3;
+}
+
+bool test_set(void) {
+    cps_api_transaction_params_t trans;
+    cps_api_transaction_init(&trans);
+    return true;
 }
 
 TEST(cps_api_object,ram_based) {

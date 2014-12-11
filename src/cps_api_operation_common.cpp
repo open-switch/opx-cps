@@ -160,7 +160,7 @@ cps_api_return_code_t cps_api_get_request_close(cps_api_get_params_t *req) {
     return cps_api_ret_code_OK;
 }
 
-cps_api_return_code_t cps_api_transaction_init(cps_api_transaction_params_t *req, cps_api_instance_t db_type) {
+cps_api_return_code_t cps_api_transaction_init(cps_api_transaction_params_t *req) {
     memset(req,0,sizeof(*req));
     req->list = cps_api_object_list_create();
     if (req->list==NULL) return cps_api_ret_code_ERR;

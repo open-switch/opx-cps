@@ -134,15 +134,14 @@ cps_api_return_code_t cps_api_get(cps_api_get_params_t * param);
  * Initialize the db transaction for use with the set and commit API
  * The idea is that you init a db request, add objects with "set" then finally commit
  * @param req is the request to initialize
- * @param db_type type of db to update
- * @return db return code
+ * @return cps_api_ret_code_OK if successful
  */
-cps_api_return_code_t cps_api_transaction_init(cps_api_transaction_params_t *req, cps_api_instance_t db_type);
+cps_api_return_code_t cps_api_transaction_init(cps_api_transaction_params_t *req);
 /**
  * Clean up after a transaction or close a pending transaction.  Before a commit is made
  * this will cancel a uncommitted transaction.
  * @param req is the transaction to cancel or clean up
- * @return db return code
+ * @return cps_api_ret_code_OK if successful
  */
 cps_api_return_code_t cps_api_transaction_close(cps_api_transaction_params_t *req);
 
@@ -151,7 +150,7 @@ cps_api_return_code_t cps_api_transaction_close(cps_api_transaction_params_t *re
  * implementing the write db API.  A write function call will be executed and the type field
  * will indicate if the write is due to a Create/Delete or Set
  * @param obj the object type to check.
- * @return
+ * @return cps_api_ret_code_OK if successful
  */
 cps_api_operation_types_t cps_api_object_type_operation(cps_api_key_t *key) ;
 
@@ -159,7 +158,7 @@ cps_api_operation_types_t cps_api_object_type_operation(cps_api_key_t *key) ;
  * Add a set to the existing transaction.  Do not apply the data at this time.
  * @param trans the transaction id
  * @param object the object containing the data to set
- * @return standard db return code
+ * @return cps_api_ret_code_OK if successful
  */
 cps_api_return_code_t cps_api_set(cps_api_transaction_params_t * trans,
                                     cps_api_object_t object);
@@ -168,7 +167,7 @@ cps_api_return_code_t cps_api_set(cps_api_transaction_params_t * trans,
  * Add a create to the existing transaction.  Do not apply the data at this time.
  * @param trans the transaction id
  * @param object the object containing the data to create
- * @return standard db return code
+ * @return cps_api_ret_code_OK if successful
  */
 cps_api_return_code_t cps_api_create(cps_api_transaction_params_t * trans,
         cps_api_object_t object);
@@ -177,7 +176,7 @@ cps_api_return_code_t cps_api_create(cps_api_transaction_params_t * trans,
  * Add a delete to the existing transaction.  Do not apply the data at this time.
  * @param trans the transaction struct
  * @param object the object to delete - only the key required
- * @return standard db return code
+ * @return cps_api_ret_code_OK if successful
  */
 cps_api_return_code_t cps_api_delete(cps_api_transaction_params_t * trans,
         cps_api_object_t object);
@@ -186,7 +185,7 @@ cps_api_return_code_t cps_api_delete(cps_api_transaction_params_t * trans,
  * Add a action to the existing transaction.  Do not run the action at this time.
  * @param trans the transaction struct
  * @param object the object to delete - only the key required
- * @return standard db return code
+ * @return cps_api_ret_code_OK if successful
  */
 cps_api_return_code_t cps_api_action(cps_api_transaction_params_t * trans,
         cps_api_object_t object);
@@ -195,8 +194,11 @@ cps_api_return_code_t cps_api_action(cps_api_transaction_params_t * trans,
  * Set a database element or list of elements.  the list must
  * contain an array of objects.  Each object has it's own key.
  * The request is committed atomically... or rolled back atomically
+ *
  * @param param the structure containing the object request.
- * @return db_return_code_t
+ * @return cps_api_ret_code_OK if successful otherwise.. if the transaction fails
+ *         the cps_api infrastructure will attempt to rollback an unsuccessful commit operation
+ *         on the supported objects
  */
 cps_api_return_code_t cps_api_commit(cps_api_transaction_params_t * param);
 
