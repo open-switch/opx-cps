@@ -92,6 +92,15 @@ cps_api_object_t cps_api_object_init(void *data, size_t bufflen);
  */
 cps_api_object_t cps_api_object_create_int(const char *desc,unsigned int line);
 
+/**
+ * Clone an object to another object
+ *
+ * @param dest the destination object
+ * @param src the source object
+ * @return true if the object has been cloned
+ */
+bool cps_api_object_clone(cps_api_object_t dest, cps_api_object_t src);
+
 
 /**
  * This API will delete the object and remove any corresponding attributes

@@ -33,7 +33,22 @@ static cps_api_return_code_t db_read_function (void * context, cps_api_get_param
 }
 
 static cps_api_return_code_t db_write_function(void * context, cps_api_transaction_params_t * param, size_t index_of_element_being_updated) {
+    cps_api_object_t obj = cps_api_object_list_get(param->list,index_of_element_being_updated);
+    STD_ASSERT(obj!=NULL);
 
+    cps_api_object_attr_t it = cps_api_object_attr_start(obj);
+
+    for ( ; it != CPS_API_ATTR_NULL ;
+            it = cps_api_object_attr_next(obj,it)) {
+        char buff[100];
+        printf("Set... Found attr %s \n",cps_api_object_attr_to_string(it,buff,sizeof(buff)));
+    }
+    cps_api_object_t old = cps_api_object_create();
+    if (!cps_api_object_clone(old,obj)) return cps_api_ret_code_ERR;
+    if (!cps_api_object_list_append(param->prev,old)) {
+        cps_api_object_delete(old);
+        return cps_api_ret_code_ERR;
+    }
     return cps_api_ret_code_OK;
 }
 
@@ -96,13 +111,52 @@ bool do_test_get(void) {
 
 bool test_set(void) {
     cps_api_transaction_params_t trans;
-    cps_api_transaction_init(&trans);
+    if (cps_api_transaction_init(&trans)!=cps_api_ret_code_OK) return false;
+
+    cps_api_get_params_t get_req;
+    if (cps_api_get_request_init(&get_req)!=cps_api_ret_code_OK) return false;
+    cps_api_key_t keys;
+
+    cps_api_key_init(&keys,1,cps_api_inst_TARGET,
+            cps_api_obj_cat_INTERFACE,1);
+
+    cps_api_key_set(&keys,CPS_OBJ_KEY_APP_INST_POS,0);
+    get_req.key_count = 1;
+    get_req.keys = &keys;
+
+    if (cps_api_get(&get_req)!=cps_api_ret_code_OK) return false;
+    cps_api_object_t obj;
+    bool create = false;
+    if (cps_api_object_list_size(get_req.list)>0) {
+        obj = cps_api_object_list_get(get_req.list,0);
+        STD_ASSERT(obj!=NULL);
+        cps_api_object_list_remove(get_req.list,0);
+    } else {
+        obj = cps_api_object_create();
+        uint32_t inst = cps_api_key_element_at(&keys,CPS_OBJ_KEY_APP_INST_POS);
+        cps_api_object_set_key(obj,&keys);
+        cps_api_object_attr_add(obj,0,"Interface",strlen("Interface"));
+        cps_api_object_attr_add(obj,1,"Interface",strlen("Interface"));
+        cps_api_object_attr_add_u64(obj,3,(uint64_t)inst);
+        create =true;
+    }
+    cps_api_get_request_close(&get_req);
+
+    if (!cps_api_object_attr_add(obj,6,"Cliff",6)) return false;
+
+    if (create) {
+        if (cps_api_create(&trans,obj)!=cps_api_ret_code_OK) return false;
+    } else {
+        if (cps_api_set(&trans,obj)!=cps_api_ret_code_OK) return false;
+    }
+    if (cps_api_commit(&trans)!=cps_api_ret_code_OK) return false;
     return true;
 }
 
 TEST(cps_api_object,ram_based) {
     ASSERT_TRUE(do_test_init());
     ASSERT_TRUE(do_test_get());
+    ASSERT_TRUE(test_set());
 }
 
 int main(int argc, char **argv) {

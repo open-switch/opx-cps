@@ -141,6 +141,18 @@ cps_api_object_t cps_api_object_create_int(const char *desc, unsigned int line) 
 
 }
 
+bool cps_api_object_clone(cps_api_object_t d, cps_api_object_t s) {
+    cps_api_object_internal_t *dest = (cps_api_object_internal_t*)d;
+    cps_api_object_internal_t *src = (cps_api_object_internal_t*)s;
+    size_t amt = obj_used_len(src);
+
+    if (dest->len < amt) {
+        if (obj_realloc(dest,src->len)==NULL) return false;
+    }
+    memcpy(dest->data,src->data,amt);
+    return true;
+}
+
 void cps_api_object_delete(cps_api_object_t o) {
     cps_api_object_internal_t *p = (cps_api_object_internal_t*)o;
     if(p->allocated==false) return;
