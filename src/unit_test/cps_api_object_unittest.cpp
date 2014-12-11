@@ -117,11 +117,17 @@ TEST(cps_api_object,ram_based) {
         switch (id) {
         case 0 : print_attr(it); break;
         case 1 : printf("Attr %d, val %d\n",(int)cps_api_object_attr_id(it),
-                (int)cps_api_object_attr_data_u16(it)); break;
+                (int)cps_api_object_attr_data_u16(it));
+            ASSERT_TRUE(cps_api_object_attr_data_u16(it)==16);
+            break;
         case 2 : printf("Attr %d, val %d\n",(int)cps_api_object_attr_id(it),
-                (int)cps_api_object_attr_data_u32(it)); break;
+                (int)cps_api_object_attr_data_u32(it));
+            ASSERT_TRUE(cps_api_object_attr_data_u32(it)==32);
+            break;
         case 3 : printf("Attr %d, val %d\n",(int)cps_api_object_attr_id(it),
-                (int)cps_api_object_attr_data_u64(it)); break;
+                (int)cps_api_object_attr_data_u64(it));
+            ASSERT_TRUE(cps_api_object_attr_data_u64(it)==64);
+            break;
         }
         cps_api_object_attr_delete(obj,cps_api_object_attr_id(it));
 
