@@ -1,11 +1,11 @@
 /*
- * filename: db_event_api.h
+ * filename: cps_api_event_api.h
  * (c) Copyright 2014 Dell Inc. All Rights Reserved.
  */
 
 /* OPENSOURCELICENSE */
-#ifndef __DS_EVENT_API_H
-#define __DS_EVENT_API_H
+#ifndef CPS_API_EVENT_API_H
+#define CPS_API_EVENT_API_H
 
 #include "cps_api_key.h"
 #include "cps_api_errors.h"
@@ -101,9 +101,7 @@ cps_api_return_code_t cps_api_event_publish(cps_api_event_service_handle_t handl
 
 /**
  * @brief allocate a message with the specified space
- * @param space the maximum size of data that will supported by this event.
- *  This cause a buffer with the space + header size to be allocated and therefore
- *  the maximum buffer space in the message is "space" length.
+ * @param space the buffer space to reserve for the event.
  * @return NULL on error otherwise a cps_api_event_header_t is returned along with the space appended
  *   for the client's use.  The max_data_len field is set appropriately by this API and MUST
  *   not be touched

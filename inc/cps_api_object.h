@@ -25,8 +25,12 @@ extern "C" {
 /** @defgroup CPSAPI The CPS API
  *
       This file consists of the utilities to create, and manage an object or list of
-    objects.  Each object contains a key and attributes.  Each attribute contains an attribute
-    id, attribute type and data.  The data can be either u16, u32, u64 or binary.
+    objects.
+
+    An object list contains a 0 or more objects
+
+    An object contains a key and attributes.
+       Each attribute contains an attribute id and a value.  The data can be either u16, u32, u64 or binary.
 @{
 */
 

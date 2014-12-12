@@ -99,10 +99,10 @@ static cps_api_event_methods_reg_t functions = {
 };
 
 
-t_std_error ds_event_service_init(void) {
+cps_api_return_code_t cps_api_event_channel_init(void) {
     if (std_event_server_init(&_handle,HAL_EVENT_SERVICE_PATH)==STD_ERR_OK) {
         cps_api_event_method_register(&functions);
-        return STD_ERR_OK;
+        return cps_api_ret_code_OK;
     }
-    return STD_ERR(COM,FAIL,0);
+    return cps_api_ret_code_ERR;
 }

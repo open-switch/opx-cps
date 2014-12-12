@@ -1,11 +1,11 @@
 /*
- * filename: ds_event_channel.h
+ * filename: cps_api_event_channel.h
  * (c) Copyright 2014 Dell Inc. All Rights Reserved.
  */
 
 /** OPENSOURCELICENSE */
 /*
- * db_event_channel.h
+ * cps_api_event_channel.h
  *
  */
 #ifndef _DS_EVENT_CHANNEL_H_
@@ -97,7 +97,7 @@ typedef struct {
  *        based on the failure.
  *
  */
-cps_api_return_code_t db_event_channel_init(void);
+cps_api_return_code_t cps_api_event_channel_init(void);
 
 /**
  * Register the methods to be used with the CPS API
@@ -113,4 +113,4 @@ cps_api_return_code_t cps_api_event_method_register( cps_api_event_methods_reg_t
  * @}
  */
 
-#endif /* DB_EVENT_CHANNEL_H_ */
+#endif /* CPS_API_EVENT_CHANNEL_H_ */
