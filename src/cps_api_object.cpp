@@ -228,7 +228,7 @@ bool cps_api_object_attr_add(cps_api_object_t o, cps_api_attr_id_t id,const void
     return add_attribute((cps_api_object_internal_t*)o, id, len, data);
 }
 
-cps_api_object_attr_t cps_api_object_attr_start(cps_api_object_t obj) {
+cps_api_object_attr_t cps_api_object_attr_first(cps_api_object_t obj) {
     void * ptr = (cps_api_object_attr_t)obj_data((cps_api_object_internal_t*)obj);
     return std_tlv_valid(ptr,obj_used_len((cps_api_object_internal_t*)obj)) ? ptr : NULL;
 }

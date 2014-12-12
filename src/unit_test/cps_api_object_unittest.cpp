@@ -40,12 +40,12 @@ cps_api_object_t create_list() {
         cps_api_object_attr_add(obj, ix + (tm & 0xf) , (void*)"cliff", 6);
     }
 
-    cps_api_object_attr_t it = cps_api_object_attr_start(obj);
+    cps_api_object_attr_t it = cps_api_object_attr_first(obj);
 
     while (it != CPS_API_ATTR_NULL) {
         if (std_tlv_tag(it) & 1) {
             cps_api_object_attr_delete(obj, std_tlv_tag(it));
-            it = cps_api_object_attr_start(obj);
+            it = cps_api_object_attr_first(obj);
         }
         it = cps_api_object_attr_next(obj, it);
     }
@@ -54,7 +54,7 @@ cps_api_object_t create_list() {
 }
 
 void print_obj(cps_api_object_t obj) {
-    cps_api_object_attr_t it = cps_api_object_attr_start(obj);
+    cps_api_object_attr_t it = cps_api_object_attr_first(obj);
 
     while (it != CPS_API_ATTR_NULL) {
         print_attr(it);
@@ -110,7 +110,7 @@ TEST(cps_api_object,ram_based) {
     ASSERT_TRUE(cps_api_object_attr_add_u32(obj,2,32));
     ASSERT_TRUE(cps_api_object_attr_add_u64(obj,3,64));
 
-    cps_api_object_attr_t it = cps_api_object_attr_start(obj);
+    cps_api_object_attr_t it = cps_api_object_attr_first(obj);
 
     for ( ; it != CPS_API_ATTR_NULL ; ) {
         int id = (int) cps_api_object_attr_id(it);
@@ -131,7 +131,7 @@ TEST(cps_api_object,ram_based) {
         }
         cps_api_object_attr_delete(obj,cps_api_object_attr_id(it));
 
-        it = cps_api_object_attr_start(obj);
+        it = cps_api_object_attr_first(obj);
     }
 }
 

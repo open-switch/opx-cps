@@ -36,7 +36,7 @@ static cps_api_return_code_t db_write_function(void * context, cps_api_transacti
     cps_api_object_t obj = cps_api_object_list_get(param->list,index_of_element_being_updated);
     STD_ASSERT(obj!=NULL);
 
-    cps_api_object_attr_t it = cps_api_object_attr_start(obj);
+    cps_api_object_attr_t it = cps_api_object_attr_first(obj);
 
     for ( ; it != CPS_API_ATTR_NULL ;
             it = cps_api_object_attr_next(obj,it)) {
@@ -97,7 +97,7 @@ bool do_test_get(void) {
     size_t ix = 0;
     for ( ; ix < len ; ++ix ) {
         cps_api_object_t obj =cps_api_object_list_get(get_req.list,ix);
-        cps_api_object_attr_t it = cps_api_object_attr_start(obj);
+        cps_api_object_attr_t it = cps_api_object_attr_first(obj);
 
         for ( ; it != CPS_API_ATTR_NULL ;
                 it = cps_api_object_attr_next(obj,it)) {

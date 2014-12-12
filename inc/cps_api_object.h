@@ -189,7 +189,7 @@ bool cps_api_object_attr_add_u64(cps_api_object_t obj, cps_api_attr_id_t id,uint
  @param obj the object in question
  @return the first attribute in the object or CPS_API_ATTR_NULL if there are no objects
  */
-cps_api_object_attr_t cps_api_object_attr_start(cps_api_object_t obj);
+cps_api_object_attr_t cps_api_object_attr_first(cps_api_object_t obj);
 
 /**
  * Get the next attribute or CPS_API_ATTR_NULL if there are no more attributes
