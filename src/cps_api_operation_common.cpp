@@ -18,6 +18,8 @@
 #include <algorithm>
 #include <vector>
 #include <string.h>
+#include <stdarg.h>
+
 
 typedef std::vector<cps_api_registration_functions_t> reg_functions_t;
 
@@ -50,30 +52,42 @@ static void db_operation_init() {
 
 extern "C" {
 
-void cps_api_key_init(cps_api_key_t * key, size_t len_of_inst_comps,
-        cps_api_instance_t inst,
+void cps_api_key_init(cps_api_key_t * key,
+        cps_api_qualifier_t qual,
         cps_api_object_category_types_t cat,
-        cps_api_object_subcategory_types_t subcat) {
+        cps_api_object_subcategory_types_t subcat, size_t number_of_inst, ...) {
+
+    va_list v;
 
     cps_api_key_set_attr(key,0);
     size_t key_len = 0;
 
-    if (inst!=0) {
-        cps_api_key_set(key,CPS_OBJ_KEY_INST_POS,inst);
+    if (qual!=0) {
+        cps_api_key_set(key,CPS_OBJ_KEY_INST_POS,qual);
         ++key_len;
     }
 
-    if ((key_len > 0) && cat!=0) {
+    if ((key_len > CPS_OBJ_KEY_INST_POS) && cat!=0) {
         cps_api_key_set(key,CPS_OBJ_KEY_CAT_POS,cat);
         ++key_len;
     }
-    if ((key_len > 0) && subcat!=0) {
+    if ((key_len > CPS_OBJ_KEY_CAT_POS) && subcat!=0) {
         cps_api_key_set(key,CPS_OBJ_KEY_SUBCAT_POS,subcat);
         ++key_len;
     }
-    if (key_len == CPS_OBJ_KEY_APP_INST_POS) {
-        key_len += len_of_inst_comps;
+    if (key_len >CPS_OBJ_KEY_SUBCAT_POS) {
+        size_t ix = 0;
+        size_t mx = number_of_inst;
+        va_start(v,number_of_inst);
+        for ( ; ix < mx ; ++ix ) {
+            int val = va_arg(v,int);
+
+            cps_api_key_set(key,CPS_OBJ_KEY_APP_INST_POS+ix,val);
+            ++key_len;
+        }
+        va_end(v);
     }
+
     cps_api_key_set_len(key,key_len);
 }
 
@@ -127,7 +141,7 @@ cps_api_return_code_t cps_api_commit(cps_api_transaction_params_t * param) {
         }
     }
     if (rc!=cps_api_ret_code_OK) {
-        for ( ; ix < mx ; ++ix ) {
+        for (ix = 0 ; ix < mx ; ++ix ) {
             cps_api_object_t l = cps_api_object_list_get(param->prev,ix);
 
             size_t func_ix = 0;
@@ -138,7 +152,9 @@ cps_api_return_code_t cps_api_commit(cps_api_transaction_params_t * param) {
                         (cps_api_key_matches(cps_api_object_key(l),
                         &p->key,false)==0)) {
                     rc = p->_rollback_function(p->context,param,ix);
-                    if (rc!=cps_api_ret_code_OK) break;
+                    if (rc!=cps_api_ret_code_OK) {
+                        //XXX log
+                    }
                 }
             }
         }

@@ -31,6 +31,11 @@ extern "C" {
 
     An object contains a key and attributes.
        Each attribute contains an attribute id and a value.  The data can be either u16, u32, u64 or binary.
+
+    An object currently can only be part of one object list. There is no reference count within the object.
+    The object itself is not locking, so multi-threading issues must be handled by the
+    calling applications.
+
 @{
 */
 

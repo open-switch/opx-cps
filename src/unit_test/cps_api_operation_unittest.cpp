@@ -49,6 +49,8 @@ static cps_api_return_code_t db_write_function(void * context, cps_api_transacti
         cps_api_object_delete(old);
         return cps_api_ret_code_ERR;
     }
+    if (index_of_element_being_updated > 0) return cps_api_ret_code_ERR;
+
     return cps_api_ret_code_OK;
 }
 
@@ -65,8 +67,8 @@ bool do_test_init(void) {
     funcs._write_function = db_write_function;
     funcs._rollback_function = db_rollback_function;
 
-    cps_api_key_init(&funcs.key,0,cps_api_inst_TARGET,
-            cps_api_obj_cat_INTERFACE,0);
+    cps_api_key_init(&funcs.key,cps_api_qualifier_TARGET,
+            cps_api_obj_cat_INTERFACE,0,0);
 
     return (cps_api_register(&funcs)==cps_api_ret_code_OK);
 }
@@ -75,15 +77,21 @@ bool do_test_get(void) {
     cps_api_get_params_t get_req;
     if (cps_api_get_request_init(&get_req)!=cps_api_ret_code_OK) return false;
     cps_api_key_t keys[3];
+    char buff[1024];
 
-    cps_api_key_init(&keys[0],1,cps_api_inst_TARGET,
-            cps_api_obj_cat_INTERFACE,1);
+    cps_api_key_init(&keys[0],cps_api_qualifier_TARGET,
+            cps_api_obj_cat_INTERFACE,1,1,1);
 
-    cps_api_key_init(&keys[1],1,cps_api_inst_TARGET,
-            cps_api_obj_cat_INTERFACE,1);
+    printf("Key - %s\n",cps_api_key_print(&keys[0],buff,sizeof(buff)));
 
-    cps_api_key_init(&keys[2],1,cps_api_inst_TARGET,
-            cps_api_obj_cat_INTERFACE,1);
+
+    cps_api_key_init(&keys[1],cps_api_qualifier_TARGET,
+            cps_api_obj_cat_INTERFACE,1,1,1);
+    printf("Key - %s\n",cps_api_key_print(&keys[1],buff,sizeof(buff)));
+
+    cps_api_key_init(&keys[2],cps_api_qualifier_TARGET,
+            cps_api_obj_cat_INTERFACE,1,1,1);
+    printf("Key - %s\n",cps_api_key_print(&keys[2],buff,sizeof(buff)));
 
     cps_api_key_set(&keys[0],CPS_OBJ_KEY_APP_INST_POS,0);
     cps_api_key_set(&keys[1],CPS_OBJ_KEY_APP_INST_POS,1);
@@ -117,8 +125,8 @@ bool test_set(void) {
     if (cps_api_get_request_init(&get_req)!=cps_api_ret_code_OK) return false;
     cps_api_key_t keys;
 
-    cps_api_key_init(&keys,1,cps_api_inst_TARGET,
-            cps_api_obj_cat_INTERFACE,1);
+    cps_api_key_init(&keys,cps_api_qualifier_TARGET,
+            cps_api_obj_cat_INTERFACE,1,1,1);
 
     cps_api_key_set(&keys,CPS_OBJ_KEY_APP_INST_POS,0);
     get_req.key_count = 1;
@@ -149,6 +157,13 @@ bool test_set(void) {
     } else {
         if (cps_api_set(&trans,obj)!=cps_api_ret_code_OK) return false;
     }
+
+    if (create) {
+        if (cps_api_create(&trans,obj)!=cps_api_ret_code_OK) return false;
+    } else {
+        if (cps_api_set(&trans,obj)!=cps_api_ret_code_OK) return false;
+    }
+
     if (cps_api_commit(&trans)!=cps_api_ret_code_OK) return false;
     return true;
 }

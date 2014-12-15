@@ -12,6 +12,13 @@
 #include "ds_common_types.h"
 #include <stdint.h>
 
+/** @defgroup CPSAPI The CPS API
+ * This file describes all of the categories that are available.
+ * This file also has the general definition for all sub-categories which must fit into
+ * a uint32_t cps_api_object_subcategory_types_t
+@{
+*/
+
 /**
  * The object categories
  */
@@ -27,5 +34,7 @@ typedef enum {
 
 typedef uint32_t cps_api_object_subcategory_types_t;
 
-
+/**
+ * @}
+ */
 #endif /* cps_api_objECT_CATEGORY_H_ */
