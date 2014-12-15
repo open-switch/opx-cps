@@ -42,9 +42,8 @@ static cps_api_object_internal_t * obj_realloc(cps_api_object_internal_t *cur, s
 }
 
 static cps_api_object_internal_t * obj_alloc(size_t  len) {
-    cps_api_object_internal_t *p = (cps_api_object_internal_t*)malloc(sizeof(cps_api_object_internal_t));
+    cps_api_object_internal_t *p = (cps_api_object_internal_t*)calloc(1,sizeof(cps_api_object_internal_t));
     if (p == NULL) return NULL;
-    memset(p, 0, sizeof(*p));
     p->data = (cps_api_object_data_t*)calloc(1, sizeof(cps_api_object_data_t) + len);
     if (p->data == NULL) {
         free(p);
