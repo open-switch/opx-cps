@@ -86,16 +86,14 @@ bool do_test_get(void) {
 
 
     cps_api_key_init(&keys[1],cps_api_qualifier_TARGET,
-            cps_api_obj_cat_INTERFACE,1,1,1);
+            cps_api_obj_cat_INTERFACE,1,1,2);
     printf("Key - %s\n",cps_api_key_print(&keys[1],buff,sizeof(buff)));
 
     cps_api_key_init(&keys[2],cps_api_qualifier_TARGET,
-            cps_api_obj_cat_INTERFACE,1,1,1);
+            cps_api_obj_cat_INTERFACE,1,1,3);
     printf("Key - %s\n",cps_api_key_print(&keys[2],buff,sizeof(buff)));
 
-    cps_api_key_set(&keys[0],CPS_OBJ_KEY_APP_INST_POS,0);
-    cps_api_key_set(&keys[1],CPS_OBJ_KEY_APP_INST_POS,1);
-    cps_api_key_set(&keys[2],CPS_OBJ_KEY_APP_INST_POS,2);
+
     get_req.key_count = sizeof(keys)/sizeof(*keys);
     get_req.keys = keys;
 
