@@ -1,13 +1,10 @@
 /**
- * filename: db_operation_common.cpp
+ * filename: cps_api_operation_common.cpp
  * (c) Copyright 2014 Dell Inc. All Rights Reserved.
  **/
 
-/** OPENSOURCELICENSE */
+/* OPENSOURCELICENSE */
 
-/*
- * db_operation_common.cpp
- */
 
 #include "cps_api_operation.h"
 #include "std_mutex_lock.h"
@@ -125,9 +122,9 @@ cps_api_return_code_t cps_api_commit(cps_api_transaction_params_t * param) {
     cps_api_return_code_t rc =cps_api_ret_code_OK;
 
     size_t ix = 0;
-    size_t mx = cps_api_object_list_size(param->list);
+    size_t mx = cps_api_object_list_size(param->change_list);
     for ( ; ix < mx ; ++ix ) {
-        cps_api_object_t l = cps_api_object_list_get(param->list,ix);
+        cps_api_object_t l = cps_api_object_list_get(param->change_list,ix);
 
         size_t func_ix = 0;
         size_t func_mx = db_functions.size();
@@ -173,31 +170,34 @@ cps_api_return_code_t cps_api_get_request_init(cps_api_get_params_t *req) {
 
 cps_api_return_code_t cps_api_get_request_close(cps_api_get_params_t *req) {
     if (req->list!=NULL) cps_api_object_list_destroy(req->list,true);
+    req->list = NULL;
     return cps_api_ret_code_OK;
 }
 
 cps_api_return_code_t cps_api_transaction_init(cps_api_transaction_params_t *req) {
     memset(req,0,sizeof(*req));
-    req->list = cps_api_object_list_create();
-    if (req->list==NULL) return cps_api_ret_code_ERR;
+    req->change_list = cps_api_object_list_create();
+    if (req->change_list==NULL) return cps_api_ret_code_ERR;
 
     req->prev = cps_api_object_list_create();
     if (req->prev==NULL) {
-        cps_api_object_list_destroy(req->list,true);
+        cps_api_object_list_destroy(req->change_list,true);
         return cps_api_ret_code_ERR;
     }
     return cps_api_ret_code_OK;
 }
 
 cps_api_return_code_t cps_api_transaction_close(cps_api_transaction_params_t *req) {
-    if (req->list!=NULL) cps_api_object_list_destroy(req->list,true);
+    if (req->change_list!=NULL) cps_api_object_list_destroy(req->change_list,true);
     if (req->prev!=NULL) cps_api_object_list_destroy(req->prev,true);
+    req->change_list = NULL;
+    req->prev = NULL;
     return cps_api_ret_code_OK;
 }
 
 static cps_api_return_code_t ds_tran_op_append(cps_api_transaction_params_t * param,
         cps_api_object_t object) {
-    if (!cps_api_object_list_append(param->list,object)) {
+    if (!cps_api_object_list_append(param->change_list,object)) {
         return cps_api_ret_code_ERR;
     }
     return cps_api_ret_code_OK;
