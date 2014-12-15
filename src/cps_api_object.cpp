@@ -153,6 +153,25 @@ bool cps_api_object_clone(cps_api_object_t d, cps_api_object_t s) {
     return true;
 }
 
+bool cps_api_object_reserve(cps_api_object_t obj, size_t amount_of_space_to_reserve) {
+    return obj_realloc((cps_api_object_internal_t *)obj,amount_of_space_to_reserve)!=NULL;
+}
+size_t cps_api_object_get_reserve_len(cps_api_object_t obj) {
+    return ((cps_api_object_internal_t *)obj)->len;
+}
+
+bool cps_api_object_received(cps_api_object_t obj, size_t size_of_object_received) {
+    cps_api_object_internal_t *o = (cps_api_object_internal_t*)obj;
+    if (o->len < size_of_object_received) return false;
+    if (size_of_object_received < sizeof(*o->data)) return false;
+
+    //TODO could walk through the list of newly created TLVs and validate each one
+    //but that is probably not necessary at this time.
+    return true;
+}
+
+
+
 void cps_api_object_delete(cps_api_object_t o) {
     cps_api_object_internal_t *p = (cps_api_object_internal_t*)o;
     if(p->allocated==false) return;

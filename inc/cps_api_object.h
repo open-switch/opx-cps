@@ -281,6 +281,33 @@ size_t cps_api_object_to_array_len(cps_api_object_t obj) ;
 void * cps_api_object_array(cps_api_object_t obj);
 
 /**
+ * Reserve space in the object to receive a future object.
+ * Can be read directly into the object array.
+ * @param obj to reserve space on.
+ * @param amount_of_space_to_reserve is the size of buffer needed within the object
+ * @return true if could reserve the space
+ */
+bool cps_api_object_reserve(cps_api_object_t obj, size_t amount_of_space_to_reserve);
+
+/**
+ * Query the object to determine how much space it has reserved.
+ * @param obj to reserve space on.
+ * @return total capacity of the object in bytes
+ */
+size_t cps_api_object_get_reserve_len(cps_api_object_t obj);
+
+/**
+ * Indicate to the object that it has recieved new contents due reading data from disk or
+ * from reseved ram, etc..  Need to pass the amount of data received.  The object will
+ * return true if the newly updated object is valid.
+ *
+ * @param obj that was updated
+ * @param size_of_object_received the amount of space used in the object
+ * @return true if the object is still valid
+ */
+bool cps_api_object_received(cps_api_object_t obj, size_t size_of_object_received);
+
+/**
  * This API will convert the array back to an object.  The object must be created before
  * calling this API (therefore the obj must not be NULL).
  * @param data the data to convert to an object.

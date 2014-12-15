@@ -12,7 +12,7 @@
 #define _DS_EVENT_CHANNEL_H_
 
 #include "cps_api_errors.h"
-#include "cps_api_key.h"
+#include "cps_api_object.h"
 
 #include "cps_api_events.h"
 
@@ -41,7 +41,7 @@ typedef cps_api_return_code_t (*cps_api_event_service_client_connect_t)(cps_api_
  * @param reg the registration message
  * @return cps_api_ret_code_OK if the API completes successfully otherwise an error.
  */
-typedef cps_api_return_code_t (*cps_api_event_service_event_register_t)(cps_api_event_service_handle_t *handle,
+typedef cps_api_return_code_t (*cps_api_event_service_event_register_t)(cps_api_event_service_handle_t handle,
         cps_api_event_reg_t * req);
 
 /**
@@ -51,7 +51,7 @@ typedef cps_api_return_code_t (*cps_api_event_service_event_register_t)(cps_api_
  * @return cps_api_ret_code_OK if the publish was successful
  */
 typedef cps_api_return_code_t (*cps_api_event_service_publish_event_t)(cps_api_event_service_handle_t handle,
-        cps_api_event_header_t *msg);
+        cps_api_object_t msg);
 
 /**
  * Deregister with the event service and therefore remove any registration requests
@@ -72,7 +72,7 @@ typedef cps_api_return_code_t (*cps_api_event_service_client_disconnect_t)(cps_a
  *   or a specific return code indicating a failure or retry request is requrired
  */
 typedef cps_api_return_code_t (*cps_api_wait_for_event_t)(cps_api_event_service_handle_t handle,
-        cps_api_event_header_t *msg);
+        cps_api_object_t msg);
 
 
 /**

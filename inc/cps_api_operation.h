@@ -26,20 +26,20 @@ extern "C" {
 */
 
 /**
- * These are the database qualifiers.
+ * These are the qualifiers for the CPS objects.
  * There are four qualifiers at this time.  Proposed, Target, Observed and Realtime.
  *
- * An applicaiton will propose a change and therefore the qualifier will be propsed when they
+ * An application will propose a change and therefore the qualifier will be proposed when they
  * attempt an operation on a object.
  *
  * If the owner of the object approves of the request, the request is converted to a target
- * state.  It is expected that the owner of the object will send out a target change notificaiton
+ * state.  It is expected that the owner of the object will send out a target change notification
  *
  * The observed state what is being used at runtime.  For a situation where the object owner
  * has to perform some complicated operation on hardware/software before the target state
  * is reached, there may be a time where the target and observed contain different objects.
  *
- * The realtime qualifier is a request to go directly to hardware for an instantanious reading
+ * The realtime qualifier is a request to go directly to hardware for an instantaneous reading
  * This is only used for statistics at this time.
  */
 typedef enum {
@@ -55,7 +55,7 @@ typedef enum {
  * CPS API Key related indexes.
  *
  * All objects have a key consisting of the following pieces.
- *     - Qualifier (described above)
+ *  - Qualifier (described above)
  *  - Object category
  *  - Object sub-category
  *  - one or more uint32_t which contains instance IDs for the object

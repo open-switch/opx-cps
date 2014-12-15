@@ -7,8 +7,9 @@
 #ifndef CPS_API_EVENT_API_H
 #define CPS_API_EVENT_API_H
 
-#include "cps_api_key.h"
 #include "cps_api_errors.h"
+
+#include "cps_api_object.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,21 +31,6 @@ typedef void * cps_api_event_service_handle_t;
  */
 typedef unsigned int cps_api_event_reg_prio_t;
 
-/**
- * The message structure sent and received by the API.  The data, will be appended
- * to the message itself.  Use the macros to define a message or allocate one with
- * the API provided.  Use the set data API to fill up the data
- */
-typedef struct {
-    cps_api_key_t key;
-    unsigned int data_len;/** the length of the data */
-    unsigned int max_data_len; /**the max buffer space contained by data */
-} cps_api_event_header_t;
-
-//Optionally pad the structure so that it always starts on a 4 byte boundary
-static inline uint8_t * cps_api_event_msg_data(cps_api_event_header_t *p) {
-    return ((uint8_t*)p) + sizeof(*p);
-}
 
 /**
  * This is the event API registration structure that provides a priority for the
@@ -87,40 +73,27 @@ cps_api_return_code_t cps_api_event_client_disconnect(cps_api_event_service_hand
  * @param req the registration request
  * @return cps_api_ret_code_OK if success otherwise a failure
  */
-cps_api_return_code_t cps_api_event_client_register(cps_api_event_service_handle_t *handle,
+cps_api_return_code_t cps_api_event_client_register(cps_api_event_service_handle_t handle,
         cps_api_event_reg_t * req);
 
 /**
- * Send an event to the event service for publishing using a previously registered handle
- * @param handle the handle to the hal event service
- * @param evt the event to send
+ * Send an object to the event service for publishing using a previously registered handle
+ * @param handle the handle to the CPS event service
+ * @param object the object to send
  * @return standard return code
  */
 cps_api_return_code_t cps_api_event_publish(cps_api_event_service_handle_t handle,
-        cps_api_event_header_t *evt);
+        cps_api_object_t object);
 
 /**
- * @brief allocate a message with the specified space
- * @param space the buffer space to reserve for the event.
- * @return NULL on error otherwise a cps_api_event_header_t is returned along with the space appended
- *   for the client's use.  The max_data_len field is set appropriately by this API and MUST
- *   not be touched
+ * wait for a object from the event service
+ * @param handle opened from a previous client registration
+ * @param object the to object to receive.
+ * @return cps_api_ret_code_OK if the wait was completed with an event returned
+ *   or a specific return code indicating a failure or retry request is required
  */
-cps_api_event_header_t * cps_api_event_allocate(unsigned int space);
-
-/**
- * @brief Free the message that was allocated with the cps_api_event_allocate. This will be both
- * the event and the data.
- *
- * @param evt a pointer to the event header and corresponding data to be freed
- */
-void cps_api_event_free(cps_api_event_header_t *evt);
-
-/**
- * A debug API for converting the out the contents of a event to a string (header only)
- * @param evt to convert to string
- */
-const char * cps_api_event_print(cps_api_event_header_t *evt, char *buff,size_t len);
+cps_api_return_code_t cps_api_wait_for_event(cps_api_event_service_handle_t handle,
+        cps_api_object_t object);
 
 
 #ifdef __cplusplus

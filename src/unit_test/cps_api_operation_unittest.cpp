@@ -33,7 +33,7 @@ static cps_api_return_code_t db_read_function (void * context, cps_api_get_param
 }
 
 static cps_api_return_code_t db_write_function(void * context, cps_api_transaction_params_t * param, size_t index_of_element_being_updated) {
-    cps_api_object_t obj = cps_api_object_list_get(param->list,index_of_element_being_updated);
+    cps_api_object_t obj = cps_api_object_list_get(param->change_list,index_of_element_being_updated);
     STD_ASSERT(obj!=NULL);
 
     cps_api_object_attr_t it = cps_api_object_attr_first(obj);

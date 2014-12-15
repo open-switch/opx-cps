@@ -27,7 +27,7 @@ static cps_api_return_code_t _cps_api_event_service_client_connect(cps_api_event
             cps_api_ret_code_OK : cps_api_ret_code_ERR;
 }
 
-static cps_api_return_code_t _cps_api_event_service_client_register(cps_api_event_service_handle_t *handle,
+static cps_api_return_code_t _cps_api_event_service_client_register(cps_api_event_service_handle_t handle,
         cps_api_event_reg_t * req) {
     size_t ix = 0;
     size_t mx = req->number_of_objects;
@@ -35,7 +35,7 @@ static cps_api_return_code_t _cps_api_event_service_client_register(cps_api_even
     std_event_srv_reg_msg_t m;
     memset(&m,0,sizeof(m));
     for ( ; ix < mx ; ++ix ) {
-        if (!cps_api_key_valid_offset(&req->objects[ix],CPS_OBJ_KEY_SUBCAT_POS)) {
+        if (!cps_api_key_valid_offset(&req->objects[ix],CPS_OBJ_KEY_CAT_POS)) {
             return cps_api_ret_code_ERR;
         }
         std_event_enable_class(&m.classes,
@@ -48,16 +48,16 @@ static cps_api_return_code_t _cps_api_event_service_client_register(cps_api_even
 }
 
 static cps_api_return_code_t _cps_api_event_service_publish_msg(cps_api_event_service_handle_t handle,
-        cps_api_event_header_t *msg) {
+        cps_api_object_t msg) {
     std_event_msg_t m;
-    if (!cps_api_key_valid_offset(&msg->key,CPS_OBJ_KEY_SUBCAT_POS)) {
+    if (!cps_api_key_valid_offset(cps_api_object_key(msg),CPS_OBJ_KEY_SUBCAT_POS)) {
         return cps_api_ret_code_ERR;
     }
 
-    m.event_class = cps_api_key_element_at(&msg->key,CPS_OBJ_KEY_CAT_POS);
-    m.sub_class = cps_api_key_element_at(&msg->key,CPS_OBJ_KEY_SUBCAT_POS);
-    m.data_len = msg->data_len + sizeof(*msg);
-    m.data = msg;
+    m.event_class = cps_api_key_element_at(cps_api_object_key(msg),CPS_OBJ_KEY_CAT_POS);
+    m.sub_class = cps_api_key_element_at(cps_api_object_key(msg),CPS_OBJ_KEY_SUBCAT_POS);
+    m.data_len = cps_api_object_to_array_len(msg);
+    m.data = cps_api_object_array(msg);
     return std_client_publish_msg(handle_to_std_handle(handle),&m) == STD_ERR_OK ?
             cps_api_ret_code_OK : cps_api_ret_code_ERR;
 }
@@ -67,25 +67,19 @@ static cps_api_return_code_t _cps_api_event_service_client_deregister(cps_api_ev
 }
 
 static cps_api_return_code_t _cps_api_wait_for_event(cps_api_event_service_handle_t handle,
-        cps_api_event_header_t *msg) {
+        cps_api_object_t msg) {
 
-    std_event_msg_t *std_msg = std_client_allocate_msg(msg->max_data_len+sizeof(std_event_msg_t));
-    if (std_msg==NULL) return cps_api_ret_code_ERR;
-
-    t_std_error rc = std_client_wait_for_event(handle_to_std_handle(handle),std_msg);
-    if (rc==STD_ERR_OK && std_msg->data_len > sizeof(cps_api_event_header_t)) {
-        cps_api_event_header_t *p = (cps_api_event_header_t*)std_msg->data;
-        cps_api_key_copy(&msg->key,&p->key);
-        if (p->data_len > msg->max_data_len) {
-            rc = STD_ERR(COM,TOOBIG,0);
-        } else {
-            msg->data_len = p->data_len;
-            memcpy(cps_api_event_msg_data(msg),cps_api_event_msg_data(p),
-                    p->data_len);
+    std_event_msg_t m;
+    m.max_data_len = cps_api_object_get_reserve_len(msg);
+    m.data = cps_api_object_array(msg);
+    cps_api_return_code_t cps_rc = cps_api_ret_code_ERR;
+    t_std_error rc = std_client_wait_for_event(handle_to_std_handle(handle),&m);
+    if (rc==STD_ERR_OK) {
+        if (cps_api_object_received(msg,m.data_len)) {
+            cps_rc = cps_api_ret_code_OK;
         }
     }
-    std_client_free_msg(std_msg);
-    return rc;
+    return cps_rc;
 }
 
 
@@ -99,7 +93,7 @@ static cps_api_event_methods_reg_t functions = {
 };
 
 
-cps_api_return_code_t cps_api_event_channel_init(void) {
+cps_api_return_code_t cps_api_event_service_init(void) {
     if (std_event_server_init(&_handle,HAL_EVENT_SERVICE_PATH)==STD_ERR_OK) {
         cps_api_event_method_register(&functions);
         return cps_api_ret_code_OK;
