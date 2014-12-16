@@ -136,6 +136,7 @@ cps_api_return_code_t cps_api_commit(cps_api_transaction_params_t * param) {
                 if (rc!=cps_api_ret_code_OK) break;
             }
         }
+        if (rc!=cps_api_ret_code_OK) break;
     }
     if (rc!=cps_api_ret_code_OK) {
         for (ix = 0 ; ix < mx ; ++ix ) {

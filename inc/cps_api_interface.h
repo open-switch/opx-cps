@@ -52,48 +52,7 @@ static inline void cps_api_int_if_key_create(
                 vrf, ifix);
 }
 
-/**
- * The type of key to use
- */
-typedef enum {
-    db_interface_key_IFNAME,//!< db_interface_key_IFNAME
-    db_interface_key_INDEX, //!< db_interface_key_INDEX
-} db_interface_key_type_t;
-
-/**
- * This is a key structure
- */
-typedef struct {
-    db_interface_key_type_t key;
-    unsigned int vrfid;
-    union {
-        hal_ifindex_t ifindex;
-        char if_name[HAL_IF_NAME_SZ+1];
-    } un;
-}db_interface_key_t;
-
-/**
- * The data type used to set either the mac address or admin state specifically instead of the full
- * object
- */
-typedef struct {
-    db_interface_key_t key;
-    union {
-        hal_mac_addr_t mac;
-        db_interface_state_t astate;
-    }un;
-} db_if_set_request_t;
-
-/**
- * A few wrappers to create common IF object IDs
- */
-#define DB_OBJ_IF_RECORD (DB_OBJ_MAKE(cps_api_obj_cat_INTERFACE,cps_api_int_obj_IF_OBJ))
-#define DB_OBJ_IF_MAC (DB_OBJ_MAKE(cps_api_obj_cat_INTERFACE,cps_api_int_obj_MAC))
-#define DB_OBJ_IF_ASTATE (DB_OBJ_MAKE(cps_api_obj_cat_INTERFACE,cps_api_int_obj_IF_ASTATE))
-
-#define DB_OBJ_IF_RECORD_KEY DB_OBJ_MAKE(cps_api_obj_cat_KEY,cps_api_obj_cat_INTERFACE)
-#define DB_OBJ_IF_RECORD_IFNAME_KEY DB_OBJ_MAKE(cps_api_obj_cat_KEY,cps_api_interface_key_IFNAME)
-
+#define CPS_API_INT_IF_OBJ_KEY_IFIX (CPS_OBJ_KEY_APP_INST_POS+1)
 
 /**
  * Copy an interface name from in to out.  Handles non-terminated strings

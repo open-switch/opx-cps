@@ -149,7 +149,7 @@ bool cps_api_object_clone(cps_api_object_t d, cps_api_object_t s) {
     if (dest->len < amt) {
         if (obj_realloc(dest,src->len)==NULL) return false;
     }
-    memcpy(dest->data,src->data,amt);
+    memcpy(dest->data,src->data,amt+sizeof(cps_api_object_data_t));
     dest->remain = dest->len - amt;
     return true;
 }

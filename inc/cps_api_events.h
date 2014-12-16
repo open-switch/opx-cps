@@ -120,7 +120,8 @@ cps_api_return_code_t cps_api_event_thread_init(void);
 /**
  * Register for an event and a callback function that will be executed when
  * an event arrives
- * @param key the key for which the event must have
+ * @param reg is the structure that contains the keys and priority of the event
+ *     registration
  * @param cb the callback function
  * @param context the context passed to the callback
  * @return cps_api_ret_code_OK if successful

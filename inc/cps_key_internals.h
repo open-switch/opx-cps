@@ -10,7 +10,7 @@
 #include <stdint.h>
 #include "endian.h"
 
-/** @defgroup CPSAPI_Internal The CPS API
+/** @defgroup CPSAPI_Internal The CPS API Internal API
  *@warning this is an internal file.  Don't use the APIs directly.
  * this file is for internal manipulation of the key and the definition of the key
  * itself.
