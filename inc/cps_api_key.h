@@ -126,7 +126,7 @@ static inline uint32_t cps_api_key_element_at(cps_api_key_t *elem, uint32_t offs
  * @param dest the destination where to copy the key to
  * @param src of where to copy the key from
  */
-static inline void cps_api_key_copy(cps_api_key_t *dest, const cps_api_key_t *src) {
+static inline void cps_api_key_copy(cps_api_key_t *dest, cps_api_key_t *src) {
     size_t len = cps_api_key_get_len_in_bytes(src) + CPS_OBJ_KEY_HEADER_SIZE;
     memcpy(dest,src,len);
 }
@@ -146,7 +146,7 @@ static inline void cps_api_key_copy(cps_api_key_t *dest, const cps_api_key_t *sr
  *              -1 if the key is < then the comparison
  */
 
-int cps_api_key_matches(const cps_api_key_t *  key, const cps_api_key_t *  prefix, bool exact) ;
+int cps_api_key_matches(cps_api_key_t * key, cps_api_key_t * prefix, bool exact) ;
 
 /**
  * A debug API to print the key into a passed in buffer.

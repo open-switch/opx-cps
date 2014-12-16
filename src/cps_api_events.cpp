@@ -63,12 +63,6 @@ typedef struct {
     cps_api_event_reg_prio_t prio;
 } cps_api_event_thread_cbs_t;
 
-struct key_compare {
-    bool operator() (const cps_api_key_t &key, const cps_api_key_t &comp) {
-        return cps_api_key_matches(&key,&comp,true) < 0;
-    }
-};
-
 static std_rw_lock_t rw_lock;
 static bool initied = false;
 static bool is_running = false;

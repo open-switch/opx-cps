@@ -9,7 +9,7 @@
 
 #include <stdio.h>
 
-int cps_api_key_matches(const cps_api_key_t *  key, const cps_api_key_t * comparison, bool exact) {
+int cps_api_key_matches( cps_api_key_t *  key, cps_api_key_t * comparison, bool exact) {
     int src_len = cps_api_key_get_len_in_bytes(key);
     int comp_len = cps_api_key_get_len_in_bytes(comparison);
     int match_len = (src_len > comp_len) ? comp_len : src_len;
