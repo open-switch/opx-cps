@@ -132,6 +132,50 @@ void cps_api_object_set_key(cps_api_object_t obj, cps_api_key_t *key);
 cps_api_object_attr_t cps_api_object_attr_get(cps_api_object_t obj, cps_api_attr_id_t attr);
 
 /**
+ * Search for all of the attributes listed in attr.  If any of them are missing the call fails
+ * with a false.
+ * @param obj the object in question
+ * @param attr the list of attributes desired
+ * @param pointers the list of attribute pointers
+ * @param count the count of both the list of attr ids and the list of pointers
+ * @return true if all of the attributes are found
+ */
+bool cps_api_object_attr_get_list(cps_api_object_t obj, cps_api_attr_id_t *attr, cps_api_object_attr_t *pointers, size_t count);
+
+/**
+ * Get the first matching attributes who's indexes are in the array passed.
+ * For example if the attribute IDs are numbered from 1=10.  Fill up the array
+ * with pointers to the attributes.  This call will not fail.
+ *
+ * On return, all of the non-found attributes will be set to CPS_API_ATTR_NULL
+ * while found attributes will have their pointers filled in.
+ *
+ * @verbatim
+ *  //want to get all attributes into an array for lots of processing
+ *  enum { IMP_ATTR_1=1, IMP_ATTR_2=2,... IMP_ATTR_20=20. MAX=100};
+ *  cps_api_object_attr_t list[MAX];
+ *  cps_api_object_attr_get_list(obj,0,list,sizeof(list)/sizeof(*list));
+ *
+ *  or...
+ *  cps_api_object_attr_t list[10];  //only care about attributes from
+ *                                   //30-39
+ *  cps_api_object_attr_get_list(obj,30,list,sizeof(list)/sizeof(*list));
+
+ *
+ * @endverbatim
+ *
+ * @param object containing the item
+ * @param base_attr_id is the first attribute in the array
+ *         (eg.. all attributes >= base_attr_id and < base_attr_id+len will be
+ *         put into the base_attr_id list.
+ * @param attr the list of attribute ID to fill in
+ * @param len the length of the list of attributes
+ *
+ *
+ */
+void cps_api_object_attr_fill_list(cps_api_object_t obj, size_t base_attr_id, cps_api_object_attr_t *attr, size_t len);
+
+/**
  * Remove an attribute from the object.  Pass in an attribute id of the attribute to remove.
  * If the attribute is invalid the request is ignored otherwise the attr is removed.
  * @param the object that contains the attribute to be deleted

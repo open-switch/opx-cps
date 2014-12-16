@@ -198,6 +198,16 @@ cps_api_object_attr_t cps_api_object_attr_get(cps_api_object_t obj, uint64_t att
     return NULL;
 }
 
+bool cps_api_object_attr_get_list(cps_api_object_t obj,
+        cps_api_attr_id_t *attr, cps_api_object_attr_t *pointers, size_t count) {
+    size_t ix = 0;
+    for ( ; ix < count ; ++ix ) {
+        pointers[ix] = cps_api_object_attr_get(obj,attr[ix]);
+        if (pointers[ix]==NULL) return false;
+    }
+    return true;
+}
+
 void cps_api_object_attr_delete(cps_api_object_t obj, cps_api_attr_id_t attr_id) {
     cps_api_object_internal_t *p = (cps_api_object_internal_t*)obj;
 
@@ -265,6 +275,24 @@ cps_api_object_attr_t cps_api_object_attr_next(cps_api_object_t obj,cps_api_obje
      }
      return p;
 }
+
+void cps_api_object_attr_fill_list(cps_api_object_t obj, size_t base_attr_id, cps_api_object_attr_t *attr, size_t len) {
+    void * ptr = (cps_api_object_attr_t)obj_data((cps_api_object_internal_t*)obj);
+    size_t used_len = obj_used_len((cps_api_object_internal_t*)obj);
+    memset(attr,0,sizeof(*attr)*len);
+
+    if (!std_tlv_valid(ptr,used_len)) return ;
+
+    while (ptr!=NULL && used_len > 0) {
+        std_tlv_tag_t tag = std_tlv_tag(ptr);
+        if (tag < base_attr_id) continue;
+        size_t offset = tag - base_attr_id;
+        if (offset >= len) continue;
+        attr[offset] = ptr;
+        ptr = std_tlv_next(ptr,&used_len);
+    }
+}
+
 
 const char * cps_api_object_attr_to_string(cps_api_object_attr_t attr, char *buff, size_t len) {
     snprintf(buff,len,"Attr %X, Len %d",(int)cps_api_object_attr_id(attr),

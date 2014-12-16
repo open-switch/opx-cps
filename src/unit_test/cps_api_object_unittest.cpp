@@ -110,6 +110,26 @@ TEST(cps_api_object,ram_based) {
     ASSERT_TRUE(cps_api_object_attr_add_u32(obj,2,32));
     ASSERT_TRUE(cps_api_object_attr_add_u64(obj,3,64));
 
+    cps_api_object_attr_t list[4];
+    size_t llen = sizeof(list)/sizeof(*list);
+    cps_api_object_attr_fill_list(obj,0,list,llen);
+    size_t ix = 0;
+    size_t mx =llen ;
+    size_t count = 0;
+    for ( ; ix < mx ; ++ix ) {
+        if (list[ix]!=NULL) ++count;
+    }
+    ASSERT_TRUE(count==4);
+
+    cps_api_object_attr_fill_list(obj,2,list,llen); //show 2 and 3
+    ix = 0;
+    count = 0;
+    for ( ; ix < mx ; ++ix ) {
+        if (list[ix]!=NULL) ++count;
+    }
+    ASSERT_TRUE(count==2);
+
+
     cps_api_object_attr_t it = cps_api_object_attr_first(obj);
 
     for ( ; it != CPS_API_ATTR_NULL ; ) {

@@ -93,6 +93,33 @@ void cps_api_key_init(cps_api_key_t * key,
         cps_api_object_subcategory_types_t subcat,
         size_t number_of_inst, ...);
 
+/**
+ * Get the cps_api_qualifier_t for a key
+ * @param key the key to query
+ * @return the cps_api_qualifier_t
+ */
+static inline cps_api_qualifier_t cps_api_key_get_qual(cps_api_key_t *key) {
+    return (cps_api_qualifier_t)cps_api_key_element_at(key,CPS_OBJ_KEY_INST_POS);
+}
+
+/**
+ * Get the key's object category
+ * @param key the key to query
+ * @return the key's cps_api_object_category_types_t
+ */
+static inline cps_api_object_category_types_t cps_api_key_get_cat(cps_api_key_t *key) {
+    return (cps_api_object_category_types_t)cps_api_key_element_at(key,CPS_OBJ_KEY_CAT_POS);
+}
+
+/**
+ * Get the key's object sub category
+ * @param key the key to query
+ * @return the key's sub category
+ */
+static inline uint32_t cps_api_key_get_subcat(cps_api_key_t *key) {
+    return cps_api_key_element_at(key,CPS_OBJ_KEY_SUBCAT_POS);
+}
+
 /*
  * The structure for a get request.  Each get request can have one or more keys
  * and will receive a list of objects in response.

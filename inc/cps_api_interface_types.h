@@ -129,6 +129,7 @@ typedef enum {
     cps_api_if_STRUCT_A_IF_TYPE=9,    //db_if_type_t
     cps_api_if_STRUCT_A_VLAN_ID=10,    //uint32_t(hal_vlan_id_t)
     cps_api_if_STRUCT_A_OPERATION=11,    //db_interface_operation_t
+    cps_api_if_STRUCT_A_MAX
 }cps_api_if_STRUCT_ATTR;
 
 #if 0
