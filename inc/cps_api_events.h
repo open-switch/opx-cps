@@ -96,6 +96,53 @@ cps_api_return_code_t cps_api_wait_for_event(cps_api_event_service_handle_t hand
         cps_api_object_t object);
 
 
+/**
+ * Maximum size of message that can be received by the event thread helper
+ * utilitiy
+ */
+#define CPS_API_EVENT_THREAD_MAX_OBJ (50000)
+
+/**
+ * The callback function when used with the CPS API event thread helper utility
+ */
+typedef bool (*cps_api_event_thread_callback_t)(cps_api_object_t object,void * context);
+
+/**
+ * Initialize the event thread utility.  This will connect to the CPS event
+ * service and provide an internal global handle that applications can use
+ * to register against events
+ *
+ * @return cps_api_ret_code_OK if successful and created otherwise an error.
+ *     should only be called once in a process
+ */
+cps_api_return_code_t cps_api_event_thread_init(void);
+
+/**
+ * Register for an event and a callback function that will be executed when
+ * an event arrives
+ * @param key the key for which the event must have
+ * @param cb the callback function
+ * @param context the context passed to the callback
+ * @return cps_api_ret_code_OK if successful
+ */
+cps_api_return_code_t cps_api_event_thread_reg(cps_api_event_reg_t * reg,
+        cps_api_event_thread_callback_t cb, void * context );
+
+/**
+ * Publish an event to the CPS API event service using the event thread's
+ * global handle.
+ *
+ * @param object the object to publish
+ * @return cps_api_ret_code_OK if successful
+ */
+cps_api_return_code_t cps_api_event_thread_publish(cps_api_object_t object);
+
+/**
+ * Shutdown the CPS API event thread utilitiy.
+ * @return cps_api_ret_code_OK if successful
+ */
+cps_api_return_code_t cps_api_event_thread_shutdown(void);
+
 #ifdef __cplusplus
 }
 #endif

@@ -1,15 +1,15 @@
 /*
- * filename: ds_interface.h
+ * filename: cps_api_interface.h
  * (c) Copyright 2014 Dell Inc. All Rights Reserved.
  */
 
 /** OPENSOURCELICENSE */
 
 
-#ifndef DS_INTERFACE_H_
-#define DS_INTERFACE_H_
+#ifndef cps_api_iNTERFACE_H_
+#define cps_api_iNTERFACE_H_
 
-#include "ds_interface_types.h"
+#include "cps_api_interface_types.h"
 #include "ds_common_types.h"
 #include "std_error_codes.h"
 #include "cps_api_object.h"
@@ -18,18 +18,18 @@
  * Interface Category subtypes
  */
 typedef enum {
-    ds_int_obj_INTERFACE,//!< db_int_obj_INTERFACE
-    ds_int_obj_ROUTE,    //!< db_int_obj_ROUTE
-    ds_int_obj_IP,       //!< db_int_obj_IP
-    ds_int_obj_NEIGHBOUR,//!< db_int_obj_NEIGHBOUR
-    ds_int_obj_MAC,      //!< db_int_obj_MAC
-    ds_int_obj_IF_OBJ,   //!< db_int_obj_IF_OBJ
-    ds_int_obj_IF_OSTATE,//!< db_int_obj_IF_OSTATE
-    ds_int_obj_IF_ASTATE, //!< db_int_obj_IF_ASTATE
-    ds_int_obj_VLAN_INTERFACE,
-    ds_int_obj_INTERFACE_ADDR,
-    ds_int_obj_HW_LINK_STATE
-}ds_interface_sub_category_t ;
+    cps_api_int_obj_INTERFACE=1,//!< db_int_obj_INTERFACE
+    cps_api_int_obj_ROUTE,    //!< db_int_obj_ROUTE
+    cps_api_int_obj_IP,       //!< db_int_obj_IP
+    cps_api_int_obj_NEIGHBOUR,//!< db_int_obj_NEIGHBOUR
+    cps_api_int_obj_MAC,      //!< db_int_obj_MAC
+    cps_api_int_obj_IF_OBJ,   //!< db_int_obj_IF_OBJ
+    cps_api_int_obj_IF_OSTATE,//!< db_int_obj_IF_OSTATE
+    cps_api_int_obj_IF_ASTATE, //!< db_int_obj_IF_ASTATE
+    cps_api_int_obj_VLAN_INTERFACE,
+    cps_api_int_obj_INTERFACE_ADDR,
+    cps_api_int_obj_HW_LINK_STATE
+}cps_api_interface_sub_category_t ;
 
 /**
  * The type of key to use
@@ -66,12 +66,12 @@ typedef struct {
 /**
  * A few wrappers to create common IF object IDs
  */
-#define DB_OBJ_IF_RECORD (DB_OBJ_MAKE(cps_api_obj_cat_INTERFACE,ds_int_obj_IF_OBJ))
-#define DB_OBJ_IF_MAC (DB_OBJ_MAKE(cps_api_obj_cat_INTERFACE,ds_int_obj_MAC))
-#define DB_OBJ_IF_ASTATE (DB_OBJ_MAKE(cps_api_obj_cat_INTERFACE,ds_int_obj_IF_ASTATE))
+#define DB_OBJ_IF_RECORD (DB_OBJ_MAKE(cps_api_obj_cat_INTERFACE,cps_api_int_obj_IF_OBJ))
+#define DB_OBJ_IF_MAC (DB_OBJ_MAKE(cps_api_obj_cat_INTERFACE,cps_api_int_obj_MAC))
+#define DB_OBJ_IF_ASTATE (DB_OBJ_MAKE(cps_api_obj_cat_INTERFACE,cps_api_int_obj_IF_ASTATE))
 
 #define DB_OBJ_IF_RECORD_KEY DB_OBJ_MAKE(cps_api_obj_cat_KEY,cps_api_obj_cat_INTERFACE)
-#define DB_OBJ_IF_RECORD_IFNAME_KEY DB_OBJ_MAKE(cps_api_obj_cat_KEY,ds_interface_key_IFNAME)
+#define DB_OBJ_IF_RECORD_IFNAME_KEY DB_OBJ_MAKE(cps_api_obj_cat_KEY,cps_api_interface_key_IFNAME)
 
 
 /**

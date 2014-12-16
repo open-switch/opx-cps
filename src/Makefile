@@ -21,7 +21,8 @@ cps_api_events_unittest_LDFLAGS=-lcps-api-common
 cps-api-common_SRCS=cps_api_object.cpp \
         cps_api_events.cpp \
         cps_api_base_event_adapter.c \
-        ds_interface_common.cpp cps_api_operation_common.cpp \
+        cps_api_interface_common.cpp \
+        cps_api_operation_common.cpp \
         cps_api_key.c
 
 cps-api-common_LDFLAGS = -levent_log -ldn_common

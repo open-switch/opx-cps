@@ -17,7 +17,23 @@
 #include "cps_api_events.h"
 #include "cps_api_event_init.h"
 
- cps_api_event_service_handle_t handle;
+cps_api_event_service_handle_t handle;
+
+size_t cnt =0;
+
+bool _cps_api_event_thread_callback(cps_api_object_t object,void * context) {
+     char buff[1024];
+     printf("1 - Obj %s\n",cps_api_object_to_string(object,buff,sizeof(buff)));
+     ++cnt;
+     return true;
+}
+
+bool _cps_api_event_thread_callback_2(cps_api_object_t object,void * context) {
+     char buff[1024];
+     printf("2 - Obj %s\n",cps_api_object_to_string(object,buff,sizeof(buff)));
+     ++cnt;
+     return true;
+}
 
 bool init(void) {
 
@@ -42,6 +58,16 @@ bool init(void) {
 
     if (cps_api_event_client_register(handle,&reg)!=cps_api_ret_code_OK) return false;
 
+    if (cps_api_event_thread_init()!=cps_api_ret_code_OK) return false;
+
+    if (cps_api_event_thread_reg(&reg,
+            _cps_api_event_thread_callback,NULL)!=cps_api_ret_code_OK)
+        return false;
+
+    if (cps_api_event_thread_reg(&reg,
+            _cps_api_event_thread_callback_2,NULL)!=cps_api_ret_code_OK)
+        return false;
+
     return true;
 }
 
@@ -51,7 +77,11 @@ bool send_receive(void) {
                 cps_api_obj_cat_INTERFACE,1,1,3);
     cps_api_object_attr_add(obj,1,"Cliff",6);
 
+    if (cps_api_event_thread_publish(obj)!=cps_api_ret_code_OK) return false;
+    while (cnt<2) sleep(1);
+
     if (cps_api_event_publish(handle,obj)!=cps_api_ret_code_OK) return false;
+    while (cnt<4) sleep(1);
 
     const int MAX_OBJ_LEN=(1024);
     cps_api_object_t rec = cps_api_object_create();
@@ -67,7 +97,9 @@ bool send_receive(void) {
 
 TEST(cps_api_events,init) {
     ASSERT_TRUE(init());
+
     ASSERT_TRUE(send_receive());
+
 }
 
 int main(int argc, char **argv) {

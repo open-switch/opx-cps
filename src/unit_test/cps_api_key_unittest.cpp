@@ -47,6 +47,19 @@ TEST(cps_api_key,key_compare) {
     cps_api_key_set(&key2,2,2);
     cps_api_key_set_len(&key2,3);
 
+    cps_api_key_t key3;
+    memset(&key3,0,sizeof(key3));
+    cps_api_key_set(&key3,0,0);
+    cps_api_key_set(&key3,1,2);
+    cps_api_key_set(&key3,2,3);
+    cps_api_key_set_len(&key3,3);
+
+    ASSERT_TRUE(cps_api_key_matches(&key,&key3,true)!=0);
+    cps_api_key_set_len(&key3,1);
+    ASSERT_TRUE(cps_api_key_matches(&key,&key3,false)==0);
+    cps_api_key_set_len(&key3,2);
+    ASSERT_TRUE(cps_api_key_matches(&key,&key3,false)!=0);
+
     ASSERT_TRUE(cps_api_key_matches(&key,&key2,true)==0);
     printf("Key 1 %s, Key 2 %s\n",cps_api_key_print(&key,buff1,sizeof(buff1)),
             cps_api_key_print(&key2,buff2,sizeof(buff2)));

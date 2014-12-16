@@ -1,11 +1,11 @@
 /*
- * filename: cps_api_common_list.h
+ * filename: cps_api_object.h
  * (c) Copyright 2014 Dell Inc. All Rights Reserved.
  */
 
 /* OPENSOURCELICENSE */
 /*
- * cps_api_common_list.h
+ * cps_api_object.h
  */
 
 #ifndef CPS_API_COMMON_LIST_H_
@@ -212,6 +212,16 @@ cps_api_object_attr_t cps_api_object_attr_next(cps_api_object_t obj, cps_api_obj
  * @return the pointer to the buffer passed in
  */
 const char * cps_api_object_attr_to_string(cps_api_object_attr_t attr, char *buff, size_t len);
+
+
+/**
+ * Print the object into a string buffer.  Debug function only
+ * @param obj the object to be printed.
+ * @param buff the buffer to print the object to
+ * @param len the length of the buffer
+ * @return the pointer to buff
+ */
+const char * cps_api_object_to_string(cps_api_object_t obj, char *buff, size_t len);
 
 /**
  * Get the attribute id for the object.

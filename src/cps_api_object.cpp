@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <map>
 #include <stdio.h> //for snprintf
+#include <string>
 
 #define DEF_OBJECT_SIZE (512)
 #define DEF_OBJECT_REALLOC_STEP_SIZE (128)
@@ -248,7 +249,8 @@ bool cps_api_object_attr_add(cps_api_object_t o, cps_api_attr_id_t id,const void
 
 cps_api_object_attr_t cps_api_object_attr_first(cps_api_object_t obj) {
     void * ptr = (cps_api_object_attr_t)obj_data((cps_api_object_internal_t*)obj);
-    return std_tlv_valid(ptr,obj_used_len((cps_api_object_internal_t*)obj)) ? ptr : NULL;
+    return std_tlv_valid(ptr,obj_used_len((cps_api_object_internal_t*)obj)) ?
+            ptr : NULL;
 }
 
 cps_api_object_attr_t cps_api_object_attr_next(cps_api_object_t obj,cps_api_object_attr_t attr) {
@@ -376,5 +378,20 @@ size_t cps_api_object_list_size(cps_api_object_list_t list) {
     return p->size();
 }
 
+const char * cps_api_object_to_string(cps_api_object_t obj, char *buff, size_t len) {
+    char *k_str = cps_api_key_print(cps_api_object_key(obj),buff,len);
+
+    std::string str;
+    str+= k_str;
+    str+= " ";
+    cps_api_object_attr_t it = cps_api_object_attr_first(obj);
+    for ( ; it != NULL ; it = cps_api_object_attr_next(obj,it)) {
+        str+= cps_api_object_attr_to_string(it,buff,len);
+        str+=" - ";
+    }
+    buff[len-1] = '\0';
+    strncpy(buff,str.c_str(),len-1);
+    return buff;
+}
 
 }

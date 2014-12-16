@@ -34,7 +34,7 @@ typedef uint8_t cps_api_key_t[CPS_OBJ_KEY_BYTE_MAX_LEN];
 /**
  * Get the length in bytes of the key
  */
-static inline uint32_t cps_api_key_get_len_in_bytes(cps_api_key_t *elem) {
+static inline uint32_t cps_api_key_get_len_in_bytes(const cps_api_key_t *elem) {
     return htole32(((uint32_t*)elem)[CPS_OBJ_KEY_LEN_POS]) * CPS_OBJ_KEY_ELEM_SIZE;
 }
 
