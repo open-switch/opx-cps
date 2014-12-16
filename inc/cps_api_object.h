@@ -44,7 +44,7 @@ extern "C" {
  */
 typedef void * cps_api_object_t;
 
-#define CPS_API_OBJECT_NULL (NULL)
+#define CPS_API_OBJECT_NULL ((void*)0)
 
 /**
  * The type of an attribute that is stored within the CPS object
@@ -54,7 +54,7 @@ typedef void * cps_api_object_attr_t;
 /**
  * The value that matches a NULL (invalid) attribute
  */
-#define CPS_API_ATTR_NULL (NULL)
+#define CPS_API_ATTR_NULL ((void*)0)
 
 
 /*
@@ -143,11 +143,11 @@ cps_api_object_attr_t cps_api_object_attr_get(cps_api_object_t obj, cps_api_attr
 bool cps_api_object_attr_get_list(cps_api_object_t obj, cps_api_attr_id_t *attr, cps_api_object_attr_t *pointers, size_t count);
 
 /**
- * Get the first matching attributes who's indexes are in the array passed.
- * For example if the attribute IDs are numbered from 1=10.  Fill up the array
- * with pointers to the attributes.  This call will not fail.
+ * Get the first matching attributes who's indexes are in the array "attr".
+ * For example if the attribute IDs are numbered from 1 to 10.  Fill up the array
+ * with pointers to the attributes.
  *
- * On return, all of the non-found attributes will be set to CPS_API_ATTR_NULL
+ * On return, all of the missing attributes are set to CPS_API_ATTR_NULL
  * while found attributes will have their pointers filled in.
  *
  * @verbatim
@@ -157,9 +157,11 @@ bool cps_api_object_attr_get_list(cps_api_object_t obj, cps_api_attr_id_t *attr,
  *  cps_api_object_attr_get_list(obj,0,list,sizeof(list)/sizeof(*list));
  *
  *  or...
- *  cps_api_object_attr_t list[10];  //only care about attributes from
+ *  const int DESIRED_RANGE=10;
+ *  const int START_ATTR_RANGE_ID=30;
+ *  cps_api_object_attr_t list[DESIRED_RANGE];  //only care about attributes from
  *                                   //30-39
- *  cps_api_object_attr_get_list(obj,30,list,sizeof(list)/sizeof(*list));
+ *  cps_api_object_attr_get_list(obj,START_ATTR_RANGE_ID,list,sizeof(list)/sizeof(*list));
 
  *
  * @endverbatim
