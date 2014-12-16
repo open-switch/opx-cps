@@ -45,7 +45,7 @@ extern "C" {
 typedef enum {
     cps_api_qualifier_NULL=0,
     cps_api_qualifier_TARGET=1,
-    cps_api_qualifer_OBSERVED=1,
+    cps_api_qualifier_OBSERVED=1,
     cps_api_qualifier_PROPOSED=2,
     cps_api_qualifier_REALTIME=3,
     cps_api_qualifier_MAX
@@ -131,6 +131,7 @@ typedef struct {
     size_t           key_count;
     cps_api_object_list_t list;
 }cps_api_get_params_t;
+
 
 /**
  * The API for a set request.

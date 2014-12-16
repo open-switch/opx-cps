@@ -12,7 +12,9 @@
 #include "cps_api_interface_types.h"
 #include "ds_common_types.h"
 #include "std_error_codes.h"
+
 #include "cps_api_object.h"
+#include "cps_api_operation.h"
 
 /**
  * Interface Category subtypes
@@ -28,8 +30,27 @@ typedef enum {
     cps_api_int_obj_IF_ASTATE, //!< db_int_obj_IF_ASTATE
     cps_api_int_obj_VLAN_INTERFACE,
     cps_api_int_obj_INTERFACE_ADDR,
-    cps_api_int_obj_HW_LINK_STATE
+    cps_api_int_obj_HW_LINK_STATE,
 }cps_api_interface_sub_category_t ;
+
+/**
+ * Create a CPS API key pointing at a specific if instance
+ * or point to all indexes
+ * @param key the key to fill in
+ * @param use_inst true if want to add the instance variables
+ * @param vrf the VRF ID
+ * @param ifix the IF index
+ */
+static inline void cps_api_int_if_key_create(
+        cps_api_key_t *key, bool use_inst,
+        uint32_t vrf, uint32_t ifix) {
+
+    cps_api_key_init(key,
+        cps_api_qualifier_TARGET,
+        cps_api_obj_cat_INTERFACE,
+        cps_api_int_obj_INTERFACE, use_inst ? 2 : 0,
+                vrf, ifix);
+}
 
 /**
  * The type of key to use
