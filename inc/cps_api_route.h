@@ -24,6 +24,7 @@ typedef enum {
     cps_api_if_NEIGH_A_EXPIRE=8, //uint32_t
     cps_api_if_NEIGH_A_FLAGS=9, //uint32_t
     cps_api_if_NEIGH_A_STATE=10, //uint32_t
+    cps_api_if_NEIGH_A_MAX
 }cps_api_if_NEIGH_ATTR;
 
 //cps_api_int_obj_ROUTE
@@ -37,6 +38,7 @@ typedef enum {
     cps_api_if_ROUTE_A_NH_IFINDEX=6, //uint32_t
     cps_api_if_ROUTE_A_NEXT_HOP_VRF=7, //uint32_t
     cps_api_if_ROUTE_A_NEXT_HOP_ADDR=8, //hal_ip_addr_t
+    cps_api_if_ROUTE_A_MAX
 }cps_api_if_ROUTE_ATTR;
 
 #if 0
