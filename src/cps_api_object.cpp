@@ -102,7 +102,7 @@ static std_mutex_lock_create_static_init_rec(db_tracker_lock);
 static tTrackerList trackers;
 
 cps_api_object_t cps_api_object_init(void *data, size_t bufflen) {
-    if (bufflen < CPS_API_MIN_OBJ_LEN) return false;
+    if (bufflen < CPS_API_MIN_OBJ_LEN) return NULL;
     cps_api_object_internal_t *p = (cps_api_object_internal_t*)data;
     bufflen -= sizeof(cps_api_object_internal_t);
     p->allocated = false;
@@ -165,13 +165,12 @@ bool cps_api_object_received(cps_api_object_t obj, size_t size_of_object_receive
     cps_api_object_internal_t *o = (cps_api_object_internal_t*)obj;
     if (o->len < size_of_object_received) return false;
     if (size_of_object_received < sizeof(*o->data)) return false;
+    o->remain = o->len - (size_of_object_received - sizeof(*o->data));
 
     //TODO could walk through the list of newly created TLVs and validate each one
     //but that is probably not necessary at this time.
     return true;
 }
-
-
 
 void cps_api_object_delete(cps_api_object_t o) {
     cps_api_object_internal_t *p = (cps_api_object_internal_t*)o;
@@ -286,10 +285,10 @@ void cps_api_object_attr_fill_list(cps_api_object_t obj, size_t base_attr_id, cp
 
     while (ptr!=NULL && used_len > 0) {
         std_tlv_tag_t tag = std_tlv_tag(ptr);
-        if (tag < base_attr_id) continue;
         size_t offset = tag - base_attr_id;
-        if (offset >= len) continue;
-        attr[offset] = ptr;
+        if ((tag >= base_attr_id) && (offset < len)) {
+            attr[offset] = ptr;
+        }
         ptr = std_tlv_next(ptr,&used_len);
     }
 }

@@ -90,7 +90,9 @@ static  void * _thread_function_(void * param) {
             key_list_t::iterator it = cb_map.begin();
             key_list_t::iterator end = cb_map.end();
             for ( ; it != end ; ++it ) {
-                if (cps_api_key_matches(cps_api_object_key(obj),&it->key,false)==0) {
+                cps_api_key_t * obj_key = cps_api_object_key(obj);
+                cps_api_key_t * pref = &it->key;
+                if (cps_api_key_matches(obj_key,pref,false)==0) {
                     if (!it->cb(obj,it->context)) break;
                 }
             }

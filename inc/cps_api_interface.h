@@ -21,13 +21,6 @@
  */
 typedef enum {
     cps_api_int_obj_INTERFACE=1,//!< db_int_obj_INTERFACE
-    cps_api_int_obj_ROUTE,    //!< db_int_obj_ROUTE
-    cps_api_int_obj_IP,       //!< db_int_obj_IP
-    cps_api_int_obj_NEIGHBOUR,//!< db_int_obj_NEIGHBOUR
-    cps_api_int_obj_MAC,      //!< db_int_obj_MAC
-    cps_api_int_obj_IF_OBJ,   //!< db_int_obj_IF_OBJ
-    cps_api_int_obj_IF_OSTATE,//!< db_int_obj_IF_OSTATE
-    cps_api_int_obj_IF_ASTATE, //!< db_int_obj_IF_ASTATE
     cps_api_int_obj_VLAN_INTERFACE,
     cps_api_int_obj_INTERFACE_ADDR,
     cps_api_int_obj_HW_LINK_STATE,
