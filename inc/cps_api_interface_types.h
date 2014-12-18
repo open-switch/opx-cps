@@ -1,13 +1,13 @@
 /*
- * filename: ds_interface_types.h
+ * filename: cps_api_interface_types.h
  * (c) Copyright 2014 Dell Inc. All Rights Reserved.
  */
 
 /** OPENSOURCELICENSE */
 
 
-#ifndef DS_INTERFACE_TYPES_H_
-#define DS_INTERFACE_TYPES_H_
+#ifndef cps_api_iNTERFACE_TYPES_H_
+#define cps_api_iNTERFACE_TYPES_H_
 
 #include "ds_common_types.h"
 
@@ -86,6 +86,20 @@ typedef enum {
  */
 typedef char hal_ifname_t[HAL_IF_NAME_SZ];
 
+
+//cps_api_int_obj_INTERFACE_ADDR
+
+typedef enum {
+    cps_api_if_ADDR_A_NAME=0, //char *
+    cps_api_if_ADDR_A_IFINDEX=1,//uint32_t
+    cps_api_if_ADDR_A_FLAGS=2, //uint32_t
+    cps_api_if_ADDR_A_IF_ADDR=3,
+    cps_api_if_ADDR_A_IF_MASK=4, //hal_ip_addr_t
+    cps_api_if_ADDR_A_OPER=5,    //db_if_addr_msg_type_t
+}cps_api_if_ADDR_ATTR;
+
+
+#if 0
 /**
  * Database structure for an interface
  */
@@ -98,7 +112,27 @@ typedef struct  {
     hal_ip_addr_t   if_mask;
     db_if_addr_msg_type_t        if_msgtype;
 } db_if_addr_t;
+#endif
 
+
+//cps_api_int_obj_INTERFACE
+typedef enum {
+    cps_api_if_STRUCT_A_NAME=0, //char *
+    cps_api_if_STRUCT_A_IFINDEX=1,//uint32_t
+    cps_api_if_STRUCT_A_FLAGS=2, //uint32_t
+    cps_api_if_STRUCT_A_IF_MACADDR=3,    //hal_mac_addr_t
+    cps_api_if_STRUCT_A_IF_VRF=4, //uint32_t
+    cps_api_if_STRUCT_A_IF_FAMILY=5, //uint32_t
+    cps_api_if_STRUCT_A_ADMIN_STATE=6,    //db_interface_state_t
+    cps_api_if_STRUCT_A_OPER_STATE=7,    //db_interface_operational_state_t
+    cps_api_if_STRUCT_A_MTU=8,    //uint32_t
+    cps_api_if_STRUCT_A_IF_TYPE=9,    //db_if_type_t
+    cps_api_if_STRUCT_A_VLAN_ID=10,    //uint32_t(hal_vlan_id_t)
+    cps_api_if_STRUCT_A_OPERATION=11,    //db_interface_operation_t
+    cps_api_if_STRUCT_A_MAX
+}cps_api_if_STRUCT_ATTR;
+
+#if 0
 typedef struct  {
     char               if_name[HAL_IF_NAME_SZ+1];
     hal_ifindex_t     if_index;
@@ -118,55 +152,12 @@ typedef struct {
     db_if_t interface;
     db_interface_operation_t operation;
 } db_if_event_t;
-
-typedef struct  {
-    db_route_msg_t  msg_type;
-    unsigned short  distance;
-    unsigned short  protocol;
-    unsigned long   vrfid;
-    hal_ip_addr_t         prefix;
-    unsigned short  prefix_masklen;
-    hal_ifindex_t   nh_if_index;
-    unsigned long   nh_vrfid;
-    hal_ip_addr_t         nh_addr;
-}db_route_t;
+#endif
 
 
-typedef struct  {
-    unsigned short  family;
-    db_nbr_event_type_t    msg_type;
-    hal_ip_addr_t         nbr_addr;
-    hal_mac_addr_t      nbr_hwaddr;
-    hal_ifindex_t   if_index;
-    hal_ifindex_t   phy_if_index;
-    unsigned long   vrfid;
-    unsigned long   expire;
-    unsigned long   flags;
-    unsigned long   state;
-}db_neighbour_entry_t;
 
-struct db_qos_qdisc_entry_s {
-    db_qdisc_msg_type_t msg_type;
-    hal_ifindex_t  ifindex;
-    db_qos_tca_type_t      qdisc_type;
-    uint16_t        qdisc;
-    uint32_t        parent;
-};
+#define cps_api_if_QDISC (4)
 
-typedef struct db_class_rate_info_s {
-    // Rate info of the node
-    uint32_t minBw;
-    uint32_t maxBw;
-    uint32_t burst;
-    uint32_t cburst;
-} db_qos_class_rate_info_t;
 
-struct db_qos_class_entry_s {
-    db_qos_class_msg_type_t msg_type;
-    hal_ifindex_t   ifindex;
-    uint32_t        qos_class;
-    uint16_t        qdisc;
-    db_qos_class_rate_info_t rinfo;
-};
 
 #endif /* DB_EVENT_INTERFACE_H_ */

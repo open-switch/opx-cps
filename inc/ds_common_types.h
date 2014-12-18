@@ -80,20 +80,6 @@ typedef unsigned int hal_vlan_id_t;
 typedef unsigned int hal_vrf_id_t;
 
 /**
- * This is the object type of anything contained within the database.
- * this object type has no instance or key data within it.. it is
- * just a generic object type.  To create an object ID, use the API
- * in db_object_catagory.h.
- */
-typedef uint64_t ds_object_type_t;
-
-/**
- * This is the object subtype.  There are two elements to an object ID
- * The object catagory and object subtype.
- */
-typedef uint32_t ds_object_sub_type_t;
-
-/**
  * The IP address structure used by all the HAL components. Address family
  * identifies the v4 or v6 address types.
  */
