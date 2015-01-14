@@ -16,7 +16,7 @@ cps_api_operation_unittest_SRCS=unit_test/cps_api_operation_unittest.cpp
 cps_api_operation_unittest_LDFLAGS=-lcps-api-common
 
 cps_api_events_unittest_SRCS=unit_test/cps_api_events_unittest.cpp
-cps_api_events_unittest_LDFLAGS=-lcps-api-common
+cps_api_events_unittest_LDFLAGS=-lcps-api-common -ldn_common
 
 cps-api-common_SRCS=cps_api_object.cpp \
         cps_api_events.cpp \
@@ -24,6 +24,10 @@ cps-api-common_SRCS=cps_api_object.cpp \
         cps_api_interface_common.cpp \
         cps_api_operation_common.cpp \
         cps_api_key.c
+
+cps_api_service_SRCS=cps_api_service.cpp
+cps_api_service_LDFLAGS = -lcps-api-common -ldn_common
+
 
 cps-api-common_LDFLAGS = -levent_log -ldn_common
 

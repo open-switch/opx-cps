@@ -96,6 +96,9 @@ static  void * _thread_function_(void * param) {
                     if (!it->cb(obj,it->context)) break;
                 }
             }
+        } else {
+            cps_api_event_client_disconnect(handle);
+            cps_api_event_client_connect(&handle);
         }
     }
     return NULL;

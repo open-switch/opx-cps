@@ -70,7 +70,7 @@ cps_api_return_code_t cps_api_event_client_disconnect(cps_api_event_service_hand
 /**
  * Have the client register with the event service for one or more specific events
  * @param handle is the handle to the cps api events service
- * @param req the registration request
+ * @param req the registration request that contains all objects that the client wants to register for
  * @return cps_api_ret_code_OK if success otherwise a failure
  */
 cps_api_return_code_t cps_api_event_client_register(cps_api_event_service_handle_t handle,

@@ -45,9 +45,9 @@ extern "C" {
 typedef enum {
     cps_api_qualifier_NULL=0,
     cps_api_qualifier_TARGET=1,
-    cps_api_qualifier_OBSERVED=1,
-    cps_api_qualifier_PROPOSED=2,
-    cps_api_qualifier_REALTIME=3,
+    cps_api_qualifier_OBSERVED=2,
+    cps_api_qualifier_PROPOSED=3,
+    cps_api_qualifier_REALTIME=4,
     cps_api_qualifier_MAX
 } cps_api_qualifier_t;
 
