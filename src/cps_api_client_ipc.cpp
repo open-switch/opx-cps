@@ -148,7 +148,7 @@ cps_api_return_code_t cps_api_process_get_request(cps_api_get_params_t *param, s
             if (!cps_api_receive_header(handle,op,len)) break;
             if (op!=cps_api_msg_o_GET_RESP) break;
             obj = cps_api_receive_object(handle,len);
-            if (cps_api_object_list_append(param->list,obj)) {
+            if (obj!=NULL && cps_api_object_list_append(param->list,obj)) {
                 obj=NULL;
             } else break;
         } while (op == cps_api_msg_o_GET_RESP);
@@ -166,11 +166,12 @@ cps_api_return_code_t cps_api_process_get_request(cps_api_get_params_t *param, s
 cps_api_return_code_t cps_api_process_commit_request(cps_api_transaction_params_t *param, size_t ix) {
     cps_api_return_code_t rc = cps_api_ret_code_ERR;
 
-    cps_api_object_t obj = cps_api_object_list_get(&param->change_list,ix);
+    cps_api_object_t obj = cps_api_object_list_get(param->change_list,ix);
     if (obj==NULL) return rc;
 
     cps_api_channel_t handle;
-    if (!cps_api_get_handle(*cps_api_object_key(obj),handle)) return rc;
+    cps_api_key_t *key = cps_api_object_key(obj);
+    if (!cps_api_get_handle(*key,handle)) return rc;
 
     rc = cps_api_ret_code_ERR;
 
@@ -210,7 +211,7 @@ cps_api_return_code_t cps_api_process_rollback_request(cps_api_transaction_param
         size_t ix) {
     cps_api_return_code_t rc = cps_api_ret_code_ERR;
 
-    cps_api_object_t obj = cps_api_object_list_get(&param->prev,ix);
+    cps_api_object_t obj = cps_api_object_list_get(param->prev,ix);
     if (obj==NULL) return rc;
 
     cps_api_channel_t handle;

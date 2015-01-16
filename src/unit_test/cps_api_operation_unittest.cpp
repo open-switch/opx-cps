@@ -130,8 +130,6 @@ bool do_test_get(void) {
 }
 
 bool test_set(void) {
-    cps_api_transaction_params_t trans;
-    if (cps_api_transaction_init(&trans)!=cps_api_ret_code_OK) return false;
 
     cps_api_get_params_t get_req;
     if (cps_api_get_request_init(&get_req)!=cps_api_ret_code_OK) return false;
@@ -160,9 +158,15 @@ bool test_set(void) {
         cps_api_object_attr_add_u64(obj,3,(uint64_t)inst);
         create =true;
     }
-    cps_api_get_request_close(&get_req);
+    //cps_api_get_request_close(&get_req);
+
+    cps_api_transaction_params_t trans;
+    if (cps_api_transaction_init(&trans)!=cps_api_ret_code_OK) return false;
 
     if (!cps_api_object_attr_add(obj,6,"Cliff",6)) return false;
+
+    cps_api_object_t cloned = cps_api_object_create();
+    cps_api_object_clone(cloned,obj);
 
     if (create) {
         if (cps_api_create(&trans,obj)!=cps_api_ret_code_OK) return false;
@@ -171,9 +175,20 @@ bool test_set(void) {
     }
 
     if (create) {
-        if (cps_api_create(&trans,obj)!=cps_api_ret_code_OK) return false;
+        if (cps_api_create(&trans,cloned)!=cps_api_ret_code_OK) return false;
     } else {
-        if (cps_api_set(&trans,obj)!=cps_api_ret_code_OK) return false;
+        if (cps_api_set(&trans,cloned)!=cps_api_ret_code_OK) return false;
+    }
+    size_t ix = 0;
+    size_t mx = cps_api_object_list_size(trans.change_list);
+    for ( ; ix < mx ; ++ix ) {
+        cps_api_object_t o = cps_api_object_list_get(trans.change_list,ix);
+        if (ix==0) {
+            if (o!=obj) return false;
+        }
+        if (ix==1) {
+            if (o!=cloned) return false;
+        }
     }
 
     if (cps_api_commit(&trans)!=cps_api_ret_code_OK) return false;
