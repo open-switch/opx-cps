@@ -107,7 +107,7 @@ static bool cps_api_handle_commit(cps_api_operation_data_t *op, int fd, size_t l
         return cps_api_send_return_code(fd,cps_api_msg_o_RETURN_CODE,rc);
     } else {
         cps_api_object_t obj = cps_api_object_list_get(param.prev,0);
-        if (obj!=NULL) return false;
+        if (obj==NULL) return false;
 
         if (!cps_api_send_one_object(fd,cps_api_msg_o_COMMIT_OBJECT,obj)) return false;
     }

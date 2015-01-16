@@ -180,25 +180,25 @@ cps_api_return_code_t cps_api_process_commit_request(cps_api_transaction_params_
                 cps_api_object_to_array_len(obj))) break;
 
         if (!cps_api_send_object(handle,obj)) break;
+        obj = NULL;
 
         uint32_t op;
-           size_t len;
-           if (!cps_api_receive_header(handle,op,len)) break;
+        size_t len;
+        if (!cps_api_receive_header(handle,op,len)) break;
 
-           if (op == cps_api_msg_o_COMMIT_OBJECT) {
-               obj = cps_api_receive_object(handle,len);
-               if (obj!=NULL) {
-                   if (cps_api_object_list_append(param->prev,obj)) {
-                       obj = NULL;
-                       rc = cps_api_ret_code_OK;
-                   }
-               }
-               break;
-           }
-           if (op == cps_api_msg_o_RETURN_CODE) {
-               if (!cps_api_receive_data(handle,&rc,sizeof(rc))) break;
-           }
-
+        if (op == cps_api_msg_o_COMMIT_OBJECT) {
+            obj = cps_api_receive_object(handle,len);
+            if (obj!=NULL) {
+                if (cps_api_object_list_append(param->prev,obj)) {
+                    obj = NULL;
+                    rc = cps_api_ret_code_OK;
+                }
+            }
+            break;
+        }
+        if (op == cps_api_msg_o_RETURN_CODE) {
+            if (!cps_api_receive_data(handle,&rc,sizeof(rc))) break;
+        }
     } while (0);
 
     if (obj!=NULL) cps_api_object_delete(obj);
