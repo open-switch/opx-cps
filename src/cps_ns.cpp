@@ -190,6 +190,7 @@ cps_api_return_code_t cps_api_ns_startup() {
     service_data.thread_pool_size = 1;
     service_data.some_data = _some_data_;
     service_data.del_client = _client_closed_;
+    service_data.context = &service_data;
 
     if (std_socket_service_init(&handle,&service_data)!=STD_ERR_OK) {
         return cps_api_ret_code_ERR;

@@ -159,14 +159,32 @@ static bool  _some_data_( void *context, int fd ) {
     return true;
 }
 
+static bool register_one_key(cps_api_operation_data_t *p, cps_api_key_t &key) {
+    cps_api_object_owner_reg_t r;
+    r.addr = p->service_data.address;
+    memcpy(&r.key,&key,sizeof(r.key));
+    if (!cps_api_ns_register(p->ns_handle,r)) {
+        close(p->ns_handle);
+        return false;
+    }
+    return true;
+}
 static bool reconnect_with_ns(cps_api_operation_data_t *data) {
     if (!cps_api_ns_create_handle(&data->ns_handle)) {
         data->ns_handle = STD_INVALID_FD;
         return false;
     }
-    if (std_socket_service_client_add(data->handle,data->ns_handle)==STD_ERR_OK) {
+    if (std_socket_service_client_add(data->handle,data->ns_handle)!=STD_ERR_OK) {
         close(data->ns_handle);
         return false;
+    }
+    size_t ix = 0;
+    size_t mx = data->db_functions.size();
+    for ( ; ix < mx ; ++ix ) {
+        if(!register_one_key(data,data->db_functions[ix].key)) {
+            close(data->ns_handle); data->ns_handle=STD_INVALID_FD;
+            return false;
+        }
     }
     return true;
 }
@@ -181,11 +199,9 @@ cps_api_return_code_t cps_api_register(cps_api_registration_functions_t * reg) {
     p->db_functions.push_back(*reg);
 
     if (p->ns_handle!=STD_INVALID_FD) {
-        cps_api_object_owner_reg_t r;
-        r.addr = p->service_data.address;
-        memcpy(&r.key,&reg->key,sizeof(r.key));
-        if (!cps_api_ns_register(p->ns_handle,r)) {
+        if (!register_one_key(p,reg->key)) {
             close(p->ns_handle);
+            p->ns_handle = STD_INVALID_FD;
         }
     }
     return cps_api_ret_code_OK;
@@ -207,6 +223,7 @@ cps_api_return_code_t cps_api_operation_subsystem_init(
     cps_api_create_process_address(&p->service_data.address);
     p->service_data.thread_pool_size = number_of_threads;
     p->service_data.some_data = _some_data_;
+    p->service_data.context = p;
 
     if (std_socket_service_init(&p->handle,&p->service_data)!=STD_ERR_OK) {
         delete p;

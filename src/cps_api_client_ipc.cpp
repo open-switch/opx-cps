@@ -146,6 +146,7 @@ cps_api_return_code_t cps_api_process_get_request(cps_api_get_params_t *param, s
             size_t len;
 
             if (!cps_api_receive_header(handle,op,len)) break;
+            if (op!=cps_api_msg_o_GET_RESP) break;
             obj = cps_api_receive_object(handle,len);
             if (cps_api_object_list_append(param->list,obj)) {
                 obj=NULL;
