@@ -12,6 +12,7 @@
 
 #include "gtest/gtest.h"
 
+#include "private/cps_ns.h"
 #include "cps_api_operation.h"
 
 
@@ -58,10 +59,23 @@ static cps_api_return_code_t db_rollback_function(void * context, cps_api_transa
 
     return cps_api_ret_code_OK;
 }
+static cps_api_operation_handle_t _serv_handle;
 
 bool do_test_init(void) {
-    cps_api_registration_functions_t funcs;
+    /**
+     * Service startup... internal to API not needed for others
+     */
+    if (cps_api_ns_startup()!=cps_api_ret_code_OK) {
+        return false;
+    }
 
+    /**
+     * Create a operation object handle for use with future registrations.
+     */
+    if (cps_api_operation_subsystem_init(&_serv_handle,1)!=cps_api_ret_code_OK) return false;
+
+    cps_api_registration_functions_t funcs;
+    funcs.handle = _serv_handle;
     funcs.context = (void*)"Cliff";
     funcs._read_function = db_read_function;
     funcs._write_function = db_write_function;
