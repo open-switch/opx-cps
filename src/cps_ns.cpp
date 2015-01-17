@@ -22,39 +22,6 @@
 
 #define CPS_API_NS_ID "/tmp/cps_api_ns"
 
-void cps_api_create_process_address(std_socket_address_t *addr) {
-    addr->type = e_std_sock_UNIX;
-    addr->addr_type = e_std_socket_a_t_STRING;
-
-    snprintf(addr->address.str,sizeof(addr->address.str)-1,
-            "/tmp/cps_inst_%d_%d",(int)std_thread_id_get(),(int)std_process_id_get());
-}
-
-void cps_api_ns_get_address(std_socket_address_t *addr) {
-    addr->type = e_std_sock_UNIX;
-    addr->addr_type = e_std_socket_a_t_STRING;
-    strncpy(addr->address.str,CPS_API_NS_ID,
-            sizeof(addr->address.str));
-}
-
-#if 0
-cps_api_object_owner_reg_t *cps_api_find_owners(cps_api_key_t *key);
-
-cps_api_return_code_t cps_api_register_owner(cps_api_object_owner_reg_t *reg);
-
-cps_api_return_code_t cps_api_connect_owner(cps_api_object_owner_reg_t *reg, cps_api_channel_t *channel);
-cps_api_return_code_t cps_api_disconnect_owner(cps_api_channel_t channel);
-
-cps_api_return_code_t cps_api_internal_send(cps_api_channel_t target,
-        cps_api_object_t obj, struct timeval *tv);
-
-cps_api_return_code_t cps_api_internal_receive(cps_api_channel_t target,
-        cps_api_object_t obj, struct timeval *tv);
-
-cps_api_return_code_t cps_api_receiver_init();
-#endif
-
-
 struct client_reg_t {
     cps_api_object_owner_reg_t details;
     int fd;
@@ -71,6 +38,20 @@ enum cps_api_ns_reg_t {
     cps_api_ns_r_RETURN_CODE
 };
 
+void cps_api_create_process_address(std_socket_address_t *addr) {
+    addr->type = e_std_sock_UNIX;
+    addr->addr_type = e_std_socket_a_t_STRING;
+
+    snprintf(addr->address.str,sizeof(addr->address.str)-1,
+            "/tmp/cps_inst_%d_%d",(int)std_thread_id_get(),(int)std_process_id_get());
+}
+
+void cps_api_ns_get_address(std_socket_address_t *addr) {
+    addr->type = e_std_sock_UNIX;
+    addr->addr_type = e_std_socket_a_t_STRING;
+    strncpy(addr->address.str,CPS_API_NS_ID,
+            sizeof(addr->address.str));
+}
 
 bool cps_api_find_owners(cps_api_key_t *key, cps_api_object_owner_reg_t &owner) {
     std_socket_address_t addr;
@@ -172,7 +153,6 @@ static bool  _client_closed_( void *context, int fd ) {
     }
     return true;
 }
-
 
 static std_socket_server_t service_data;
 static std_socket_server_handle_t handle;

@@ -11,6 +11,7 @@
 #include "std_assert.h"
 #include "std_rw_lock.h"
 #include "event_log.h"
+#include "cps_api_event_init.h"
 
 #include "private/cps_api_client_utils.h"
 #include "private/cps_ns.h"
@@ -169,6 +170,11 @@ cps_api_return_code_t cps_api_action(cps_api_transaction_params_t * trans,
         cps_api_object_t object) {
     cps_api_key_set_attr(cps_api_object_key(object),cps_api_oper_ACTION);
     return ds_tran_op_append(trans,object);
+}
+
+bool cps_api_unittest_init(void) {
+    return cps_api_event_service_init()==cps_api_ret_code_OK &&
+            cps_api_ns_startup()==cps_api_ret_code_OK;
 }
 
 }

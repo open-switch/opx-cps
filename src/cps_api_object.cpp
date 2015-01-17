@@ -129,9 +129,16 @@ void db_list_tracker_rm(cps_api_object_t obj) {
     //todo log if not found
 }
 
-void cps_api_list_debug() {
+bool cps_api_list_debug() {
     //TODO implement
     std_mutex_simple_lock_guard g(&db_tracker_lock);
+    tTrackerList::iterator it = trackers.begin();
+    tTrackerList::iterator end = trackers.end();
+    if (it==end) return true;
+    for ( ; it != end ; ++it ) {
+        printf("Objects still found from %s:%d\n",it->second.desc,it->second.ln);
+    }
+    return false;
 }
 
 cps_api_object_t cps_api_object_create_int(const char *desc, unsigned int line) {

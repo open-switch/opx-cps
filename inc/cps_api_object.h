@@ -422,6 +422,12 @@ cps_api_object_t cps_api_object_list_get(cps_api_object_list_t list,size_t ix);
 size_t cps_api_object_list_size(cps_api_object_list_t list);
 
 
+/**
+ * Print out the contents of the CPS API object tracker database.
+ * @return true if no entries - false if there are elements
+ */
+bool cps_api_list_debug(void) ;
+
 #ifdef __cplusplus
 }
 #endif

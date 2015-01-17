@@ -273,6 +273,15 @@ cps_api_operation_types_t cps_api_object_type_operation(cps_api_key_t *key) ;
 
 
 /**
+ * The following function is provided to make unit testing with the CPS library easier.
+ * This function will initialize the event service and also provide a way to support
+ * CPS API operations in a unit testing environment.
+ *
+ * @return true if unit testing environment is ready for users.
+ */
+bool cps_api_unittest_init(void);
+
+/**
  * The handle to the CPS API operation subsystem. Required for use with the object
  * registration below.
  */

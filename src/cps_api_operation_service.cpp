@@ -190,6 +190,7 @@ static bool reconnect_with_ns(cps_api_operation_data_t *data) {
 }
 
 cps_api_return_code_t cps_api_register(cps_api_registration_functions_t * reg) {
+    STD_ASSERT(reg->handle!=NULL);
     cps_api_operation_data_t *p = (cps_api_operation_data_t *)reg->handle;
     std_rw_lock_write_guard g(&p->db_lock);
 
@@ -205,6 +206,15 @@ cps_api_return_code_t cps_api_register(cps_api_registration_functions_t * reg) {
         }
     }
     return cps_api_ret_code_OK;
+}
+
+
+static void _timedout(void * context) {
+    cps_api_operation_data_t *p = (cps_api_operation_data_t *)context;
+    std_rw_lock_write_guard g(&p->db_lock);
+    if (p->ns_handle==STD_INVALID_FD) {
+        reconnect_with_ns(p);
+    }
 }
 
 cps_api_return_code_t cps_api_operation_subsystem_init(
@@ -223,6 +233,8 @@ cps_api_return_code_t cps_api_operation_subsystem_init(
     cps_api_create_process_address(&p->service_data.address);
     p->service_data.thread_pool_size = number_of_threads;
     p->service_data.some_data = _some_data_;
+    p->service_data.timeout = _timedout;
+
     p->service_data.context = p;
 
     if (std_socket_service_init(&p->handle,&p->service_data)!=STD_ERR_OK) {

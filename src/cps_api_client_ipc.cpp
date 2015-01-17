@@ -133,8 +133,6 @@ cps_api_return_code_t cps_api_process_get_request(cps_api_get_params_t *param, s
     cps_api_channel_t handle;
     if (!cps_api_get_handle(param->keys[ix],handle)) return rc;
 
-    cps_api_object_t obj = NULL;
-
     do {
         if (!cps_api_send_header(handle,cps_api_msg_o_GET,sizeof(cps_api_key_t)))
             break;
@@ -147,17 +145,17 @@ cps_api_return_code_t cps_api_process_get_request(cps_api_get_params_t *param, s
 
             if (!cps_api_receive_header(handle,op,len)) break;
             if (op!=cps_api_msg_o_GET_RESP) break;
-            obj = cps_api_receive_object(handle,len);
-            if (obj!=NULL && cps_api_object_list_append(param->list,obj)) {
-                obj=NULL;
+            cps_api_object_guard og (cps_api_receive_object(handle,len));
+
+            if (og.valid() && cps_api_object_list_append(param->list,og.get())) {
+                og.release();
             } else break;
         } while (op == cps_api_msg_o_GET_RESP);
 
-        if (op!=cps_api_msg_o_GET_DONE) break;
+        if (op!=cps_api_msg_o_GET_DONE) break; //leave an error code
         rc = cps_api_ret_code_OK;
     } while (0);
 
-    if (obj!=NULL) cps_api_object_delete(obj);
     cps_api_disconnect_owner(handle);
 
     return rc;
@@ -187,10 +185,10 @@ cps_api_return_code_t cps_api_process_commit_request(cps_api_transaction_params_
         if (!cps_api_receive_header(handle,op,len)) break;
 
         if (op == cps_api_msg_o_COMMIT_OBJECT) {
-            obj = cps_api_receive_object(handle,len);
-            if (obj!=NULL) {
-                if (cps_api_object_list_append(param->prev,obj)) {
-                    obj = NULL;
+            cps_api_object_guard og(cps_api_receive_object(handle,len));
+            if (og.valid()) {
+                if (cps_api_object_list_append(param->prev,og.get())) {
+                    og.release();
                     rc = cps_api_ret_code_OK;
                 }
             }
@@ -201,7 +199,6 @@ cps_api_return_code_t cps_api_process_commit_request(cps_api_transaction_params_
         }
     } while (0);
 
-    if (obj!=NULL) cps_api_object_delete(obj);
     cps_api_disconnect_owner(handle);
 
     return rc;

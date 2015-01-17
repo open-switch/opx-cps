@@ -50,6 +50,11 @@ static cps_api_return_code_t db_write_function(void * context, cps_api_transacti
         cps_api_object_delete(old);
         return cps_api_ret_code_ERR;
     }
+    cps_api_object_attr_t attr = cps_api_object_attr_get(obj,4);
+    if (attr!=NULL) {
+        return cps_api_ret_code_ERR;
+    }
+
     if (index_of_element_being_updated > 0) return cps_api_ret_code_ERR;
 
     return cps_api_ret_code_OK;
@@ -192,7 +197,33 @@ bool test_set(void) {
     }
 
     if (cps_api_commit(&trans)!=cps_api_ret_code_OK) return false;
-    return true;
+    cps_api_transaction_close(&trans);
+
+    /**
+     * Transaction initialize...
+     */
+    if (cps_api_transaction_init(&trans)!=cps_api_ret_code_OK) return false;
+
+    obj = cps_api_object_create();
+    uint32_t inst = cps_api_key_element_at(&keys,CPS_OBJ_KEY_APP_INST_POS);
+    cps_api_object_set_key(obj,&keys);
+    cps_api_object_attr_add(obj,0,"Interface",strlen("Interface"));
+    cps_api_object_attr_add(obj,1,"Interface",strlen("Interface"));
+    cps_api_object_attr_add_u64(obj,3,(uint64_t)inst);
+
+    if (cps_api_set(&trans,obj)!=cps_api_ret_code_OK) return false;
+
+    cloned = cps_api_object_create();
+    cps_api_object_clone(cloned,obj);
+    cps_api_object_attr_add_u64(cloned,4,true);
+
+    if (cps_api_action(&trans,cloned)!=cps_api_ret_code_OK) return false;
+
+    if (cps_api_commit(&trans)==cps_api_ret_code_OK) return false;
+    //transaction complete
+    cps_api_transaction_close(&trans);
+
+    return cps_api_list_debug();
 }
 
 TEST(cps_api_object,ram_based) {
