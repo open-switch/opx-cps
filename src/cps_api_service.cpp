@@ -24,6 +24,9 @@ int main(int argc, char**argv) {
         EV_LOG(ERR,DSAPI,0,"FLT","Failed to initialize the messaging service.");
         return cps_api_ret_code_ERR;
     }
+    if (cps_api_ns_startup()!=cps_api_ret_code_OK) {
+        return cps_api_ret_code_ERR;
+    }
     while (true) sleep(1);
 
     return 0;
