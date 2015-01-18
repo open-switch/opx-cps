@@ -1,4 +1,4 @@
 
-CFG_FILES=$(wildcard init/* modules-load.d/*)
+CFG_FILES=$(wildcard init/* )
 
 include ${PROJROOT}/tools/workspace.mak

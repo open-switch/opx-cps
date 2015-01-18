@@ -1,5 +1,5 @@
 PROGRAMS=
-SUBDIRS=src
+SUBDIRS=src cfg
 LIBRARIES=
 ARCHIVES=
 HEADERS=$(wildcard inc/*.h)
