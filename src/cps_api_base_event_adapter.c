@@ -101,6 +101,7 @@ static cps_api_return_code_t _cps_api_wait_for_event(
             cps_api_object_get_reserve_len(msg))!=STD_ERR_OK) {
         return cps_api_ret_code_ERR;
     }
+    if (!cps_api_object_received(msg,m.data_len)) return cps_api_ret_code_ERR;
     return cps_api_ret_code_OK;
 }
 
