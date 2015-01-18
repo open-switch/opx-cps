@@ -7,7 +7,7 @@
 #include "cps_api_service.h"
 #include "std_event_service.h"
 #include "event_log.h"
-
+#include "private/cps_ns.h"
 #include <unistd.h>
 
 static std_event_server_handle_t _handle=NULL;

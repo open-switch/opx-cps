@@ -1,4 +1,4 @@
-PROGRAMS=
+PROGRAMS= cps_api_service
 SUBDIRS=
 LIBRARIES= cps-api-common
 ARCHIVES=
