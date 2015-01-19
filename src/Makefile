@@ -1,4 +1,4 @@
-PROGRAMS= cps_api_service
+PROGRAMS= cps_api_service cps_api_example
 SUBDIRS=
 LIBRARIES= cps-api-common
 ARCHIVES=
@@ -17,6 +17,9 @@ cps_api_operation_unittest_LDFLAGS=-lcps-api-common
 
 cps_api_events_unittest_SRCS=unit_test/cps_api_events_unittest.cpp
 cps_api_events_unittest_LDFLAGS=-lcps-api-common -ldn_common
+
+cps_api_example_SRCS=example/cps_api_operation_example.c
+cps_api_example_LDFLAGS=-lcps-api-common -ldn_common
 
 cps-api-common_SRCS=cps_api_object.cpp \
         cps_api_events.cpp \

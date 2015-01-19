@@ -124,8 +124,12 @@ void db_list_tracker_add(cps_api_object_t obj, const char * label, unsigned int 
 
 void db_list_tracker_rm(cps_api_object_t obj) {
     std_mutex_simple_lock_guard g(&db_tracker_lock);
-    tTrackerList::iterator it = trackers.find(obj);
-    if (it!=trackers.end()) trackers.erase(it);
+    size_t before = trackers.size();
+    trackers.erase(obj);
+    size_t after = trackers.size();
+    if (before <= after ) {
+        printf("Issue..\n");
+    }
     //todo log if not found
 }
 

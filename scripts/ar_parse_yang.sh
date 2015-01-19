@@ -1,6 +1,8 @@
 #!/bin/bash
 
-TOOL_ROOT=$PWD/py
+if [ "$TOOL_ROOT"b = b ] ; then
+    TOOL_ROOT=$PWD/py
+fi
 
 od=$2
 

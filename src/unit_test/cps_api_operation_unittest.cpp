@@ -15,20 +15,26 @@
 #include "private/cps_ns.h"
 #include "cps_api_operation.h"
 
-
+#define OBJECTS_IN_GET (10000)
 
 static cps_api_return_code_t db_read_function (void * context, cps_api_get_params_t * param, size_t key_ix) {
     STD_ASSERT(key_ix < param->key_count);
     cps_api_key_t * the_key = &param->keys[key_ix];
 
     uint32_t inst = cps_api_key_element_at(the_key,CPS_OBJ_KEY_APP_INST_POS);
-
-    cps_api_object_t obj = cps_api_object_create();
-    cps_api_object_set_key(obj,the_key);
-    cps_api_object_attr_add(obj,0,"Interface",strlen("Interface"));
-    cps_api_object_attr_add(obj,inst,"Interface",strlen("Interface"));
-    cps_api_object_attr_add_u64(obj,3,(uint64_t)inst);
-    cps_api_object_list_append(param->list,obj);
+    size_t ix = 0;
+    size_t mx = OBJECTS_IN_GET;
+    for ( ; ix < mx ; ++ix ) {
+        cps_api_object_t obj = cps_api_object_create();
+        cps_api_object_set_key(obj,the_key);
+        cps_api_object_attr_add(obj,0,"Interface",strlen("Interface"));
+        cps_api_object_attr_add(obj,inst,"Interface",strlen("Interface"));
+        cps_api_object_attr_add_u64(obj,3,(uint64_t)inst);
+        if (!cps_api_object_list_append(param->list,obj)) {
+            cps_api_object_delete(obj);
+            return cps_api_ret_code_ERR;
+        }
+    }
 
     return cps_api_ret_code_OK;
 }
@@ -117,6 +123,7 @@ bool do_test_get(void) {
     get_req.keys = keys;
 
     if (cps_api_get(&get_req)!=cps_api_ret_code_OK) return false;
+    size_t expected = get_req.key_count * OBJECTS_IN_GET;
 
     size_t len = cps_api_object_list_size(get_req.list);
     size_t ix = 0;
@@ -131,7 +138,7 @@ bool do_test_get(void) {
         }
     }
     cps_api_get_request_close(&get_req);
-    return ix == 3;
+    return ix == expected;
 }
 
 bool test_set(void) {
@@ -163,7 +170,7 @@ bool test_set(void) {
         cps_api_object_attr_add_u64(obj,3,(uint64_t)inst);
         create =true;
     }
-    //cps_api_get_request_close(&get_req);
+    cps_api_get_request_close(&get_req);
 
     cps_api_transaction_params_t trans;
     if (cps_api_transaction_init(&trans)!=cps_api_ret_code_OK) return false;
