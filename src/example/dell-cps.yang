@@ -1,0 +1,78 @@
+module dell-cps {
+
+namespace "http://www.dell.com/ns/amazon-river:0.1/cps/interfaces";
+prefix "cps";
+
+import dell-common-types {
+  prefix "ct";
+}
+
+organization
+"Dell Inc";
+
+contact
+"http://support.dell.com/force10";
+
+description "This module is an example for people implementing CPS modules.";
+
+revision 2014-08-06 {
+description
+"Initial revision.";
+}
+
+/**
+* Example of an enumeration.  Comments in C style comment.
+*/
+
+typedef enumeration-name-type { 
+
+        description "Description describes the enumeration and enumeration use" ; 
+        
+        type enumeration {
+            enum ENUMERATION_ONE;
+            enum ENUMERATION_TWO {
+               value 3; 
+               description "if you know the value you need for the enumeration specify it but must be done for all enums in the enumeration";
+            }
+        }
+}
+
+/** example of creating a type */
+typedef some-special-id {
+        type uint32;
+        description "Uniquely identifies any object in this file ";
+}
+
+
+list object-list-type {
+    key  "obj-list-ix obj-id" ; 
+	description "descripton of object and how to use";
+    
+    leaf obj-list-ix {
+        type uint32;
+        description "some description - eg rolls at x";
+    }
+    leaf obj-id {
+        type uint32; 
+        description "part of the object's key";
+    }
+
+	leaf name {
+	   type string;
+	   description "string name field - again some description";
+    }
+
+    leaf uint16-type-field {
+	  type uint16;
+          description "an example of another type";
+    }
+
+    leaf get-attribute-only {
+ 	  config false;
+      type uint32;
+	  description "this attribute is available for get - there is no configuration that can be done on it";
+	}
+}
+
+
+}
