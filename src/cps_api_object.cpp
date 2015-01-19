@@ -11,6 +11,7 @@
 
 #include "std_tlv.h"
 #include "cps_api_object.h"
+#include "event_log.h"
 
 #include <endian.h>
 #include <string.h>
@@ -128,13 +129,12 @@ void db_list_tracker_rm(cps_api_object_t obj) {
     trackers.erase(obj);
     size_t after = trackers.size();
     if (before <= after ) {
-        printf("Issue..\n");
+        EV_LOG(ERR,DSAPI,0,"SWERR","Invalid object delete found.");
     }
     //todo log if not found
 }
 
 bool cps_api_list_debug() {
-    //TODO implement
     std_mutex_simple_lock_guard g(&db_tracker_lock);
     tTrackerList::iterator it = trackers.begin();
     tTrackerList::iterator end = trackers.end();

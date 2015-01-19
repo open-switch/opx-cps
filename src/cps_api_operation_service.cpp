@@ -217,6 +217,17 @@ static void _timedout(void * context) {
     }
 }
 
+
+static bool _del_client(void * context, int fd) {
+    cps_api_operation_data_t *p = (cps_api_operation_data_t *)context;
+    std_rw_lock_write_guard g(&p->db_lock);
+
+    if (p->ns_handle==fd) {
+        p->ns_handle = STD_INVALID_FD;
+    }
+    return true;
+}
+
 cps_api_return_code_t cps_api_operation_subsystem_init(
         cps_api_operation_handle_t *handle, size_t number_of_threads) {
 
@@ -234,6 +245,7 @@ cps_api_return_code_t cps_api_operation_subsystem_init(
     p->service_data.thread_pool_size = number_of_threads;
     p->service_data.some_data = _some_data_;
     p->service_data.timeout = _timedout;
+    p->service_data.del_client = _del_client;
 
     p->service_data.context = p;
 
@@ -248,7 +260,12 @@ cps_api_return_code_t cps_api_operation_subsystem_init(
         return cps_api_ret_code_ERR;
     }
 
-    reconnect_with_ns(p);
+    {
+        std_rw_lock_write_guard g(&p->db_lock);
+        reconnect_with_ns(p);
+    }
+
+
 
     *handle = p;
 
