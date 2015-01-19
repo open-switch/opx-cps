@@ -45,9 +45,9 @@ extern "C" {
 typedef enum {
     cps_api_qualifier_NULL=0,
     cps_api_qualifier_TARGET=1,
-    cps_api_qualifier_OBSERVED=1,
-    cps_api_qualifier_PROPOSED=2,
-    cps_api_qualifier_REALTIME=3,
+    cps_api_qualifier_OBSERVED=2,
+    cps_api_qualifier_PROPOSED=3,
+    cps_api_qualifier_REALTIME=4,
     cps_api_qualifier_MAX
 } cps_api_qualifier_t;
 
@@ -271,12 +271,41 @@ typedef enum {
  */
 cps_api_operation_types_t cps_api_object_type_operation(cps_api_key_t *key) ;
 
+
+/**
+ * The following function is provided to make unit testing with the CPS library easier.
+ * This function will initialize the event service and also provide a way to support
+ * CPS API operations in a unit testing environment.
+ *
+ * @return true if unit testing environment is ready for users.
+ */
+bool cps_api_unittest_init(void);
+
+/**
+ * The handle to the CPS API operation subsystem. Required for use with the object
+ * registration below.
+ */
+typedef void * cps_api_operation_handle_t;
+
+
+/**
+ * Initialize the operation subsystem and get back a handle.  The handle then can be used
+ * to in futher calls to register a CPS object.
+ * @param handle handle to the CPS owner
+ * @param number_of_threads number of threads to process
+ * @return standard db return code
+ */
+cps_api_return_code_t cps_api_operation_subsystem_init(
+        cps_api_operation_handle_t *handle, size_t number_of_threads) ;
+
+
 /**
  * A registration function for the database
  * Implementers of the write API need to handle the db operation types and as part of the type field
  * in the db_list_entry structure.  This can be done by calling
  */
 typedef struct {
+    cps_api_operation_handle_t handle;
     void * context; //! some application specific context to pass to the read/write function
     cps_api_key_t key;
     cps_api_return_code_t (*_read_function) (void * context, cps_api_get_params_t * param, size_t key_ix); //! the read db function
@@ -293,6 +322,39 @@ cps_api_return_code_t cps_api_register(cps_api_registration_functions_t * reg);
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef __cplusplus
+
+/**
+ * Cleanup a transaction automatically when you go out of scope with this transaciton helper
+ */
+class cps_api_transaction_guard {
+    cps_api_transaction_params_t *param;
+public:
+    cps_api_transaction_guard(cps_api_transaction_params_t*p) {
+        param = p;
+    }
+    ~cps_api_transaction_guard() {
+        cps_api_transaction_close(param);
+    }
+};
+
+/**
+ * Cleanup a a get request automatically when you go out of scope with this get
+ * request helper
+ */
+class cps_api_get_request_guard {
+    cps_api_get_params_t *param;
+public:
+    cps_api_get_request_guard(cps_api_get_params_t*p) {
+        param = p;
+    }
+    ~cps_api_get_request_guard() {
+        cps_api_get_request_close(param);
+    }
+};
+
 #endif
 /**
  * @}

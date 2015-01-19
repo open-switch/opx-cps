@@ -11,94 +11,159 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+
 #include "gtest/gtest.h"
+
 
 #include "cps_api_operation.h"
 #include "cps_api_events.h"
 #include "cps_api_event_init.h"
+#include "std_event_service.h"
+#include "cps_api_service.h"
+
+#include <pthread.h>
+#include <sys/select.h>
 
 cps_api_event_service_handle_t handle;
 
-size_t cnt =0;
 
 bool _cps_api_event_thread_callback(cps_api_object_t object,void * context) {
      char buff[1024];
-     printf("1 - Obj %s\n",cps_api_object_to_string(object,buff,sizeof(buff)));
+     static int cnt=0;
+     printf("1(%d)- Obj %s\n",cnt,cps_api_object_to_string(object,buff,sizeof(buff)));
      ++cnt;
      return true;
 }
 
 bool _cps_api_event_thread_callback_2(cps_api_object_t object,void * context) {
      char buff[1024];
-     printf("2 - Obj %s\n",cps_api_object_to_string(object,buff,sizeof(buff)));
+     static int cnt=0;
+     printf("2(%d) - Obj %s\n",cnt,cps_api_object_to_string(object,buff,sizeof(buff)));
      ++cnt;
      return true;
 }
 
-bool init(void) {
 
-     bool rc =  cps_api_event_service_init()==cps_api_ret_code_OK;
+bool threaded_client_test() {
+    if (cps_api_event_thread_init()!=cps_api_ret_code_OK) return false;
 
-     if (!rc) return false;
+    cps_api_event_reg_t reg;
+    reg.priority = 0;
 
-     if (cps_api_event_client_connect(&handle)!=cps_api_ret_code_OK) return false;
-
-     cps_api_event_reg_t reg;
-     reg.priority = 0;
-
-    cps_api_key_t keys[2];
-    cps_api_key_init(&keys[0],cps_api_qualifier_TARGET,
+    cps_api_key_t keys[5];
+    cps_api_key_init(&keys[0],cps_api_qualifier_OBSERVED,
             cps_api_obj_cat_INTERFACE,1,0);
 
-    cps_api_key_init(&keys[1],cps_api_qualifier_TARGET,
+    cps_api_key_init(&keys[1],cps_api_qualifier_OBSERVED,
             cps_api_obj_cat_ROUTE,1,0);
 
+    cps_api_key_init(&keys[2],cps_api_qualifier_OBSERVED,
+            cps_api_obj_cat_ROUTE,1,1,1);
+
+    cps_api_key_init(&keys[3],cps_api_qualifier_TARGET,
+            cps_api_obj_cat_ROUTE,1,0);
+
+    cps_api_key_init(&keys[4],cps_api_qualifier_TARGET,
+            cps_api_obj_cat_INTERFACE,1,0);
+
     reg.objects = keys;
-    reg.number_of_objects = sizeof(keys)/sizeof(*keys);
-
-    if (cps_api_event_client_register(handle,&reg)!=cps_api_ret_code_OK) return false;
-
-    if (cps_api_event_thread_init()!=cps_api_ret_code_OK) return false;
+    reg.number_of_objects = 5 ; //sizeof(keys)/sizeof(*keys);
 
     if (cps_api_event_thread_reg(&reg,
             _cps_api_event_thread_callback,NULL)!=cps_api_ret_code_OK)
         return false;
 
+    cps_api_key_set_len(keys,1);
+    reg.number_of_objects = 1;
     if (cps_api_event_thread_reg(&reg,
             _cps_api_event_thread_callback_2,NULL)!=cps_api_ret_code_OK)
         return false;
-
     return true;
 }
 
-bool send_receive(void) {
+bool push_running = true;
+void * push_client_messages(void *) {
+
+    size_t ix = 0;
+    size_t mx = 10000;
+
+    cps_api_event_service_handle_t handle;
+    if (cps_api_event_client_connect(&handle)!=cps_api_ret_code_OK) return false;
+
     cps_api_object_t obj = cps_api_object_create();
-    cps_api_key_init(cps_api_object_key(obj),cps_api_qualifier_TARGET,
-                cps_api_obj_cat_INTERFACE,1,1,3);
     cps_api_object_attr_add(obj,1,"Cliff",6);
+    cps_api_qualifier_t q[2] ={ cps_api_qualifier_TARGET, cps_api_qualifier_OBSERVED};
+    cps_api_object_category_types_t c[3]={cps_api_obj_cat_INTERFACE,
+            cps_api_obj_cat_ROUTE,cps_api_obj_cat_QOS
+    };
 
-    if (cps_api_event_thread_publish(obj)!=cps_api_ret_code_OK) return false;
-    while (cnt<2) sleep(1);
+    for ( ; ix < mx ; ++ix ) {
+        if ((ix %10)==0) {
+            if (cps_api_event_client_disconnect(handle)!=cps_api_ret_code_OK) return false;
+            if (cps_api_event_client_connect(&handle)!=cps_api_ret_code_OK) return false;
+            sleep(1);
+        }
+        cps_api_key_init(cps_api_object_key(obj),q[ix%2],c[ix%3],1,2,ix%3,ix);
+        if (cps_api_event_publish(handle,obj)!=cps_api_ret_code_OK) exit(1);
+    }
+    push_running = false;
+    return NULL;
+}
 
-    if (cps_api_event_publish(handle,obj)!=cps_api_ret_code_OK) return false;
-    while (cnt<4) sleep(1);
+bool simple_client_use() {
+    cps_api_event_service_handle_t handle;
+    if (cps_api_event_client_connect(&handle)!=cps_api_ret_code_OK) return false;
 
-    const int MAX_OBJ_LEN=(1024);
+    cps_api_event_reg_t reg;
+    reg.priority = 0;
+
+    cps_api_key_t keys[5];
+    cps_api_key_init(&keys[0],cps_api_qualifier_OBSERVED,
+            cps_api_obj_cat_INTERFACE,1,0);
+
+    cps_api_key_init(&keys[1],cps_api_qualifier_OBSERVED,
+            cps_api_obj_cat_ROUTE,1,0);
+
+    cps_api_key_init(&keys[2],cps_api_qualifier_OBSERVED,
+            cps_api_obj_cat_ROUTE,1,1,1);
+
+    cps_api_key_init(&keys[3],cps_api_qualifier_TARGET,
+            cps_api_obj_cat_ROUTE,1,0);
+
+    cps_api_key_init(&keys[4],cps_api_qualifier_TARGET,
+            cps_api_obj_cat_INTERFACE,1,0);
+
+
+    reg.objects = keys;
+    reg.number_of_objects =5; //sizeof(keys)/sizeof(*keys);
+
+    if (cps_api_event_client_register(handle,&reg)!=cps_api_ret_code_OK) return false;
+
     cps_api_object_t rec = cps_api_object_create();
+    pthread_t id;
+    pthread_create(&id,NULL,push_client_messages,NULL);
+    char buff[1024];
+    int cnt=0;
+    while(true) {
+        if (cps_api_wait_for_event(handle,rec)!=cps_api_ret_code_OK) return false;
+        printf("3(%d) -  %s\n",cnt,cps_api_object_to_string(rec,buff,sizeof(buff)));
+        ++cnt;
+    }
+    return true;
+}
 
-    if (cps_api_object_reserve(rec,MAX_OBJ_LEN)==cps_api_ret_code_OK) return true;
-    if (cps_api_wait_for_event(handle,rec)!=cps_api_ret_code_OK) return false;
-
-    //compare the received objects for the unit test only.  Should really walk through the attributes
-    //of the object and do something with them but.. this is a unit test with fake data..
-    return memcmp(cps_api_object_array(obj),cps_api_object_array(rec),
-            cps_api_object_to_array_len(obj))==0;
+bool test_init() {
+    static std_event_server_handle_t _handle=NULL;
+    std_event_server_init(&_handle,CPS_API_EVENT_CHANNEL_NAME,CPS_API_EVENT_THREADS );
+    return (cps_api_event_service_init()==cps_api_ret_code_OK);
 }
 
 TEST(cps_api_events,init) {
-    ASSERT_TRUE(init());
+    ASSERT_TRUE(test_init());
 
-    ASSERT_TRUE(send_receive());
+    ASSERT_TRUE(threaded_client_test());
+
+    ASSERT_TRUE(simple_client_use());
 
 }
 

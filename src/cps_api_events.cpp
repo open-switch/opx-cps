@@ -96,6 +96,11 @@ static  void * _thread_function_(void * param) {
                     if (!it->cb(obj,it->context)) break;
                 }
             }
+        } else {
+            //if there is a failure reading from the client - disconnect and reconnect
+            //ideally this will be hidden beneath the handle itself in the very near future
+            cps_api_event_client_disconnect(handle);
+            cps_api_event_client_connect(&handle);
         }
     }
     return NULL;

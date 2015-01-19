@@ -422,10 +422,55 @@ cps_api_object_t cps_api_object_list_get(cps_api_object_list_t list,size_t ix);
 size_t cps_api_object_list_size(cps_api_object_list_t list);
 
 
+/**
+ * Print out the contents of the CPS API object tracker database.
+ * @return true if no entries - false if there are elements
+ */
+bool cps_api_list_debug(void) ;
+
 #ifdef __cplusplus
 }
 #endif
 
+#ifdef __cplusplus
+
+/**
+ * This is an object helper.  It will take an object and provide the ability to clean it up
+ * automatically once it goes out of scope.
+ *
+ */
+class cps_api_object_guard {
+    cps_api_object_t obj;
+public:
+    /**
+     * takes a newly created object and stores
+     * @param o the object to manage internally
+     */
+    cps_api_object_guard(cps_api_object_t o) : obj(o) {}
+
+    /**
+     * When the object goes out of scope delete the object if it is still owned  (not NULL)
+     */
+    ~cps_api_object_guard() {
+        if (obj!=NULL) cps_api_object_delete(obj);
+    }
+    /**
+     * Check to see if the object is valid
+     */
+    bool valid() { return obj!=NULL; }
+
+    /**
+     * Release the object - will not be destroyed when this cps_api_object_guard
+     * is going out of scope
+     */
+    cps_api_object_t release() { cps_api_object_t tmp = obj; obj = NULL; return tmp; }
+    /**
+     * Return the contained object
+     */
+    cps_api_object_t get() { return obj; }
+};
+
+#endif
 
 #endif /* CPS_API_COMMON_LIST_H_ */
 

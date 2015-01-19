@@ -8,81 +8,102 @@
 #include "cps_api_event_init.h"
 #include "std_event_service.h"
 #include "cps_api_operation.h"
+#include "cps_api_service.h"
 
 #include <stdlib.h>
 
-static std_event_server_handle _handle=NULL;
+#define DEFAULT_DATA_LEN (1000)
+
+
+typedef struct {
+    std_event_client_handle handle;
+    std_event_msg_buff_t buff;
+} cps_api_to_std_event_map_t;
 
 static inline std_event_client_handle handle_to_std_handle(cps_api_event_service_handle_t handle) {
-    return *(std_event_client_handle*)(&handle);
+    cps_api_to_std_event_map_t *p = (cps_api_to_std_event_map_t*) handle;
+    return p->handle;
+}
+static inline std_event_msg_buff_t handle_to_buff(cps_api_event_service_handle_t handle) {
+    cps_api_to_std_event_map_t *p = (cps_api_to_std_event_map_t*) handle;
+    return p->buff;
 }
 
-/**
- * The HAL event service path passed to the standard event service API
- */
-#define HAL_EVENT_SERVICE_PATH "/tmp/hal_event_service"
-
 static cps_api_return_code_t _cps_api_event_service_client_connect(cps_api_event_service_handle_t * handle) {
-    return std_server_client_connect((std_event_client_handle*)handle,HAL_EVENT_SERVICE_PATH) == STD_ERR_OK ?
-            cps_api_ret_code_OK : cps_api_ret_code_ERR;
+
+    cps_api_to_std_event_map_t *p = calloc(1,sizeof(cps_api_to_std_event_map_t));
+    if (p==NULL) return cps_api_ret_code_ERR;
+
+    if (std_server_client_connect(&p->handle,
+            CPS_API_EVENT_CHANNEL_NAME) == STD_ERR_OK) {
+        p->buff = std_client_allocate_msg_buff(DEFAULT_DATA_LEN,false);
+        if (p->buff!=NULL) {
+            *handle = p;
+            return cps_api_ret_code_OK;
+        }
+        std_server_client_disconnect(p->handle);
+    }
+    free(p);
+    return cps_api_ret_code_ERR;
+}
+
+static void cps_api_to_std_key(std_event_key_t *key,cps_api_key_t *cps_key) {
+    memcpy(key->event_key,cps_api_key_elem_start(cps_key),
+            cps_api_key_get_len(cps_key)* sizeof (key->event_key[0]));
+    key->len = cps_api_key_get_len(cps_key);
 }
 
 static cps_api_return_code_t _cps_api_event_service_client_register(cps_api_event_service_handle_t handle,
         cps_api_event_reg_t * req) {
     size_t ix = 0;
     size_t mx = req->number_of_objects;
-
-    std_event_srv_reg_msg_t m;
-    memset(&m,0,sizeof(m));
+    std_event_key_t key;
     for ( ; ix < mx ; ++ix ) {
-        if (!cps_api_key_valid_offset(&req->objects[ix],CPS_OBJ_KEY_CAT_POS)) {
-            return cps_api_ret_code_ERR;
-        }
-        std_event_enable_class(&m.classes,
-                cps_api_key_element_at(&req->objects[ix],CPS_OBJ_KEY_CAT_POS));
+        cps_api_to_std_key(&key,&req->objects[ix]);
+        if (std_client_register_interest(handle_to_std_handle(handle),
+                &key,1)!=STD_ERR_OK) return cps_api_ret_code_ERR;
     }
-    if (std_client_register_interest(handle_to_std_handle(handle),&m)!=STD_ERR_OK) {
-        return cps_api_ret_code_ERR;
-    }
+
     return cps_api_ret_code_OK;
 }
 
 static cps_api_return_code_t _cps_api_event_service_publish_msg(cps_api_event_service_handle_t handle,
         cps_api_object_t msg) {
-    std_event_msg_t m;
+
     if (!cps_api_key_valid_offset(cps_api_object_key(msg),CPS_OBJ_KEY_SUBCAT_POS)) {
         return cps_api_ret_code_ERR;
     }
+    std_event_key_t key;
 
-    m.event_class = cps_api_key_element_at(cps_api_object_key(msg),CPS_OBJ_KEY_CAT_POS);
-    m.sub_class = cps_api_key_element_at(cps_api_object_key(msg),CPS_OBJ_KEY_SUBCAT_POS);
-    m.data_len = cps_api_object_to_array_len(msg);
-    m.data = cps_api_object_array(msg);
-    return std_client_publish_msg(handle_to_std_handle(handle),&m) == STD_ERR_OK ?
-            cps_api_ret_code_OK : cps_api_ret_code_ERR;
+    cps_api_to_std_key(&key,cps_api_object_key(msg));
+
+    return std_client_publish_msg_data(handle_to_std_handle(handle), &key,
+            cps_api_object_array(msg),
+            cps_api_object_to_array_len(msg)) == STD_ERR_OK ?
+                    cps_api_ret_code_OK : cps_api_ret_code_ERR;
 }
 
 static cps_api_return_code_t _cps_api_event_service_client_deregister(cps_api_event_service_handle_t handle) {
-    return cps_api_ret_code_OK;
+    std_event_client_handle h = handle_to_std_handle(handle);
+    std_client_free_msg_buff(handle_to_buff(handle));
+    free(handle);
+    return std_server_client_disconnect(h);
+
 }
 
-static cps_api_return_code_t _cps_api_wait_for_event(cps_api_event_service_handle_t handle,
+static cps_api_return_code_t _cps_api_wait_for_event(
+        cps_api_event_service_handle_t handle,
         cps_api_object_t msg) {
 
     std_event_msg_t m;
-    m.max_data_len = cps_api_object_get_reserve_len(msg);
-    m.data = cps_api_object_array(msg);
-    cps_api_return_code_t cps_rc = cps_api_ret_code_ERR;
-    t_std_error rc = std_client_wait_for_event(handle_to_std_handle(handle),&m);
-    if (rc==STD_ERR_OK) {
-        if (cps_api_object_received(msg,m.data_len)) {
-            cps_rc = cps_api_ret_code_OK;
-        }
+    if (std_client_wait_for_event_data( handle_to_std_handle(handle),
+            &m, cps_api_object_array(msg),
+            cps_api_object_get_reserve_len(msg))!=STD_ERR_OK) {
+        return cps_api_ret_code_ERR;
     }
-    return cps_rc;
+    if (!cps_api_object_received(msg,m.data_len)) return cps_api_ret_code_ERR;
+    return cps_api_ret_code_OK;
 }
-
-
 
 static cps_api_event_methods_reg_t functions = {
     .connect_function =_cps_api_event_service_client_connect,
@@ -92,11 +113,7 @@ static cps_api_event_methods_reg_t functions = {
     .wait_for_event_function = _cps_api_wait_for_event
 };
 
-
 cps_api_return_code_t cps_api_event_service_init(void) {
-    if (std_event_server_init(&_handle,HAL_EVENT_SERVICE_PATH)==STD_ERR_OK) {
-        cps_api_event_method_register(&functions);
-        return cps_api_ret_code_OK;
-    }
-    return cps_api_ret_code_ERR;
+    cps_api_event_method_register(&functions);
+    return cps_api_ret_code_OK;
 }
