@@ -41,35 +41,5 @@ typedef enum {
     cps_api_if_ROUTE_A_MAX
 }cps_api_if_ROUTE_ATTR;
 
-#if 0
-typedef struct  {
-    db_route_msg_t  msg_type;
-    unsigned short  distance;
-    unsigned short  protocol;
-    unsigned long   vrfid;
-    hal_ip_addr_t         prefix;
-    unsigned short  prefix_masklen;
-    hal_ifindex_t   nh_if_index;
-    unsigned long   nh_vrfid;
-    hal_ip_addr_t         nh_addr;
-}db_route_t;
-#endif
-
-
-
-#if 0
-typedef struct  {
-    unsigned short  family;
-    db_nbr_event_type_t    msg_type;
-    hal_ip_addr_t         nbr_addr;
-    hal_mac_addr_t      nbr_hwaddr;
-    hal_ifindex_t   if_index;
-    hal_ifindex_t   phy_if_index;
-    unsigned long   vrfid;
-    unsigned long   expire;
-    unsigned long   flags;
-    unsigned long   state;
-}db_neighbour_entry_t;
-#endif
 
 #endif /* cps_api_route_H_ */
