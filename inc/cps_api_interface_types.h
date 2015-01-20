@@ -99,22 +99,6 @@ typedef enum {
 }cps_api_if_ADDR_ATTR;
 
 
-#if 0
-/**
- * Database structure for an interface
- */
-typedef struct  {
-    char if_name[HAL_IF_NAME_SZ+1];
-    hal_ifindex_t   if_index;
-    unsigned long   if_flags;
-    long            namelen;
-    hal_ip_addr_t   if_addr;
-    hal_ip_addr_t   if_mask;
-    db_if_addr_msg_type_t        if_msgtype;
-} db_if_addr_t;
-#endif
-
-
 //cps_api_int_obj_INTERFACE
 typedef enum {
     cps_api_if_STRUCT_A_NAME=0, //char *
@@ -132,32 +116,7 @@ typedef enum {
     cps_api_if_STRUCT_A_MAX
 }cps_api_if_STRUCT_ATTR;
 
-#if 0
-typedef struct  {
-    char               if_name[HAL_IF_NAME_SZ+1];
-    hal_ifindex_t     if_index;
-    unsigned short     if_flags;
-    long               namelen;
-    hal_mac_addr_t          if_hwaddr;
-    unsigned long      vrfid;
-    unsigned short     family;
-    db_interface_state_t  if_astate;
-    db_interface_operational_state_t   if_ostate;
-    unsigned int               mtu;
-    db_if_type_t         if_type;
-    hal_vlan_id_t         if_vlan;
-}db_if_t;
-
-typedef struct {
-    db_if_t interface;
-    db_interface_operation_t operation;
-} db_if_event_t;
-#endif
-
-
 
 #define cps_api_if_QDISC (4)
-
-
 
 #endif /* DB_EVENT_INTERFACE_H_ */
