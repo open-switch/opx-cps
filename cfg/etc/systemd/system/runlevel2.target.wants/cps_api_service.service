@@ -14,5 +14,5 @@ RestartSec=0
 LimitNOFILE=16384
 
 [Install]
-WantedBy=network-pre.target
+WantedBy=runlevel2.target
 
