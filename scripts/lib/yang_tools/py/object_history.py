@@ -8,7 +8,6 @@ class enum_tracker:
     the_dict = None
     last_index = None
 
-
     def __init__(self,name):
         self.the_dict = dict()
         self.the_name = name
@@ -72,13 +71,13 @@ class enum_tracker:
         the_file.write("obj "+self.the_name+" end\n");
         return True
 
-class ar_history:
+class history:
     the_file = None
     the_name = ""
     the_dict = None
 
     def __init__(self, filename):
-        self.the_name = filename+".hist";
+        self.the_name = filename
         self.the_dict = dict()
 
         try:
@@ -119,13 +118,13 @@ def get():
 
 def init(file):
     global historical_enums
-    historical_enums = ar_history(file)
+    historical_enums = history(file)
 
 def close():
     global historical_enums
     historical_enums.write()
 
 if __name__ == '__main__':
-    hf = ar_history_file (sys.argv[1])
+    hf = history(sys.argv[1])
 
 

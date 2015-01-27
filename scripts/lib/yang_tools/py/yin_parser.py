@@ -3,16 +3,15 @@ import yin_ns
 import yin_utils
 import yin_enum
 import object_history
+import yin_cps
 
 import xml.etree.ElementTree as ET
 
+import os
 import sys
-
-import yin_cps
 
 
 mod_prefix = ""
-
 
 
 factory = {
@@ -51,24 +50,13 @@ def process(filename,history):
 
 
     nodes = list(root)
-    print ""
-    print "/*"
-    print "* source yang file : "+ just_name
-    print "* (c) Copyright 2014 Dell Inc. All Rights Reserved."
-    print "*/"
-    print ""
-    print "/* OPENSOURCELICENSE */"
-
-    print "#ifndef "+yin_utils.string_to_c_formatted_name(yin_ns.get_mod_name()+"_H")
-    print "#define "+yin_utils.string_to_c_formatted_name(yin_ns.get_mod_name()+"_H")
-    print ""
-    print ""
+    yin_utils.header_file_open(just_name,yin_ns.get_mod_name(),sys.stdout)
 
     yin_cps.cps_create_doc_ids(root)
     el = yin_enum.EnumerationList(root)
     el.show()
+    yin_utils.header_file_close(sys.stdout)
 
-    print "#endif"
     object_history.close()
 
 
