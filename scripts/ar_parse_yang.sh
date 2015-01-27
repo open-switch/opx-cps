@@ -24,4 +24,4 @@ fi
 
 pyang $yf -f yin > $tf
 
-python $TOOL_ROOT/ar_yin_reader.py $tf > $of
+python $TOOL_ROOT/yin_parser.py $tf > $of
