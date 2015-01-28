@@ -74,11 +74,17 @@ static size_t obj_data_offset(cps_api_object_internal_t *p, void * tlv) {
     return loc - data;
 }
 
-static void * add_get_tlv_pos_with_enough_space(cps_api_object_internal_t * p, uint64_t attr, uint64_t len) {
-    if (p->remain < (len + STD_TLV_HDR_LEN)) {
-        p = obj_realloc(p, (size_t)(len + obj_used_len(p) + STD_TLV_HDR_LEN) + DEF_OBJECT_REALLOC_STEP_SIZE);
-        if (p == NULL) return NULL;
+
+static bool reserve_spacespace(cps_api_object_internal_t * p, uint64_t len) {
+    if (p->remain < len ) {
+        p = obj_realloc(p, (size_t)(len + obj_used_len(p) + DEF_OBJECT_REALLOC_STEP_SIZE));
+        if (p == NULL) return false;
     }
+    return true;
+}
+
+static void * add_get_tlv_pos_with_enough_space(cps_api_object_internal_t * p, uint64_t attr, uint64_t len) {
+    if (!reserve_spacespace(p,len+STD_TLV_HDR_LEN)) return NULL;
     return std_tlv_offset(obj_data(p), obj_used_len(p));
 }
 
@@ -262,6 +268,76 @@ bool cps_api_object_attr_add_u64(cps_api_object_t obj, cps_api_attr_id_t id,uint
 
     ptr = std_tlv_add_u64(ptr, &p->remain, id, data);
     return (ptr != NULL);
+}
+
+cps_api_object_attr_t cps_api_object_e_get(cps_api_object_t obj, cps_api_attr_id_t *id,
+        size_t id_size) {
+
+    size_t len = obj_used_len((cps_api_object_internal_t*)obj);
+    void *tlv = obj_data((cps_api_object_internal_t*)obj);
+    size_t ix = 0;
+    for ( ; ix < id_size; ++ix) {
+        tlv = std_tlv_find_next(tlv,&len,id[ix]);
+        if (tlv==NULL) return NULL;
+        len = std_tlv_len(tlv);
+        tlv = std_tlv_data(tlv);
+    }
+    return tlv;
+}
+
+bool cps_api_object_e_add(cps_api_object_t obj, cps_api_attr_id_t *id,
+        size_t id_size, cps_api_object_ATTR_TYPE_t type, const void *data, size_t dlen) {
+
+       size_t current_obj_len = obj_used_len((cps_api_object_internal_t*)obj);
+
+    size_t len = current_obj_len;
+    void *tlv = obj_data((cps_api_object_internal_t*)obj);
+    size_t ix = 0;
+
+    for ( ; ix < (id_size-1); ++ix) {
+        tlv = std_tlv_find_next(tlv,&len,id[ix]);
+        if (tlv==NULL) break;
+        tlv = std_tlv_data(tlv);
+    }
+
+       size_t remaining_needed = dlen + (STD_TLV_HDR_LEN * (id_size - ix));
+
+       if (!reserve_spacespace((cps_api_object_internal_t*)obj,remaining_needed))
+           return false;
+
+       ((cps_api_object_internal_t*)obj)->remain -= remaining_needed;
+
+       tlv = obj_data((cps_api_object_internal_t*)obj);
+       size_t cur_tlv_len = current_obj_len;
+
+    for ( ix = 0 ; ix < (id_size-1) ; ++ix) {
+
+        len = cur_tlv_len;
+        void *target_tlv = std_tlv_find_next(tlv,&len,id[ix]);
+        if (target_tlv==NULL) break;
+
+        cur_tlv_len = std_tlv_len(target_tlv);
+        std_tlv_set_len(target_tlv,cur_tlv_len+remaining_needed);
+
+        tlv = std_tlv_data(target_tlv);
+    }
+    tlv = ((uint8_t*)tlv) + cur_tlv_len;    //shift to end of current tlv
+    size_t offset = obj_data_offset((cps_api_object_internal_t*)obj,tlv);
+    size_t left = current_obj_len - offset;
+
+    memmove(((uint8_t*)tlv)+remaining_needed,tlv,left);
+
+    for ( ; ix < (id_size-1) ; ++ix ) {
+        remaining_needed -= STD_TLV_HDR_LEN;
+        std_tlv_set_len(tlv,remaining_needed);
+        std_tlv_set_tag(tlv,id[ix]);
+        tlv = ((uint8_t*)tlv)+ STD_TLV_HDR_LEN;
+    }
+    std_tlv_set_tag(tlv, id[ix]);
+    std_tlv_set_len(tlv, dlen);
+    memcpy(std_tlv_data(tlv), data, (size_t)dlen);
+
+    return true;
 }
 
 bool cps_api_object_attr_add(cps_api_object_t o, cps_api_attr_id_t id,const void *data, size_t len) {

@@ -49,6 +49,36 @@ cps_api_object_t create_list() {
         }
         it = cps_api_object_attr_next(obj, it);
     }
+    cps_api_object_delete(obj);
+    obj = cps_api_object_create();
+
+    cps_api_attr_id_t lst[] = { 1,2,3,4,5,6 };
+    const char * c = "clifford was here";
+
+    if (!cps_api_object_e_add(obj,lst,sizeof(lst)/sizeof(*lst),cps_api_object_ATTR_T_BIN,
+            c,strlen(c))) {
+        return NULL;
+    }
+    lst[3] = 3;
+    if (!cps_api_object_e_add(obj,lst,sizeof(lst)/sizeof(*lst),cps_api_object_ATTR_T_BIN,
+            c,strlen(c))) {
+        return NULL;
+    }
+    lst[3] = 5;
+    if (!cps_api_object_e_add(obj,lst,sizeof(lst)/sizeof(*lst),cps_api_object_ATTR_T_BIN,
+            c,strlen(c))) {
+        return NULL;
+    }
+    lst[5] = 5;
+    if (!cps_api_object_e_add(obj,lst,sizeof(lst)/sizeof(*lst),cps_api_object_ATTR_T_BIN,
+            c,strlen(c))) {
+        return NULL;
+    }
+    lst[5] = 4;
+    if (!cps_api_object_e_add(obj,lst,sizeof(lst)/sizeof(*lst),cps_api_object_ATTR_T_BIN,
+            c,strlen(c))) {
+        return NULL;
+    }
 
     return obj;
 }

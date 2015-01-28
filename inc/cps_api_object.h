@@ -39,6 +39,13 @@ extern "C" {
 @{
 */
 
+typedef enum cps_api_object_ATTR_TYPE_t {
+    cps_api_object_ATTR_T_U16,
+    cps_api_object_ATTR_T_U32,
+    cps_api_object_ATTR_T_U64,
+    cps_api_object_ATTR_T_BIN,
+} cps_api_object_ATTR_TYPE_t;
+
 /**
  * Each CPS Object has a object key along with a number of attributes.
  */
@@ -184,6 +191,34 @@ void cps_api_object_attr_fill_list(cps_api_object_t obj, size_t base_attr_id, cp
  * @param attribute id of the item
  */
 void cps_api_object_attr_delete(cps_api_object_t obj, cps_api_attr_id_t attr);
+
+/**
+ * This API is meant for embedded objects - an object that contains objects itself.
+ * This API will get an embedded attribute.  The attribute can be embedded many levels
+ * deep.
+ *
+ * @param object that contains the attribute
+ * @param id a list of attribute ids (for embedded objects)
+ * @param id_size the length of ids in the attribute
+ * @return the cps_api_object_attr_t for the object.
+ */
+cps_api_object_attr_t cps_api_object_e_get(cps_api_object_t obj, cps_api_attr_id_t *id,
+        size_t id_size);
+
+/**
+ * This API is meant for embedded objects - an object that contains objects itself.
+ * Users will need to specify the containment in the cps_api_attr_id_t list
+ *
+ * Add an attribute or embedded attribute to the object.  The attribute will be copied into the object.
+ * @param object in which to add the attribute
+ * @param id a list of attribute ids (for embedded objects)
+ * @param id_size the length of ids in the attribute
+ * @param data the data to add
+ * @param len the length of attribute
+ * @return true of the item is added otherwise false
+ */
+bool cps_api_object_e_add(cps_api_object_t obj, cps_api_attr_id_t *id,
+        size_t id_size, cps_api_object_ATTR_TYPE_t type, const void *data, size_t len);
 
 /**
  * Add an attribute to the object.  The attribute will be copied into the object.
