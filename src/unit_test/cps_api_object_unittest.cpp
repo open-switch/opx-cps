@@ -18,6 +18,7 @@
 #include "std_tlv.h"
 #include "cps_api_object.h"
 #include <time.h>
+#include <stdlib.h>
 
 void print_attr(cps_api_object_attr_t it) {
     if (it == NULL) return;
@@ -120,8 +121,55 @@ void print_obj(cps_api_object_t obj) {
         cps_api_object_it_next(&it);
     }
 }
-#include <stdlib.h>
 
+TEST(cps_api_object,add_delete_test) {
+    cps_api_object_t obj = cps_api_object_create();
+
+    size_t ix = 0;
+    size_t mx = 10;
+
+    for (; ix < mx; ++ix) {
+        time_t tm = time(NULL);
+        size_t id = ix + (tm & 0xf);
+        ASSERT_TRUE(cps_api_object_attr_add(obj, id , (void*)"cliff", 6));
+        ASSERT_TRUE(cps_api_object_attr_get(obj,id)!=NULL);
+    }
+
+    cps_api_object_it_t it;
+    cps_api_object_it_begin(obj,&it);
+
+    while ( cps_api_object_it_valid(&it) ) {
+        cps_api_object_attr_delete(obj, std_tlv_tag(it.attr));
+        cps_api_object_it_begin(obj,&it);
+    }
+    cps_api_object_delete(obj);
+    obj = cps_api_object_create();
+
+    cps_api_attr_id_t lst[][6] = {
+                                { 1,2,3,4,5,6 },
+                                { 2,2,3,4,5,6 },
+                                { 1,3,3,4,5,6 },
+                                { 1,2,3,4,5,7 },
+                                { 1,2,3,4,4,6 },
+                                       { 3,2,3,4,5,6 }
+    };
+    const char * c = "clifford was here";
+
+    ix = 0;
+    mx = 6;
+    for ( ; ix < mx ; ++ix ) {
+        ASSERT_TRUE(cps_api_object_e_add(obj,lst[ix],6,cps_api_object_ATTR_T_BIN,
+                c,strlen(c)));
+        uint16_t val=1;
+        ASSERT_TRUE(cps_api_object_e_add(obj,lst[ix],6,cps_api_object_ATTR_T_U16,
+                &val,sizeof(val)));
+        size_t i = 0;
+        for ( ; i < ix ; ++i ) {
+            cps_api_object_attr_t it = cps_api_object_e_get(obj,lst[i],6);
+            ASSERT_TRUE(it!=NULL);
+        }
+    }
+}
 
 TEST(cps_api_object,create) {
     cps_api_object_list_t list = cps_api_object_list_create();
