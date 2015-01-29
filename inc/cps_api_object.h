@@ -15,6 +15,7 @@
 
 #include <stddef.h>
 #include <stdbool.h>
+#include "std_tlv.h"
 
 #include "cps_api_object_internal.h"
 
@@ -57,6 +58,11 @@ typedef void * cps_api_object_t;
  * The type of an attribute that is stored within the CPS object
  */
 typedef void * cps_api_object_attr_t;
+
+typedef struct cps_api_object_it_t {
+    size_t len;
+    cps_api_object_attr_t attr;
+} cps_api_object_it_t;
 
 /**
  * The value that matches a NULL (invalid) attribute
@@ -188,7 +194,7 @@ void cps_api_object_attr_fill_list(cps_api_object_t obj, size_t base_attr_id, cp
  * Remove an attribute from the object.  Pass in an attribute id of the attribute to remove.
  * If the attribute is invalid the request is ignored otherwise the attr is removed.
  * @param the object that contains the attribute to be deleted
- * @param attribute id of the item
+ * @param attr the attribute of the item to delete
  */
 void cps_api_object_attr_delete(cps_api_object_t obj, cps_api_attr_id_t attr);
 
@@ -228,7 +234,9 @@ bool cps_api_object_e_add(cps_api_object_t obj, cps_api_attr_id_t *id,
  * @param len the length of attribute
  * @return true of the item is added otherwise false
  */
-bool cps_api_object_attr_add(cps_api_object_t obj, cps_api_attr_id_t id,const void *data, size_t len);
+static inline bool cps_api_object_attr_add(cps_api_object_t obj, cps_api_attr_id_t id,const void *data, size_t len) {
+    return cps_api_object_e_add(obj,&id,1,cps_api_object_ATTR_T_BIN,data,len);
+}
 
 /**
  * Add an attribute to the object.  The attribute will be copied into the object.
@@ -237,7 +245,9 @@ bool cps_api_object_attr_add(cps_api_object_t obj, cps_api_attr_id_t id,const vo
  * @param data the data to add
  * @return true of the item is added otherwise false
  */
-bool cps_api_object_attr_add_u16(cps_api_object_t obj, cps_api_attr_id_t id,uint16_t data);
+static inline bool cps_api_object_attr_add_u16(cps_api_object_t obj, cps_api_attr_id_t id,uint16_t data) {
+    return cps_api_object_e_add(obj,&id,1,cps_api_object_ATTR_T_U16,&data,sizeof(data));
+}
 
 /**
  * Add an attribute to the object.  The attribute will be copied into the object.
@@ -246,7 +256,9 @@ bool cps_api_object_attr_add_u16(cps_api_object_t obj, cps_api_attr_id_t id,uint
  * @param data the data to add
  * @return true of the item is added otherwise false
  */
-bool cps_api_object_attr_add_u32(cps_api_object_t obj, cps_api_attr_id_t id,uint32_t data);
+static inline bool cps_api_object_attr_add_u32(cps_api_object_t obj, cps_api_attr_id_t id,uint32_t data) {
+    return cps_api_object_e_add(obj,&id,1,cps_api_object_ATTR_T_U32,&data,sizeof(data));
+}
 
 /**
  * Add an attribute to the object.  The attribute will be copied into the object.
@@ -255,27 +267,50 @@ bool cps_api_object_attr_add_u32(cps_api_object_t obj, cps_api_attr_id_t id,uint
  * @param data the data to add
  * @return true of the item is added otherwise false
  */
-bool cps_api_object_attr_add_u64(cps_api_object_t obj, cps_api_attr_id_t id,uint64_t data);
+static inline bool cps_api_object_attr_add_u64(cps_api_object_t obj, cps_api_attr_id_t id,uint64_t data) {
+    return cps_api_object_e_add(obj,&id,1,cps_api_object_ATTR_T_U64,&data,sizeof(data));
+}
 
 /**
  * Get the first attribute within the object.  This can be passed to cps_api_object_attr_next to walk through
  * the list of attributes.  For example...
  *
  @verbatim
-    cps_api_object_attr_t it = cps_api_object_attr_start(obj);
+    cps_api_object_it_t it;
+    cps_api_object_it_begin(obj,&it);
 
-    while (it != CPS_API_ATTR_NULL) {
-        print_attr(it);
+    while (cps_api_object_it_valid(&it)) {
+
+        print_attr(it.tlv);
         it = cps_api_object_attr_next(obj, it);
         if (it == NULL) {
             printf("Null\n");
         }
+
     }
  @endverbatim
  @param obj the object in question
  @return the first attribute in the object or CPS_API_ATTR_NULL if there are no objects
  */
-cps_api_object_attr_t cps_api_object_attr_first(cps_api_object_t obj);
+void cps_api_object_it_begin(cps_api_object_t obj, cps_api_object_it_t *it);
+
+/**
+ * Check to see if the current iterator is valid
+ * @param it the iterator that contains the attribute to check
+ * @return true if the attribute contained by the current iterator is valid
+ */
+static inline bool cps_api_object_it_valid(cps_api_object_it_t *it) {
+    return std_tlv_valid(it->attr,it->len);
+}
+
+/**
+ * Start to iterate through all of the contained attributes by the current attribute
+ * @param iter the current iterator that we will navigate inside
+ */
+static inline void cps_api_object_it_inside(cps_api_object_it_t *iter) {
+    iter->len = std_tlv_len(iter->attr);
+    iter->attr = std_tlv_data(iter->attr);
+}
 
 /**
  * Get the next attribute or CPS_API_ATTR_NULL if there are no more attributes
@@ -283,7 +318,18 @@ cps_api_object_attr_t cps_api_object_attr_first(cps_api_object_t obj);
  * @param attr the current attribute
  * @return the next attribute or CPS_API_ATTR_NULL if there is no next
  */
-cps_api_object_attr_t cps_api_object_attr_next(cps_api_object_t obj, cps_api_object_attr_t attr);
+static inline bool cps_api_object_it_next(cps_api_object_it_t *iter) {
+    iter->attr = std_tlv_next(iter->attr,&iter->len);
+    return iter->attr != NULL && iter->len!=0;
+}
+
+/**
+ * Create a CPS API object attribute iterator from a attribute.  This can be useful if you want to query/walk through embedded attributes.
+ *
+ * @param attr the attribute to initialize the iterator from
+ * @param iter the iterator to initialize
+ */
+void cps_api_object_it_from_attr(cps_api_object_attr_t attr, cps_api_object_it_t *iter);
 
 /**
  *    Print the attribute into a human readable format - not the data just the header
