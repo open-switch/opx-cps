@@ -21,10 +21,10 @@ def set_mod_name(node):
 def yin_ns_init(node):
     global mod_ns
     mod_ns = get_namespace(node)
-    
+
 #Create a list that also has the NS prefix to the names
 def prepend_ns_to_list(types):
-    l = list()    
+    l = list()
     for elem in types:
         l.append(get_ns() + elem)
     return l
