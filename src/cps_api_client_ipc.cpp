@@ -19,6 +19,8 @@ struct cps_msg_hdr_t {
     uint32_t version;
 };
 
+#define SCRATCH_LOG_BUFF (100)
+
 bool cps_api_send(cps_api_channel_t handle, cps_api_msg_operation_t op,
         const struct iovec *iov,
         size_t count) {
@@ -123,21 +125,40 @@ cps_api_return_code_t cps_api_connect_owner(cps_api_object_owner_reg_t*o,cps_api
 bool cps_api_get_handle(cps_api_key_t &key, cps_api_channel_t &handle) {
     cps_api_object_owner_reg_t owner;
     if (!cps_api_find_owners(&key,owner)) return false;
-    return (cps_api_connect_owner(&owner, handle))==cps_api_ret_code_OK;
+    bool rc = (cps_api_connect_owner(&owner, handle))==cps_api_ret_code_OK;
+    if (!rc) {
+        char buff[SCRATCH_LOG_BUFF];
+        EV_LOG(ERR,DSAPI,0,"NS","Could not connect with owner for %s (%s)",
+                cps_api_key_print(&key,buff,sizeof(buff)-1),
+                owner.addr.addr_type== e_std_socket_a_t_STRING ?
+                        owner.addr.address.str: "unk");
+    }
+    return rc;
 }
 
 
 cps_api_return_code_t cps_api_process_get_request(cps_api_get_params_t *param, size_t ix) {
     cps_api_return_code_t rc = cps_api_ret_code_ERR;
-
+    char buff[SCRATCH_LOG_BUFF];
     cps_api_channel_t handle;
-    if (!cps_api_get_handle(param->keys[ix],handle)) return rc;
+    if (!cps_api_get_handle(param->keys[ix],handle)) {
+        EV_LOG(ERR,DSAPI,0,"NS","Faied to find owner for %s",
+                cps_api_key_print(&param->keys[ix],buff,sizeof(buff)-1));
+        return rc;
+    }
 
     do {
-        if (!cps_api_send_header(handle,cps_api_msg_o_GET,sizeof(cps_api_key_t)))
+        if (!cps_api_send_header(handle,cps_api_msg_o_GET,sizeof(cps_api_key_t))) {
+            EV_LOG(ERR,DSAPI,0,"NS","Faied to send header for %s",
+                    cps_api_key_print(&param->keys[ix],buff,sizeof(buff)-1));
             break;
+        }
 
-        if (!cps_api_send_key(handle,param->keys[ix])) break;
+        if (!cps_api_send_key(handle,param->keys[ix])) {
+            EV_LOG(ERR,DSAPI,0,"NS","Faied to send request %s",
+                    cps_api_key_print(&param->keys[ix],buff,sizeof(buff)-1));
+            break;
+        }
         uint32_t op;
 
         do {
