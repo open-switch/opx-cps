@@ -2,6 +2,8 @@
 import yin_ns
 import yin_utils
 import sys
+import object_history
+
 
 supported_ids_at_root = [
     "list","container" ]
@@ -14,24 +16,9 @@ supported_list_containing_children = [
 supported_list_of_leaves_have_attr_ids = [
     "container","grouping","choice", "list", "leaf","leaf-list", "rpc", "uses" ]
 
-def get_id_of_node(node, ix):
-    desc = node.find(yin_ns.get_ns()+'description')
-    if desc != None:
-        txt = desc.find(yin_ns.get_ns()+'text')
-        if txt != None:
-            field = txt.text;
-            if field != None:
-                cps_ix = field.find('cps-id=')
-                if cps_ix != -1 :
-                    data = field[cps_ix + len('cps-id='):]
-                    just_id = data.split()
-                    if len(just_id) > 0 and len(just_id[0]>0) :
-                        if not ix.unused():
-                            print "Invalid cps-id found in file.. please recheck"
-                            sys.exit(1)
-                        return int(just_id[0])
-    ix.inc()
-    return ix.get()
+def get_id_of_node(parent, node):
+    en = object_history.get().get_enum(yin_utils.string_to_c_formatted_name(parent))
+    return en.get_value(yin_utils.string_to_c_formatted_name(node))
 
 
 class CPSId:
@@ -165,7 +152,7 @@ class CPSParser:
 
 
     def walk(self,node):
-        ix = yin_utils.IndexTracker()
+
         path = yin_utils.get_node_path(node, self.root_node)
         cont_name = yin_utils.node_get_identifier(node)
         c = CPSContainer(cont_name,path,node)
@@ -176,7 +163,6 @@ class CPSParser:
 
         self.container_map[cont_name] = c;
 
-
         nodes = self.get_list_of_children(node)
         for n in nodes:
             if n.tag == yin_ns.get_ns()+"uses":
@@ -185,8 +171,8 @@ class CPSParser:
                     n = tn
 
             if self.is_id_element(n):
-                node_ix = get_id_of_node(n,ix)
                 node_name = yin_utils.node_get_identifier(n)
+                node_ix = get_id_of_node(cont_name,node_name)
                 node_path = path+"/"+node_name
                 node_type = None
                 if self.has_children(n):
@@ -200,14 +186,13 @@ class CPSParser:
 
 
     def key_elements(self,node):
-        ix = yin_utils.IndexTracker()
-
         leaves = yin_utils.find_child_classes_of_types(node,yin_ns.prepend_ns_to_list(supported_ids_at_root))
 
         for l in leaves:
-            node_id = get_id_of_node(l,ix)
+            node_name = yin_ns.get_mod_name()+"-"+l.get('name')
+            node_id = get_id_of_node(yin_ns.get_mod_name(),node_name)
             node_path = yin_utils.get_node_path(l, node)
-            self.key_elemts.append(CPSId(node_id,yin_ns.get_mod_name()+"-"+l.get('name'),l,node_path))
+            self.key_elemts.append(CPSId(node_id,node_name,l,node_path))
 
     def parse(self, root_nodes):
         self.root_node = root_nodes

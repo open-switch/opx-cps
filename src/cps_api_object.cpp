@@ -74,20 +74,18 @@ static size_t obj_data_offset(cps_api_object_internal_t *p, void * tlv) {
     return loc - data;
 }
 
-static void * add_get_tlv_pos_with_enough_space(cps_api_object_internal_t * p, uint64_t attr, uint64_t len) {
-    if (p->remain < (len + STD_TLV_HDR_LEN)) {
-        p = obj_realloc(p, (size_t)(len + obj_used_len(p) + STD_TLV_HDR_LEN) + DEF_OBJECT_REALLOC_STEP_SIZE);
-        if (p == NULL) return NULL;
+
+static bool reserve_spacespace(cps_api_object_internal_t * p, uint64_t len) {
+    if (p->remain < len ) {
+        p = obj_realloc(p, (size_t)(len + obj_used_len(p) + DEF_OBJECT_REALLOC_STEP_SIZE));
+        if (p == NULL) return false;
     }
-    return std_tlv_offset(obj_data(p), obj_used_len(p));
+    return true;
 }
 
-
-static bool add_attribute(cps_api_object_internal_t * p, uint64_t attr, uint64_t len, const void *data) {
-    void * ptr = add_get_tlv_pos_with_enough_space(p,attr,len);
-    if (ptr==NULL) return false;
-    ptr = std_tlv_add(ptr, &p->remain, attr, len, data);
-    return (ptr != NULL) ;
+static void * add_get_tlv_pos_with_enough_space(cps_api_object_internal_t * p, uint64_t attr, uint64_t len) {
+    if (!reserve_spacespace(p,len+STD_TLV_HDR_LEN)) return NULL;
+    return std_tlv_offset(obj_data(p), obj_used_len(p));
 }
 
 extern "C" {
@@ -234,57 +232,103 @@ void cps_api_object_attr_delete(cps_api_object_t obj, cps_api_attr_id_t attr_id)
     }
 }
 
-bool cps_api_object_attr_add_u16(cps_api_object_t obj, cps_api_attr_id_t id,uint16_t data) {
-    cps_api_object_internal_t* p = (cps_api_object_internal_t*)obj;
+cps_api_object_attr_t cps_api_object_e_get(cps_api_object_t obj, cps_api_attr_id_t *id,
+        size_t id_size) {
+    size_t len = obj_used_len((cps_api_object_internal_t*)obj);
+    void *tlv = obj_data((cps_api_object_internal_t*)obj);
+    return std_tlv_efind(tlv,&len,id,id_size);
+}
 
-    void * ptr = add_get_tlv_pos_with_enough_space(p,id,sizeof(data));
+static bool add_attribute(cps_api_object_internal_t * p, uint64_t attr, uint64_t len, const void *data) {
+    void * ptr = add_get_tlv_pos_with_enough_space(p,attr,len);
     if (ptr==NULL) return false;
-
-    ptr = std_tlv_add_u16(ptr, &p->remain, id, data);
-    return (ptr != NULL);
+    ptr = std_tlv_add(ptr, &p->remain, attr, len, data);
+    return (ptr != NULL) ;
 }
 
-bool cps_api_object_attr_add_u32(cps_api_object_t obj, cps_api_attr_id_t id,uint32_t data) {
-    cps_api_object_internal_t* p = (cps_api_object_internal_t*)obj;
+static bool add_embedded(cps_api_object_internal_t * obj, cps_api_attr_id_t *id,
+        size_t id_size, const void *data, size_t dlen) {
+    size_t current_obj_len = obj_used_len(obj);
 
-    void * ptr = add_get_tlv_pos_with_enough_space(p,id,sizeof(data));
-    if (ptr==NULL) return false;
+    size_t len = current_obj_len;
+    void *tlv = obj_data(obj);
+    size_t ix = 0;
 
-    ptr = std_tlv_add_u32(ptr, &p->remain, id, data);
-    return (ptr != NULL);
+    for ( ; ix < (id_size-1); ++ix) {
+        tlv = std_tlv_find_next(tlv,&len,id[ix]);
+        if (tlv==NULL) break;
+        tlv = std_tlv_data(tlv);
+    }
+
+    size_t remaining_needed = dlen + (STD_TLV_HDR_LEN * (id_size - ix));
+
+    if (!reserve_spacespace(obj,remaining_needed))
+       return false;
+
+    (obj)->remain -= remaining_needed;
+
+    tlv = obj_data(obj);
+    size_t cur_tlv_len = current_obj_len;
+
+    for ( ix = 0 ; ix < (id_size-1) ; ++ix) {
+        len = cur_tlv_len;
+        void *target_tlv = std_tlv_find_next(tlv,&len,id[ix]);
+        if (target_tlv==NULL) break;
+
+        cur_tlv_len = std_tlv_len(target_tlv);
+        std_tlv_set_len(target_tlv,cur_tlv_len+remaining_needed);
+
+        tlv = std_tlv_data(target_tlv);
+    }
+    tlv = ((uint8_t*)tlv) + cur_tlv_len;    //shift to end of current tlv
+    size_t offset = obj_data_offset((cps_api_object_internal_t*)obj,tlv);
+    size_t left = current_obj_len - offset;
+
+    memmove(((uint8_t*)tlv)+remaining_needed,tlv,left);
+
+    for ( ; ix < (id_size-1) ; ++ix ) {
+        remaining_needed -= STD_TLV_HDR_LEN;
+        std_tlv_set_len(tlv,remaining_needed);
+        std_tlv_set_tag(tlv,id[ix]);
+        tlv = ((uint8_t*)tlv)+ STD_TLV_HDR_LEN;
+    }
+    std_tlv_set_tag(tlv, id[ix]);
+    std_tlv_set_len(tlv, dlen);
+    memcpy(std_tlv_data(tlv), data, (size_t)dlen);
+
+    return true;
+
 }
 
-bool cps_api_object_attr_add_u64(cps_api_object_t obj, cps_api_attr_id_t id,uint64_t data) {
-    cps_api_object_internal_t* p = (cps_api_object_internal_t*)obj;
+bool cps_api_object_e_add(cps_api_object_t obj, cps_api_attr_id_t *id,
+        size_t id_size, cps_api_object_ATTR_TYPE_t type, const void *data, size_t dlen) {
 
-    void * ptr = add_get_tlv_pos_with_enough_space(p,id,sizeof(data));
-    if (ptr==NULL) return false;
+    union {
+        uint16_t u16;
+        uint32_t u32;
+        uint64_t u64;
+    } un;
 
-    ptr = std_tlv_add_u64(ptr, &p->remain, id, data);
-    return (ptr != NULL);
+    switch(type) {
+    case cps_api_object_ATTR_T_U16:
+        un.u16 = htole16(*(uint16_t*)data); data = &un.u16; break;
+    case cps_api_object_ATTR_T_U32:
+        un.u32 = htole32(*(uint32_t*)data); data = &un.u32; break;
+    case cps_api_object_ATTR_T_U64:
+        un.u64 = htole64(*(uint64_t*)data); data = &un.u64; break;
+    default:
+        //bin;
+        break;
+    }
+    if (id_size==1)
+        return add_attribute((cps_api_object_internal_t*)obj,id[0],dlen,data);
+
+    return add_embedded((cps_api_object_internal_t*)obj,id,id_size,data,dlen);
 }
 
-bool cps_api_object_attr_add(cps_api_object_t o, cps_api_attr_id_t id,const void *data, size_t len) {
-    return add_attribute((cps_api_object_internal_t*)o, id, len, data);
-}
-
-cps_api_object_attr_t cps_api_object_attr_first(cps_api_object_t obj) {
-    void * ptr = (cps_api_object_attr_t)obj_data((cps_api_object_internal_t*)obj);
-    return std_tlv_valid(ptr,obj_used_len((cps_api_object_internal_t*)obj)) ?
-            ptr : NULL;
-}
-
-cps_api_object_attr_t cps_api_object_attr_next(cps_api_object_t obj,cps_api_object_attr_t attr) {
-    if (attr == NULL) return NULL;
-    cps_api_object_internal_t* obj_ptr = (cps_api_object_internal_t*)obj;
-    size_t offset = obj_data_offset(obj_ptr, attr);
-    size_t left = obj_used_len(obj_ptr) - offset;
-
-     void * p = std_tlv_next(attr, &left);
-     if (p != NULL) {
-         if (!std_tlv_valid(p, left)) return NULL;
-     }
-     return p;
+void cps_api_object_it_from_attr(cps_api_object_attr_t attr, cps_api_object_it_t *iter) {
+    iter->len = std_tlv_total_len(attr);
+    iter->attr = attr;
 }
 
 void cps_api_object_attr_fill_list(cps_api_object_t obj, size_t base_attr_id, cps_api_object_attr_t *attr, size_t len) {
@@ -304,6 +348,10 @@ void cps_api_object_attr_fill_list(cps_api_object_t obj, size_t base_attr_id, cp
     }
 }
 
+void cps_api_object_it_begin(cps_api_object_t obj, cps_api_object_it_t *it) {
+    it->len = obj_used_len( (cps_api_object_internal_t*)obj );
+    it->attr =obj_data( (cps_api_object_internal_t*)obj );
+}
 
 const char * cps_api_object_attr_to_string(cps_api_object_attr_t attr, char *buff, size_t len) {
     snprintf(buff,len,"Attr %X, Len %d",(int)cps_api_object_attr_id(attr),
@@ -423,10 +471,13 @@ const char * cps_api_object_to_string(cps_api_object_t obj, char *buff, size_t l
     std::string str;
     str+= k_str;
     str+= " ";
-    cps_api_object_attr_t it = cps_api_object_attr_first(obj);
-    for ( ; it != NULL ; it = cps_api_object_attr_next(obj,it)) {
-        str+= cps_api_object_attr_to_string(it,buff,len);
+
+    cps_api_object_it_t it;
+    cps_api_object_it_begin(obj,&it);
+    while (cps_api_object_it_valid(&it)) {
+        str+= cps_api_object_attr_to_string(it.attr,buff,len);
         str+=" - ";
+        cps_api_object_it_next(&it);
     }
     buff[len-1] = '\0';
     strncpy(buff,str.c_str(),len-1);

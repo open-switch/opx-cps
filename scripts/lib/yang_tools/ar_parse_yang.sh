@@ -10,7 +10,7 @@ yf=$1
 tf=$od/$(basename $1 .yang).yin
 of=$od/$(basename $1 .yang).h
 
-if [ ! -f $TOOL_ROOT/ar_yin_reader.py ] ; then
+if [ ! -f $TOOL_ROOT/yin_parser.py ] ; then
     echo "Please set TOOL_ROOT to be the directory containing the yin parser"
     exit 1
 fi
@@ -24,4 +24,4 @@ fi
 
 pyang $yf -f yin > $tf
 
-python $TOOL_ROOT/ar_yin_reader.py $tf > $of
+python $TOOL_ROOT/yin_parser.py $tf > $of
