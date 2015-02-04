@@ -142,20 +142,20 @@ cps_api_return_code_t cps_api_process_get_request(cps_api_get_params_t *param, s
     char buff[SCRATCH_LOG_BUFF];
     cps_api_channel_t handle;
     if (!cps_api_get_handle(param->keys[ix],handle)) {
-        EV_LOG(ERR,DSAPI,0,"NS","Faied to find owner for %s",
+        EV_LOG(ERR,DSAPI,0,"NS","Failed to find owner for %s",
                 cps_api_key_print(&param->keys[ix],buff,sizeof(buff)-1));
         return rc;
     }
 
     do {
         if (!cps_api_send_header(handle,cps_api_msg_o_GET,sizeof(cps_api_key_t))) {
-            EV_LOG(ERR,DSAPI,0,"NS","Faied to send header for %s",
+            EV_LOG(ERR,DSAPI,0,"NS","Failed to send header for %s",
                     cps_api_key_print(&param->keys[ix],buff,sizeof(buff)-1));
             break;
         }
 
         if (!cps_api_send_key(handle,param->keys[ix])) {
-            EV_LOG(ERR,DSAPI,0,"NS","Faied to send request %s",
+            EV_LOG(ERR,DSAPI,0,"NS","Failed to send request %s",
                     cps_api_key_print(&param->keys[ix],buff,sizeof(buff)-1));
             break;
         }
