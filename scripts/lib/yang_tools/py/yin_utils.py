@@ -13,8 +13,8 @@ def node_get_desc(node):
     if t != None:
         if t.text != None:
             return t.text
-    return s    
-    
+    return s
+
 
 #get the ID for a specific node.This normally is getting the 'name' attribute of the node
 def node_get_identifier(node):
@@ -32,6 +32,24 @@ def node_get_type(node):
     if s==None:
         s = "Und"
     return s
+
+def header_file_open(src_file, mod_name, stream):
+    stream.write( "\n" )
+    stream.write( "/*\n" )
+    stream.write( "* source file : "+ src_file +"\n")
+    stream.write( "* (c) Copyright 2015 Dell Inc. All Rights Reserved."+"\n" )
+    stream.write( "*/" +"\n")
+    stream.write( "" +"\n")
+    stream.write( "/* OPENSOURCELICENSE */" +"\n")
+
+    stream.write( "#ifndef "+string_to_c_formatted_name(mod_name+"_H")+"\n" )
+    stream.write( "#define "+string_to_c_formatted_name(mod_name+"_H") +"\n")
+    stream.write( "" +"\n")
+    stream.write( "" +"\n")
+
+def header_file_close(stream):
+    stream.write("#endif"+"\n" )
+
 
 #Create a string that can be used is C programs
 def string_to_c_formatted_name(s):
@@ -58,7 +76,7 @@ def find_child_classes_of_types(nodes, list_of_types):
 #find the parent of the node
 def find_parent(node, iter):
     par = None
-    for p in node.iter() :                    
+    for p in node.iter() :
         if iter in p:
             par = p;
             break
@@ -73,22 +91,22 @@ def get_node_path(node, root_node):
         if p == None:
             return s;
         s = node_get_identifier(p)+"/"+s
-    
+
 #generate an index for a node.
 class IndexTracker:
     ix = 0
     begin = 0;
-    
+
     def __init__(self, init=0):
         self.ix = init
         self.begin = self.ix
-        
+
     def get(self):
         return self.ix
-    
+
     def inc(self):
         self.ix+=1
-    
+
     def unused(self) :
         return self.ix == self.begin
 

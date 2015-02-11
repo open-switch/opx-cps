@@ -43,12 +43,12 @@ static cps_api_return_code_t db_write_function(void * context, cps_api_transacti
     cps_api_object_t obj = cps_api_object_list_get(param->change_list,index_of_element_being_updated);
     STD_ASSERT(obj!=NULL);
 
-    cps_api_object_attr_t it = cps_api_object_attr_first(obj);
+    cps_api_object_it_t it;
+    cps_api_object_it_begin(obj,&it);
 
-    for ( ; it != CPS_API_ATTR_NULL ;
-            it = cps_api_object_attr_next(obj,it)) {
+    for ( ; cps_api_object_it_valid(&it) ; cps_api_object_it_next(&it) ) {
         char buff[100];
-        printf("Set... Found attr %s \n",cps_api_object_attr_to_string(it,buff,sizeof(buff)));
+        printf("Set... Found attr %s \n",cps_api_object_attr_to_string(it.attr,buff,sizeof(buff)));
     }
     cps_api_object_t old = cps_api_object_create();
     if (!cps_api_object_clone(old,obj)) return cps_api_ret_code_ERR;
@@ -129,12 +129,14 @@ bool do_test_get(void) {
     size_t ix = 0;
     for ( ; ix < len ; ++ix ) {
         cps_api_object_t obj =cps_api_object_list_get(get_req.list,ix);
-        cps_api_object_attr_t it = cps_api_object_attr_first(obj);
 
-        for ( ; it != CPS_API_ATTR_NULL ;
-                it = cps_api_object_attr_next(obj,it)) {
+        cps_api_object_it_t it;
+        cps_api_object_it_begin(obj,&it);
+
+
+        for ( ; cps_api_object_it_valid(&it) ; cps_api_object_it_next(&it) ) {
             char buff[100];
-            printf("Found attr %s \n",cps_api_object_attr_to_string(it,buff,sizeof(buff)));
+            printf("Found attr %s \n",cps_api_object_attr_to_string(it.attr,buff,sizeof(buff)));
         }
     }
     cps_api_get_request_close(&get_req);
