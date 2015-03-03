@@ -24,7 +24,6 @@ cps_api_example_LDFLAGS=-lcps-api-common -ldn_common
 cps-api-common_SRCS=cps_api_object.cpp \
         cps_api_events.cpp \
         cps_api_base_event_adapter.c \
-        cps_api_interface_common.cpp \
         cps_api_operation_common.cpp \
         cps_api_key.c
 
