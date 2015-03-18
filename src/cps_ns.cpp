@@ -145,13 +145,14 @@ static bool process_query(int fd, size_t len) {
     if (!cps_api_receive_key(fd,key)) return false;
     cps_api_object_owner_reg_t *p = find_owner(key);
     char buff[DEF_KEY_PRINT_BUFF];//enough to handle key printing
-    EV_LOG(TRACE,DSAPI,0,"NS","NS query for %s %s",
-            cps_api_key_print(&p->key,buff,sizeof(buff)-1),
-            p==NULL? "missing" : "found");
 
     if (p==NULL) {
         return cps_api_send_return_code(fd,cps_api_ns_r_RETURN_CODE,cps_api_ret_code_ERR);
     }
+    EV_LOG(TRACE,DSAPI,0,"NS","NS query for %s %s",
+            cps_api_key_print(&p->key,buff,sizeof(buff)-1),
+            p==NULL? "missing" : "found");
+
     if (cps_api_send_header(fd,cps_api_ns_r_QUERY_RESULTS,sizeof(*p))) {
         return cps_api_send_data(fd,p,sizeof(*p));
     }
