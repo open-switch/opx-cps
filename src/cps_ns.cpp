@@ -19,6 +19,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <vector>
+#include <string>
 
 #define CPS_API_NS_ID "/tmp/cps_api_ns"
 
@@ -53,8 +54,10 @@ void cps_api_create_process_address(std_socket_address_t *addr) {
 void cps_api_ns_get_address(std_socket_address_t *addr) {
     addr->type = e_std_sock_UNIX;
     addr->addr_type = e_std_socket_a_t_STRING;
-    strncpy(addr->address.str,CPS_API_NS_ID,
-            sizeof(addr->address.str));
+    std::string ns = cps_api_user_queue(CPS_API_NS_ID);
+    memset(addr->address.str,0,sizeof(addr->address.str));
+    strncpy(addr->address.str,ns.c_str(),
+            sizeof(addr->address.str)-1);
 }
 
 bool cps_api_find_owners(cps_api_key_t *key, cps_api_object_owner_reg_t &owner) {

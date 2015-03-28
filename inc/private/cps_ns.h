@@ -11,12 +11,29 @@
 #include "cps_api_operation.h"
 
 #include "std_socket_tools.h"
+
 #include <time.h>
 #include <stdbool.h>
 
 #ifdef __cplusplus
+
+#include "std_envvar.h"
+#include <string>
+
+
 extern "C" {
+
+static inline std::string cps_api_user_queue(const char *q) {
+    std::string ns = q;
+    const char *u = std_getenv("CPSNS");
+    if (u!=NULL) {
+        ns+=u;
+    }
+    return ns;
+}
+
 #endif
+
 
 typedef struct cps_api_object_owner_reg_t {
     cps_api_key_t key;

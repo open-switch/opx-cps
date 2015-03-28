@@ -51,6 +51,17 @@ static inline void cps_api_object_it_inside(cps_api_object_it_t *iter) {
 }
 
 /**
+ * Leaving the existing attribute alone, find the next attribute matching the tag and return the cps attribute
+ * @param iter the current iterator to start from
+ * @param tag the tag to locate
+ * @return either NULL if not found or the cps attribute
+ */
+static inline cps_api_object_attr_t cps_api_object_it_find(const cps_api_object_it_t *iter,std_tlv_tag_t tag) {
+    cps_api_object_it_t it = *iter;
+    return std_tlv_find_next(it.attr,&it.len,tag);
+}
+
+/**
  * Get the next attribute or CPS_API_ATTR_NULL if there are no more attributes
  * @param obj the object to query
  * @param attr the current attribute

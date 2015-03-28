@@ -8,12 +8,15 @@
 #include "std_event_service.h"
 #include "event_log.h"
 #include "private/cps_ns.h"
+
+#include <string>
 #include <unistd.h>
 
 static std_event_server_handle_t _handle=NULL;
 
 cps_api_return_code_t cps_api_services_start() {
-    if (std_event_server_init(&_handle,CPS_API_EVENT_CHANNEL_NAME,CPS_API_EVENT_THREADS )!=STD_ERR_OK) {
+    std::string ns = cps_api_user_queue(CPS_API_EVENT_CHANNEL_NAME);
+    if (std_event_server_init(&_handle,ns.c_str(),CPS_API_EVENT_THREADS )!=STD_ERR_OK) {
         return cps_api_ret_code_ERR;
     }
     return cps_api_ret_code_OK;
