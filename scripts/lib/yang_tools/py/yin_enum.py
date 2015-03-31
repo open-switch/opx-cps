@@ -1,19 +1,21 @@
-import yin_ns
+
 import yin_utils
 import object_history
 
 import sys
 
 
-
 class Element:
     name = ""
     node = None
     description = ""
-
-    def __init__(self, node):
+    
+    
+    def __init__(self, node,module,history):
         self.node = node
         self.name = node.get('name')
+        self.module = module
+        self.history = history
 
     def create(node):
         return Element(node)
@@ -21,19 +23,19 @@ class Element:
     create = staticmethod(create)
 
     def get_description(self):
-        n = self.node.find(yin_ns.get_ns()+'description')
+        n = self.node.find(self.module.ns()+'description')
         if n != None:
-            n = n.find(yin_ns.get_ns()+'text')
+            n = n.find(self.module.ns()+'text')
             if n != None:
                 self.description = n.text
 
 
 class Enumeration(Element):
     enums = None
-
+    module = None
     def load_enums(self):
         self.enums = dict()
-        n = self.node.find(yin_ns.get_ns()+'type')
+        n = self.node.find(self.module.ns()+'type')
         if n == None: return
         enums = list(n)
 
@@ -44,7 +46,7 @@ class Enumeration(Element):
             enum_name = self.name+"-"+e.get('name')
 
             value = e.find('value')
-            en = object_history.get().get_enum(typename)
+            en = self.history.get_enum(typename)
 
             if value != None:
                 enum_val = int(value.get('value'))
@@ -57,8 +59,8 @@ class Enumeration(Element):
             self.enums[enum_val] = enum_name
 
 
-    def __init__(self, node):
-        Element.__init__(self, node)
+    def __init__(self, node, module, history):
+        Element.__init__(self, node,module,history)    
         self.get_description()
         self.load_enums()
 
@@ -78,17 +80,22 @@ class Enumeration(Element):
 
 class EnumerationList:
     enum = None
-    def __init__(self,node):
+    module = None
+    history = None
+    
+    def __init__(self, node, module, history):
         self.enum = list()
+        self.module = module
+        self.history = history        
         self.find_all(node)
 
     def find_all(self,node):
         for i in node.iter():
-            if i.tag == yin_ns.get_ns()+"type" and i.get('name').lower()== 'enumeration':
+            if i.tag == self.module.ns()+"type" and i.get('name').lower()== 'enumeration':
                 par = yin_utils.find_parent(node,i)
-                self.enum.append(Enumeration(par))
+                self.enum.append(Enumeration(par,self.module,self.history))
 
-    def show(self):
+    def print_source(self):
         for i in self.enum:
             print i.to_string()
 

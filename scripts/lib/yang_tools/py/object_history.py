@@ -110,19 +110,11 @@ class history:
 
         f.close()
 
-historical_enums = None
+def init(file):    
+    return history(file)
 
-def get():
-    global historical_enums
-    return historical_enums
-
-def init(file):
-    global historical_enums
-    historical_enums = history(file)
-
-def close():
-    global historical_enums
-    historical_enums.write()
+def close(hist):   
+    hist.write()
 
 if __name__ == '__main__':
     hf = history(sys.argv[1])
