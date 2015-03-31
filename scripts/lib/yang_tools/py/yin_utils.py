@@ -1,31 +1,75 @@
 # This file contains a few general purpose YIN utilities
 
-import yin_ns
+import os
+import subprocess
 
-def node_get_desc(node):
-    d = node.find(yin_ns.get_ns()+'description')
+def run_cmd(args):
+    p = subprocess.Popen(args,stdout=subprocess.PIPE)
+    stdout = p.communicate()[0]
+    print(stdout)
+    if p.wait()!=0:
+        print(stdout)
+
+
+def search_path_for_file(filename):
+    path = os.getenv('YANG_PATH','')
+    for i in path.split(':'):
+        f = os.path.join(i,filename)
+        if os.path.exists(f):
+            return f
+    raise Exception("Missing file "+filename+" please set path in YANG_PATH.  eg YANG_PATH=DIR1:DIR2")
+
+def get_yang_history_file_name(filename):
+    yang_hist_name = os.path.splitext(os.path.basename(filename))[0]+".yhist"    
+    default_dir = os.path.dirname(filename)
+    
+    try:
+        return search_path_for_file(yang_hist_name)
+    except:
+        name = ""
+    name = os.path.join(default_dir,yang_hist_name)
+    
+    if os.path.exists(name):
+        return name 
+    
+    path = os.getenv('YANG_PATH','')
+    for i in path.split(':'):
+        if 'yanghist' in i:
+            return i
+    
+    yang_file = search_path_for_file(filename)
+    return os.path.join(os.path.dirname(yang_file),yang_hist_name)
+        
+
+def create_yin_file(yang_file, yin_file):
+    yang_file = search_path_for_file(yang_file)
+    print "converting "+yang_file+" to "+ yin_file    
+    run_cmd([ 'pyang','-o',yin_file,'-f', 'yin',yang_file])    
+
+def node_get_desc(module,node):
+    d = node.find(module.ns()+'description')
     if d == None:
         return ""
     s = ""
     if d.get('name')!=None:
         s = d.get('name')
-    t = d.find(yin_ns.get_ns()+'text')
+    t = d.find(module.ns()+'text')
     if t != None:
         if t.text != None:
             return t.text
     return s
 
 
+def get_node_tag(module,node):
+    return node.tag[len(module.ns()):]
+
 #get the ID for a specific node.This normally is getting the 'name' attribute of the node
 def node_get_identifier(node):
-    id = node.get('name')
-    if id == None:
-        return node.tag[len(yin_ns.get_ns()):]
-    return id
+    return node.get('name')
 
 #get the node type - if not found return "Und"
-def node_get_type(node):
-    t = node.find(yin_ns.get_ns()+"type")
+def node_get_type(module,node):
+    t = node.find(module.ns()+"type")
     if t == None:
         return "Und"
     s = t.get('name')
@@ -83,7 +127,7 @@ def find_parent(node, iter):
     return par
 
 #get the node path
-def get_node_path(node, root_node):
+def get_node_path(module,node, root_node):
     s = node_get_identifier(node);
     p = node;
     while True:
