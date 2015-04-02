@@ -19,85 +19,13 @@ supported_list_containing_children = [
 supported_list_of_leaves_have_attr_ids = [
     "container","grouping","choice", "list", "leaf","leaf-list", "rpc", "uses" ]
 
-def get_id_of_node(history, parent, node):
-    en = history.get_enum(yin_utils.string_to_c_formatted_name(parent))
-    return en.get_value(yin_utils.string_to_c_formatted_name(node))
 
-
-class CPSId:
-    name = ""
-    cps_id = ""
+class CPSContainerElement:
+    name = None
     node = None
-    path = ""
-    type = ""
-    parent = None
-
-    def __init__(self, cps_id, name, node, path, t=None):
+    def __init__(self,name,node):
         self.name = name
-        self.cps_id = cps_id
         self.node = node
-        self.path = path
-        self.type = t
-
-    def show(self) :
-        str_id = str(self.cps_id)
-        print self.path+" CPS ID("+str_id+") = "+yin_utils.string_to_c_formatted_name(self.name)
-
-    def to_string(self,module):
-        s = yin_utils.string_to_c_formatted_name(self.name) + " = " + str(self.cps_id)
-        if self.type == None:
-            self.type = yin_utils.node_get_type(module,self.node)
-        s+= "/*!< "+self.type+" */"
-        return s;
-
-
-class CPSContainer:
-    list_of_ids = list()
-    name = ""
-    node_path = ""
-    node = None
-    module = None
-    def __init__(self,module,name,path,node):
-        self.module = module
-        self.list_of_ids = list()
-        self.name = name
-        self.path =path
-        self.node = node
-
-    def add(self,cps_id):
-        self.list_of_ids.append(cps_id)
-
-    def show(self):
-        print self.path + " Container -> " + yin_utils.string_to_c_formatted_name(self.name)+"_T"
-        for i in self.list_of_ids:
-            i.show()
-
-    def to_string(self) :
-        n =  yin_utils.string_to_c_formatted_name(self.name)+"_t"
-
-        if len(self.list_of_ids) == 0:
-            return "/* "+n+"*/\n"
-        desc = yin_utils.node_get_desc(self.module,self.node)
-        s = ""
-        if len(desc) > 0:
-            s += "/* "+desc+ " */\n"
-
-        s += "typedef enum {\n"
-        for i in self.list_of_ids:
-            s+= " "
-            s+= i.to_string(self.module)
-            s+=",\n"
-        s+="} "+n +";"
-        return s
-
-    def to_enum_name(module,node):
-        return yin_utils.string_to_c_formatted_name(yin_utils.node_get_identifier(node))+"_t"
-
-    to_enum_name = staticmethod(to_enum_name)
-
-    def get_container_name(self):
-        return yin_utils.string_to_c_formatted_name(self.name)
-
 
 class CPSParser:
     context = None
@@ -136,7 +64,6 @@ class CPSParser:
 
         for i in self.root_node.findall(self.module.ns()+"import"):
             self.context['yangfiles'].load(i.get('module')+".yang")
-
 
         self.has_children_nodes = self.module.prepend_ns_to_list(supported_list_containing_children)
         self.has_attr_ids = self.module.prepend_ns_to_list(supported_list_of_leaves_have_attr_ids)
@@ -199,11 +126,11 @@ class CPSParser:
 
             if tag == 'container' or tag == 'list':
                self.containers[n_path] = i
-               self.container_map[n_path] = {}
+               self.container_map[n_path] = list()
                self.walk_nodes(i,n_path)
 
             if tag == 'leaf' or tag == 'leaf-list' or tag=='enum':
-                self.container_map[path][n_path]= i
+                self.container_map[path].append(CPSContainerElement(n_path,i))
 
                 type = i.find(self.module.ns()+'type')
                 if type!=None:

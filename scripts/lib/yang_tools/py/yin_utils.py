@@ -42,7 +42,7 @@ def get_yang_history_file_name(filename):
 
 def create_yin_file(yang_file, yin_file):
     yang_file = search_path_for_file(yang_file)
-    print "converting "+yang_file+" to "+ yin_file
+    #print "converting "+yang_file+" to "+ yin_file
     run_cmd([ 'pyang','-o',yin_file,'-f', 'yin',yang_file])
 
 def node_get_desc(module,node):

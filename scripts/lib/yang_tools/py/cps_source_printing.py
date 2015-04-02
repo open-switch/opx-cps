@@ -70,18 +70,35 @@ class COutputFormat:
     def print_container(self,model):
         for name in model.container_map.keys():
             node = model.container_map[name]
+            if len(node)==0: continue
+
             print ""
             print "/*Object "+name+" */"
             print "typedef { "
-            for c in node.keys():
-                en_name = string_to_c_formatted_name(c)
+            for c in node:
+                en_name = string_to_c_formatted_name(c.name)
                 value = str(model.history.get_enum(name,en_name,None))
-                comment = self.get_comment(model,node[c])
-                print  "/*type="+self.get_type(model,node[c])+"*/ "
+                comment = self.get_comment(model,c.node)
+                print  "/*type="+self.get_type(model,c.node)+"*/ "
                 if len(comment)>0: print comment
                 print "  "+en_name+"="+value+","
                 print ""
             print "} "+string_to_c_formatted_name(name)+"_t;"
+
+        print "/* Object subcategories */"
+        subcat_name = model.module.name()+"_objects"
+        print "typedef {"
+        for name in model.container_map.keys():
+            node = model.container_map[name]
+            en_name = string_to_c_formatted_name(name+"_obj")
+            value = str(model.history.get_enum(subcat_name,en_name,None))
+            comment = self.get_comment(model,model.all_node_map[name])
+            if len(comment)>0: print comment
+            print "  "+en_name+"="+value+","
+            print ""
+
+        print "} "+string_to_c_formatted_name(subcat_name)+"_t;"
+        print ""
 
     def print_types(self,model):
         name = model.module.name()
