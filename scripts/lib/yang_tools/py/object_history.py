@@ -1,6 +1,9 @@
+from __future__ import print_function
 
 import sys
 import yin_utils
+from os import walk
+import os
 
 
 class enum_tracker:
@@ -14,8 +17,6 @@ class enum_tracker:
         self.last_index = 1
 
     def add_enum(self, name, index):
-        name = yin_utils.string_to_c_formatted_name(name)
-
         if self.last_index < (index+1):
             self.last_index = index+1
         self.the_dict[name] = index
@@ -79,25 +80,41 @@ class history:
     the_file = None
     the_name = ""
     the_dict = None
+    object_cat = []
+    parsed_files = set()
 
     def __init__(self, filename):
         self.the_name = filename
         self.the_dict = dict()
-
         try:
             the_file = open(self.the_name,"r")
             while True:
                 en = enum_tracker("") # track a single object
                 if en.create(the_file):
+                    if en.get_name()=='cps_api_object_category':
+                        self.object_cat.append(en)
+                        #print(filename+"adding "+en.get_name(), file=sys.stderr)
                     self.the_dict[en.get_name()] = en
                 else:
                     break
 
             the_file.close()
-
+            self.parsed_files.add(filename)
         except IOError:
             the_file = open(self.the_name,"w")
             the_file.close()
+
+    def get_category(self,name):
+        oc = 'cps_api_object_category'
+
+        et = enum_tracker(oc)
+        for en_track in self.object_cat:
+            for i in en_track.the_dict.keys():
+                et.add_enum(i,en_track.the_dict[i])
+
+        id = et.get_value(name, None)
+        self.get_enum(oc, name, id)
+        return id
 
     def get_enum(self, container, name, requested):
         if not self.the_dict.has_key(container):
@@ -114,7 +131,23 @@ class history:
         f.close()
 
 def init(file):
-    return history(file)
+    h = history(file)
+
+    l = list();
+    path = os.getenv('YANG_PATH','')
+    f = []
+    for i in path.split(':'):
+        for (dirpath, dirnames, filenames) in walk(i):
+            for filename in filenames:
+                if filename.find(".yhist")!=-1:
+                    if not filename in h.parsed_files:
+                        f.append(os.path.join(dirpath,filename))
+                    #print(os.path.join(dirpath,filename)+"adding ", file=sys.stderr)
+
+    for filename in f:
+        temp_hist = history(filename)
+
+    return h
 
 def close(hist):
     hist.write()

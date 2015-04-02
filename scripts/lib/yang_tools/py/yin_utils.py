@@ -5,7 +5,6 @@ import subprocess
 def run_cmd(args):
     p = subprocess.Popen(args,stdout=subprocess.PIPE)
     stdout = p.communicate()[0]
-    print(stdout)
     if p.wait()!=0:
         print(stdout)
 

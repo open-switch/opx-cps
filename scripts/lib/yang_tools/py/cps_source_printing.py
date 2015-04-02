@@ -122,6 +122,11 @@ class COutputFormat:
     def show(self,model):
         yin_utils.header_file_open(model.module.name(),model.module.name(),sys.stdout)
 
+        print ""
+        id = model.history.get_category(model.module.name())
+
+        print "#define cps_api_obj_CAT_"+string_to_c_formatted_name(model.module.name())+" ("+str(id)+") "
+
         self.print_types(model)
         self.print_enums(model)
         self.print_container(model)
