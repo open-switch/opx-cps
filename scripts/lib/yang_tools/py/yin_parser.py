@@ -1,6 +1,4 @@
-
 import yin_model
-
 import os
 import sys
 

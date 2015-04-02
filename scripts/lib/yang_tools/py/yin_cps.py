@@ -3,7 +3,6 @@ import yin_ns
 import yin_utils
 import sys
 import object_history
-import yin_enum
 import os
 
 import xml.etree.ElementTree as ET
