@@ -10,13 +10,11 @@ import xml.etree.ElementTree as ET
 
 import tempfile
 
-
 supported_ids_at_root = [
     "list","container" ]
 
-
 supported_list_containing_children = [
-    "container","grouping","choice", "list", "rpc" , "case", "module"]
+    "container","grouping","choice", "list", "rpc" , "case", "module","type","typedef"]
 
 
 supported_list_of_leaves_have_attr_ids = [
@@ -34,7 +32,7 @@ class CPSId:
     path = ""
     type = ""
     parent = None
-    
+
     def __init__(self, cps_id, name, node, path, t=None):
         self.name = name
         self.cps_id = cps_id
@@ -106,11 +104,15 @@ class CPSParser:
     context = None
     module = None
     history = None
-    
-    imports = None
-    
-    key_elemts = None
+
+    all_node_map = None
+
     containers = None
+
+
+    key_elemts = None
+
+
     enum = None
 
     all_node_map = None
@@ -125,16 +127,17 @@ class CPSParser:
 
     def load_module(self,filename):
         f = search_path_for_file(filename)
-        
-        
+
+
     def load(self):
         et = ET.parse(self.filename)
         self.root_node = et.getroot()
-        self.module = yin_ns.Module(self.filename,self.root_node)       
+        self.module = yin_ns.Module(self.filename,self.root_node)
         self.imports = list()
-        
+
         for i in self.root_node.findall(self.module.ns()+"import"):
-            self.context['yangfiles'].load(i.get('module')+".yang")            
+            self.context['yangfiles'].load(i.get('module')+".yang")
+
 
         self.has_children_nodes = self.module.prepend_ns_to_list(supported_list_containing_children)
         self.has_attr_ids = self.module.prepend_ns_to_list(supported_list_of_leaves_have_attr_ids)
@@ -143,129 +146,95 @@ class CPSParser:
         self.context = context
         self.filename = filename
         self.history = object_history.init(history_name)
-        
+
         self.key_elemts = list()
-        self.containers = list()
+        self.containers = {}
         self.all_node_map = {}
         self.container_map= {}
-        
+
     def close(self):
         object_history.close(self.history)
-        
-    def get_current_container(self):
-        return self.stack[len(self.stack)-1]
 
-    def get_list_of_children(self, node) :
-        if not node.tag in self.has_children_nodes:
-            return []
+    def walk(self):
+        self.walk_nodes(self.root_node, self.module.name())
 
-        children = list()
+    def walk_nodes(self, node, path):
         nodes = list(node)
+        parent = path   #container path to parent
 
-        for n in nodes :
-            if n.tag == self.module.ns()+'choice' :
-                lst = list(n)
-                for i in lst:
-                    l = self.get_list_of_children(i)
-                    children += l;
+        for i in nodes:
 
-            else :
-                children.append(n)
+            tag = self.module.filter_ns(i.tag)
+            if i.get('name')!=None:
+                n_path=path+"_"+i.get('name');
+            else:
+                n_path=path+"_"+tag;
 
-        return children
+            self.all_node_map[n_path] = i
 
-    def scan_for_all_nodes(self,node, path):
-        if path==None:
-            path = self.module.name()
-        
-        nodes = self.get_list_of_children(node)
+            if tag == 'grouping':
+                tag = 'typedef'
 
-        for n in nodes:
-            node_name = yin_utils.node_get_identifier(n)
-            if node_name == None:
-                node_name = n.tag
-            node_path = path+"/"+node_name
-            self.all_node_map[node_path] = n
+            if tag == 'typedef':
+                self.context['types'][n_path] = i
+                type = i.find(self.module.ns()+'type')
+                if type!=None:
+                    if type.get('name')=='enumeration':
+                        self.context['enum'][n_path] = i
+                    if type.get('name')=='union':
+                        self.context['union'][n_path] = i
+                continue
 
-            if self.has_children(n) :
-                self.scan_for_all_nodes(n)
+            if tag == 'choice':
+                #ignore the choice itself.. and consider the cases
+                for ch in list(i):
+                    self.walk_nodes(ch,path)
+                continue
 
-    def get_module(self):  
-        return self.module
-    
-    def set_module(self,module):
-        self.module = module
-    
-    def get_node_id(self,node):
-        id = yin_utils.node_get_identifier(node)
-        if id == None:
-            id = yin_utils.get_node_tag(self.module,node)
-        return self.module.name()+":"+id
-    
-    
-    
-    def walk(self,node, path):        
-        ns = self.module.name()
-                
-        cont_name = self.get_node_id(node)
-        
-        c = CPSContainer(self.module,cont_name,path,node)
+            if tag == 'case':
+                tag = 'container'
 
-        if self.container_map.get(cont_name):
-            return
-            #@todo need to figure out why this is necessary
+            if tag == 'enumeration':
+                n_path = self.all_node_map[path]
+                tag = 'container'
 
-        self.container_map[cont_name] = c       
+            if tag == 'container' or tag == 'list':
+               self.containers[n_path] = i
+               self.container_map[n_path] = {}
+               self.walk_nodes(i,n_path)
 
-        nodes = self.get_list_of_children(node)
-        for n in nodes:            
-            if n.tag == self.module.ns()+"uses":
-                tn = self.container_map.get(n.get('name'))
-                if tn != None:                    
-                    nodes.remove(n);
-                    for child in tn.list_of_ids:
-                        child = CPSId(get_id_of_node(self.history,cont_name,child.name),                              
-                              child.name,child.node,child.path,child.type)
-                        c.add(child)                    
-                    
-        for n in nodes:                                            
-            if self.is_id_element(n):
-                node_name = self.get_node_id(n)
-                node_ix = get_id_of_node(self.history,cont_name,node_name)
-                node_path = path+"/"+node_name
-                node_type = None
-                if self.has_children(n):
-                    node_type= CPSContainer.to_enum_name(self.module,n)
-                c.add(CPSId(node_ix,c.get_container_name()+"-"+node_name,n,node_path,node_type))
+            if tag == 'leaf' or tag == 'leaf-list' or tag=='enum':
+                self.container_map[path][n_path]= i
 
-            if self.has_children(n):
-                self.walk(n)
+                type = i.find(self.module.ns()+'type')
+                if type!=None:
+                    if type.get('name')=='enumeration':
+                        self.context['enum'][n_path] = i
+                        self.walk_nodes(i,n_path)
 
-        self.containers.append(c)
+            if tag == 'uses':
+                type_name = i.get('name')
+                type_name.replace(':','_')
+                if type_name.find(':')==-1:
+                    type_name = self.module.name()+"_"+type_name
 
+                if not type_name in self.context['types']:
+                    print self.context['types'].keys()
+                    print type_name
+                    raise Exception ("Missing "+type_name)
 
-    def key_elements(self,node):
-        leaves = yin_utils.find_child_classes_of_types(node,self.module.prepend_ns_to_list(supported_ids_at_root))
-
-        for l in leaves:
-            node_name = self.module.name()+"-"+l.get('name')
-            node_id = get_id_of_node(self.history,self.module.name(),node_name)
-            node_path = yin_utils.get_node_path(self.module,l, node)
-            self.key_elemts.append(CPSId(node_id,node_name,l,node_path))
-
-    def parse(self):        
-        self.enum = yin_enum.EnumerationList(self.root_node,self.module,self.history)
-        self.key_elements(self.root_node)
-        
-        self.scan_for_all_nodes(self.root_node,None)
-        
-        self.walk(self.root_node,self.module.name())
-        
+                type = self.context['types'][type_name]
+                type_tag = self.module.filter_ns(type.tag)
+                if type_tag == 'grouping':
+                    self.walk_nodes(type,path)
+                    continue
+                print type
+                raise Exception("Invalid grouping specified ")
 
     def print_source(self):
         for i in self.containers:
             print i.to_string() + "\n"
-        
+
         self.enum.print_source()
 
     def show(self):

@@ -26,11 +26,15 @@ class enum_tracker:
     def get_next_enum_value(self):
         return self.last_index
 
-    def get_value(self,name):
-        name = yin_utils.string_to_c_formatted_name(name)
+    def get_value(self,name, requested):
         if not name in self.the_dict.keys():
-            ix = self.get_next_enum_value()
+            if requested!=None:
+                ix = int(requested)
+            else:
+                ix = self.get_next_enum_value()
             self.add_enum(name, ix)
+        if requested!=None:
+            self.the_dict[name] = int(requested)
         return self.the_dict[name]
 
     def write(self,the_file):
@@ -83,7 +87,7 @@ class history:
         try:
             the_file = open(self.the_name,"r")
             while True:
-                en = enum_tracker("")
+                en = enum_tracker("") # track a single object
                 if en.create(the_file):
                     self.the_dict[en.get_name()] = en
                 else:
@@ -95,25 +99,24 @@ class history:
             the_file = open(self.the_name,"w")
             the_file.close()
 
-    def get_enum(self, name):
-        name = yin_utils.string_to_c_formatted_name(name)
-        if not self.the_dict.has_key(name) :
-            self.the_dict[name] = enum_tracker(name)
-        return self.the_dict[name]
+    def get_enum(self, container, name, requested):
+        if not self.the_dict.has_key(container):
+            self.the_dict[container] = enum_tracker(container)
+        return self.the_dict[container].get_value(name,requested)
 
     def write(self):
         f = open(self.the_name,"w");
         f.write("# writing "+self.the_name+"\n")
         for k in self.the_dict.keys():
-            en = self.get_enum(k)
+            en = self.the_dict[k]
             en.write(f);
 
         f.close()
 
-def init(file):    
+def init(file):
     return history(file)
 
-def close(hist):   
+def close(hist):
     hist.write()
 
 if __name__ == '__main__':
