@@ -75,6 +75,8 @@ class CPSParser:
         object_history.close(self.history)
 
     def walk(self):
+        self.container_map[self.module.name()] = list()
+        self.all_node_map[self.module.name()] = self.root_node
         self.walk_nodes(self.root_node, self.module.name())
 
     def walk_nodes(self, node, path):
@@ -120,6 +122,7 @@ class CPSParser:
             if tag == 'container' or tag == 'list':
                self.containers[n_path] = i
                self.container_map[n_path] = list()
+               self.container_map[path].append(CPSContainerElement(n_path,i))
                self.walk_nodes(i,n_path)
 
             if tag == 'leaf' or tag == 'leaf-list' or tag=='enum':

@@ -25,3 +25,8 @@ if [ -z $YANG_PATH ] ; then
     exit 1
 fi
 python $TOOL_ROOT/yin_parser.py $yf > $of
+if [ ! $? = 0 ] ; then
+    rm $of
+    exit 1
+fi
+exit 0

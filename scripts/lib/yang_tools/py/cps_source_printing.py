@@ -76,6 +76,7 @@ class COutputFormat:
             print "/*Object "+name+" */"
             print "typedef { "
             for c in node:
+                if c.name == model.module.name(): continue
                 en_name = string_to_c_formatted_name(c.name)
                 value = str(model.history.get_enum(name,en_name,None))
                 comment = self.get_comment(model,c.node)
@@ -88,11 +89,12 @@ class COutputFormat:
         print "/* Object subcategories */"
         subcat_name = model.module.name()+"_objects"
         print "typedef {"
-        for name in model.container_map.keys():
+        for c in model.container_map[model.module.name()]:
+            name = c.name
             node = model.container_map[name]
             en_name = string_to_c_formatted_name(name+"_obj")
-            value = str(model.history.get_enum(subcat_name,en_name,None))
-            comment = self.get_comment(model,model.all_node_map[name])
+            value = str(model.history.get_enum(model.module.name(),en_name,None))
+            comment = self.get_comment(model,c.node)
             if len(comment)>0: print comment
             print "  "+en_name+"="+value+","
             print ""
