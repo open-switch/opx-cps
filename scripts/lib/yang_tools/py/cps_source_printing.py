@@ -69,6 +69,7 @@ class COutputFormat:
 
     def print_container(self,model):
         for name in model.container_map.keys():
+            if name == model.module.name(): continue
             node = model.container_map[name]
             if len(node)==0: continue
 
