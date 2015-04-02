@@ -19,7 +19,6 @@ supported_list_containing_children = [
 supported_list_of_leaves_have_attr_ids = [
     "container","grouping","choice", "list", "leaf","leaf-list", "rpc", "uses" ]
 
-
 class CPSContainerElement:
     name = None
     node = None
@@ -35,12 +34,6 @@ class CPSParser:
     all_node_map = None
 
     containers = None
-
-
-    key_elemts = None
-
-
-    enum = None
 
     all_node_map = None
     container_map = None
