@@ -3,98 +3,36 @@ import yin_ns
 import yin_utils
 import sys
 import object_history
+import os
 
+import xml.etree.ElementTree as ET
+
+import tempfile
 
 supported_ids_at_root = [
     "list","container" ]
 
-
 supported_list_containing_children = [
-    "container","grouping","choice", "list", "rpc" , "case", "module"]
+    "container","grouping","choice", "list", "rpc" , "case", "module","type","typedef"]
 
 
 supported_list_of_leaves_have_attr_ids = [
     "container","grouping","choice", "list", "leaf","leaf-list", "rpc", "uses" ]
 
-def get_id_of_node(parent, node):
-    en = object_history.get().get_enum(yin_utils.string_to_c_formatted_name(parent))
-    return en.get_value(yin_utils.string_to_c_formatted_name(node))
-
-
-class CPSId:
-    name = ""
-    cps_id = ""
+class CPSContainerElement:
+    name = None
     node = None
-    path = ""
-    type = ""
-    parent = None
-    def __init__(self, cps_id, name, node, path, t=None):
-
+    def __init__(self,name,node):
         self.name = name
-        self.cps_id = cps_id
         self.node = node
-        self.path = path
-        self.type = t
-
-    def show(self) :
-        str_id = str(self.cps_id)
-        print self.path+" CPS ID("+str_id+") = "+yin_utils.string_to_c_formatted_name(self.name)
-
-    def to_string(self):
-        s = yin_utils.string_to_c_formatted_name(self.name) + " = " + str(self.cps_id)
-        if self.type == None:
-            self.type = yin_utils.node_get_type(self.node)
-        s+= "/*!< "+self.type+" */"
-        return s;
-
-
-class CPSContainer:
-    list_of_ids = list()
-    name = ""
-    node_path = ""
-    node = None
-    def __init__(self,name,path,node):
-        self.list_of_ids = list()
-        self.name = name
-        self.path =path
-        self.node = node
-
-    def add(self,cps_id):
-        self.list_of_ids.append(cps_id)
-
-    def show(self):
-        print self.path + " Container -> " + yin_utils.string_to_c_formatted_name(self.name)+"_T"
-        for i in self.list_of_ids:
-            i.show()
-
-    def to_string(self) :
-        n =  yin_utils.string_to_c_formatted_name(self.name)+"_t"
-
-        if len(self.list_of_ids) == 0:
-            return "/* "+n+"*/\n"
-        desc = yin_utils.node_get_desc(self.node)
-        s = ""
-        if len(desc) > 0:
-            s += "/* "+desc+ " */\n"
-
-        s += "typedef enum {\n"
-        for i in self.list_of_ids:
-            s+= " "
-            s+= i.to_string()
-            s+=",\n"
-        s+="} "+n +";"
-        return s
-
-    def to_enum_name(node):
-        return yin_utils.string_to_c_formatted_name(yin_utils.node_get_identifier(node))+"_t"
-
-    to_enum_name = staticmethod(to_enum_name)
-
-    def get_container_name(self):
-        return yin_utils.string_to_c_formatted_name(self.name)
 
 class CPSParser:
-    key_elemts = None
+    context = None
+    module = None
+    history = None
+
+    all_node_map = None
+
     containers = None
 
     all_node_map = None
@@ -107,106 +45,119 @@ class CPSParser:
     def is_id_element(self,node):
         return node.tag in self.has_attr_ids
 
-    def __init__(self):
+    def load_module(self,filename):
+        f = search_path_for_file(filename)
+
+
+    def load(self):
+        et = ET.parse(self.filename)
+        self.root_node = et.getroot()
+        self.module = yin_ns.Module(self.filename,self.root_node)
+        self.imports = list()
+
+        for i in self.root_node.findall(self.module.ns()+"import"):
+            self.context['yangfiles'].load(i.get('module')+".yang")
+
+        self.has_children_nodes = self.module.prepend_ns_to_list(supported_list_containing_children)
+        self.has_attr_ids = self.module.prepend_ns_to_list(supported_list_of_leaves_have_attr_ids)
+
+    def __init__(self, context, filename,history_name):
+        self.context = context
+        self.filename = filename
+        self.history = object_history.init(history_name)
+
         self.key_elemts = list()
-        self.containers = list()
+        self.containers = {}
         self.all_node_map = {}
         self.container_map= {}
-        self.has_children_nodes = yin_ns.prepend_ns_to_list(supported_list_containing_children)
-        self.has_attr_ids = yin_ns.prepend_ns_to_list(supported_list_of_leaves_have_attr_ids)
 
-    def get_current_container(self):
-        return self.stack[len(self.stack)-1]
+    def close(self):
+        object_history.close(self.history)
 
-    def get_list_of_children(self, node) :
+    def walk(self):
+        self.container_map[self.module.name()] = list()
+        self.all_node_map[self.module.name()] = self.root_node
+        self.walk_nodes(self.root_node, self.module.name())
 
-        if not node.tag in yin_ns.prepend_ns_to_list(supported_list_containing_children):
-            return [node]
-
-        children = list()
+    def walk_nodes(self, node, path):
         nodes = list(node)
+        parent = path   #container path to parent
 
-        for n in nodes :
-            if n.tag == yin_ns.get_ns()+'choice' :
-                lst = list(n)
-                for i in lst:
-                    l = self.get_list_of_children(i)
-                    children += l;
+        for i in nodes:
 
-            else :
-                children.append(n)
+            tag = self.module.filter_ns(i.tag)
+            if i.get('name')!=None:
+                n_path=path+"_"+i.get('name');
+            else:
+                n_path=path+"_"+tag;
 
-        return children
+            self.all_node_map[n_path] = i
 
-    def scan_for_all_nodes(self,node):
-        path = yin_utils.get_node_path(node, self.root_node)
-        nodes = self.get_list_of_children(node)
+            if tag == 'grouping':
+                tag = 'typedef'
 
-        for n in nodes:
-            node_name = yin_utils.node_get_identifier(n)
-            node_path = path+"/"+node_name
-            self.all_node_map[node_path] = n
+            if tag == 'typedef':
+                self.context['types'][n_path] = i
+                type = i.find(self.module.ns()+'type')
+                if type!=None:
+                    if type.get('name')=='enumeration':
+                        self.context['enum'][n_path] = i
+                    if type.get('name')=='union':
+                        self.context['union'][n_path] = i
+                continue
 
-            if self.has_children(n) :
-                self.scan_for_all_nodes(n)
+            if tag == 'choice':
+                #ignore the choice itself.. and consider the cases
+                for ch in list(i):
+                    self.walk_nodes(ch,path)
+                continue
 
+            if tag == 'case':
+                tag = 'container'
 
-    def walk(self,node):
+            if tag == 'enumeration':
+                n_path = self.all_node_map[path]
+                tag = 'container'
 
-        path = yin_utils.get_node_path(node, self.root_node)
-        cont_name = yin_utils.node_get_identifier(node)
-        c = CPSContainer(cont_name,path,node)
+            if tag == 'container' or tag == 'list':
+               self.containers[n_path] = i
+               self.container_map[n_path] = list()
+               self.container_map[path].append(CPSContainerElement(n_path,i))
+               self.walk_nodes(i,n_path)
 
-        if self.container_map.get(cont_name):
-            return
-            #@todo need to figure out why this is necessary
+            if tag == 'leaf' or tag == 'leaf-list' or tag=='enum':
+                self.container_map[path].append(CPSContainerElement(n_path,i))
 
-        self.container_map[cont_name] = c;
+                type = i.find(self.module.ns()+'type')
+                if type!=None:
+                    if type.get('name')=='enumeration':
+                        self.context['enum'][n_path] = i
+                        self.walk_nodes(i,n_path)
 
-        nodes = self.get_list_of_children(node)
-        for n in nodes:
-            if n.tag == yin_ns.get_ns()+"uses":
-                tn = self.all_node_map.get(yin_ns.get_mod_name()+"/"+n.get('name'))
-                if tn != None:
-                    n = tn
+            if tag == 'uses':
+                type_name = i.get('name')
+                if type_name.find(':')==-1:
+                    type_name = self.module.name()+"_"+type_name
+                type_name = type_name.replace(':','_')
 
-            if self.is_id_element(n):
-                node_name = yin_utils.node_get_identifier(n)
-                node_ix = get_id_of_node(cont_name,node_name)
-                node_path = path+"/"+node_name
-                node_type = None
-                if self.has_children(n):
-                    node_type= CPSContainer.to_enum_name(n)
-                c.add(CPSId(node_ix,c.get_container_name()+"-"+node_name,n,node_path,node_type))
+                if not type_name in self.context['types']:
+                    print self.context['types'].keys()
+                    print type_name
+                    raise Exception ("Missing "+type_name)
 
-            if self.has_children(n):
-                self.walk(n)
-
-        self.containers.append(c)
-
-
-    def key_elements(self,node):
-        leaves = yin_utils.find_child_classes_of_types(node,yin_ns.prepend_ns_to_list(supported_ids_at_root))
-
-        for l in leaves:
-            node_name = yin_ns.get_mod_name()+"-"+l.get('name')
-            node_id = get_id_of_node(yin_ns.get_mod_name(),node_name)
-            node_path = yin_utils.get_node_path(l, node)
-            self.key_elemts.append(CPSId(node_id,node_name,l,node_path))
-
-    def parse(self, root_nodes):
-        self.root_node = root_nodes
-
-        yin_ns.set_mod_name(self.root_node)
-
-        self.key_elements(self.root_node)
-        self.scan_for_all_nodes(self.root_node)
-        self.walk(self.root_node)
+                type = self.context['types'][type_name]
+                type_tag = self.module.filter_ns(type.tag)
+                if type_tag == 'grouping':
+                    self.walk_nodes(type,path)
+                    continue
+                print type
+                raise Exception("Invalid grouping specified ")
 
     def print_source(self):
         for i in self.containers:
             print i.to_string() + "\n"
 
+        self.enum.print_source()
 
     def show(self):
         print "/** keys... **/ "
@@ -220,12 +171,7 @@ class CPSParser:
             i.show()
 
 
-def cps_create_doc_ids(node):
-    parser = CPSParser()
-    parser.parse(node)
-    parser.print_source()
 
-
-
+#parser.print_source()
 
 

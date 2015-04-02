@@ -1,13 +1,11 @@
 #!/bin/bash
 
 if [ "$TOOL_ROOT"b = b ] ; then
-    TOOL_ROOT=$PWD/py
+    TOOL_ROOT=$(dirname $0)/py
 fi
 
 od=$2
-
 yf=$1
-tf=$od/$(basename $1 .yang).yin
 of=$od/$(basename $1 .yang).h
 
 if [ ! -f $TOOL_ROOT/yin_parser.py ] ; then
@@ -22,6 +20,13 @@ if [ "$od"b = b ] ; then
     exit 1
 fi
 
-pyang $yf -f yin > $tf
-
-python $TOOL_ROOT/yin_parser.py $tf > $of
+if [ -z $YANG_PATH ] ; then
+    echo "Please set YANG_PATH to a : separated list of directories containing the Yang files"
+    exit 1
+fi
+python $TOOL_ROOT/yin_parser.py $yf > $of
+if [ ! $? = 0 ] ; then
+    rm $of
+    exit 1
+fi
+exit 0
