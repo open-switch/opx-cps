@@ -140,9 +140,9 @@ class CPSParser:
 
             if tag == 'uses':
                 type_name = i.get('name')
-                type_name.replace(':','_')
                 if type_name.find(':')==-1:
                     type_name = self.module.name()+"_"+type_name
+                type_name = type_name.replace(':','_')
 
                 if not type_name in self.context['types']:
                     print self.context['types'].keys()

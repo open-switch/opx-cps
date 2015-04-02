@@ -24,4 +24,4 @@ if [ -z $YANG_PATH ] ; then
     echo "Please set YANG_PATH to a : separated list of directories containing the Yang files"
     exit 1
 fi
-python $TOOL_ROOT/yin_parser.py $yf > $of || echo "Invalid file $yf" && exit 1
+python $TOOL_ROOT/yin_parser.py $yf > $of
