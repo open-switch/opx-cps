@@ -37,7 +37,7 @@ class COutputFormat:
     def get_value(self,model,node):
         value = node.find(model.module.ns()+'value')
         if value!=None:
-            value = self.node_get_text(model,value)
+            value = value.get('value')
         if value!=None and len(value)==0: value=None
         return value
 
