@@ -50,7 +50,7 @@ class COutputFormat:
         enum = node.find('enumeration')
         print ""
         print "/*Enumeration "+name+" */"
-        print "typedef { "
+        print "typedef enum { "
         for i in node.iter():
             if model.module.filter_ns(i.tag) == 'enum':
                 en_name = string_to_c_formatted_name(name+"_"+i.get('name'))
@@ -75,7 +75,7 @@ class COutputFormat:
 
             print ""
             print "/*Object "+name+" */"
-            print "typedef { "
+            print "typedef enum { "
             for c in node:
                 if c.name == model.module.name(): continue
                 en_name = string_to_c_formatted_name(c.name)
@@ -86,10 +86,15 @@ class COutputFormat:
                 print "  "+en_name+"="+value+","
                 print ""
             print "} "+string_to_c_formatted_name(name)+"_t;"
+        print ""
+
+        if len(model.container_map[model.module.name()])==0:
+            print "/*No objects defined...*/"
+            return
 
         print "/* Object subcategories */"
         subcat_name = model.module.name()+"_objects"
-        print "typedef {"
+        print "typedef enum{"
         for c in model.container_map[model.module.name()]:
             name = c.name
             node = model.container_map[name]
