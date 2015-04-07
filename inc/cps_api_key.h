@@ -157,6 +157,16 @@ int cps_api_key_matches(cps_api_key_t * key, cps_api_key_t * prefix, bool exact)
  */
 char * cps_api_key_print(cps_api_key_t *key, char *buff, size_t len);
 
+
+/**
+ * An API that takes a key as a string and returns the key object filled in
+ * @param key the key that will be filled in with the contents of the string
+ * @param buff NULL terminiated string containing the key "1.1.2.3.4"
+ * @return true if parsing was successful
+ */
+bool cps_api_key_from_string(cps_api_key_t *key,const char *buff);
+
+
 #ifdef __cplusplus
 }
 #endif

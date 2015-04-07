@@ -91,7 +91,7 @@ class history:
             while True:
                 en = enum_tracker("") # track a single object
                 if en.create(the_file):
-                    if en.get_name()=='cps_api_object_category':
+                    if en.get_name()=='cps_api_object_category':                        
                         self.object_cat.append(en)
                         #print(filename+"adding "+en.get_name(), file=sys.stderr)
                     self.the_dict[en.get_name()] = en
@@ -108,10 +108,11 @@ class history:
         oc = 'cps_api_object_category'
 
         et = enum_tracker(oc)
+        et.last_index = int(20)
         for en_track in self.object_cat:
             for i in en_track.the_dict.keys():
                 et.add_enum(i,en_track.the_dict[i])
-
+                
         id = et.get_value(name, None)
         self.get_enum(oc, name, id)
         return id
