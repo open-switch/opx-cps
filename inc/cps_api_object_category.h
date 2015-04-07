@@ -30,6 +30,7 @@ typedef enum {
     cps_api_obj_cat_ROUTE,    //!< cps_api_obj_cat_ROUTE
     cps_api_obj_cat_QOS,       //!< cps_api_obj_cat_QOS
     cps_api_obj_cat_PHY,
+    cps_api_obj_cat_L2,        //!< cps_api_obj_cat_L2 @TODO this is only temporary use - do not use for any other component
     cps_api_obj_cat_MAX,
 }cps_api_object_category_type_internal_t;
 
