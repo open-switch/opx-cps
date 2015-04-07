@@ -20,9 +20,9 @@
 */
 
 /**
- * The object categories
- * @depreciated - please use object categories within the appliciable CPS api generated files
+ * The object categories definition is not depreciated - please use object categories within the appliciable CPS api generated files
  */
+
 typedef enum {
     cps_api_obj_cat_RESERVED    = 1,//! reserved for internal use
     cps_api_obj_cat_KEY,      //!< cps_api_obj_cat_KEY
@@ -33,8 +33,14 @@ typedef enum {
     cps_api_obj_cat_MAX,
 }cps_api_object_category_type_internal_t;
 
+/*
+ * All CPS Object categories fit within a uint32_t which also is the basic type of the CPS key elements
+ */
 typedef uint32_t cps_api_object_category_types_t;
 
+/*
+ * The object sub category also fits within a uint32_t wich is also the basic type of the CPS key elements
+ */
 typedef uint32_t cps_api_object_subcategory_types_t;
 
 /**
