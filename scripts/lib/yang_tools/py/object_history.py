@@ -108,6 +108,7 @@ class history:
         oc = 'cps_api_object_category'
 
         et = enum_tracker(oc)
+        et.last_index = int(10) # object categories start at 10 reserving 0-9 for internal purposes
         for en_track in self.object_cat:
             for i in en_track.the_dict.keys():
                 et.add_enum(i,en_track.the_dict[i])
