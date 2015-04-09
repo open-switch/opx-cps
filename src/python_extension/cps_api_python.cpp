@@ -16,10 +16,6 @@ class cps_api_key_wrapper {
 protected:
     cps_api_key_t key;
 public:
-    cps_api_key_wrapper() { }
-    const cps_api_key_wrapper & operator=(const cps_api_key_wrapper &rhs) {
-        return *this;
-    }
     cps_api_key_t *get() { return &key; }
 };
 
@@ -65,12 +61,11 @@ static PyObject * py_cps_get(PyObject *self, PyObject *args) {
 
     PyObject * dict_obj = PyDict_New();
 
-    printf("Number of lines returned is %d\n",cps_api_object_list_size(gr.list));
+    printf("Number of lines returned is %d\n",(int)cps_api_object_list_size(gr.list));
     fflush(stdout);
 
     return dict_obj;
 }
-
 
 /* A list of all the methods defined by this module. */
 /* "METH_VARGS" tells Python how to call the handler */
