@@ -37,10 +37,6 @@ cps_api_service_LDFLAGS = -lcps-api-common -ldn_common -levent_log
 
 cps-api-common_LDFLAGS = -levent_log -ldn_common
 
-pcps_python_SRCS=python_extension/cps_api_python.cpp
-cps_python_CFLAGS=-DMAJOR_VERSION=1 -DMINOR_VERSION=0 -Ipython2.7 -std=c++11
-cps_python_LDFLAGS=-lX11
-
 include ${PROJROOT}/tools/workspace.mak
 
 sos: ${BUILD_DN_SYSROOT}/lib/cps.so
