@@ -116,15 +116,15 @@ class COutputFormat:
 
             i = model.context['types'][i]
             if i.tag == model.module.ns()+'grouping': continue #not printable
-            
+
             name = i.get('name');
-                            
+
             type = i.find(model.module.ns()+'type')
             if type!=None:
                 type = type.get('name')
-            
+
             valid_types = {
-                           'boolean':'bool', 
+                           'boolean':'bool',
                            'decimal64':'double',
                            'int8':'int8_t',
                            'int16':'int16_t',
@@ -137,19 +137,20 @@ class COutputFormat:
                            'string':'const char*',
                            'binary':'uint8_t*'
             }
-            
+
             if type in valid_types.keys():
                 print "/*"
                 print "Comments:"+self.get_comment(model,i,enclose=False)
                 print "*/"
-                print 'typedef '+valid_types[type]+' '+name+";"
+                print 'typedef '+valid_types[type]+' '+string_to_c_formatted_name(name)+"_t;"
             else:
-                print "/* "                
+                print "/* "
                 print "Name: "+ i.get('name')
                 if type!=None:
                     print "Type:"+ type
                 print "Comments:"+self.get_comment(model,i,enclose=False)
-            print "*/\n"
+                print "*/\n"
+        print ""
 
 
     def show(self,model):
