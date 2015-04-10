@@ -112,17 +112,45 @@ class COutputFormat:
         name = model.module.name()
         for i in model.context['types'].keys():
             if i.find(name)==-1: continue
-            if i in model.context['enum']: continue
+            if i in model.context['enum']: continue #already printed
 
             i = model.context['types'][i]
-            if i.tag == model.module.ns()+'grouping': continue
-            print "/* "
+            if i.tag == model.module.ns()+'grouping': continue #not printable
+
+            name = i.get('name');
+
             type = i.find(model.module.ns()+'type')
-            print "Name: "+ i.get('name')
             if type!=None:
-                print "Type:"+ type.get('name')
-            print "Comments:"+self.get_comment(model,i,enclose=False)
-            print "*/\n"
+                type = type.get('name')
+
+            valid_types = {
+                           'boolean':'bool',
+                           'decimal64':'double',
+                           'int8':'int8_t',
+                           'int16':'int16_t',
+                           'int32':'int32_t',
+                           'int64':'int64_t',
+                           'uint8':'uint8_t',
+                           'uint16':'uint16_t',
+                           'uint32':'uint32_t',
+                           'uint64':'uint64_t',
+                           'string':'const char*',
+                           'binary':'uint8_t*'
+            }
+
+            if type in valid_types.keys():
+                print "/*"
+                print "Comments:"+self.get_comment(model,i,enclose=False)
+                print "*/"
+                print 'typedef '+valid_types[type]+' '+string_to_c_formatted_name(name)+"_t;"
+            else:
+                print "/* "
+                print "Name: "+ i.get('name')
+                if type!=None:
+                    print "Type:"+ type
+                print "Comments:"+self.get_comment(model,i,enclose=False)
+                print "*/\n"
+        print ""
 
 
     def show(self,model):

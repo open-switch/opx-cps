@@ -7,7 +7,13 @@
 
 #include "cps_api_key.h"
 
+#include "std_utils.h"
+
+#include <limits.h>
+#include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
+
 
 int cps_api_key_matches( cps_api_key_t *  key, cps_api_key_t * comparison, bool exact) {
     int src_len = cps_api_key_get_len_in_bytes(key);
@@ -53,4 +59,25 @@ char * cps_api_key_print(cps_api_key_t *key, char *buff, size_t len) {
     }
 
     return buff;
+}
+
+bool cps_api_key_from_string(cps_api_key_t *key,const char *buff) {
+	std_parsed_string_t handle;
+	if (!std_parse_string(&handle,buff,".")) return false;
+	memset(key,0,sizeof(*key));
+	size_t ix = 0;
+	size_t mx = std_parse_string_num_tokens(handle);
+	bool rc = true;
+	for ( ; ix < mx ; ++ix ) {
+		unsigned long int ul =strtoul(std_parse_string_at(handle,ix),NULL,0);
+		if (ul==ULONG_MAX && errno==ERANGE) {
+			rc = false;
+			break;
+		}
+		cps_api_key_set(key,ix,ul);
+	}
+
+	std_parse_string_free(handle);
+	return rc;
+
 }
