@@ -193,6 +193,20 @@ cps_api_object_attr_t cps_api_object_e_get(cps_api_object_t obj, cps_api_attr_id
         size_t id_size);
 
 /**
+ * This API is meant for getting iterators on for any attribute within the object.
+ * If you query a single attribute, it will only create an iterator that point to the existing attribute.
+ * If you use the cps_api_object_it_inside API, you can further go inside the attribute
+ * deep.
+ *
+ * @param object that contains the attribute
+ * @param id a list of attribute ids (for embedded objects)
+ * @param id_size the length of ids in the attribute
+ * @return the cps_api_object_it_t for the object.
+ */
+bool cps_api_object_it(cps_api_object_t obj, cps_api_attr_id_t *id,
+        size_t id_size, cps_api_object_it_t *it);
+
+/**
  * This API is meant for embedded objects - an object that contains objects itself.
  * Users will need to specify the containment in the cps_api_attr_id_t list
  *
