@@ -9,6 +9,8 @@
 #include "std_event_service.h"
 #include "cps_api_operation.h"
 #include "cps_api_service.h"
+#include "private/cps_ns.h"
+#include "cps_api_service.h"
 
 #include <stdlib.h>
 
@@ -31,7 +33,7 @@ static inline std_event_msg_buff_t handle_to_buff(cps_api_event_service_handle_t
 
 static cps_api_return_code_t _cps_api_event_service_client_connect(cps_api_event_service_handle_t * handle) {
 
-    cps_api_to_std_event_map_t *p = calloc(1,sizeof(cps_api_to_std_event_map_t));
+    cps_api_to_std_event_map_t *p = (cps_api_to_std_event_map_t*)calloc(1,sizeof(cps_api_to_std_event_map_t));
     if (p==NULL) return cps_api_ret_code_ERR;
 
     if (std_server_client_connect(&p->handle,
@@ -85,9 +87,9 @@ static cps_api_return_code_t _cps_api_event_service_publish_msg(cps_api_event_se
 
 static cps_api_return_code_t _cps_api_event_service_client_deregister(cps_api_event_service_handle_t handle) {
     std_event_client_handle h = handle_to_std_handle(handle);
-    std_client_free_msg_buff(handle_to_buff(handle));
+    std_client_free_msg_buff((std_event_msg_buff_t *)handle_to_buff(handle));
     free(handle);
-    return std_server_client_disconnect(h);
+    return (cps_api_return_code_t)std_server_client_disconnect(h);
 
 }
 
@@ -105,15 +107,31 @@ static cps_api_return_code_t _cps_api_wait_for_event(
     return cps_api_ret_code_OK;
 }
 
+extern "C" {
+
 static cps_api_event_methods_reg_t functions = {
-    .connect_function =_cps_api_event_service_client_connect,
-    .register_function =_cps_api_event_service_client_register,
-    .publish_function = _cps_api_event_service_publish_msg,
-    .deregister_function = _cps_api_event_service_client_deregister,
-    .wait_for_event_function = _cps_api_wait_for_event
+		NULL,
+		0,
+		_cps_api_event_service_client_connect,
+		_cps_api_event_service_client_register,
+		_cps_api_event_service_publish_msg,
+		_cps_api_event_service_client_deregister,
+		_cps_api_wait_for_event
 };
 
 cps_api_return_code_t cps_api_event_service_init(void) {
     cps_api_event_method_register(&functions);
     return cps_api_ret_code_OK;
+}
+
+static std_event_server_handle_t _handle=NULL;
+
+cps_api_return_code_t cps_api_services_start() {
+    std::string ns = cps_api_user_queue(CPS_API_EVENT_CHANNEL_NAME);
+    if (std_event_server_init(&_handle,ns.c_str(),CPS_API_EVENT_THREADS )!=STD_ERR_OK) {
+        return cps_api_ret_code_ERR;
+    }
+    return cps_api_ret_code_OK;
+}
+
 }

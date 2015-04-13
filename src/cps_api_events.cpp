@@ -167,6 +167,4 @@ cps_api_return_code_t cps_api_event_thread_shutdown(void) {
     return cps_api_ret_code_OK;
 }
 
-
-
 }
