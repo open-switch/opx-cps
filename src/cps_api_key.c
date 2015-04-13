@@ -76,7 +76,7 @@ bool cps_api_key_from_string(cps_api_key_t *key,const char *buff) {
 		}
 		cps_api_key_set(key,ix,ul);
 	}
-
+	cps_api_key_set_len(key,ix);
 	std_parse_string_free(handle);
 	return rc;
 
