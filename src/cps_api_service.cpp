@@ -12,16 +12,6 @@
 #include <string>
 #include <unistd.h>
 
-static std_event_server_handle_t _handle=NULL;
-
-cps_api_return_code_t cps_api_services_start() {
-    std::string ns = cps_api_user_queue(CPS_API_EVENT_CHANNEL_NAME);
-    if (std_event_server_init(&_handle,ns.c_str(),CPS_API_EVENT_THREADS )!=STD_ERR_OK) {
-        return cps_api_ret_code_ERR;
-    }
-    return cps_api_ret_code_OK;
-}
-
 int main(int argc, char**argv) {
     if (cps_api_services_start()!=cps_api_ret_code_OK) {
         EV_LOG(ERR,DSAPI,0,"FLT","Failed to initialize the messaging service.");

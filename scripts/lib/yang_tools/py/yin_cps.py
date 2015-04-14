@@ -83,8 +83,15 @@ class CPSParser:
         nodes = list(node)
         parent = path   #container path to parent
 
-        for i in nodes:
+        for i in node.iter():
+            tag = self.module.filter_ns(i.tag)
+            if tag == 'uses':
+                n = i.get('name')
+                if n.find(':')==-1:
+                    n = self.module.name()+':'+n
+                i.set('name',n)
 
+        for i in nodes:
             tag = self.module.filter_ns(i.tag)
             if i.get('name')!=None:
                 n_path=path+"_"+i.get('name');

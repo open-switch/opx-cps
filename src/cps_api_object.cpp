@@ -239,6 +239,24 @@ cps_api_object_attr_t cps_api_object_e_get(cps_api_object_t obj, cps_api_attr_id
     return std_tlv_efind(tlv,&len,id,id_size);
 }
 
+bool cps_api_object_it(cps_api_object_t obj, cps_api_attr_id_t *id,
+        size_t id_size, cps_api_object_it_t *it) {
+	it->attr =  obj_data((cps_api_object_internal_t*)obj);
+	it->len = obj_used_len((cps_api_object_internal_t*)obj);
+
+	size_t ix = 0;
+	size_t mx = id_size;
+	for ( ; ix < mx ; ++ix ) {
+		it->attr = std_tlv_find_next(it->attr,&it->len,id[ix]);
+		if (!cps_api_object_it_valid(it)) break;
+		if ((ix +1) == mx ) {
+			return true;
+		}
+		cps_api_object_it_inside(it);
+	}
+	return false;
+}
+
 static bool add_attribute(cps_api_object_internal_t * p, uint64_t attr, uint64_t len, const void *data) {
     void * ptr = add_get_tlv_pos_with_enough_space(p,attr,len);
     if (ptr==NULL) return false;
