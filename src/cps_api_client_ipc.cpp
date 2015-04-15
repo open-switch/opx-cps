@@ -52,12 +52,18 @@ bool cps_api_send_header(cps_api_channel_t handle, uint32_t op,
 
     t_std_error rc = STD_ERR_OK;
     int by = std_write(handle,&hdr,sizeof(hdr),true,&rc);
+    if (by!=sizeof(hdr)) {
+        EV_LOG(ERR,DSAPI,0,"CPS IPC","Was not able to send the full message header.");
+    }
     return (by==sizeof(hdr)) ;
 }
 
 bool cps_api_send_data(cps_api_channel_t handle, void *data, size_t len) {
     t_std_error rc = STD_ERR_OK;
     int by = std_write(handle,data,len,true,&rc);
+    if (by != (int)len) {
+        EV_LOG(ERR,DSAPI,0,"CPS IPC","Was not able to send the full message body.");
+    }
     return (by==(int)len) ;
 }
 
@@ -69,6 +75,9 @@ bool cps_api_send_data(cps_api_channel_t handle, void *data, size_t len) {
     t_std_error rc = STD_ERR_OK;
     size_t len = cps_api_object_to_array_len(obj);
     int by = std_write(handle,cps_api_object_array(obj),len, true,&rc);
+    if (by != (int)len) {
+        EV_LOG(ERR,DSAPI,0,"CPS IPC","Was not able to send the full object.");
+    }
     return (by==(int)len) ;
 }
 
@@ -78,16 +87,23 @@ bool cps_api_send_data(cps_api_channel_t handle, void *data, size_t len) {
 
     t_std_error rc = STD_ERR_OK;
     int by = std_read(handle,&hdr,sizeof(hdr),true,&rc);
-    if (by!=sizeof(hdr)) return false;
+    if (by!=sizeof(hdr)) {
+        EV_LOG(ERR,DSAPI,0,"CPS IPC","Was not able to read the header.");
+        return false;
+    }
     op = hdr.operation;
     len = hdr.len;
     return true;
 }
 
  bool cps_api_receive_data(cps_api_channel_t handle, void *data, size_t len) {
-    t_std_error rc = STD_ERR_OK;
-    int by = std_read(handle,data,len,true,&rc);
-    return (by==(int)len) ;
+    t_std_error msg_rc = STD_ERR_OK;
+    int by = std_read(handle,data,len,true,&msg_rc);
+    bool rc = (by==(int)len) ;
+    if (!rc) {
+        EV_LOG(ERR,DSAPI,0,"CPS IPC","Was not able to read the data. (%X)",msg_rc);
+    }
+    return rc;
 }
 
  bool cps_api_receive_key(cps_api_channel_t handle, cps_api_key_t &key) {
@@ -96,12 +112,12 @@ bool cps_api_send_data(cps_api_channel_t handle, void *data, size_t len) {
 
  cps_api_object_t cps_api_receive_object(cps_api_channel_t handle,size_t len) {
     cps_api_object_t obj = cps_api_object_create();
+    t_std_error rc = STD_ERR_OK;
     do {
         if (cps_api_object_get_reserve_len(obj) < len) {
             if (!cps_api_object_reserve(obj,len)) break;
         }
 
-        t_std_error rc = STD_ERR_OK;
         int by = std_read(handle,cps_api_object_array(obj),len,true,&rc);
         if (by!=(int)len) break;
 
@@ -109,6 +125,7 @@ bool cps_api_send_data(cps_api_channel_t handle, void *data, size_t len) {
         return obj;
     } while (0);
     cps_api_object_delete(obj);
+    EV_LOG(ERR,DSAPI,0,"CPS IPC","Was not able to read the object - MSG (%X)",rc);
     return NULL;
 }
 
@@ -119,7 +136,10 @@ void cps_api_disconnect_owner(cps_api_channel_t handle) {
 
 cps_api_return_code_t cps_api_connect_owner(cps_api_object_owner_reg_t*o,cps_api_channel_t &handle) {
     t_std_error rc = std_sock_connect(&o->addr,&handle);
-    return (rc==STD_ERR_OK) ? cps_api_ret_code_OK : cps_api_ret_code_ERR;
+    if (rc!=STD_ERR_OK) {
+        EV_LOG(ERR,DSAPI,0,"CPS IPC","not able to connect to owner");
+    }
+    return (cps_api_return_code_t) rc;
 }
 
 bool cps_api_get_handle(cps_api_key_t &key, cps_api_channel_t &handle) {
@@ -206,14 +226,21 @@ cps_api_return_code_t cps_api_process_commit_request(cps_api_transaction_params_
         if (op == cps_api_msg_o_COMMIT_OBJECT) {
             do {
                 cps_api_object_guard og(cps_api_receive_object(handle,len));
-                if (!og.valid()) break;
+                if (!og.valid()) {
+                    EV_LOG(ERR,DSAPI,0,"CPS IPC","Transaction response missing cur object..");
+                    break;
+                }
                 cps_api_object_clone(obj,og.get());
                 og.set(cps_api_receive_object(handle,len));
-                if (!og.valid())  break;
+                if (!og.valid())  {
+                    EV_LOG(ERR,DSAPI,0,"CPS IPC","Transaction response missing prev object..");
+                    break;
+                }
                 if (cps_api_object_list_append(param->prev,og.get())) {
                     og.release();
                     rc = cps_api_ret_code_OK;
                 }
+                EV_LOG(ERR,DSAPI,0,"CPS IPC","Can't update previous object");
             } while (0);
         }
         if (op == cps_api_msg_o_RETURN_CODE) {

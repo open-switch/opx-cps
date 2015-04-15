@@ -14,8 +14,8 @@
 */
 
 typedef enum {
-    cps_api_ret_code_OK, //!< an OK return code
-    cps_api_ret_code_ERR,//!< a generic error return code
+    cps_api_ret_code_OK=0, //!< an OK return code
+    cps_api_ret_code_ERR=1,//!< a generic error return code
 } cps_api_return_code_t;
 
 /**
