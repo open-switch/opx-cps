@@ -86,6 +86,7 @@ static bool cps_api_handle_commit(cps_api_operation_data_t *op, int fd, size_t l
 
     cps_api_transaction_params_t param;
     if (cps_api_transaction_init(&param)!=cps_api_ret_code_OK) return false;
+
     cps_api_transaction_guard tr(&param);
 
     if (!cps_api_object_list_append(param.change_list,o.get())) return false;
@@ -106,10 +107,20 @@ static bool cps_api_handle_commit(cps_api_operation_data_t *op, int fd, size_t l
     if (rc!=cps_api_ret_code_OK) {
         return cps_api_send_return_code(fd,cps_api_msg_o_RETURN_CODE,rc);
     } else {
-        cps_api_object_t obj = cps_api_object_list_get(param.prev,0);
-        if (obj==NULL) return false;
+        cps_api_object_t cur = cps_api_object_list_get(param.change_list,0);
+        cps_api_object_t prev = cps_api_object_list_get(param.prev,0);
 
-        if (!cps_api_send_one_object(fd,cps_api_msg_o_COMMIT_OBJECT,obj)) return false;
+        if (cur==NULL || prev==NULL) {
+            EV_LOG(ERR,DSAPI,0,"COMMIT-REQ","response to request was invalid - cur=%d,prev=%d.",
+                    (cur!=NULL),(prev!=NULL));
+            return false;
+        }
+
+        if (!cps_api_send_one_object(fd,cps_api_msg_o_COMMIT_OBJECT,cur) ||
+                !cps_api_send_one_object(fd,cps_api_msg_o_COMMIT_OBJECT,prev)) {
+            EV_LOG(ERR,DSAPI,0,"COMMIT-REQ","Failed to send response to commit... ");
+            return false;
+        }
     }
 
     return true;
