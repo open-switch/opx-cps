@@ -62,22 +62,22 @@ char * cps_api_key_print(cps_api_key_t *key, char *buff, size_t len) {
 }
 
 bool cps_api_key_from_string(cps_api_key_t *key,const char *buff) {
-	std_parsed_string_t handle;
-	if (!std_parse_string(&handle,buff,".")) return false;
-	memset(key,0,sizeof(*key));
-	size_t ix = 0;
-	size_t mx = std_parse_string_num_tokens(handle);
-	bool rc = true;
-	for ( ; ix < mx ; ++ix ) {
-		unsigned long int ul =strtoul(std_parse_string_at(handle,ix),NULL,0);
-		if (ul==ULONG_MAX && errno==ERANGE) {
-			rc = false;
-			break;
-		}
-		cps_api_key_set(key,ix,ul);
-	}
-	cps_api_key_set_len(key,ix);
-	std_parse_string_free(handle);
-	return rc;
+    std_parsed_string_t handle;
+    if (!std_parse_string(&handle,buff,".")) return false;
+    memset(key,0,sizeof(*key));
+    size_t ix = 0;
+    size_t mx = std_parse_string_num_tokens(handle);
+    bool rc = true;
+    for ( ; ix < mx ; ++ix ) {
+        unsigned long int ul =strtoul(std_parse_string_at(handle,ix),NULL,0);
+        if (ul==ULONG_MAX && errno==ERANGE) {
+            rc = false;
+            break;
+        }
+        cps_api_key_set(key,ix,ul);
+    }
+    cps_api_key_set_len(key,ix);
+    std_parse_string_free(handle);
+    return rc;
 
 }

@@ -25,14 +25,14 @@ static PyObject * py_cps_get(PyObject *self, PyObject *args) {
 
     cps_api_get_params_t gr;
     if (cps_api_get_request_init (&gr)==cps_api_ret_code_ERR) return NULL;
-    
+
     printf("Initializing\n");fflush(stdout);
 
     cps_api_get_request_guard rg(&gr);
 
 
     if (! PyArg_ParseTuple( args, "O!", &PyList_Type, &param_list)) return NULL;
-    
+
     printf("Scanning\n");fflush(stdout);
     Py_ssize_t str_keys = PyList_Size(param_list);
 

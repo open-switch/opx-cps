@@ -456,6 +456,23 @@ public:
      * Return the contained object
      */
     cps_api_object_t get() { return obj; }
+
+    /**
+     * Free the contained object
+     */
+    void free() {
+        if (obj!=NULL) cps_api_object_delete(obj);
+        obj = NULL;
+    }
+
+    /**
+     * Remove the existing object if any and then assign the guard to manage the new object
+     * @param o
+     */
+    void set(cps_api_object_t o) {
+        if (obj!=NULL) free();
+        obj = o;
+    }
 };
 
 #endif

@@ -160,7 +160,7 @@ class COutputFormat:
         stream.write( "*/" +"\n")
         stream.write( "" +"\n")
         stream.write( "/* OPENSOURCELICENSE */" +"\n")
-    
+
         stream.write( "#ifndef "+string_to_c_formatted_name(mod_name+"_H")+"\n" )
         stream.write( "#define "+string_to_c_formatted_name(mod_name+"_H") +"\n")
         stream.write( "" +"\n")
@@ -170,7 +170,7 @@ class COutputFormat:
 
     def header_file_close(self,stream):
         stream.write("#endif"+"\n" )
-    
+
     def show(self,model):
         self.header_file_open(model.module.name(),model.module.name(),sys.stdout)
 
