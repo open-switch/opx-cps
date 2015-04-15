@@ -152,9 +152,27 @@ class COutputFormat:
                 print "*/\n"
         print ""
 
+    def header_file_open(self,src_file, mod_name, stream):
+        stream.write( "\n" )
+        stream.write( "/*\n" )
+        stream.write( "* source file : "+ src_file +"\n")
+        stream.write( "* (c) Copyright 2015 Dell Inc. All Rights Reserved."+"\n" )
+        stream.write( "*/" +"\n")
+        stream.write( "" +"\n")
+        stream.write( "/* OPENSOURCELICENSE */" +"\n")
+
+        stream.write( "#ifndef "+string_to_c_formatted_name(mod_name+"_H")+"\n" )
+        stream.write( "#define "+string_to_c_formatted_name(mod_name+"_H") +"\n")
+        stream.write( "" +"\n")
+        stream.write( "#include <stdint.h>\n")
+        stream.write( "#include <stdbool.h>\n")
+        stream.write( "" +"\n")
+
+    def header_file_close(self,stream):
+        stream.write("#endif"+"\n" )
 
     def show(self,model):
-        yin_utils.header_file_open(model.module.name(),model.module.name(),sys.stdout)
+        self.header_file_open(model.module.name(),model.module.name(),sys.stdout)
 
         print ""
         id = model.history.get_category(model.module.name())
@@ -165,5 +183,5 @@ class COutputFormat:
         self.print_enums(model)
         self.print_container(model)
 
-        yin_utils.header_file_close(sys.stdout)
+        self.header_file_close(sys.stdout)
 

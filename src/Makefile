@@ -48,7 +48,7 @@ include ${MAKE_INC}/additional_directories.mak
 
 cps_python_CFLAGS=-DMAJOR_VERSION=1 -DMINOR_VERSION=0 -Ipython2.7 -std=c++11
 
-${BUILD_DN_SYSROOT}/lib/cps.so: $(wildcard python_extension/*.cpp ) python_extension/setup.py | ${PY_OBJ_PATH}
+${BUILD_DN_SYSROOT}/lib/cps.so: $(wildcard python_extension/*) | ${PY_OBJ_PATH}
 	cp -f $(wildcard python_extension/*) ${PY_OBJ_PATH}
 	cd ${PY_OBJ_PATH} && DISTUTILS_DEBUG=1 CFLAGS="${ADDED_CFLAGS} ${cps_python_CFLAGS}" CC="${CC}" python setup.py build -v --build-lib ${PY_OBJ_PATH}
 	cp ${PY_OBJ_PATH}/cps.so ${BUILD_DN_SYSROOT}/lib/cps.so
