@@ -236,7 +236,6 @@ cps_api_return_code_t cps_api_process_commit_request(cps_api_transaction_params_
                     EV_LOG(ERR,DSAPI,0,"CPS IPC","Transaction response missing prev object..");
                     break;
                 }
-                obj = cps_api_object_list_get(param->prev,ix);
                 if (cps_api_object_list_append(param->prev,og.get())) {
                     og.release();
                     rc = cps_api_ret_code_OK;
