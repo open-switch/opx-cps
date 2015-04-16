@@ -35,7 +35,7 @@ cps_api_service_SRCS=cps_api_service.cpp
 cps_api_service_LDFLAGS = -lcps-api-common -ldn_common -levent_log
 
 
-cps-api-common_LDFLAGS = -levent_log -ldn_common
+cps-api-common_LDFLAGS = -levent_log -ldn_common -lpthread
 
 include ${PROJROOT}/tools/workspace.mak
 
