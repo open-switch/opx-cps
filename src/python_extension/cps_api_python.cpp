@@ -60,7 +60,8 @@ static PyObject * py_cps_get(PyObject *self, PyObject *args) {
     gr.keys = &(keys[0]);
     gr.key_count = str_keys;
     if (cps_api_get(&gr)!=cps_api_ret_code_OK) {
-        return NULL;
+    	printf("Exception... bad return code\n");
+    	return NULL;
     }
 
     PyObject * dict_obj = PyDict_New();

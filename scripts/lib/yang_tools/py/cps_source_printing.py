@@ -68,8 +68,10 @@ class COutputFormat:
             self.show_enum(model,i)
 
     def print_container(self,model):
+        
         for name in model.container_map.keys():
             if name == model.module.name(): continue
+            
             node = model.container_map[name]
             if len(node)==0: continue
 
@@ -88,6 +90,8 @@ class COutputFormat:
             print "} "+string_to_c_formatted_name(name)+"_t;"
         print ""
 
+        print model.container_map[model.module.name()]
+        
         if len(model.container_map[model.module.name()])==0:
             print "/*No objects defined...*/"
             return

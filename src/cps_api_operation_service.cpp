@@ -275,9 +275,6 @@ cps_api_return_code_t cps_api_operation_subsystem_init(
         std_rw_lock_write_guard g(&p->db_lock);
         reconnect_with_ns(p);
     }
-
-
-
     *handle = p;
 
     return cps_api_ret_code_OK;

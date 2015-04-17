@@ -93,6 +93,7 @@ class CPSYangModel:
         yf = CPSYinFiles(context)
         self.model = yf.load(filename)
         self.model.walk()
+       
         self.coutput = cps_source_printing.COutputFormat(context)
 
     def show(self):
