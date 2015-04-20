@@ -3,10 +3,17 @@ import os
 import sys
 import yin_utils
 
+def to_c_type(context,elem):
+    return "cps_api_object_ATTR_T_BIN"
+
 def string_to_c_formatted_name(s):
     s = s.replace('-','_')
     s = s.replace(':','_')
+    s = s.replace('/','_')
     return s.upper();
+
+def to_string(s):
+    return string_to_c_formatted_name(s)
 
 class COutputFormat:
 
@@ -68,10 +75,10 @@ class COutputFormat:
             self.show_enum(model,i)
 
     def print_container(self,model):
-        
+
         for name in model.container_map.keys():
             if name == model.module.name(): continue
-            
+
             node = model.container_map[name]
             if len(node)==0: continue
 
@@ -90,8 +97,6 @@ class COutputFormat:
             print "} "+string_to_c_formatted_name(name)+"_t;"
         print ""
 
-        print model.container_map[model.module.name()]
-        
         if len(model.container_map[model.module.name()])==0:
             print "/*No objects defined...*/"
             return
@@ -113,11 +118,12 @@ class COutputFormat:
         print ""
 
     def print_types(self,model):
-        name = model.module.name()
+        print ""
+
         for i in model.context['types'].keys():
+            name = model.module.name()
             if i.find(name)==-1: continue
             if i in model.context['enum']: continue #already printed
-
             i = model.context['types'][i]
             if i.tag == model.module.ns()+'grouping': continue #not printable
 
@@ -143,9 +149,11 @@ class COutputFormat:
             }
 
             if type in valid_types.keys():
-                print "/*"
-                print "Comments:"+self.get_comment(model,i,enclose=False)
-                print "*/"
+                comments = self.get_comment(model,i,enclose=False)
+                if len(comments) > 0:
+                    print "/*"
+                    print "Comments:"+comments
+                    print "*/"
                 print 'typedef '+valid_types[type]+' '+string_to_c_formatted_name(name)+"_t;"
             else:
                 print "/* "

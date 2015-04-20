@@ -1,5 +1,5 @@
 /*
- * filename: cps_api_object.h
+ * filename: cps_api_object_attr.h
  * (c) Copyright 2014 Dell Inc. All Rights Reserved.
  */
 /* OPENSOURCELICENSE */
@@ -11,6 +11,10 @@
 extern "C" {
 #endif
 
+#include "std_tlv.h"
+
+#include <stdint.h>
+#include <stddef.h>
 /**
  * The type of each attribute in an object
  */
@@ -30,7 +34,7 @@ typedef struct cps_api_object_it_t {
 /**
  * The value that matches a NULL (invalid) attribute
  */
-#define CPS_API_ATTR_NULL ((void*)0)
+#define CPS_API_ATTR_NULL NULL
 
 /**
  * Check to see if the current iterator is valid

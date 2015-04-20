@@ -4,9 +4,18 @@ if [ "$TOOL_ROOT"b = b ] ; then
     TOOL_ROOT=$(dirname $0)/py
 fi
 
+#output dir for headers
 od=$2
+
+#output dir for sources
+od_src=$3
+
+#the yang file to parse
 yf=$1
+
+
 of=$od/$(basename $1 .yang).h
+of_src=$od_src/$(basename $1 .yang).cpp
 
 if [ ! -f $TOOL_ROOT/yin_parser.py ] ; then
     echo "Please set TOOL_ROOT to be the directory containing the yin parser"
@@ -24,7 +33,7 @@ if [ -z $YANG_PATH ] ; then
     echo "Please set YANG_PATH to a : separated list of directories containing the Yang files"
     exit 1
 fi
-python $TOOL_ROOT/yin_parser.py $yf > $of
+python $TOOL_ROOT/yin_parser.py file=$yf header=$of src=$of_src
 if [ ! $? = 0 ] ; then
     rm $of
     exit 1

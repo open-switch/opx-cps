@@ -1,10 +1,30 @@
 PROGRAMS= cps_api_service cps_api_example
 SUBDIRS=
-LIBRARIES= cps-api-common
+LIBRARIES= cps-api-common cps-class-map-util
 ARCHIVES=
-
-
 UNIT_TEST=cps_api_key_unittest cps_api_object_unittest cps_api_operation_unittest cps_api_events_unittest
+
+CXXFLAGS+=-std=c++11
+
+cps-class-map-util_SRCS=cps_class_map.cpp
+cps-class-map-util_CFLAGS=-std=c++11
+cps-class-map-util_LDFLAGS=-ldn_common -levent_log -lcps-api-common -lpthread
+
+cps-api-common_SRCS=cps_api_object.cpp \
+        cps_api_events.cpp \
+        cps_api_base_event_adapter.cpp \
+        cps_api_operation_common.cpp \
+        cps_api_key.c
+
+cps-api-common_SRCS+= cps_ns.cpp \
+					cps_api_operation_service.cpp \
+					cps_api_client_ipc.cpp
+
+cps-api-common_LDFLAGS = -levent_log -ldn_common
+
+cps_api_service_SRCS=cps_api_service.cpp
+cps_api_service_LDFLAGS = -lcps-api-common -ldn_common -levent_log
+
 
 cps_api_key_unittest_SRCS=unit_test/cps_api_key_unittest.cpp
 cps_api_key_unittest_LDFLAGS=-lcps-api-common
@@ -21,21 +41,11 @@ cps_api_events_unittest_LDFLAGS=-lcps-api-common -ldn_common
 cps_api_example_SRCS=example/cps_api_operation_example.c
 cps_api_example_LDFLAGS=-lcps-api-common -ldn_common
 
-cps-api-common_SRCS=cps_api_object.cpp \
-        cps_api_events.cpp \
-        cps_api_base_event_adapter.cpp \
-        cps_api_operation_common.cpp \
-        cps_api_key.c
 
-cps-api-common_SRCS+= cps_ns.cpp \
-					cps_api_operation_service.cpp \
-					cps_api_client_ipc.cpp
+UNIT_TEST+=cps_class_map_unittest
+cps_class_map_unittest_SRCS=unit_test/cps_class_map_unittest.cpp
+cps_class_map_unittest_LDFLAGS=-lcps-api-common -lcps-class-map-util
 
-cps_api_service_SRCS=cps_api_service.cpp
-cps_api_service_LDFLAGS = -lcps-api-common -ldn_common -levent_log
-
-
-cps-api-common_LDFLAGS = -levent_log -ldn_common
 
 include ${PROJROOT}/tools/workspace.mak
 
