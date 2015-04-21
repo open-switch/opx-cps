@@ -173,14 +173,11 @@ static PyObject * py_cps_byte_array_to_obj(PyObject *self, PyObject *args) {
 }
 
 static PyObject * py_cps_obj_to_array(PyObject *self, PyObject *args) {
-    const char * path=NULL,*prefix=NULL;
-    if (! PyArg_ParseTuple( args, "ss", &path, &prefix)) return NULL;
+    PyObject *d;
+    if (! PyArg_ParseTuple( args, "O!", PyDict_Type, &d)) return NULL;
 
-    printf("Parsed %s:%s\n",path,prefix);fflush(stdout);
 
-    cps_class_objs_load(path,prefix);
-
-    Py_RETURN_TRUE;
+    return PyByteArray_FromStringAndSize(NULL,0);
 }
 
 /* A list of all the methods defined by this module. */
