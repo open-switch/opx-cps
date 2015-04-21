@@ -19,6 +19,7 @@ static cps_api_return_code_t db_read_function (void * context, cps_api_get_param
 
     cps_api_object_t obj = cps_api_object_create();
     cps_api_object_set_key(obj,the_key);
+
     cps_api_object_attr_add(obj,0,"key",strlen("key"));
     cps_api_object_attr_add(obj,1,"Interface",strlen("Interface"));
     cps_api_object_attr_add_u64(obj,2,(uint64_t)2);
@@ -84,11 +85,9 @@ int main(int argc, char **argv) {
     }
     cps_api_registration_functions_t f;
 
-    cps_api_key_t key;
-    cps_api_key_from_string(&key,argv[1]);
-
     memset(&f,0,sizeof(f));
     f.handle = handle;
+    cps_api_key_from_string(&f.key,argv[1]);
     f._read_function =db_read_function;
     f._write_function = db_write_function;
     f._rollback_function = db_rollback_function;
