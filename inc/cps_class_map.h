@@ -85,6 +85,15 @@ const char * cps_class_attr_name(const cps_api_key_t *key,const cps_api_attr_id_
  */
 bool cps_class_objs_load(const char *path, const char * prefix);
 
+/**
+ * Given a string path, return the CPS object key for it
+ * @param str the string to translate to a CPS object ID list
+ * @param ids the destination holding the returned ids
+ * @param max_ids the maximum number of returned ids
+ * @return true if found otherwise false
+ */
+bool cps_class_string_to_key(const char *str, cps_api_attr_id_t *ids, size_t *max_ids);
+
 #ifdef __cplusplus
 }
 #endif

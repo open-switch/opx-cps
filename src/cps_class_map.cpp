@@ -17,12 +17,11 @@
 #include <string>
 #include <algorithm>
 
-static std_mutex_lock_create_static_init_fast(lock);
-
 class cps_class_map_key {
 public:
     using vector = std::vector<cps_api_attr_id_t>;
 public:
+    cps_class_map_key(){}
     auto size() const -> std::vector<cps_api_attr_id_t>::size_type {
         return _ids.size();
     }
@@ -39,6 +38,7 @@ public:
     cps_class_map_key(cps_class_map_key &&k) {
         *this = std::move(k);
     }
+    const vector &get() const { return _ids; }
     cps_class_map_key(const cps_api_key_t *key,const cps_api_attr_id_t *ids, size_t ids_len) {
         size_t klen = cps_api_key_get_len(key);
         size_t len = ids_len;
@@ -60,6 +60,10 @@ public:
             _ids[ix] = ids[ids_ix];
         }
     }
+    cps_class_map_key& operator=(const cps_class_map_key&k) {
+        _ids = k._ids;
+        return *this;
+    }
 private:
     vector _ids;
 };
@@ -75,7 +79,6 @@ struct cps_class_map_key_comp {
         }
         return (lhs.size()<rhs.size());
     }
-
 };
 
 struct cps_class_map_node_details_int_t {
@@ -85,10 +88,13 @@ struct cps_class_map_node_details_int_t {
     cps_api_object_ATTR_TYPE_t type;
 };
 
-extern "C" {
-
 using cps_class_map_type_t = std::map<cps_class_map_key,cps_class_map_node_details_int_t,cps_class_map_key_comp>;
 using cps_class_map_reverse_string_t = std::map<std::string,cps_class_map_key>;
+
+
+static std_mutex_lock_create_static_init_fast(lock);
+
+extern "C" {
 
 static cps_class_map_type_t _cmt;
 static cps_class_map_reverse_string_t _rev_string;
@@ -132,6 +138,19 @@ const char * cps_class_attr_name(const cps_api_key_t *key,const cps_api_attr_id_
     const auto it = _cmt.find(k);
     if (it==_cmt.end()) return false;
     return it->second.name.c_str();
+}
+
+bool cps_class_string_to_key(const char *str, cps_api_attr_id_t *ids, size_t *max_ids) {
+    const auto it = _rev_string.find(str);
+    if (it!=_rev_string.end()) return false;
+    if (*max_ids >= it->second.get().size()) {
+        *max_ids = it->second.get().size();
+    }
+    size_t ix = 0;
+    for ( ; ix < *max_ids ; ++ix ) {
+        ids[ix] = it->second[ix];
+    }
+    return true;
 }
 
 static bool _cps_class_data(const char *name, std_dir_file_TYPE_t type,void *context) {

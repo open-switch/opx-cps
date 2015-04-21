@@ -1,9 +1,9 @@
 
-#include "python2.7/Python.h"
-
 
 #include "cps_api_operation.h"
 #include "cps_api_key.h"
+#include "cps_class_map.h"
+#include "python2.7/Python.h"
 
 #include <stdio.h>
 #include <vector>
@@ -11,6 +11,9 @@
 
 PyDoc_STRVAR(cps_get__doc__, "Perform a CPS get using the keys specified.");
 PyDoc_STRVAR(cps_doc__, "A python interface to the CPS API");
+
+PyDoc_STRVAR(cps_cps_map_init_doc__, "Initialize the string dictionary for the CPS.");
+
 
 class cps_api_key_wrapper {
 protected:
@@ -26,18 +29,14 @@ static PyObject * py_cps_get(PyObject *self, PyObject *args) {
     cps_api_get_params_t gr;
     if (cps_api_get_request_init (&gr)==cps_api_ret_code_ERR) return NULL;
 
-    printf("Initializing\n");fflush(stdout);
-
     cps_api_get_request_guard rg(&gr);
 
 
     if (! PyArg_ParseTuple( args, "O!", &PyList_Type, &param_list)) return NULL;
 
-    printf("Scanning\n");fflush(stdout);
     Py_ssize_t str_keys = PyList_Size(param_list);
 
     if (str_keys<0) return NULL;
-    printf("found %d keys \n",(int)str_keys);fflush(stdout);
 
     std::unique_ptr<cps_api_key_t[]> keys;
 
@@ -60,24 +59,140 @@ static PyObject * py_cps_get(PyObject *self, PyObject *args) {
     gr.keys = &(keys[0]);
     gr.key_count = str_keys;
     if (cps_api_get(&gr)!=cps_api_ret_code_OK) {
-    	printf("Exception... bad return code\n");
-    	return NULL;
+        printf("Exception... bad return code\n");
+        return NULL;
     }
 
     PyObject * dict_obj = PyDict_New();
 
-    printf("Number of lines returned is %d\n",(int)cps_api_object_list_size(gr.list));
-    fflush(stdout);
+    size_t ix = 0;
+    size_t mx = cps_api_object_list_size(gr.list);
+    for ( ; ix < mx ; ++ix) {
+        cps_api_object_t obj = cps_api_object_list_get(gr.list,ix);
+        cps_api_key_t *key = cps_api_object_key(obj);
+
+        char buff[1024];
+
+        PyObject * k = PyString_FromString(cps_api_key_print(key,buff,sizeof(buff)));
+
+        PyDict_SetItem(dict_obj,k,PyByteArray_FromStringAndSize((const char *)cps_api_object_array(obj),
+                cps_api_object_to_array_len(obj)));
+    }
 
     return dict_obj;
+}
+
+static PyObject * py_cps_map_init(PyObject *self, PyObject *args) {
+    const char * path=NULL,*prefix=NULL;
+    if (! PyArg_ParseTuple( args, "ss", &path, &prefix)) return NULL;
+
+    printf("Parsed %s:%s\n",path,prefix);fflush(stdout);
+
+    cps_class_objs_load(path,prefix);
+
+    Py_RETURN_TRUE;
+}
+
+
+static void py_obj_dump_level(PyObject * d, std::vector<cps_api_attr_id_t> &parent, cps_api_object_it_t *it) {
+
+    std::vector<cps_api_attr_id_t> cur = parent;
+    size_t level = cur.size();
+    cur.push_back((cps_api_attr_id_t)0);
+    cps_api_key_t key;
+    memset(&key,0,sizeof(key));
+
+    while (cps_api_object_it_valid(it)) {
+
+        do {
+            char buff[100];
+
+            cur[level] = cps_api_object_attr_id(it->attr);
+            sprintf(buff,"%d",(int)cur[level]);
+
+            const char * name = cps_class_attr_name(&key,&cur[0],cur.size());
+
+            if (!cps_class_attr_is_valid(&key,&cur[0],cur.size()) || name==NULL) {
+                PyDict_SetItem(d,PyString_FromString(buff),
+                        PyByteArray_FromStringAndSize((const char *)cps_api_object_attr_data_bin(it->attr),
+                        cps_api_object_attr_len(it->attr)));
+                break;
+            }
+
+            bool emb = cps_class_attr_is_embedded(&key,&cur[0],cur.size());
+            if (emb) {
+                PyObject * subd = PyDict_New();
+                cps_api_object_it_t contained_it = *it;
+                cps_api_object_it_inside(&contained_it);
+                py_obj_dump_level(subd,cur,&contained_it);
+                PyDict_SetItem(d,PyString_FromString(name),subd);
+                break;
+            }
+            PyDict_SetItem(d,PyString_FromString(name),
+                            PyByteArray_FromStringAndSize((const char *)cps_api_object_attr_data_bin(it->attr),
+                                    cps_api_object_attr_len(it->attr)));
+        } while (0);
+        cps_api_object_it_next(it);
+    }
+}
+
+static PyObject * py_cps_byte_array_to_obj(PyObject *self, PyObject *args) {
+    const char * path=NULL;
+    PyObject *array;
+    if (! PyArg_ParseTuple( args, "sO!", &path, &PyByteArray_Type, &array)) return NULL;
+
+    cps_api_key_t key;
+    cps_api_key_from_string(&key,path);
+
+    std::vector<cps_api_attr_id_t> lst;
+
+    size_t ix = 1;
+    size_t mx = cps_api_key_get_len(&key);
+    if (mx > 3) mx = 3;
+    for ( ; ix < mx ; ++ix ) {
+        lst.push_back((cps_api_attr_id_t)cps_api_key_element_at(&key,ix));
+    }
+    cps_api_key_set_len(&key,0);
+
+    PyObject * d = PyDict_New();
+
+    cps_api_object_t obj = cps_api_object_create();
+    cps_api_object_guard og(obj);
+
+    if (!cps_api_array_to_object(PyByteArray_AsString(array), PyByteArray_Size(array),obj)) {
+        return d;
+    }
+    if (!cps_api_object_received(obj,PyByteArray_Size(array))) {
+        return d;
+    }
+
+    cps_api_object_it_t it;
+    cps_api_object_it_begin(obj, &it);
+    py_obj_dump_level(d,lst,&it);
+    return d;
+}
+
+static PyObject * py_cps_obj_to_array(PyObject *self, PyObject *args) {
+    const char * path=NULL,*prefix=NULL;
+    if (! PyArg_ParseTuple( args, "ss", &path, &prefix)) return NULL;
+
+    printf("Parsed %s:%s\n",path,prefix);fflush(stdout);
+
+    cps_class_objs_load(path,prefix);
+
+    Py_RETURN_TRUE;
 }
 
 /* A list of all the methods defined by this module. */
 /* "METH_VARGS" tells Python how to call the handler */
 static PyMethodDef cps_methods[] = {
-    {"cps_get",  py_cps_get, METH_VARARGS, cps_get__doc__},
+    {"get",  py_cps_get, METH_VARARGS, cps_get__doc__},
+    {"init",  py_cps_map_init, METH_VARARGS, cps_cps_map_init_doc__},
+    {"array_to_dict",  py_cps_byte_array_to_obj, METH_VARARGS, cps_cps_map_init_doc__},
+    {"dict_to_array",  py_cps_obj_to_array, METH_VARARGS, cps_cps_map_init_doc__},
     {NULL, NULL}      /* sentinel */
 };
+
 
 PyMODINIT_FUNC initcps(void) {
     /* There have been several InitModule functions over time */

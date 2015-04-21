@@ -46,6 +46,10 @@ UNIT_TEST+=cps_class_map_unittest
 cps_class_map_unittest_SRCS=unit_test/cps_class_map_unittest.cpp
 cps_class_map_unittest_LDFLAGS=-lcps-api-common -lcps-class-map-util
 
+UNIT_TEST+=cps_api_receiver
+cps_api_receiver_SRCS=unit_test/cps_api_receiver.cpp
+cps_api_receiver_LDFLAGS=-lcps-api-common -lcps-class-map-util
+
 
 include ${PROJROOT}/tools/workspace.mak
 
