@@ -74,7 +74,10 @@ static PyObject * py_cps_get(PyObject *self, PyObject *args) {
         char buff[1024];
 
         PyObject * k = PyString_FromString(cps_api_key_print(key,buff,sizeof(buff)));
-
+        if(k==NULL) {
+            printf("Allocation error... python environment corrupted.");
+            break;
+        }
         PyDict_SetItem(dict_obj,k,PyByteArray_FromStringAndSize((const char *)cps_api_object_array(obj),
                 cps_api_object_to_array_len(obj)));
     }
@@ -86,13 +89,10 @@ static PyObject * py_cps_map_init(PyObject *self, PyObject *args) {
     const char * path=NULL,*prefix=NULL;
     if (! PyArg_ParseTuple( args, "ss", &path, &prefix)) return NULL;
 
-    printf("Parsed %s:%s\n",path,prefix);fflush(stdout);
-
     cps_class_objs_load(path,prefix);
 
     Py_RETURN_TRUE;
 }
-
 
 static void py_obj_dump_level(PyObject * d, std::vector<cps_api_attr_id_t> &parent, cps_api_object_it_t *it) {
 
@@ -103,7 +103,6 @@ static void py_obj_dump_level(PyObject * d, std::vector<cps_api_attr_id_t> &pare
     memset(&key,0,sizeof(key));
 
     while (cps_api_object_it_valid(it)) {
-
         do {
             char buff[100];
 
@@ -122,6 +121,7 @@ static void py_obj_dump_level(PyObject * d, std::vector<cps_api_attr_id_t> &pare
             bool emb = cps_class_attr_is_embedded(&key,&cur[0],cur.size());
             if (emb) {
                 PyObject * subd = PyDict_New();
+                if (subd==NULL) break;
                 cps_api_object_it_t contained_it = *it;
                 cps_api_object_it_inside(&contained_it);
                 py_obj_dump_level(subd,cur,&contained_it);
@@ -155,6 +155,7 @@ static PyObject * py_cps_byte_array_to_obj(PyObject *self, PyObject *args) {
     cps_api_key_set_len(&key,0);
 
     PyObject * d = PyDict_New();
+    if (d==NULL) return NULL;
 
     cps_api_object_t obj = cps_api_object_create();
     cps_api_object_guard og(obj);
@@ -175,7 +176,6 @@ static PyObject * py_cps_byte_array_to_obj(PyObject *self, PyObject *args) {
 static PyObject * py_cps_obj_to_array(PyObject *self, PyObject *args) {
     PyObject *d;
     if (! PyArg_ParseTuple( args, "O!", PyDict_Type, &d)) return NULL;
-
 
     return PyByteArray_FromStringAndSize(NULL,0);
 }
