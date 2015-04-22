@@ -21,15 +21,19 @@
 extern "C" {
 #endif
 
+/** @defgroup CPSAPI The CPS API
+@{
+*/
+
 /**
- * Structure reperesenting a node in the CPS yang map.  This map can be used to get extended inforamtion
+ * Structure representing a node in the CPS yang map.  This map can be used to get extended inforamtion
  * about a CPS object.
  */
 typedef struct {
-    const char *name;     //name of the class element
-    const char *desc;    //Description of the element
-    bool embedded;         //true if the element is embedded
-    cps_api_object_ATTR_TYPE_t type;    //the type of the element
+    const char *name;     //!name of the class element
+    const char *desc;    //!Description of the element
+    bool embedded;         //!true if the element is embedded
+    cps_api_object_ATTR_TYPE_t type;    //!the type of the element
 } cps_class_map_node_details;
 
 /**
@@ -93,6 +97,10 @@ bool cps_class_objs_load(const char *path, const char * prefix);
  * @return true if found otherwise false
  */
 bool cps_class_string_to_key(const char *str, cps_api_attr_id_t *ids, size_t *max_ids);
+
+/**
+@}
+*/
 
 #ifdef __cplusplus
 }

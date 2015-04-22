@@ -15,6 +15,13 @@ extern "C" {
 
 #include <stdint.h>
 #include <stddef.h>
+
+/** @defgroup CPSAPI The CPS API
+ *
+@{
+*/
+
+
 /**
  * The type of each attribute in an object
  */
@@ -136,6 +143,11 @@ uint64_t cps_api_object_attr_data_u64(cps_api_object_attr_t attr);
  * @return the data as binary
  */
 void *cps_api_object_attr_data_bin(cps_api_object_attr_t attr);
+
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }
