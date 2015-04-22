@@ -28,17 +28,18 @@ public:
     auto operator[](size_t ix) const -> std::vector<cps_api_attr_id_t>::const_reference {
         return _ids[ix];
     }
-    cps_class_map_key & operator=(cps_class_map_key&& rhs) {
-        _ids = std::move(rhs._ids);
-        return *this;
-    }
     cps_class_map_key(vector &&v) {
         _ids = std::move(v);
     }
-    cps_class_map_key(cps_class_map_key &&k) {
-        *this = std::move(k);
-    }
+
+    //require move constructor
+    cps_class_map_key(cps_class_map_key &&k)  = default;
+
+    //requried because constructor
+    cps_class_map_key& operator=(const cps_class_map_key&k) = default;
+
     const vector &get() const { return _ids; }
+
     cps_class_map_key(const cps_api_key_t *key,const cps_api_attr_id_t *ids, size_t ids_len) {
         size_t klen = cps_api_key_get_len(key);
         size_t len = ids_len;
@@ -59,10 +60,6 @@ public:
         for (size_t ids_ix=0 ;ix < len ; ++ix,++ids_ix ) {
             _ids[ix] = ids[ids_ix];
         }
-    }
-    cps_class_map_key& operator=(const cps_class_map_key&k) {
-        _ids = k._ids;
-        return *this;
     }
 private:
     vector _ids;
