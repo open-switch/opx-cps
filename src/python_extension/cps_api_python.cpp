@@ -104,7 +104,8 @@ static void py_obj_dump_level(PyObject * d, std::vector<cps_api_attr_id_t> &pare
 
     while (cps_api_object_it_valid(it)) {
         do {
-            char buff[100];
+            const size_t ID_BUFF_LEN=100;
+            char buff[ID_BUFF_LEN];
 
             cur[level] = cps_api_object_attr_id(it->attr);
             sprintf(buff,"%d",(int)cur[level]);
