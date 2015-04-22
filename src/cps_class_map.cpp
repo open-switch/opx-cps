@@ -139,7 +139,7 @@ const char * cps_class_attr_name(const cps_api_key_t *key,const cps_api_attr_id_
 
 bool cps_class_string_to_key(const char *str, cps_api_attr_id_t *ids, size_t *max_ids) {
     const auto it = _rev_string.find(str);
-    if (it!=_rev_string.end()) return false;
+    if (it==_rev_string.end()) return false;
     if (*max_ids >= it->second.get().size()) {
         *max_ids = it->second.get().size();
     }
