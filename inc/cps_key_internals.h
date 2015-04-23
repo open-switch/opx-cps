@@ -21,7 +21,6 @@
  * opaque key structure.  Each element in the key is a uint32_t.
  */
 typedef uint8_t cps_api_key_t[CPS_OBJ_KEY_BYTE_MAX_LEN];
-typedef const uint8_t cps_api_key_const_t[CPS_OBJ_KEY_BYTE_MAX_LEN];
 
 
 
