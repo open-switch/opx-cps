@@ -41,7 +41,7 @@ public:
     const vector &get() const { return _ids; }
 
     cps_class_map_key(const cps_api_key_t *key,const cps_api_attr_id_t *ids, size_t ids_len) {
-        size_t klen = cps_api_key_get_len(key);
+        size_t klen = cps_api_key_get_len(const_cast<cps_api_key_t *>(key));
         size_t len = ids_len;
         if(klen>0) {
             len+=klen-1;

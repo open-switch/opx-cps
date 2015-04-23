@@ -50,7 +50,7 @@ extern "C" {
  * @param elem
  * @return the number of elements in the key
  */
-static inline uint32_t cps_api_key_get_len(const cps_api_key_t *elem) {
+static inline uint32_t cps_api_key_get_len(cps_api_key_t * elem) {
     return le32toh(((const uint32_t*)elem)[CPS_OBJ_KEY_LEN_POS]);
 }
 
@@ -60,7 +60,7 @@ static inline uint32_t cps_api_key_get_len(const cps_api_key_t *elem) {
  * @param offset the position to validate
  * @return true if the index is valid
  */
-static inline bool cps_api_key_valid_offset(const cps_api_key_t *elem, uint32_t offset) {
+static inline bool cps_api_key_valid_offset(cps_api_key_t *elem, uint32_t offset) {
     return offset < cps_api_key_get_len(elem);
 }
 
