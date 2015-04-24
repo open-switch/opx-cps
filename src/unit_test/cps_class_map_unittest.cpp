@@ -8,11 +8,10 @@
 
 #include "cps_class_map.h"
 #include "cps_api_operation.h"
+#include "private/cps_class_map_query.h"
 
 #include <gtest/gtest.h>
 
-
-#include "cps_class_map.h"
 
 #include <vector>
 
@@ -33,6 +32,16 @@ static const size_t lst_len = sizeof(lst)/sizeof(*lst);
 
 TEST(cps_class_map,load) {
     ASSERT_TRUE(cps_class_objs_load("workspace/debian/jessie/x86_64/sysroot/opt/ngos/lib","libcpsclass-"));
+    std::vector<cps_api_attr_id_t> ids = {19,1};
+    cps_class_node_detail_list_t lst;
+    cps_class_map_level(&ids[0],ids.size(),lst);
+
+     for ( auto it : lst) {
+
+         printf(" %s = %s\n",
+                 cps_class_ids_to_string(it.ids).c_str(),
+                 it.name.c_str());
+     }
 }
 
 TEST(cps_class_map,keys) {

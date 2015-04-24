@@ -6,8 +6,13 @@ if __name__ == '__main__':
     #load the mapping file
     cps.init('/localdisk/cwichmann/cps-api/workspace/debian/jessie/x86_64/sysroot/opt/ngos/lib/','libcpsclass-')
 
+    data = cps.info('19')
+    print data
+    data = cps.info('20')
+    print data
+    print cps.convdict({'1':'dasra'})
     #Get the cps objects
-    result = cps.get(['1.2.3.4','2.3.4.5'])
+    result = cps.get(['1.2.3.4'])
 
     #print discovered map
     print result
@@ -15,4 +20,6 @@ if __name__ == '__main__':
     for d in result.keys():
         print d
         #convert to displayable info
-        print cps.array_to_dict(d,result[d])
+        di = cps.arrayconv(d,result[d])
+        cps.dictconv(d)
+

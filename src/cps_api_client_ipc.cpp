@@ -240,7 +240,7 @@ cps_api_return_code_t cps_api_process_commit_request(cps_api_transaction_params_
                     og.release();
                     rc = cps_api_ret_code_OK;
                 }
-                EV_LOG(ERR,DSAPI,0,"CPS IPC","Can't update previous object");
+
             } while (0);
         }
         if (op == cps_api_msg_o_RETURN_CODE) {
