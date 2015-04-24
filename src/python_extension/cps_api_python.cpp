@@ -19,6 +19,11 @@ PyDoc_STRVAR(cps_doc__, "A python interface to the CPS API");
 PyDoc_STRVAR(cps_cps_map_init_doc__, "Initialize the string dictionary for the CPS.");
 
 
+const static size_t KEY_STR_LEN=500;
+const static size_t MAX_EVENT_BUFF=20000;
+const static unsigned int CUSTOM_KEY_POS = 2;
+
+
 class cps_api_key_wrapper {
 protected:
     cps_api_key_t key;
@@ -141,6 +146,27 @@ static void py_obj_dump_level(PyObject * d, std::vector<cps_api_attr_id_t> &pare
     }
 }
 
+
+static PyObject * py_cps_byte_array_key(PyObject *self, PyObject *args) {
+    PyObject *array;
+    if (! PyArg_ParseTuple( args, "O!", &PyByteArray_Type, &array)) return NULL;
+    cps_api_object_t obj = cps_api_object_create();
+    cps_api_object_guard og(obj);
+
+    if (!cps_api_array_to_object(PyByteArray_AsString(array), PyByteArray_Size(array),obj)) {
+        return PyString_FromString("");
+    }
+    if (!cps_api_object_received(obj,PyByteArray_Size(array))) {
+        return PyString_FromString("");
+    }
+
+    char buff[KEY_STR_LEN];
+    cps_api_key_print(cps_api_object_key(obj),buff,sizeof(buff));
+
+    return PyString_FromString(buff);
+}
+
+
 static PyObject * py_cps_byte_array_to_obj(PyObject *self, PyObject *args) {
     const char * path=NULL;
     PyObject *array;
@@ -226,8 +252,8 @@ static PyObject * py_cps_obj_to_array(PyObject *self, PyObject *args) {
 
     std::vector<cps_api_attr_id_t> level;
     cps_class_ids_from_string(level,path);
-    if (level.size()>1) level.erase(level.begin());
-    if (level.size()>2) level.resize(2);
+    if (level.size()>(CPS_OBJ_KEY_INST_POS+1)) level.erase(level.begin());
+    if (level.size()>CUSTOM_KEY_POS) level.resize(CUSTOM_KEY_POS);
 
     add_to_object(level,obj,d,level.size());
 
@@ -318,10 +344,10 @@ static PyObject * py_cps_event_wait(PyObject *self, PyObject *args) {
 
     cps_api_object_t obj=cps_api_object_create();
     cps_api_object_guard og(obj);
-    cps_api_object_reserve(obj,20000);
+    cps_api_object_reserve(obj,MAX_EVENT_BUFF);
 
     if (cps_api_wait_for_event(*handle,obj)==cps_api_ret_code_OK) {
-        char k_buff[300];
+        char k_buff[KEY_STR_LEN];
         cps_api_key_print(cps_api_object_key(obj),k_buff,sizeof(k_buff));
         std::vector<cps_api_attr_id_t> k;
         cps_class_ids_from_string(k,k_buff);
@@ -362,6 +388,7 @@ static PyMethodDef cps_methods[] = {
     {"get",  py_cps_get, METH_VARARGS, cps_get__doc__},
     {"init",  py_cps_map_init, METH_VARARGS, cps_cps_map_init_doc__},
     {"convarray",  py_cps_byte_array_to_obj, METH_VARARGS, cps_cps_map_init_doc__},
+    {"arraykey",  py_cps_byte_array_key, METH_VARARGS, cps_cps_map_init_doc__},
     {"convdict",  py_cps_obj_to_array, METH_VARARGS, cps_cps_map_init_doc__},
     {"info",  py_cps_info, METH_VARARGS, cps_cps_map_init_doc__},
     {"event_register",  py_cps_event_reg, METH_VARARGS, cps_cps_map_init_doc__},
