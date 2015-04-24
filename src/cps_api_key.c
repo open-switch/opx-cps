@@ -38,7 +38,7 @@ int cps_api_key_matches( cps_api_key_t *  key, cps_api_key_t * comparison, bool 
 char * cps_api_key_print(const cps_api_key_t *key, char *buff, size_t len) {
     STD_ASSERT(buff!=NULL);
 
-    size_t klen = cps_api_key_get_len(key);
+    size_t klen = cps_api_key_get_len((cps_api_key_t *)key);
     if (klen > CPS_OBJ_MAX_KEY_LEN) {
         buff[0] = '\0';
         return buff;

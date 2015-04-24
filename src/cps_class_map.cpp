@@ -55,6 +55,7 @@ public:
         if(klen>0) {
             len+=klen-1;
         }
+
         _ids.resize(len);
         size_t ix = 0;
         if (klen>0){

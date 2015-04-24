@@ -8,7 +8,6 @@ import os
 import xml.etree.ElementTree as ET
 
 import tempfile
-from docutils.parsers.rst.directives import path
 
 supported_ids_at_root = [
     "list","container" ]
