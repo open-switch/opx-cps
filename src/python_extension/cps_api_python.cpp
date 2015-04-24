@@ -3,8 +3,12 @@
 #include "cps_api_operation.h"
 #include "cps_api_key.h"
 #include "cps_class_map.h"
-#include "python2.7/Python.h"
+#include "cps_class_map_query.h"
+#include "cps_api_events.h"
 
+
+
+#include "python2.7/Python.h"
 #include <stdio.h>
 #include <vector>
 #include <memory>
@@ -13,6 +17,11 @@ PyDoc_STRVAR(cps_get__doc__, "Perform a CPS get using the keys specified.");
 PyDoc_STRVAR(cps_doc__, "A python interface to the CPS API");
 
 PyDoc_STRVAR(cps_cps_map_init_doc__, "Initialize the string dictionary for the CPS.");
+
+
+const static size_t KEY_STR_LEN=500;
+const static size_t MAX_EVENT_BUFF=20000;
+const static unsigned int CUSTOM_KEY_POS = 2;
 
 
 class cps_api_key_wrapper {
@@ -108,7 +117,7 @@ static void py_obj_dump_level(PyObject * d, std::vector<cps_api_attr_id_t> &pare
             char buff[ID_BUFF_LEN];
 
             cur[level] = cps_api_object_attr_id(it->attr);
-            sprintf(buff,"%d",(int)cur[level]);
+            snprintf(buff,sizeof(buff)-1,"%d",(int)cur[level]);
 
             const char * name = cps_class_attr_name(&key,&cur[0],cur.size());
 
@@ -137,6 +146,27 @@ static void py_obj_dump_level(PyObject * d, std::vector<cps_api_attr_id_t> &pare
     }
 }
 
+
+static PyObject * py_cps_byte_array_key(PyObject *self, PyObject *args) {
+    PyObject *array;
+    if (! PyArg_ParseTuple( args, "O!", &PyByteArray_Type, &array)) return NULL;
+    cps_api_object_t obj = cps_api_object_create();
+    cps_api_object_guard og(obj);
+
+    if (!cps_api_array_to_object(PyByteArray_AsString(array), PyByteArray_Size(array),obj)) {
+        return PyString_FromString("");
+    }
+    if (!cps_api_object_received(obj,PyByteArray_Size(array))) {
+        return PyString_FromString("");
+    }
+
+    char buff[KEY_STR_LEN];
+    cps_api_key_print(cps_api_object_key(obj),buff,sizeof(buff));
+
+    return PyString_FromString(buff);
+}
+
+
 static PyObject * py_cps_byte_array_to_obj(PyObject *self, PyObject *args) {
     const char * path=NULL;
     PyObject *array;
@@ -161,6 +191,7 @@ static PyObject * py_cps_byte_array_to_obj(PyObject *self, PyObject *args) {
     cps_api_object_t obj = cps_api_object_create();
     cps_api_object_guard og(obj);
 
+
     if (!cps_api_array_to_object(PyByteArray_AsString(array), PyByteArray_Size(array),obj)) {
         return d;
     }
@@ -171,14 +202,184 @@ static PyObject * py_cps_byte_array_to_obj(PyObject *self, PyObject *args) {
     cps_api_object_it_t it;
     cps_api_object_it_begin(obj, &it);
     py_obj_dump_level(d,lst,&it);
+
     return d;
 }
 
-static PyObject * py_cps_obj_to_array(PyObject *self, PyObject *args) {
-    PyObject *d;
-    if (! PyArg_ParseTuple( args, "O!", PyDict_Type, &d)) return NULL;
+static void add_to_object(std::vector<cps_api_attr_id_t> &level,
+        cps_api_object_t obj, PyObject *d, size_t start_level ) {
+    PyObject *key, *value;
+    Py_ssize_t pos = 0;
 
-    return PyByteArray_FromStringAndSize(NULL,0);
+    size_t depth = level.size();
+    level.resize(depth+1);
+    while (PyDict_Next(d, &pos, &key, &value)) {
+        const char * k = PyString_AS_STRING(key);
+
+        cps_class_map_node_details_int_t cm;
+
+        if (!cps_class_map_query(&level[0],level.size(),k,cm)) {
+            level[depth] = (cps_api_attr_id_t)atoi(k);
+        } else level[depth] = cm.id;
+
+        if (PyDict_Check(value)) {
+            std::vector<cps_api_attr_id_t> v = level;
+            add_to_object(v,obj,value,start_level);
+            continue;
+        }
+
+        if (PyByteArray_Check(value)) {
+            cps_api_object_e_add(obj,&level[start_level],level.size()-start_level,cps_api_object_ATTR_T_BIN,
+                    PyByteArray_AsString(value), PyByteArray_Size(value));
+            continue;
+        }
+        if (PyString_Check(value)) {
+            cps_api_object_e_add(obj,&level[start_level],level.size()-start_level,cps_api_object_ATTR_T_BIN,
+                    PyString_AS_STRING(value), PyString_GET_SIZE(value));
+            continue;
+        }
+    }
+}
+
+
+static PyObject * py_cps_obj_to_array(PyObject *self, PyObject *args) {
+    const char *path="";
+    PyObject *d;
+    if (! PyArg_ParseTuple( args, "sO!",&path,&PyDict_Type, &d)) return NULL;
+
+    cps_api_object_t obj = cps_api_object_create();
+    cps_api_object_guard og(obj);
+
+    std::vector<cps_api_attr_id_t> level;
+    cps_class_ids_from_string(level,path);
+    if (level.size()>(CPS_OBJ_KEY_INST_POS+1)) level.erase(level.begin());
+    if (level.size()>CUSTOM_KEY_POS) level.resize(CUSTOM_KEY_POS);
+
+    add_to_object(level,obj,d,level.size());
+
+    PyObject *ba =PyByteArray_FromStringAndSize((const char *)cps_api_object_array(obj),
+            cps_api_object_to_array_len(obj));
+
+    return ba;
+}
+
+static PyObject * py_cps_info(PyObject *self, PyObject *args) {
+    const char * path=NULL;
+    if (! PyArg_ParseTuple( args, "s", &path)) return NULL;
+
+    PyObject * d = PyDict_New();
+    if (d==NULL) return NULL;
+
+    std::vector<cps_api_attr_id_t> v;
+    cps_class_ids_from_string(v,path);
+
+    cps_class_node_detail_list_t lst;
+    cps_class_map_level(&v[0],v.size(),lst);
+
+    size_t ix = 0;
+    size_t mx = lst.size();
+    for ( ; ix < mx ; ++ix ) {
+        PyDict_SetItem(d,
+                PyString_FromString(cps_class_ids_to_string(lst[ix].ids).c_str()),
+                PyString_FromString(lst[ix].name.c_str()));
+    }
+    return d;
+}
+
+static PyObject * py_cps_event_connect(PyObject *self, PyObject *args) {
+    cps_api_event_service_handle_t handle=NULL;
+    if (cps_api_event_client_connect(&handle)!=cps_api_ret_code_OK) {
+        return PyByteArray_FromStringAndSize(NULL,0);
+    }
+    return PyByteArray_FromStringAndSize((const char *)&handle,sizeof(handle));
+}
+
+static PyObject * py_cps_event_reg(PyObject *self, PyObject *args) {
+    cps_api_event_service_handle_t *handle=NULL;
+    PyObject *o;
+    const char *path;
+    if (! PyArg_ParseTuple( args, "O!s",  &PyByteArray_Type, &o,&path)) return NULL;
+
+    handle = (cps_api_event_service_handle_t*)PyByteArray_AsString(o);
+    if (PyByteArray_Size(o)!=sizeof(*handle)) {
+        return NULL;
+    }
+
+    cps_api_event_reg_t reg;
+    cps_api_key_t key;
+
+    cps_api_key_from_string(&key,path);
+    reg.number_of_objects =1;
+    reg.objects = &key;
+    reg.priority = 0;
+
+    if (cps_api_event_client_register(*handle,&reg)==cps_api_ret_code_OK) {
+        Py_RETURN_TRUE;
+    }
+    Py_RETURN_FALSE;
+}
+
+static PyObject * py_cps_event_close(PyObject *self, PyObject *args) {
+    cps_api_event_service_handle_t *handle=NULL;
+    PyObject *o;
+    if (! PyArg_ParseTuple( args, "O!",  &PyByteArray_Type, &o)) return NULL;
+
+    handle = (cps_api_event_service_handle_t*)PyByteArray_AsString(o);
+    if (PyByteArray_Size(o)!=sizeof(*handle)) {
+        return NULL;
+    }
+    cps_api_event_client_disconnect(*handle);
+    Py_RETURN_TRUE;
+}
+
+static PyObject * py_cps_event_wait(PyObject *self, PyObject *args) {
+    cps_api_event_service_handle_t *handle=NULL;
+    PyObject *o;
+    if (! PyArg_ParseTuple( args, "O!",  &PyByteArray_Type, &o)) return NULL;
+
+    handle = (cps_api_event_service_handle_t*)PyByteArray_AsString(o);
+    if (PyByteArray_Size(o)!=sizeof(*handle)) {
+        return NULL;
+    }
+
+    cps_api_object_t obj=cps_api_object_create();
+    cps_api_object_guard og(obj);
+    cps_api_object_reserve(obj,MAX_EVENT_BUFF);
+
+    if (cps_api_wait_for_event(*handle,obj)==cps_api_ret_code_OK) {
+        char k_buff[KEY_STR_LEN];
+        cps_api_key_print(cps_api_object_key(obj),k_buff,sizeof(k_buff));
+        std::vector<cps_api_attr_id_t> k;
+        cps_class_ids_from_string(k,k_buff);
+        return PyByteArray_FromStringAndSize((const char *)cps_api_object_array(obj),
+                    cps_api_object_to_array_len(obj));
+    }
+    return PyByteArray_FromStringAndSize((const char *)NULL,0);
+}
+
+static PyObject * py_cps_event_send(PyObject *self, PyObject *args) {
+    cps_api_event_service_handle_t *handle=NULL;
+    PyObject *o,*h;
+    if (! PyArg_ParseTuple( args, "O!O!",  &PyByteArray_Type, &h,&PyByteArray_Type, &o)) return NULL;
+
+    handle = (cps_api_event_service_handle_t*)PyByteArray_AsString(h);
+    if (PyByteArray_Size(h)!=sizeof(*handle)) {
+        return NULL;
+    }
+
+    cps_api_object_t obj = cps_api_object_create();
+    cps_api_object_guard og(obj);
+
+    if (!cps_api_array_to_object(PyByteArray_AsString(o), PyByteArray_Size(o),obj)) {
+        Py_RETURN_FALSE;
+    }
+    if (!cps_api_object_received(obj,PyByteArray_Size(o))) {
+        Py_RETURN_FALSE;
+    }
+    if (cps_api_event_publish(*handle,obj)==cps_api_ret_code_OK) {
+        Py_RETURN_TRUE;
+    }
+    Py_RETURN_FALSE;
 }
 
 /* A list of all the methods defined by this module. */
@@ -186,8 +387,16 @@ static PyObject * py_cps_obj_to_array(PyObject *self, PyObject *args) {
 static PyMethodDef cps_methods[] = {
     {"get",  py_cps_get, METH_VARARGS, cps_get__doc__},
     {"init",  py_cps_map_init, METH_VARARGS, cps_cps_map_init_doc__},
-    {"array_to_dict",  py_cps_byte_array_to_obj, METH_VARARGS, cps_cps_map_init_doc__},
-    {"dict_to_array",  py_cps_obj_to_array, METH_VARARGS, cps_cps_map_init_doc__},
+    {"convarray",  py_cps_byte_array_to_obj, METH_VARARGS, cps_cps_map_init_doc__},
+    {"arraykey",  py_cps_byte_array_key, METH_VARARGS, cps_cps_map_init_doc__},
+    {"convdict",  py_cps_obj_to_array, METH_VARARGS, cps_cps_map_init_doc__},
+    {"info",  py_cps_info, METH_VARARGS, cps_cps_map_init_doc__},
+    {"event_register",  py_cps_event_reg, METH_VARARGS, cps_cps_map_init_doc__},
+    {"event_close",  py_cps_event_close, METH_VARARGS, cps_cps_map_init_doc__},
+    {"event_connect",  py_cps_event_connect, METH_VARARGS, cps_cps_map_init_doc__},
+    {"event_wait",  py_cps_event_wait, METH_VARARGS, cps_cps_map_init_doc__},
+    {"event_send",  py_cps_event_send, METH_VARARGS, cps_cps_map_init_doc__},
+
     {NULL, NULL}      /* sentinel */
 };
 
@@ -197,5 +406,6 @@ PyMODINIT_FUNC initcps(void) {
     PyObject *m = Py_InitModule3("cps", cps_methods, cps_doc__);
     if (m==NULL) return;
 
+    cps_api_event_service_init();
 
 }

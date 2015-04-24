@@ -11,11 +11,17 @@
 #include "std_directory.h"
 #include "std_shlib.h"
 #include "event_log.h"
+#include "private/cps_class_map_query.h"
+#include "std_utils.h"
 
+
+#include <errno.h>
+#include <limits.h>
 #include <string.h>
 #include <map>
 #include <string>
 #include <algorithm>
+#include <ctype.h>
 
 class cps_class_map_key {
 public:
@@ -41,8 +47,11 @@ public:
     const vector &get() const { return _ids; }
 
     cps_class_map_key(const cps_api_key_t *key,const cps_api_attr_id_t *ids, size_t ids_len) {
-        size_t klen = cps_api_key_get_len(const_cast<cps_api_key_t *>(key));
+        size_t klen = 0;
         size_t len = ids_len;
+        if (key!=NULL) {
+            klen = cps_api_key_get_len(const_cast<cps_api_key_t *>(key));
+        }
         if(klen>0) {
             len+=klen-1;
         }
@@ -65,24 +74,42 @@ private:
     vector _ids;
 };
 
+static bool key_compare_less(const cps_api_attr_id_t *ids_a, size_t ids_len_a,
+        const cps_api_attr_id_t *ids_b, size_t ids_len_b) {
+    size_t ix = 0;
+    size_t mx = std::min(ids_len_a,ids_len_b);
+    for ( ; ix < mx ; ++ix) {
+        if (ids_a[ix] ==  ids_b[ix]) continue;
+        if (ids_a[ix] <  ids_b[ix]) return true;
+        return false;
+    }
+    return (ids_len_a<ids_len_b);
+}
+
 struct cps_class_map_key_comp {
     bool operator()( const cps_class_map_key &lhs, const cps_class_map_key &rhs) const {
-        size_t ix = 0;
-        size_t mx = std::min(lhs.size(),rhs.size());
-        for ( ; ix < mx ; ++ix) {
-            if (lhs[ix] ==  rhs[ix]) continue;
-            if (lhs[ix] <  rhs[ix]) return true;
-            return false;
-        }
-        return (lhs.size()<rhs.size());
+        return key_compare_less(&(lhs.get()[0]),lhs.get().size(),&(rhs.get()[0]),rhs.get().size());
     }
 };
 
-struct cps_class_map_node_details_int_t {
-    std::string name;
-    std::string desc;
-    bool embedded;
-    cps_api_object_ATTR_TYPE_t type;
+static bool key_compare_match(const cps_api_attr_id_t *ids_a, size_t ids_len_a,
+        const cps_api_attr_id_t *ids_b, size_t ids_len_b) {
+    size_t ix = 0;
+    if (ids_len_a <ids_len_b) return false;
+
+    size_t mx = std::min(ids_len_a,ids_len_b);
+    for ( ; ix < mx ; ++ix) {
+        if (ids_a[ix] !=  ids_b[ix]) return false;
+    }
+    return true;
+}
+
+struct cps_class_map_key_subcomp {
+    bool operator()( const cps_class_map_key &lhs, const cps_class_map_key &rhs) const {
+        if (lhs.get().size()< rhs.get().size()) return false;
+        size_t mx = std::min(lhs.get().size(),rhs.get().size());
+        return key_compare_match(&(lhs.get()[0]),mx,&(rhs.get()[0]),mx);
+    }
 };
 
 using cps_class_map_type_t = std::map<cps_class_map_key,cps_class_map_node_details_int_t,cps_class_map_key_comp>;
@@ -98,19 +125,30 @@ static cps_class_map_reverse_string_t _rev_string;
 
 cps_api_return_code_t cps_class_map_init(const cps_api_attr_id_t *ids, size_t ids_len, cps_class_map_node_details *details) {
     cps_class_map_key::vector v(ids,ids+(ids_len));
+    cps_class_map_key::vector cloned = v;
+
     cps_class_map_key k(std::move(v));
     std_mutex_simple_lock_guard lg(&lock);
+
     if (_cmt.find(k)!=_cmt.end()) {
         return cps_api_ret_code_ERR;
     }
 
     _rev_string[details->name] = k;
 
+    std::string name = details->name;
+    if (name.find('/')!=std::string::npos) {
+        name = name.substr(name.rfind('/')+1);
+    }
+
     cps_class_map_node_details_int_t &ref = _cmt[std::move(k)];
+    ref.ids = std::move(cloned);
     ref.desc = details->desc;
-    ref.name = details->name;
+    ref.name = std::move(name);
+    ref.full_path = details->name;
     ref.embedded = details->embedded;
     ref.type = details->type;
+    ref.id = ids[ids_len-1];
 
     return cps_api_ret_code_OK;
 }
@@ -178,4 +216,70 @@ bool cps_class_objs_load(const char *path, const char * prefix) {
     return rc==STD_ERR_OK;
 }
 
+}
+
+
+void cps_class_ids_from_string(std::vector<cps_api_attr_id_t> &v, const char * str) {
+    std_parsed_string_t handle;
+    if (!std_parse_string(&handle,str,".")) return ;
+
+    size_t ix = 0;
+    size_t mx = std_parse_string_num_tokens(handle);
+    v.resize(mx);
+    for ( ; ix < mx ; ++ix ) {
+        unsigned long int ul =strtoul(std_parse_string_at(handle,ix),NULL,0);
+        if (ul==ULONG_MAX && errno==ERANGE) {
+            break;
+        }
+        v[ix]= ((cps_api_attr_id_t)ul);
+    }
+    std_parse_string_free(handle);
+
+}
+
+std::string cps_class_ids_to_string(const std::vector<cps_api_attr_id_t> &v) {
+    std::string s;
+    static const int BUFF_LEN=100;
+    char buff[BUFF_LEN];
+    bool first_time = true;
+    size_t ix = 0;
+    size_t mx = v.size();
+    for ( ; ix < mx ; ++ix ) {
+        snprintf(buff,sizeof(buff)-1,"%d",(int)v[ix]);
+        if (!first_time) s+=".";
+        first_time=false;
+        s+=buff;
+    }
+    return std::move(s);
+}
+
+void cps_class_map_level(const cps_api_attr_id_t *ids, size_t max_ids,
+        cps_class_node_detail_list_t &details) {
+    cps_class_map_key k(nullptr,ids,max_ids);
+    std_mutex_simple_lock_guard lg(&lock);
+
+    auto it = _cmt.cbegin();
+    auto end = _cmt.cend();
+    for ( ; it != end ; ++it ) {
+        bool match = cps_class_map_key_subcomp()(it->first,k);
+        if (match) {
+            details.push_back(it->second);
+        }
+    }
+}
+
+bool cps_class_map_query(const cps_api_attr_id_t *ids, size_t max_ids, const char * node,
+        cps_class_map_node_details_int_t &details){
+    cps_class_node_detail_list_t lst;
+    cps_class_map_level(ids,max_ids,lst);
+    size_t ix = 0;
+    size_t mx = lst.size();
+    for ( ; ix < mx ; ++ix ) {
+        if ((lst[ix].name == node) || (lst[ix].full_path==node) ||
+                (isdigit(node[0]) && atoi(node)==(int)lst[ix].id)) {
+            details = lst[ix];
+            return true;
+        }
+    }
+    return false;
 }

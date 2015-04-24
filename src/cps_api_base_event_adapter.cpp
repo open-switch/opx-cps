@@ -36,8 +36,10 @@ static cps_api_return_code_t _cps_api_event_service_client_connect(cps_api_event
     cps_api_to_std_event_map_t *p = (cps_api_to_std_event_map_t*)calloc(1,sizeof(cps_api_to_std_event_map_t));
     if (p==NULL) return cps_api_ret_code_ERR;
 
+    std::string ns = cps_api_user_queue(CPS_API_EVENT_CHANNEL_NAME);
+
     if (std_server_client_connect(&p->handle,
-            CPS_API_EVENT_CHANNEL_NAME) == STD_ERR_OK) {
+            ns.c_str()) == STD_ERR_OK) {
         p->buff = std_client_allocate_msg_buff(DEFAULT_DATA_LEN,false);
         if (p->buff!=NULL) {
             *handle = p;
@@ -110,13 +112,13 @@ static cps_api_return_code_t _cps_api_wait_for_event(
 extern "C" {
 
 static cps_api_event_methods_reg_t functions = {
-		NULL,
-		0,
-		_cps_api_event_service_client_connect,
-		_cps_api_event_service_client_register,
-		_cps_api_event_service_publish_msg,
-		_cps_api_event_service_client_deregister,
-		_cps_api_wait_for_event
+        NULL,
+        0,
+        _cps_api_event_service_client_connect,
+        _cps_api_event_service_client_register,
+        _cps_api_event_service_publish_msg,
+        _cps_api_event_service_client_deregister,
+        _cps_api_wait_for_event
 };
 
 cps_api_return_code_t cps_api_event_service_init(void) {
