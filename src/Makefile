@@ -53,7 +53,10 @@ cps_api_receiver_LDFLAGS=-lcps-api-common -lcps-class-map-util
 
 include ${PROJROOT}/tools/workspace.mak
 
+
 sos: ${BUILD_DN_SYSROOT}/lib/cps.so
+
+${BUILD_CURDIR_sos}/libcps-class-map-util.so : ${SW_SYSROOT_LIB}/libcps-api-common.so
 
 PY_OBJ_PATH=${BUILD_CURDIR}/pybuild
 
@@ -64,6 +67,7 @@ cps_python_CFLAGS=-DMAJOR_VERSION=1 -DMINOR_VERSION=0 -Ipython2.7 -std=c++11
 
 ${BUILD_DN_SYSROOT}/lib/cps.so: $(wildcard python_extension/*) | ${PY_OBJ_PATH}
 	cp -f $(wildcard python_extension/*) ${PY_OBJ_PATH}
+	cp -f $(wildcard ../inc/private/*.h) ${PY_OBJ_PATH}
 	cd ${PY_OBJ_PATH} && DISTUTILS_DEBUG=1 LDFLAGS="${ADDED_LDFLAGS}" CFLAGS="${ADDED_CFLAGS} ${cps_python_CFLAGS}" CC="${CC}" python setup.py build -v --build-lib ${PY_OBJ_PATH}
 	cp ${PY_OBJ_PATH}/cps.so ${BUILD_DN_SYSROOT}/lib/cps.so
 
