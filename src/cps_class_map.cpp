@@ -50,7 +50,7 @@ public:
         size_t klen = 0;
         size_t len = ids_len;
         if (key!=NULL) {
-            klen = cps_api_key_get_len(key);
+            klen = cps_api_key_get_len(const_cast<cps_api_key_t *>(key));
         }
         if(klen>0) {
             len+=klen-1;
