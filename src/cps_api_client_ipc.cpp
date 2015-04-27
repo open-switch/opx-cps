@@ -233,7 +233,6 @@ cps_api_return_code_t cps_api_process_commit_request(cps_api_transaction_params_
             }
             cps_api_object_clone(obj,og.get());
         }
-                //discard header op since it must be a commit as well
         if (!cps_api_receive_header(handle,op,len)) break;
         if (op == cps_api_msg_o_COMMIT_OBJECT) {
             cps_api_object_guard og(cps_api_receive_object(handle,len));
