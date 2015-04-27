@@ -377,6 +377,10 @@ const char * cps_api_object_attr_to_string(cps_api_object_attr_t attr, char *buf
     return buff;
 }
 
+void cps_api_object_attr_id_as_enum(cps_api_object_attr_t attr, void *enumptr) {
+    *reinterpret_cast<int*>(enumptr) = static_cast<int>(std_tlv_tag(attr));
+}
+
 cps_api_attr_id_t cps_api_object_attr_id(cps_api_object_attr_t attr) {
     return std_tlv_tag(attr);
 }

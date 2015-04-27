@@ -108,6 +108,16 @@ const char * cps_api_object_attr_to_string(cps_api_object_attr_t attr, char *buf
 cps_api_attr_id_t cps_api_object_attr_id(cps_api_object_attr_t attr);
 
 /**
+ * Get the attribute id and return it into a specific enum value.
+ * NOTE: limited to uint32.
+ *
+ * @param attr is the TLV containing the attribute to query
+ * @param enumptr is a pointer to the enum value (cast to a void*) - the size must be an int len
+ * @return none
+ */
+void cps_api_object_attr_id_as_enum(cps_api_object_attr_t attr, void *enumptr);
+
+/**
  * Get the length of the attribute.
  * @param attr the attribute to querty
  * @return the length of the current attribute's data

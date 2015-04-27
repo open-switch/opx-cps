@@ -33,6 +33,7 @@ if [ -z $YANG_PATH ] ; then
     echo "Please set YANG_PATH to a : separated list of directories containing the Yang files"
     exit 1
 fi
+export YANG_MODPATH=$YANG_PATH
 python $TOOL_ROOT/yin_parser.py file=$yf header=$of src=$of_src
 if [ ! $? = 0 ] ; then
     rm $of
