@@ -237,7 +237,7 @@ cps_api_return_code_t cps_api_process_commit_request(cps_api_transaction_params_
         if (op == cps_api_msg_o_COMMIT_OBJECT) {
             cps_api_object_guard og(cps_api_receive_object(handle,len));
             if (!og.valid()) {
-                EV_LOG(ERR,DSAPI,0,"CPS IPC","Transaction response missing cur object..");
+                EV_LOG(ERR,DSAPI,0,"CPS IPC","Transaction response missing resp object..");
                 break;
             }
             if (cps_api_object_list_append(param->prev,og.get())) {
