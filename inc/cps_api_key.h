@@ -164,7 +164,7 @@ int cps_api_key_matches(cps_api_key_t * key, cps_api_key_t * prefix, bool exact)
  * @param len the length of the buffer
  * @return a pointer to buff passed in
  */
-char * cps_api_key_print(const cps_api_key_t *key, char *buff, size_t len);
+char * cps_api_key_print(cps_api_key_t *key, char *buff, size_t len);
 
 
 /**

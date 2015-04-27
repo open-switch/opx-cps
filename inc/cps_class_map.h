@@ -79,7 +79,6 @@ bool cps_class_attr_is_valid(const cps_api_key_t *key,const cps_api_attr_id_t *i
  */
 const char * cps_class_attr_name(const cps_api_key_t *key,const cps_api_attr_id_t *ids, size_t ids_len);
 
-
 /**
  * Load all cps class descriptions in the directory specified.  Use the prefix to determine which
  * libraries actually have CPS related information

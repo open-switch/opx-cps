@@ -18,7 +18,7 @@
 #include <vector>
 #include <stdlib.h>
 #include <map>
-#include <stdio.h> //for snprintf
+#include <stdio.h>
 #include <string>
 
 #define DEF_OBJECT_SIZE (512)
@@ -241,20 +241,20 @@ cps_api_object_attr_t cps_api_object_e_get(cps_api_object_t obj, cps_api_attr_id
 
 bool cps_api_object_it(cps_api_object_t obj, cps_api_attr_id_t *id,
         size_t id_size, cps_api_object_it_t *it) {
-	it->attr =  obj_data((cps_api_object_internal_t*)obj);
-	it->len = obj_used_len((cps_api_object_internal_t*)obj);
+    it->attr =  obj_data((cps_api_object_internal_t*)obj);
+    it->len = obj_used_len((cps_api_object_internal_t*)obj);
 
-	size_t ix = 0;
-	size_t mx = id_size;
-	for ( ; ix < mx ; ++ix ) {
-		it->attr = std_tlv_find_next(it->attr,&it->len,id[ix]);
-		if (!cps_api_object_it_valid(it)) break;
-		if ((ix +1) == mx ) {
-			return true;
-		}
-		cps_api_object_it_inside(it);
-	}
-	return false;
+    size_t ix = 0;
+    size_t mx = id_size;
+    for ( ; ix < mx ; ++ix ) {
+        it->attr = std_tlv_find_next(it->attr,&it->len,id[ix]);
+        if (!cps_api_object_it_valid(it)) break;
+        if ((ix +1) == mx ) {
+            return true;
+        }
+        cps_api_object_it_inside(it);
+    }
+    return false;
 }
 
 static bool add_attribute(cps_api_object_internal_t * p, uint64_t attr, uint64_t len, const void *data) {

@@ -112,6 +112,24 @@ struct cps_class_map_key_subcomp {
     }
 };
 
+void cps_class_ids_from_key(std::vector<cps_api_attr_id_t> &v,
+        cps_api_key_t *key, size_t start, size_t len) {
+    v.resize(0);
+    size_t max_len = cps_api_key_get_len(key);
+    if (max_len==0) return;
+
+    if (len > (max_len-start)) {
+        len = (max_len - start);
+    }
+    v.resize(len);
+
+    size_t ix = 0;
+    for ( ; ix < len ; ++ix ) {
+        v[ix] = cps_api_key_element_at(key,ix+start);
+    }
+}
+
+
 using cps_class_map_type_t = std::map<cps_class_map_key,cps_class_map_node_details_int_t,cps_class_map_key_comp>;
 using cps_class_map_reverse_string_t = std::map<std::string,cps_class_map_key>;
 
@@ -218,7 +236,6 @@ bool cps_class_objs_load(const char *path, const char * prefix) {
 
 }
 
-
 void cps_class_ids_from_string(std::vector<cps_api_attr_id_t> &v, const char * str) {
     std_parsed_string_t handle;
     if (!std_parse_string(&handle,str,".")) return ;
@@ -234,12 +251,11 @@ void cps_class_ids_from_string(std::vector<cps_api_attr_id_t> &v, const char * s
         v[ix]= ((cps_api_attr_id_t)ul);
     }
     std_parse_string_free(handle);
-
 }
 
 std::string cps_class_ids_to_string(const std::vector<cps_api_attr_id_t> &v) {
     std::string s;
-    static const int BUFF_LEN=100;
+    static const int BUFF_LEN=1024;
     char buff[BUFF_LEN];
     bool first_time = true;
     size_t ix = 0;
@@ -251,6 +267,12 @@ std::string cps_class_ids_to_string(const std::vector<cps_api_attr_id_t> &v) {
         s+=buff;
     }
     return std::move(s);
+}
+
+std::string cps_key_to_string(const cps_api_key_t * key) {
+    const static size_t BUFF_LEN=1024;
+    char buff[BUFF_LEN];
+    return std::string(cps_api_key_print(const_cast<cps_api_key_t*>(key),buff,sizeof(buff)));
 }
 
 void cps_class_map_level(const cps_api_attr_id_t *ids, size_t max_ids,
@@ -283,3 +305,4 @@ bool cps_class_map_query(const cps_api_attr_id_t *ids, size_t max_ids, const cha
     }
     return false;
 }
+

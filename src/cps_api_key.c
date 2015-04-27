@@ -35,7 +35,7 @@ int cps_api_key_matches( cps_api_key_t *  key, cps_api_key_t * comparison, bool 
 
 #define REQUIRED_ADDITIONAL_SPACE (12) //10 chars + ws + 1 extra :)
 
-char * cps_api_key_print(const cps_api_key_t *key, char *buff, size_t len) {
+char * cps_api_key_print(cps_api_key_t *key, char *buff, size_t len) {
     STD_ASSERT(buff!=NULL);
 
     size_t klen = cps_api_key_get_len((cps_api_key_t *)key);
@@ -47,7 +47,7 @@ char * cps_api_key_print(const cps_api_key_t *key, char *buff, size_t len) {
     size_t offset = 0;
     size_t ix = 0;
     buff[0] = '\0';
-    const uint32_t *head = cps_api_key_elem_start_const(key);
+    const uint32_t *head = cps_api_key_elem_start(key);
     for ( ; (ix < klen) ; ++ix ) {
         int amt = snprintf(buff+offset, len - offset, "%d.",head[ix]);
         if (amt < 0) break;
