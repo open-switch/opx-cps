@@ -528,11 +528,12 @@ static cps_api_return_code_t _read_function (void * context, cps_api_get_params_
 
     PyObject *p = PyDict_New();
     PyRef dict(p);
-    PyObject *lst = PyList_New(1);
+    PyObject *lst = PyList_New(1);  //create with one element
 
     PyDict_SetItemString(p,"keys",lst);
     PyDict_SetItemString(p,"result",PyDict_New());
 
+    //set the only element to the correct key
     PyList_SetItem(lst,0,PyString_FromString(cps_key_to_string(&param->keys[key_ix]).c_str()));
 
     PyObject * res = cb->execute("get",p);
