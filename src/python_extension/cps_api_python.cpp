@@ -338,7 +338,13 @@ static PyObject * py_cps_event_wait(PyObject *self, PyObject *args) {
     cps_api_object_reserve(obj,MAX_EVENT_BUFF);
 
     if (cps_api_wait_for_event(*handle,obj)==cps_api_ret_code_OK) {
-        return cps_obj_to_dict(obj);
+        PyRef r(cps_obj_to_dict(obj));
+        PyObject *ret = PyDict_New();
+        if (ret==NULL) return ret;
+        PyDict_SetItemString(ret,"data",r.get());
+        PyDict_SetItemString(ret,"key",PyString_FromString(cps_key_to_string(cps_api_object_key(obj)).c_str()));
+        r.release();
+        return ret;
     }
     return PyDict_New();
 }
@@ -407,7 +413,6 @@ static PyObject * py_cps_get(PyObject *self, PyObject *args) {
     gr.keys = &(keys[0]);
     gr.key_count = str_keys;
     if (cps_api_get(&gr)!=cps_api_ret_code_OK) {
-        printf("Exception... bad return code\n");
         Py_RETURN_FALSE;
     }
 

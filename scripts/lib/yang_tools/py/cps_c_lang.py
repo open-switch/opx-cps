@@ -6,26 +6,41 @@ def to_string(s):
     s = s.replace('/','_')
     return s.upper();
 
-def type_to_lang_type(self,typename):
-    valid_types = {
-       'boolean':'bool',
-       'decimal64':'double',
-       'int8':'int8_t',
-       'int16':'int16_t',
-       'int32':'int32_t',
-       'int64':'int64_t',
-       'uint8':'uint8_t',
-       'uint16':'uint16_t',
-       'uint32':'uint32_t',
-       'uint64':'uint64_t',
-       'string':'const char*',
-       'binary':'uint8_t*'
-    }
+valid_types = {
+   'boolean':'bool',
+   'decimal64':'double',
+   'int8':'int8_t',
+   'int16':'int16_t',
+   'int3/2':'int32_t',
+   'int64':'int64_t',
+   'uint8':'uint8_t',
+   'uint16':'uint16_t',
+   'uint32':'uint32_t',
+   'uint64':'uint64_t',
+   'string':'const char*',
+   'binary':'uint8_t*'
+}
+
+def type_to_lang_type(typename):
+    global valid_types
     if not typename in valid_types:
         return valid_types['binary'];
     return valid_types[typename]
 
 class Language:
+    def determine_type(self,node):
+        return "cps_api_object_ATTR_T_BIN"
+
+    def to_string(self,str):
+        return to_string(str)
+
+    def valid_lang_type(self,str):
+        global valid_types
+        return str in valid_types
+
+    def type_to_lang_type(self,str):
+        return type_to_lang_type(str)
+
     def get_type(self,node):
         type = node.find(self.model.module.ns()+'type')
         if type==None: return 'binary'
@@ -125,15 +140,17 @@ class Language:
             self.keys[self.names[i]] = new_key
         self.determine_key_types()
 
-    def __init__(self,context,model):
-        self.context = context
+    def setup(self,model):
         self.model = model
-        self.names = {}
-        self.keys = {}
-        self.types = {}
         self.names[model.module.name()] = "cps_api_obj_CAT_"+to_string(model.module.name())
         self.handle_types()
         self.handle_enums()
         self.handle_container()
         self.handle_keys()
+
+    def __init__(self,context):
+        self.context = context
+        self.names = {}
+        self.keys = {}
+        self.types = {}
 

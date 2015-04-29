@@ -4,6 +4,7 @@ import yin_utils
 import tempfile
 import cps_h
 import cps_c_dict
+import cps_c_lang
 import sys
 
 class CPSYinFiles:
@@ -93,18 +94,20 @@ class CPSYangModel:
         self.args = args
         self.filename = self.args['file']
         self.context = dict()
-        self.context['ctype'] = cps_h.to_c_type
-        self.context['id_to_string']=cps_h.to_string
         self.context['output']={}
-        self.context['output']['header']=cps_h
-        self.context['output']['src']=cps_c_dict
+        self.context['output']['language'] = cps_c_lang.Language(self.context)
 
         self.context['types'] = {}
         self.context['enum'] = {}
         self.context['union'] = {}
         self.context['model-names'] = {}
         yf = CPSYinFiles(self.context)
+
         self.model = yf.load(self.filename)
+        self.context['output']['language'].setup(self.model)
+
+        self.context['output']['header']=cps_h
+        self.context['output']['src']=cps_c_dict
 
         self.write_details('header',cps_h)
         self.write_details('src',cps_c_dict)

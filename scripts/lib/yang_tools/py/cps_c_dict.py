@@ -5,6 +5,7 @@ class COutputFormat:
 
     def __init__(self,context):
         self.context = context
+        self.lang = context['output']['language']
 
     def show(self,model):
         self.model = model
@@ -33,7 +34,7 @@ class COutputFormat:
             else :
                 line+="true"
             line+=","
-            line+= self.context['ctype'](self.context,i)
+            line+= self.lang.determine_type(i)
             line+="}},"
             print line
 
