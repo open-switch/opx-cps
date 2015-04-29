@@ -135,7 +135,7 @@ static bool process_registration(int fd,size_t len) {
 
     EV_LOG(INFO,DSAPI,0,"NS","Added registration for %s at %s",
     		cps_api_key_print(&r.details.key,buff,sizeof(buff)-1),
-			r.details.addr);
+			r.details.addr.address.str);
     return true;
 }
 
