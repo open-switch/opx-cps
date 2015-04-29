@@ -69,7 +69,7 @@ ${BUILD_DN_SYSROOT}/lib/cps.so: $(wildcard python_extension/*) | ${PY_OBJ_PATH}
 	cp -f $(wildcard python_extension/*) ${PY_OBJ_PATH}
 	cp -f $(wildcard ../inc/private/*.h) ${PY_OBJ_PATH}
 	cd ${PY_OBJ_PATH} && DISTUTILS_DEBUG=1 LDFLAGS="${ADDED_LDFLAGS}" CFLAGS="${ADDED_CFLAGS} ${cps_python_CFLAGS}" CC="${CC}" python setup.py build -v --build-lib ${PY_OBJ_PATH}
-	cp ${PY_OBJ_PATH}/cps.so ${BUILD_DN_SYSROOT}/lib/cps.so
+	cp ${PY_OBJ_PATH}/cps.so ${BUILD_DN_SYSROOT}/lib/cps.so && cp ${PY_OBJ_PATH}/cps.so ${SW_SYSROOT_LIB}
 
 
 

@@ -6,15 +6,6 @@ import yin_utils
 def to_c_type(context,elem):
     return "cps_api_object_ATTR_T_BIN"
 
-def string_to_c_formatted_name(s):
-    s = s.replace('-','_')
-    s = s.replace(':','_')
-    s = s.replace('/','_')
-    return s.upper();
-
-def to_string(s):
-    return string_to_c_formatted_name(s)
-
 class COutputFormat:
 
     def node_get_text(self,model,node):
@@ -50,6 +41,7 @@ class COutputFormat:
 
     def __init__(self,context):
         self.context = context
+        self.lang = self.context['output']['language']
 
     def show_enum(self,model,name):
 
@@ -60,7 +52,7 @@ class COutputFormat:
         print "typedef enum { "
         for i in node.iter():
             if model.module.filter_ns(i.tag) == 'enum':
-                en_name = string_to_c_formatted_name(name+"_"+i.get('name'))
+                en_name = self.context['output']['language'].to_string(name+"_"+i.get('name'))
                 value = self.get_value(model,i)
                 value = str(model.history.get_enum(name,en_name,value))
                 comment = self.get_comment(model,i)

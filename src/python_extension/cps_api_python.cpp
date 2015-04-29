@@ -370,13 +370,17 @@ static PyObject * py_cps_get(PyObject *self, PyObject *args) {
     PyObject * param_list;
 
     cps_api_get_params_t gr;
-    if (cps_api_get_request_init (&gr)==cps_api_ret_code_ERR) return NULL;
+    if (cps_api_get_request_init (&gr)==cps_api_ret_code_ERR) {
+        Py_RETURN_FALSE;
+    }
 
     cps_api_get_request_guard rg(&gr);
 
     PyObject *dict_obj;
 
-    if (! PyArg_ParseTuple( args, "O!O!", &PyList_Type, &param_list, &PyDict_Type,&dict_obj)) return NULL;
+    if (! PyArg_ParseTuple( args, "O!O!", &PyList_Type, &param_list, &PyDict_Type,&dict_obj)) {
+        Py_RETURN_FALSE;
+    }
 
     Py_ssize_t str_keys = PyList_Size(param_list);
 
@@ -387,7 +391,7 @@ static PyObject * py_cps_get(PyObject *self, PyObject *args) {
     try {
         keys = std::unique_ptr<cps_api_key_t[]>(new cps_api_key_t[str_keys]);
     } catch (...) {
-        return NULL;
+        Py_RETURN_FALSE;
     }
 
     {
@@ -395,7 +399,7 @@ static PyObject * py_cps_get(PyObject *self, PyObject *args) {
         for ( ;ix < str_keys ; ++ix ) {
             PyObject *strObj = PyList_GetItem(param_list, ix);
             if (!cps_api_key_from_string(&(keys[ix]),PyString_AS_STRING(strObj))) {
-                return NULL;
+                Py_RETURN_FALSE;
             }
         }
     }
@@ -404,7 +408,7 @@ static PyObject * py_cps_get(PyObject *self, PyObject *args) {
     gr.key_count = str_keys;
     if (cps_api_get(&gr)!=cps_api_ret_code_OK) {
         printf("Exception... bad return code\n");
-        return NULL;
+        Py_RETURN_FALSE;
     }
 
     size_t ix = 0;
@@ -413,15 +417,10 @@ static PyObject * py_cps_get(PyObject *self, PyObject *args) {
         cps_api_object_t obj = cps_api_object_list_get(gr.list,ix);
         cps_api_key_t *key = cps_api_object_key(obj);
 
-        PyObject * k = PyString_FromString(cps_key_to_string(key).c_str());
-        if(k==NULL) {
-            printf("Allocation error... python environment corrupted.");
-            break;
-        }
-        PyDict_SetItem(dict_obj,k,cps_obj_to_dict(obj));
+        PyDict_SetItemString(dict_obj,cps_key_to_string(key).c_str(),cps_obj_to_dict(obj));
     }
 
-    return dict_obj;
+    Py_RETURN_TRUE;
 }
 
 static bool py_add_object_to_trans( cps_api_transaction_params_t *tr, PyObject *dict) {
