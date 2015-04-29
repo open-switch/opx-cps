@@ -46,9 +46,15 @@ enum cps_api_ns_reg_t {
 void cps_api_create_process_address(std_socket_address_t *addr) {
     addr->type = e_std_sock_UNIX;
     addr->addr_type = e_std_socket_a_t_STRING;
+    static std_mutex_lock_create_static_init_fast(lock);
+    std_mutex_simple_lock_guard mg(&lock);
+    static uint32_t id = 0; //unique regardless of the number of times called in a
+    						//process/thread
 
     snprintf(addr->address.str,sizeof(addr->address.str)-1,
-            "/tmp/cps_inst_%d_%d",(int)std_thread_id_get(),(int)std_process_id_get());
+            "/tmp/cps_inst_%d-%d-%d",(int)std_thread_id_get(),
+			(int)std_process_id_get(),
+			++id);
 }
 
 void cps_api_ns_get_address(std_socket_address_t *addr) {
@@ -127,7 +133,9 @@ static bool process_registration(int fd,size_t len) {
     active_registraitons.push_back(r);
     char buff[100];
 
-    EV_LOG(INFO,DSAPI,0,"NS","Added registration for %s",cps_api_key_print(&r.details.key,buff,sizeof(buff)-1));
+    EV_LOG(INFO,DSAPI,0,"NS","Added registration for %s at %s",
+    		cps_api_key_print(&r.details.key,buff,sizeof(buff)-1),
+			r.details.addr);
     return true;
 }
 
