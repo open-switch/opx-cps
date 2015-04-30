@@ -48,7 +48,6 @@ class CPSParser:
     def load_module(self,filename):
         f = search_path_for_file(filename)
 
-
     def load(self):
 
         et = ET.parse(self.filename)
@@ -64,15 +63,16 @@ class CPSParser:
 
 
     def __init__(self, context, filename,history_name):
-
         self.context = context
         self.filename = filename
         self.history = object_history.init(history_name)
+        self.lang = context['output']['language']
 
         self.key_elemts = list()
         self.containers = {}
         self.all_node_map = {}
         self.container_map= {}
+        self.container_keys={}
         self.name_to_id={}
         self.parent={}
 
@@ -84,6 +84,7 @@ class CPSParser:
             return
         self.container_map[self.module.name()] = list()
         self.all_node_map[self.module.name()] = self.root_node
+        self.container_keys[self.module.name()] = self.module.name()+ " "
         self.walk_nodes(self.root_node, self.module.name())
 
     def walk_nodes(self, node, path):
@@ -115,7 +116,6 @@ class CPSParser:
 
             self.parent[n_path]=path
 
-            self.all_node_map[n_path] = i
 
             if tag == 'grouping':
                 tag = 'typedef'
@@ -135,6 +135,8 @@ class CPSParser:
                         self.context['union'][id] = i
                 continue
 
+            self.all_node_map[n_path] = i
+
             if tag == 'choice':
                 #ignore the choice itself.. and consider the cases
                 for ch in list(i):
@@ -153,6 +155,13 @@ class CPSParser:
                if n_path not in self.container_map:
                    self.container_map[n_path] = list()
                self.container_map[path].append(CPSContainerElement(n_path,i))
+               self.container_keys[n_path] = self.container_keys[path]
+               self.container_keys[n_path] += n_path +" "
+               key_entry = i.find(self.module.ns()+'key')
+               if key_entry != None:
+                    for key_node in key_entry.get('value').split():
+                        self.container_keys[n_path] += n_path+"/"+key_node+" "
+
                self.walk_nodes(i,n_path)
 
             if tag == 'leaf' or tag == 'leaf-list' or tag=='enum':
@@ -192,7 +201,7 @@ class CPSParser:
 
             for c in node:
                 if c.name == self.module.name(): continue
-                en_name = self.context['id_to_string'](c.name)
+                en_name = self.lang.to_string(c.name)
                 value = str(self.history.get_enum(name,en_name,None))
                 self.name_to_id[c.name]= value
 
@@ -203,7 +212,7 @@ class CPSParser:
         for c in self.container_map[self.module.name()]:
             name = c.name
             node = self.container_map[name]
-            en_name = self.context['id_to_string'](name+"_obj")
+            en_name = self.lang.to_string(name+"_obj")
             value = str(self.history.get_enum(self.module.name(),en_name,None))
             self.name_to_id[c.name]= value
 
@@ -224,25 +233,5 @@ class CPSParser:
         array = "{"+array
         return array
 
-    def print_source(self):
-        for i in self.containers:
-            print i.to_string() + "\n"
-
-        self.enum.print_source()
-
-    def show(self):
-        print "/** keys... **/ "
-
-        for i in self.key_elemts:
-            i.show()
-
-        print "/** Containers **/"
-
-        for i in self.containers:
-            i.show()
-
-
-
-#parser.print_source()
 
 
