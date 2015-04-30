@@ -20,7 +20,7 @@
 #include <vector>
 #include <string.h>
 #include <stdarg.h>
-
+#include <memory>
 
 
 
@@ -67,14 +67,61 @@ void cps_api_key_init(cps_api_key_t * key,
     cps_api_key_set_len(key,key_len);
 }
 
+static void cps_api_object_list_swap(cps_api_object_list_t &a, cps_api_object_list_t &b) {
+    cps_api_object_list_t t = a;
+    a = b;
+    b = t;
+}
+
 cps_api_return_code_t cps_api_get(cps_api_get_params_t * param) {
     cps_api_return_code_t rc = cps_api_ret_code_ERR;
+
+    cps_api_get_params_t new_req;
+    if (cps_api_get_request_init(&new_req)!=cps_api_ret_code_OK) {
+        return rc;
+    }
+    cps_api_get_request_guard rg(&new_req);
+
+    if (param->filters!=NULL) {
+        cps_api_object_list_swap(param->filters,new_req.filters);
+    }
+
+    size_t filter_len = cps_api_object_list_size(new_req.filters);
+
+
+    std::unique_ptr<cps_api_key_t[]> keys(new cps_api_key_t[param->key_count + filter_len]);
+    if (keys.get()==NULL) return cps_api_ret_code_ERR;
+
     size_t ix = 0;
+
+    for ( ; ix < filter_len ; ++ix ) {
+        cps_api_key_copy(&keys.get()[ix],cps_api_object_key(cps_api_object_list_get(new_req.filters,0)));
+    }
+    ix=0;
     size_t mx = param->key_count;
+    for ( ; ix < mx ; ++ix ) {
+        cps_api_object_t o = cps_api_object_create();
+        if (o==NULL) return cps_api_ret_code_ERR;
+
+        if (!cps_api_object_list_append(new_req.filters,o)){
+            cps_api_object_delete(o);
+            return cps_api_ret_code_ERR;
+        }
+
+        cps_api_key_copy(cps_api_object_key(o),param->keys+ix);
+        cps_api_key_copy(&keys.get()[ix+filter_len],cps_api_object_key(o));
+
+    }
+    new_req.key_count = param->key_count + filter_len;
+    new_req.keys = keys.get();
+
+    ix = 0;
+    mx = new_req.key_count;
 
     for ( ; ix < mx ; ++ix ) {
-        if ((rc=cps_api_process_get_request(param,ix))!=cps_api_ret_code_OK) break;
+        if ((rc=cps_api_process_get_request(&new_req,ix))!=cps_api_ret_code_OK) break;
     }
+    cps_api_object_list_swap(param->list,new_req.list);
 
     return rc;
 }
@@ -105,12 +152,20 @@ cps_api_return_code_t cps_api_get_request_init(cps_api_get_params_t *req) {
     memset(req,0,sizeof(*req));
     req->list = cps_api_object_list_create();
     if (req->list==NULL) return cps_api_ret_code_ERR;
+    req->filters = cps_api_object_list_create();
+    if (req->filters==NULL) {
+        cps_api_object_list_destroy(req->list,true);
+    }
     return cps_api_ret_code_OK;
 }
 
 cps_api_return_code_t cps_api_get_request_close(cps_api_get_params_t *req) {
     if (req->list!=NULL) cps_api_object_list_destroy(req->list,true);
     req->list = NULL;
+    if (req->filters!=NULL) {
+        cps_api_object_list_destroy(req->filters,true);
+    }
+
     return cps_api_ret_code_OK;
 }
 

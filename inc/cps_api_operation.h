@@ -130,6 +130,7 @@ typedef struct {
     cps_api_key_t   *keys;
     size_t           key_count;
     cps_api_object_list_t list;
+    cps_api_object_list_t filters;
 }cps_api_get_params_t;
 
 

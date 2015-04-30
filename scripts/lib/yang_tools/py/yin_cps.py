@@ -99,6 +99,32 @@ class CPSParser:
                     n = self.module.name()+':'+n
                 i.set('name',n)
 
+
+        for i in node.iter():
+            tag = self.module.filter_ns(i.tag)
+
+            id = self.module.name()+':'+tag
+            if i.get('name')!=None:
+                id = self.module.name()+':'+i.get('name')
+
+            if tag == 'grouping':
+                tag = 'typedef'
+
+            if tag == 'typedef':
+                if id in self.context['types']:
+                    continue
+                    #raise Exception("Duplicate entry in type name database..."+id)
+
+                self.context['types'][id] = i
+                type = i.find(self.module.ns()+'type')
+                if type!=None:
+                    if type.get('name')=='enumeration':
+                        self.context['enum'][id] = i
+                    if type.get('name')=='union':
+                        self.context['union'][id] = i
+                continue
+
+
         for i in nodes:
             tag = self.module.filter_ns(i.tag)
 
@@ -121,18 +147,6 @@ class CPSParser:
                 tag = 'typedef'
 
             if tag == 'typedef':
-                if id in self.context['types']:
-                    print self.context['types'].keys()
-                    print n_path
-                    raise Exception("Duplicate entry in type name database..."+id)
-
-                self.context['types'][id] = i
-                type = i.find(self.module.ns()+'type')
-                if type!=None:
-                    if type.get('name')=='enumeration':
-                        self.context['enum'][id] = i
-                    if type.get('name')=='union':
-                        self.context['union'][id] = i
                 continue
 
             self.all_node_map[n_path] = i

@@ -33,12 +33,29 @@ struct cps_api_operation_data_t {
 
 static bool  cps_api_handle_get(cps_api_operation_data_t *op, int fd,size_t len) {
 
-    cps_api_key_t key;
-    if (!cps_api_receive_key(fd,key)) return false;
-
     cps_api_get_params_t param;
     if (cps_api_get_request_init(&param)!=cps_api_ret_code_OK) return false;
     cps_api_get_request_guard grg(&param);
+
+    cps_api_key_t key;
+    if (!cps_api_receive_key(fd,key)) return false;
+
+    uint32_t oper;
+    if (!cps_api_receive_header(fd,oper,len)) return false;
+
+    if (oper != cps_api_msg_o_GET) {
+        return false;
+    }
+    cps_api_object_t filter = cps_api_receive_object(fd,len);
+    if (filter==NULL) {
+        EV_LOG(ERR,DSAPI,0,"CPS IPC","Get request missing filter object..");
+        return false;
+    }
+
+    if (!cps_api_object_list_append(param.filters,filter)) {
+        cps_api_object_delete(filter);
+        return false;
+    }
 
     std_rw_lock_read_guard g(&op->db_lock);
 
