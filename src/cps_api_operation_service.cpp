@@ -37,15 +37,6 @@ static bool  cps_api_handle_get(cps_api_operation_data_t *op, int fd,size_t len)
     if (cps_api_get_request_init(&param)!=cps_api_ret_code_OK) return false;
     cps_api_get_request_guard grg(&param);
 
-    cps_api_key_t key;
-    if (!cps_api_receive_key(fd,key)) return false;
-
-    uint32_t oper;
-    if (!cps_api_receive_header(fd,oper,len)) return false;
-
-    if (oper != cps_api_msg_o_GET) {
-        return false;
-    }
     cps_api_object_t filter = cps_api_receive_object(fd,len);
     if (filter==NULL) {
         EV_LOG(ERR,DSAPI,0,"CPS IPC","Get request missing filter object..");
@@ -60,7 +51,7 @@ static bool  cps_api_handle_get(cps_api_operation_data_t *op, int fd,size_t len)
     std_rw_lock_read_guard g(&op->db_lock);
 
     param.key_count =1;
-    param.keys = &key;
+    param.keys = cps_api_object_key(filter);
 
     cps_api_return_code_t rc = cps_api_ret_code_ERR;
     size_t func_ix = 0;
@@ -69,7 +60,7 @@ static bool  cps_api_handle_get(cps_api_operation_data_t *op, int fd,size_t len)
     for ( ; func_ix < func_mx ; ++func_ix ) {
         cps_api_registration_functions_t *p = &(op->db_functions[func_ix]);
         if ((p->_read_function!=NULL) &&
-                (cps_api_key_matches(&key,&p->key,false)==0)) {
+                (cps_api_key_matches(param.keys,&p->key,false)==0)) {
             rc = p->_read_function(p->context,&param,0);
             if (rc!=cps_api_ret_code_OK) break;
         }

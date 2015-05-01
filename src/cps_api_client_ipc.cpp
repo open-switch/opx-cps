@@ -168,13 +168,6 @@ cps_api_return_code_t cps_api_process_get_request(cps_api_get_params_t *param, s
     }
 
     do {
-        if (!cps_api_send_header(handle,cps_api_msg_o_GET,sizeof(cps_api_key_t))
-                || !cps_api_send_key(handle,param->keys[ix])) {
-            EV_LOG(ERR,DSAPI,0,"NS","Failed to send header for %s",
-                    cps_api_key_print(&param->keys[ix],buff,sizeof(buff)-1));
-            break;
-        }
-
         cps_api_object_t o = cps_api_object_list_get(param->filters,ix);
         if (o==NULL) {
             EV_LOG(ERR,DSAPI,0,"NS","Missing filters... %s",
@@ -186,6 +179,7 @@ cps_api_return_code_t cps_api_process_get_request(cps_api_get_params_t *param, s
                            cps_api_key_print(&param->keys[ix],buff,sizeof(buff)-1));
                    break;
         }
+
         uint32_t op;
 
         do {
