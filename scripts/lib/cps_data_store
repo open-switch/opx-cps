@@ -1,0 +1,55 @@
+#!/usr/bin/python
+# Generic CPS data storage that responds to all CPS requests
+# CPS service performs a longest-prefix match, so by registering at the root,
+# if there is no other match for the CPS key, CPS will pass the request to
+# this script
+
+import cps
+import time
+
+# Create the standard data store
+data_store = dict()
+
+# CPS Get handler
+def get_cb(methods, params):
+    retval = False
+    # print "Get...", params
+    for key in params['keys']:
+        # For all keys that match the prefix
+        for ds_key in data_store.keys():
+            if ds_key.startswith(key):
+                params['result'][ds_key] = data_store[ds_key]
+                retval = True
+
+    return retval
+
+# CPS Transaction handler
+def transaction_cb(methods, params):
+    # print "Trans...", params
+    op = params['operation']
+    if (op == 'set') or (op == 'create'):
+        # Create a new entry in our data store
+        for key in params['change'].keys():
+            data_store[key] = params['change'][key]
+    elif (op == 'delete'):
+        # Delete an entry from the data store
+        for key in params['change'].keys():
+            if not key in data_store:
+                return False
+            del data_store[key]
+    else:
+        # Unknown operation
+        return False
+
+    return True
+
+# Register for CPS
+reg = dict()
+reg['get'] = get_cb
+reg['transaction'] = transaction_cb
+cps_handle = cps.obj_init()
+cps.obj_register(cps_handle, '', reg)
+
+# Wait for responses
+while True:
+    time.sleep(1)
