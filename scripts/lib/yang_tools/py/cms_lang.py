@@ -1,6 +1,50 @@
 import sys
 import os
 
+cma_gen_file_c_includes = """
+
+#include \"cps_api_operation.h\"
+#include \"cma_utilities.h\"
+#include \"cma_init.h\"
+
+
+"""
+write_statement_switch = """
+  t_std_error retval = STD_ERR_OK;
+  switch (edit_mode.phase) {
+  case CMA_PH_VALIDATE:
+     /* Validation phase code here */
+     break;
+  case CMA_PH_APPLY:
+     /* Check whether ready for commit */
+     break;
+  case CMA_PH_COMMIT:
+     /* Commit phase code here */
+     switch (edit_mode.op) {
+     case CMA_OP_LOAD:
+         /*This is called at module startup to reload all data that module owns*/
+         break;
+     case CMA_OP_REPLACE:
+         break;
+     case CMA_OP_CREATE:
+         /*Called when module is created*/
+         break;
+     case CMA_OP_MERGE:
+         break;
+     case CMA_OP_DELETE:
+         break;
+     default:
+         retval = CMA_ERR_OPERATION_NOT_SUPPORTED;
+     }
+     break;
+  case CMA_PH_ROLLBACK:
+     /* Code for undoing commit here */
+     break;
+  default:
+     retval = CMA_ERR_OPERATION_FAILED;
+ }
+"""
+
 class Language:
 
     supported_list_containing_cb = [
@@ -182,10 +226,12 @@ class Language:
         print "  cps_api_object_t filter = cps_api_object_list_get(param->filters,key_ix);"
         print "  cps_api_key_t *key    = cps_api_object_key(filter);"
         print "  cps_api_object_t *obj = cps_api_object_create();"
+        print ""
         print "  if (obj==NULL) return cps_api_ret_code_ERR;"
         print "  if (!cps_api_object_list_append(param->list,obj)) {"
         print "     cps_api_object_delete(obj); return cps_api_ret_code_ERR;"
         print "  }"
+        print ""
         print "  cps_api_key_copy(cps_api_object_key(obj),key);"
         self.get_keys(cb_node,"filter")
         print ""
@@ -208,36 +254,9 @@ class Language:
         self.get_keys(cb_node,"obj")
         print ""
         self.get_instance_vars(cb_node,False,"cma_get_data")
-        print "  t_std_error retval = STD_ERR_OK;"
-        print "  switch (edit_mode.phase) { "
-        print "  case CMA_PH_VALIDATE:"
-        print "     /* Validation phase code here */"
-        print "     break;"
-        print "  case CMA_PH_APPLY:"
-        print "     /* Check whether ready for commit */"
-        print "     break;"
-        print "  case CMA_PH_COMMIT:"
-        print "     /* Commit phase code here */"
-        print "     switch (edit_mode.op) {"
-        print "     case CMA_OP_LOAD:"
-        print "         break;"
-        print "     case CMA_OP_REPLACE:"
-        print "         break;"
-        print "     case CMA_OP_CREATE:"
-        print "     case CMA_OP_MERGE: "
-        print "         break;"
-        print "     case CMA_OP_DELETE:"
-        print "         break;"
-        print "     default:"
-        print "         retval = CMA_ERR_OPERATION_NOT_SUPPORTED;"
-        print "     }"
-        print "     break;"
-        print "  case CMA_PH_ROLLBACK:"
-        print "     /* Code for undoing commit here */"
-        print "     break;"
-        print "  default:"
-        print "     retval = CMA_ERR_OPERATION_FAILED;"
-        print " }"
+
+        print""
+        print write_statement_switch
         print ""
         print "  (void)retval;"
         print " /*Return a cps_api_ret_code_OK when you implement and have a successful operation"
@@ -275,12 +294,8 @@ class Language:
 
     def write_headers(self, elem):
         print "/*Generated for "+elem+"*/"
-        print "#include \"cps_api_operation.h\""
-        print "#include \"cma_utilities.h\" "
-        print "#include \"cma_init.h\" "
+        print cma_gen_file_c_includes
         print "#include \""+self.module+"_xmltag.h\""
-        print ""
-
 
     def write(self):
         old_stdout = sys.stdout
