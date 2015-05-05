@@ -5,7 +5,7 @@ class COutputFormat:
 
     def __init__(self,context):
         self.context = context
-        self.lang = context['output']['language']
+        self.lang = context['output']['language']['cps']
 
     def show(self,model):
         self.model = model
@@ -26,7 +26,7 @@ class COutputFormat:
         print "} lst[] = {"
         for i in self.model.name_to_id.keys():
             line = "{"
-            line += self.model.path_to_ids(i)+", { \""
+            line += self.lang.path_to_ids(self.model,i)+", { \""
             line += i+"\",\"\","
 
             if not i in self.model.container_map:

@@ -1,4 +1,9 @@
 
+import yin_utils
+import cps_c_dict
+import cps_h
+import object_history
+import sys
 
 def to_string(s):
     s = s.replace('-','_')
@@ -107,8 +112,8 @@ class Language:
                 self.names[name] = to_string(name)+"_t"
 
     def determine_key_types(self):
-        for cont_key in self.map_with_keys.keys():
-            for i in self.map_with_keys[cont_key].split():
+        for cont_key in self.model.elem_with_keys.keys():
+            for i in self.model.elem_with_keys[cont_key].split():
                 path = i
                 cname = self.names[i]
 
@@ -123,16 +128,9 @@ class Language:
                 self.types[cname] = type_to_lang_type(self.types[cname])
 
     def handle_keys(self):
-        self.map_with_keys = {}
-        for i in self.model.container_keys.keys():
-            node = self.model.all_node_map[i]
-            if node.find(self.model.module.ns()+'key')== None:
-                continue
-            self.map_with_keys[i] = self.model.container_keys[i]
-
-        for i in self.map_with_keys.keys():
+        for i in self.model.elem_with_keys.keys():
             new_key=""
-            key_str = self.map_with_keys[i]
+            key_str = self.model.elem_with_keys[i]
             for elem in key_str.split():
                 new_key+=self.names[elem]+","
 
@@ -140,17 +138,94 @@ class Language:
             self.keys[self.names[i]] = new_key
         self.determine_key_types()
 
+    def get_category(self):
+        return self.category
+
     def setup(self,model):
         self.model = model
-        self.names[model.module.name()] = "cps_api_obj_CAT_"+to_string(model.module.name())
+
+        self.category = "cps_api_obj_CAT_"+to_string(model.module.name())
+
+        self.names[model.module.name()] = self.category
+
+        hist_file_name = yin_utils.get_yang_history_file_name(model.filename)
+
+        self.history = object_history.init(hist_file_name,self.category);
+
         self.handle_types()
         self.handle_enums()
         self.handle_container()
         self.handle_keys()
+
+        self.setup_enums(model)
+
 
     def __init__(self,context):
         self.context = context
         self.names = {}
         self.keys = {}
         self.types = {}
+        self.context['output']['header']['cps']=cps_h
+        self.context['output']['src']['cps']=cps_c_dict
 
+    def setup_enums(self,module):
+        #alias
+        history = self.history
+        category = self.category
+
+        for name in module.container_map.keys():
+            if name == module.module.name(): continue
+            node = module.container_map[name]
+            if len(node)==0: continue
+
+            for c in node:
+                if c.name == module.module.name(): continue
+                en_name = self.to_string(c.name)
+                value = str(history.get_enum(en_name,None))
+                module.name_to_id[c.name]= value
+
+        if len(module.container_map[module.module.name()])==0:
+            return
+
+        subcat_name = module.module.name()+"_objects"
+        for c in module.container_map[module.module.name()]:
+            name = c.name
+            node = module.container_map[name]
+            en_name = self.to_string(name+"_obj")
+            value = str(history.get_enum(en_name,None))
+            module.name_to_id[c.name]= value
+
+        id = history.get_global(category)
+        module.name_to_id[category] = id
+        #alias to module name too
+        module.name_to_id[module.module.name()] = id
+
+    def path_to_ids(self,module,path):
+        array="}"
+        while not path==None and not len(path)==0:
+            if path in module.parent:
+                par = module.parent[path]
+            else:
+                par = None
+            array = str(module.name_to_id[path])+array
+            if par !=None:
+                array = ","+array
+            path = par
+        array = "{"+array
+        return array
+
+
+    def write(self):
+        self.write_details('header')
+        self.write_details('src')
+
+    def write_details(self,type):
+        class_type = self.context['output'][type]['cps']
+
+        old_stdout = sys.stdout
+        with open(self.context['args']['cps'+type],"w") as sys.stdout:
+            class_type.COutputFormat(self.context).show(self.model)
+        sys.stdout = old_stdout
+
+    def close(self):
+        self.history.write()

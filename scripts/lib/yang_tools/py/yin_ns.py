@@ -23,10 +23,35 @@ class Module:
     module_name = ""
     filename = ""
 
+    def get_prefix(self,node):
+        n = node.find(self.mod_ns+'prefix')
+        if n == None:
+            n = node.find(self.mod_ns+'belongs-to')
+            if n != None:
+                n = n.find(self.mod_ns+'prefix')
+            if n==None: return ""
+
+        return n.get('value')
+
+    def get_module(self,node):
+        if node.tag != self.mod_ns+'module':
+            node = node.find(self.mod_ns+'module')
+
+        if node!=None:
+            return node.get('name')
+        return ""
+
     def __init__(self,filename, node):
         self.filename = filename
-        self.mod_ns =get_namespace(node)
-        self.module_name = set_mod_name(self.mod_ns,node);
+        self.mod_ns = get_namespace(node)
+        self.module = self.get_module(node)
+        self.prefix = self.get_prefix(node)
+        if len(self.prefix)>0:
+            self.module_name = self.prefix
+        else: self.module_name = self.module
+
+        if len(self.module_name)==0:
+            sys.exit(1)
 
     def filter_ns(self,name):
         return name[len(self.mod_ns):]

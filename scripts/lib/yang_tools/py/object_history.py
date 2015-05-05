@@ -1,51 +1,56 @@
-from __future__ import print_function
 
 import sys
 import yin_utils
 from os import walk
 import os
 
+class enum_tracker_int:
 
-class enum_tracker:
-    the_name = "";
-    the_dict = None
-    last_index = None
-
-    def __init__(self,name):
+    def __init__(self,indexer,name):
         self.the_dict = dict()
+        self.indexer = indexer
         self.the_name = name
-        self.last_index = 1
 
     def add_enum(self, name, index):
-        if self.last_index < (index+1):
-            self.last_index = index+1
+        if index > int('ffff',16):
+            raise Exception("Invalid id detected "+str(index))
+
+        self.indexer.use_enum(index)
         self.the_dict[name] = index
 
     def get_name(self):
         return self.the_name
-
-    def get_next_enum_value(self):
-        return self.last_index
 
     def get_value(self,name, requested):
         if not name in self.the_dict.keys():
             if requested!=None:
                 ix = int(requested)
             else:
-                ix = self.get_next_enum_value()
+                ix = self.indexer.get_free_enum()
             self.add_enum(name, ix)
         if requested!=None:
             self.the_dict[name] = int(requested)
         return self.the_dict[name]
 
-    def write(self,the_file):
-        the_file.write("++obj "+self.the_name+"\n")
-        for k in self.the_dict.keys():
-            the_file.write(k+"="+str(self.the_dict[k])+"\n")
-        the_file.write("--obj "+self.the_name+" end\n");
+    def setup(self,dic):
+        for en in dic:
+            self.add_enum(en,int(dic[en]) & int("ffff", 16))
 
-    def create(self,the_file):
-        for l in the_file:
+
+class IndexFile:
+    def __init__(self,file):
+        self.file = file
+
+    def write(self,enum):
+        file = self.file
+        file.write("++obj "+enum.the_name+"\n")
+        for k in enum.the_dict.keys():
+            file.write(k+"="+str(enum.the_dict[k])+"\n")
+        file.write("--obj "+enum.the_name+" end\n");
+
+    def get(self):
+        file = self.file
+        for l in file:
             if l.find("#")==0:
                 continue
             if l.find("++obj ") == -1:
@@ -54,8 +59,11 @@ class enum_tracker:
             if len(line) < 2:
                 print("Invalid line in file "+l);
                 sys.exit(1)
-            self.the_name = line[1];
-            for el in the_file:
+
+            the_name = line[1];
+            d = {'name':line[1] }
+            d['list'] = {}
+            for el in file:
                 if el.find("--obj ")!=-1:
                     break
                 if el.find("=")==-1:
@@ -64,17 +72,24 @@ class enum_tracker:
                 if len(line) < 2:
                     print("Badly formatted line "+line)
                     sys.exit(1)
-                self.add_enum(line[0], int(line[1]))
+                d['list'][line[0]] = line[1]
 
-            return True
+            return d
+        return {}
 
-        return False
+class IndexTracker :
+    def __init__(self,start):
+        self.last_index = 1
+        if self!=None:
+                self.last_index = start
 
-        the_file.write("obj "+self.the_name+"\n")
-        for k in self.the_dict.keys():
-            the_file.write(k+"="+str(self.the_dict[k])+"\n")
-        the_file.write("obj "+self.the_name+" end\n");
-        return True
+    def get_free_enum(self):
+        return self.last_index
+
+    def use_enum(self, index):
+        if int(self.last_index) < index+1:
+            self.last_index = index+1
+        return index;
 
 class history:
     the_file = None
@@ -83,71 +98,88 @@ class history:
     object_cat = []
     parsed_files = set()
 
-    def __init__(self, filename):
+    GLOBAL_SECTION="global"
+    MODULE_SECTION="module"
+
+    GLOBAL_enums = enum_tracker_int(IndexTracker(10),"global")
+
+    def get_global_enums(self,filename):
+        with open(filename,"r") as f:
+            ix_reader = IndexFile(f)
+            while True:
+                    d = ix_reader.get()
+                    if 'name' not in d: break
+                    if d['name'] != self.GLOBAL_SECTION: continue
+                    self.GLOBAL_enums.setup(d['list'])
+                    break;
+
+    def load_all_globals(self):
+        l = []
+        path = os.getenv('YANG_PATH','')
+        f = []
+        found_names = []
+        for i in path.split(':'):
+            for (dirpath, dirnames, filenames) in os.walk(i):
+                for filename in filenames:
+                    if filename.find('.yhist')==-1: continue
+
+                    if filename in found_names:
+                        print("Error.. found two instances of " + filename + " at "+dirpath)
+                        print("other files found are:")
+                        print f
+                        sys.exit(1)
+
+                    f.append(os.path.join(dirpath,filename))
+                    found_names.append(filename)
+        for i in f:
+            self.get_global_enums(i)
+
+    staticmethod (get_global_enums)
+    staticmethod (load_all_globals)
+
+    def __init__(self, filename, category):
         self.the_name = filename
         self.the_dict = dict()
+        self.module = IndexTracker(1)
+
+        self.load_all_globals()
+        self.category = category
+        self.the_dict[self.MODULE_SECTION] = enum_tracker_int(self.module,category)
+        self.the_dict[self.GLOBAL_SECTION] = enum_tracker_int(self.GLOBAL_enums.indexer,self.GLOBAL_SECTION)
+
         try:
             the_file = open(self.the_name,"r")
+            ix_reader = IndexFile(the_file)
             while True:
-                en = enum_tracker("") # track a single object
-                if en.create(the_file):
-                    if en.get_name()=='cps_api_object_category':                        
-                        self.object_cat.append(en)
-                        #print(filename+"adding "+en.get_name(), file=sys.stderr)
-                    self.the_dict[en.get_name()] = en
-                else:
-                    break
+                d = ix_reader.get()
+                if not 'name' in d : break
+                if not d['name'] in self.the_dict: continue
+                self.the_dict[d['name']].setup(d['list'])
 
             the_file.close()
-            self.parsed_files.add(filename)
+
         except IOError:
             the_file = open(self.the_name,"w")
             the_file.close()
 
-    def get_category(self,name):
-        oc = 'cps_api_object_category'
 
-        et = enum_tracker(oc)
-        et.last_index = int(10) # object categories start at 10 reserving 0-9 for internal purposes
-        for en_track in self.object_cat:
-            for i in en_track.the_dict.keys():
-                et.add_enum(i,en_track.the_dict[i])
-                
-        id = et.get_value(name, None)
-        self.get_enum(oc, name, id)
-        return id
+    def get_global(self,name):
+        return self.the_dict[self.GLOBAL_SECTION].get_value(name, None)
 
-    def get_enum(self, container, name, requested):
-        if not self.the_dict.has_key(container):
-            self.the_dict[container] = enum_tracker(container)
-        return self.the_dict[container].get_value(name,requested)
+    def get_enum(self,name, requested):
+        return (self.the_dict[self.MODULE_SECTION].get_value(name,requested) +
+            (self.get_global(self.category) << 16))
 
     def write(self):
-        f = open(self.the_name,"w");
-        f.write("# writing "+self.the_name+"\n")
-        for k in self.the_dict.keys():
-            en = self.the_dict[k]
-            en.write(f);
+        print "Writing history to "+self.the_name
+        with open(self.the_name,"w") as f:
+            f.write("# writing "+self.the_name+"\n")
+            writer = IndexFile(f)
+            for k in self.the_dict.keys():
+                writer.write(self.the_dict[k])
 
-        f.close()
-
-def init(file):
-    h = history(file)
-
-    l = list();
-    path = os.getenv('YANG_PATH','')
-    f = []
-    for i in path.split(':'):
-        for (dirpath, dirnames, filenames) in walk(i):
-            for filename in filenames:
-                if filename.find(".yhist")!=-1:
-                    if not filename in h.parsed_files:
-                        f.append(os.path.join(dirpath,filename))
-                    #print(os.path.join(dirpath,filename)+"adding ", file=sys.stderr)
-
-    for filename in f:
-        temp_hist = history(filename)
-
+def init(file,category):
+    h = history(file,category)
     return h
 
 def close(hist):

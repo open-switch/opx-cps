@@ -36,9 +36,10 @@ class COutputFormat:
 
     def __init__(self,context):
         self.context = context
-        self.lang = self.context['output']['language']
+        self.lang = self.context['output']['language']['cps']
 
     def show_enum(self,model,name):
+        history = self.lang.history
 
         node = model.context['enum'][name]
         enum = node.find('enumeration')
@@ -49,9 +50,9 @@ class COutputFormat:
             if model.module.filter_ns(i.tag) == 'enum':
                 en_name = self.lang.to_string(name+"_"+i.get('name'))
                 value = self.get_value(model,i)
-                value = str(model.history.get_enum(name,en_name,value))
+                value = str(history.get_enum(en_name,value))
                 comment = self.get_comment(model,i)
-                print "  "+en_name+"="+value+", "+comment
+                print "  "+en_name+" = "+value+", "+comment
 
         print "} "+self.lang.to_string(name)+"_t;"
 
@@ -62,6 +63,7 @@ class COutputFormat:
             self.show_enum(model,i)
 
     def print_container(self,model):
+        history = self.lang.history
 
         for name in model.container_map.keys():
             if name == model.module.name(): continue
@@ -75,11 +77,11 @@ class COutputFormat:
             for c in node:
                 if c.name == model.module.name(): continue
                 en_name = self.lang.to_string(c.name)
-                value = str(model.history.get_enum(name,en_name,None))
+                value = str(history.get_enum(en_name,None))
                 comment = self.get_comment(model,c.node)
                 print  "/*type="+self.lang.get_type(c.node)+"*/ "
                 if len(comment)>0: print comment
-                print "  "+en_name+"="+value+","
+                print "  "+en_name+" = "+value+","
                 print ""
             print "} "+self.lang.to_string(name)+"_t;"
 
@@ -96,17 +98,18 @@ class COutputFormat:
             name = c.name
             node = model.container_map[name]
             en_name = self.lang.to_string(name+"_obj")
-            value = str(model.history.get_enum(model.module.name(),en_name,None))
+            value = str(history.get_enum(en_name,None))
             comment = self.get_comment(model,c.node)
             if len(comment)>0: print comment
-            print "  "+en_name+"="+value+","
+            print "  "+en_name+" = "+value+","
             print ""
 
         print "} "+self.lang.to_string(subcat_name)+"_t;"
         print ""
         print ""
 
-    def dump_keys(self):
+    def dump_keys(self,model):
+
         print ""
         print "/*"
         print "All nodes that contains keys follow:"
@@ -119,20 +122,12 @@ class COutputFormat:
             model_keys = key_args[:2]
             remaining_keys = key_args[2:]
 
-            line = "static inline void "+self.lang.to_string(i)+"_key(cps_api_key_t *key, cps_api_qualifier_t qual,"
-
-            elem_keys = len(remaining_keys)
-            for k in remaining_keys:
-                line+=self.lang.types[k]+" "
-                line+=k+"_arg,"
-            line = line[:-1]
-            line+=") {"
+            line = "static inline void "+self.lang.to_string(i)+"_key(cps_api_key_t *key, "
+            line+= "cps_api_qualifier_t qual) {"
             print line
             line = "  cps_api_key_init(key,qual,"+",".join(model_keys)+","
-            line+=str((len(remaining_keys)*2)+1)+","
-            line += ",".join(remaining_keys)+",~0"
-            for i in remaining_keys:
-                line += ","+i+"_arg"
+            line+=str(len(remaining_keys))+","
+            line += ",".join(remaining_keys)
             line+=");"
             print line
             print "}"
@@ -169,6 +164,7 @@ class COutputFormat:
         print ""
 
     def header_file_open(self,src_file, mod_name, stream):
+
         stream.write( "\n" )
         stream.write( "/*\n" )
         stream.write( "* source file : "+ src_file +"\n")
@@ -193,16 +189,14 @@ class COutputFormat:
         self.header_file_open(model.module.name(),model.module.name(),sys.stdout)
 
         print ""
-        id = model.history.get_category(model.module.name())
+        id = self.lang.history.get_global(self.lang.get_category())
 
-        print "#define cps_api_obj_CAT_"+self.lang.to_string(model.module.name())+" ("+str(id)+") "
-
-
+        print "#define "+self.lang.get_category()+" ("+str(id)+") "
 
         self.print_types(model)
         self.print_enums(model)
         self.print_container(model)
 
-        #self.dump_keys()
+        self.dump_keys(model)
         self.header_file_close(sys.stdout)
 

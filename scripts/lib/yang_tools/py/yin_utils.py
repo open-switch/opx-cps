@@ -18,25 +18,18 @@ def search_path_for_file(filename):
     raise Exception("Missing file "+filename+" please set path in YANG_PATH.  eg YANG_PATH=DIR1:DIR2")
 
 def get_yang_history_file_name(filename):
-    yang_hist_name = os.path.splitext(os.path.basename(filename))[0]+".yhist"
-    default_dir = os.path.dirname(filename)
+    filename = os.path.splitext(os.path.basename(filename))[0]+".yhist"
+    yang_vlan_file = search_path_for_file(os.path.splitext(filename)[0]+".yang")
+
+    yang_hist_name = os.path.splitext(yang_vlan_file)[0]+".yhist"
 
     try:
-        return search_path_for_file(yang_hist_name)
+        return search_path_for_file(filename)
     except:
         name = ""
-    name = os.path.join(default_dir,yang_hist_name)
 
-    if os.path.exists(name):
-        return name
+    return yang_hist_name
 
-    path = os.getenv('YANG_PATH','')
-    for i in path.split(':'):
-        if 'yanghist' in i:
-            return i
-
-    yang_file = search_path_for_file(filename)
-    return os.path.join(os.path.dirname(yang_file),yang_hist_name)
 
 
 def create_yin_file(yang_file, yin_file):

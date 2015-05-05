@@ -2,9 +2,8 @@ import os
 import yin_cps
 import yin_utils
 import tempfile
-import cps_h
-import cps_c_dict
 import cps_c_lang
+import cms_lang
 import sys
 
 class CPSYinFiles:
@@ -13,7 +12,6 @@ class CPSYinFiles:
 
     def __init__(self,context):
         self.tmpdir = tempfile.mkdtemp();
-        context['yangfiles'] = self
         self.context = context
 
 
@@ -27,12 +25,11 @@ class CPSYinFiles:
         key_name = os.path.splitext(filename)[0]
         key_name = os.path.split(key_name)[1]
         if key_name not in self.yin_map:
-            hist_name = yin_utils.get_yang_history_file_name(filename)
             f = self.get_yin_file(filename)
-            self.yin_map[key_name] = yin_cps.CPSParser(self.context,f,hist_name)
+            self.yin_map[key_name] = yin_cps.CPSParser(self.context,f)
             self.yin_map[key_name].load()
             self.yin_map[key_name].walk()
-            self.yin_map[key_name].setup_enums()
+
             self.context['model-names'][self.yin_map[key_name].module.name()] = key_name
         return self.yin_map[key_name]
 
@@ -94,26 +91,37 @@ class CPSYangModel:
         self.args = args
         self.filename = self.args['file']
         self.context = dict()
+        self.context['args'] = args
         self.context['output']={}
-        self.context['output']['language'] = cps_c_lang.Language(self.context)
+        self.context['output']['header'] = {}
+        self.context['output']['src'] = {}
+        self.context['output']['language']= {}
+        self.context['output']['language']['cps'] = cps_c_lang.Language(self.context)
+        self.context['output']['language']['cms'] = cms_lang.Language(self.context)
 
         self.context['types'] = {}
         self.context['enum'] = {}
         self.context['union'] = {}
         self.context['model-names'] = {}
-        yf = CPSYinFiles(self.context)
 
-        self.model = yf.load(self.filename)
-        self.context['output']['language'].setup(self.model)
+        self.context['loader'] = CPSYinFiles(self.context)
 
-        self.context['output']['header']=cps_h
-        self.context['output']['src']=cps_c_dict
-
-        self.write_details('header',cps_h)
-        self.write_details('src',cps_c_dict)
+        self.model = self.context['loader'].load(self.filename)
+        for i in self.context['output']['language']:
+            self.context['output']['language'][i].setup(self.model)
 
 
-    def write_details(self,key,class_type):
+        for i in self.context['args']['output'].split(','):
+            self.context['output']['language'][i].write()
+
+        #self.context['output']['language'].setup(self.model)
+
+        #self.write_details('header')
+        #self.write_details('src')
+
+
+    def write_details(self,key):
+        class_type = self.context['output'][key]
         if key in self.args:
             old_stdout = sys.stdout
             with open(self.args[key],"w") as sys.stdout:
@@ -122,5 +130,6 @@ class CPSYangModel:
 
 
     def close(self):
-        self.model.history.write()
+        for i in self.context['output']['language']:
+            self.context['output']['language'][i].close()
 

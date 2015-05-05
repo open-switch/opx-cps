@@ -10,14 +10,13 @@ import xml.etree.ElementTree as ET
 import tempfile
 
 supported_ids_at_root = [
-    "list","container" ]
+    "list","container","rpc" ]
 
 supported_list_containing_children = [
     "container","grouping","choice", "list", "rpc" , "case", "module","type","typedef"]
 
-
 supported_list_of_leaves_have_attr_ids = [
-    "container","grouping","choice", "list", "leaf","leaf-list", "rpc", "uses" ]
+    "container","grouping","case", "list", "leaf","leaf-list", "rpc", "uses" ]
 
 class CPSContainerElement:
     name = None
@@ -56,17 +55,15 @@ class CPSParser:
         self.imports = list()
 
         for i in self.root_node.findall(self.module.ns()+"import"):
-            self.context['yangfiles'].load(i.get('module')+".yang")
+            self.context['loader'].load(i.get('module')+".yang")
 
         self.has_children_nodes = self.module.prepend_ns_to_list(supported_list_containing_children)
         self.has_attr_ids = self.module.prepend_ns_to_list(supported_list_of_leaves_have_attr_ids)
 
 
-    def __init__(self, context, filename,history_name):
+    def __init__(self, context, filename):
         self.context = context
         self.filename = filename
-        self.history = object_history.init(history_name)
-        self.lang = context['output']['language']
 
         self.key_elemts = list()
         self.containers = {}
@@ -85,12 +82,11 @@ class CPSParser:
         self.container_map[self.module.name()] = list()
         self.all_node_map[self.module.name()] = self.root_node
         self.container_keys[self.module.name()] = self.module.name()+ " "
+        self.fix_namespace(self.root_node)
         self.walk_nodes(self.root_node, self.module.name())
+        self.handle_keys()
 
-    def walk_nodes(self, node, path):
-        nodes = list(node)
-        parent = path   #container path to parent
-
+    def fix_namespace(self,node):
         for i in node.iter():
             tag = self.module.filter_ns(i.tag)
             if tag == 'uses':
@@ -98,7 +94,6 @@ class CPSParser:
                 if n.find(':')==-1:
                     n = self.module.name()+':'+n
                 i.set('name',n)
-
 
         for i in node.iter():
             tag = self.module.filter_ns(i.tag)
@@ -124,6 +119,9 @@ class CPSParser:
                         self.context['union'][id] = i
                 continue
 
+    def walk_nodes(self, node, path):
+        nodes = list(node)
+        parent = path   #container path to parent
 
         for i in nodes:
             tag = self.module.filter_ns(i.tag)
@@ -151,11 +149,15 @@ class CPSParser:
 
             self.all_node_map[n_path] = i
 
-            if tag == 'choice':
+            ignore=False
+            if ignore:
                 #ignore the choice itself.. and consider the cases
-                for ch in list(i):
-                    self.walk_nodes(ch,path)
+#                for ch in list(i):
+                self.walk_nodes(i,path)
                 continue
+
+            if tag == 'choice':
+                tag = 'container'
 
             if tag == 'case':
                 tag = 'container'
@@ -164,7 +166,7 @@ class CPSParser:
                 n_path = self.all_node_map[path]
                 tag = 'container'
 
-            if tag == 'container' or tag == 'list':
+            if tag == 'container' or tag == 'list' or tag == 'rpc':
                self.containers[n_path] = i
                if n_path not in self.container_map:
                    self.container_map[n_path] = list()
@@ -207,45 +209,13 @@ class CPSParser:
                 print type
                 raise Exception("Invalid grouping specified ")
 
-    def setup_enums(self):
-        for name in self.container_map.keys():
-            if name == self.module.name(): continue
-            node = self.container_map[name]
-            if len(node)==0: continue
 
-            for c in node:
-                if c.name == self.module.name(): continue
-                en_name = self.lang.to_string(c.name)
-                value = str(self.history.get_enum(name,en_name,None))
-                self.name_to_id[c.name]= value
-
-        if len(self.container_map[self.module.name()])==0:
-            return
-
-        subcat_name = self.module.name()+"_objects"
-        for c in self.container_map[self.module.name()]:
-            name = c.name
-            node = self.container_map[name]
-            en_name = self.lang.to_string(name+"_obj")
-            value = str(self.history.get_enum(self.module.name(),en_name,None))
-            self.name_to_id[c.name]= value
-
-        id = self.history.get_category(self.module.name())
-        self.name_to_id[self.module.name()] = id
-
-    def path_to_ids(self,path):
-        array="}"
-        while not path==None and not len(path)==0:
-            if path in self.parent:
-                par = self.parent[path]
-            else:
-                par = None
-            array = str(self.name_to_id[path])+array
-            if par !=None:
-                array = ","+array
-            path = par
-        array = "{"+array
-        return array
-
+    def handle_keys(self):
+        self.elem_with_keys = {}
+        for i in self.container_keys.keys():
+            node = self.all_node_map[i]
+            if node.find(self.module.ns()+'key')== None:
+                continue
+            self.elem_with_keys[i] = self.container_keys[i]
 
 
