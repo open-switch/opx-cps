@@ -384,6 +384,15 @@ void cps_api_object_list_destroy(cps_api_object_list_t list, bool delete_objects
  */
 bool cps_api_object_list_append(cps_api_object_list_t list,cps_api_object_t obj);
 
+
+/**
+ * Create an object and add it to the list.  If the creation of the object fails
+ * return NULL.  If adding the object to the list fails return NULL
+ * @param list to add the object to
+ * @return the object created if successful otherwise NULLL
+ */
+cps_api_object_t cps_api_object_list_create_obj_and_append(cps_api_object_list_t list);
+
 /**
  * Remove an object from the list.  The user specifies an index of the object to remove.
  * After the object is removed all previous indexes are invalid -

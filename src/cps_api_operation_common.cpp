@@ -73,15 +73,6 @@ static void cps_api_object_list_swap(cps_api_object_list_t &a, cps_api_object_li
     b = t;
 }
 
-cps_api_object_t cps_api_get_result_create(cps_api_get_params_t *req ) {
-    cps_api_object_t obj = cps_api_object_create();
-    if (obj==NULL) return NULL;
-    if (cps_api_object_list_append(req->list,obj)) {
-        return obj;
-    }
-    cps_api_object_delete(obj);
-    return NULL;
-}
 cps_api_return_code_t cps_api_get(cps_api_get_params_t * param) {
     cps_api_return_code_t rc = cps_api_ret_code_ERR;
 

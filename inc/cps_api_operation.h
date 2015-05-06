@@ -159,12 +159,14 @@ typedef struct {
 cps_api_return_code_t cps_api_get_request_init(cps_api_get_params_t *req);
 
 /**
- * Create an object that will be added t the get response and automatically add the object to the
+ * Create an object that will be added to the get response and automatically add the object to the
  * req's list of returned objects
  * @param req the get request to add the object
  * @return the cps_api_object_t created and added to the get request or NULL if the request fails
  */
-cps_api_object_t cps_api_get_result_create(cps_api_get_params_t *req );
+static inline cps_api_object_t cps_api_get_result_create(cps_api_get_params_t *req ) {
+    return cps_api_object_list_create_obj_and_append(req->list);
+}
 
 /**
  * Clean up used get request including removing any objects added to the req

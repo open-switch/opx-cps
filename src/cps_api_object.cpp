@@ -474,6 +474,14 @@ void cps_api_object_list_remove(cps_api_object_list_t list, size_t ix) {
     p->erase(it);
 }
 
+cps_api_object_t cps_api_object_list_create_obj_and_append(cps_api_object_list_t list) {
+    cps_api_object_t obj = cps_api_object_create();
+    if (obj==NULL) return NULL;
+    if (cps_api_object_list_append(list,obj)) return obj;
+    cps_api_object_delete(obj);
+    return NULL;
+}
+
 cps_api_object_t cps_api_object_list_get(cps_api_object_list_t list,size_t ix) {
     STD_ASSERT(list!=NULL);
     tObjList * p = (tObjList*)list;

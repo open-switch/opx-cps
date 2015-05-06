@@ -198,7 +198,7 @@ class Language:
             yin_node = self.model.all_node_map[full_name]
             if yin_node.tag == self.model.module.ns()+'leaf' or yin_node.tag == self.model.module.ns()+'leaf-list':
                 print "  cma_value_t "+self.names_short[i]+"_kval;"
-                print "  bool "+self.names_short[i]+"_kval_valid = cma_get_key_data("+object+","+i+",&"+self.names_short[i]+"_kval);"
+                print "  const bool "+self.names_short[i]+"_kval_valid = cma_get_key_data("+object+","+i+",&"+self.names_short[i]+"_kval);"
                 print "  (void)"+self.names_short[i]+"_kval_valid;"
                 print ""
 
@@ -209,12 +209,12 @@ class Language:
         print "/* Instance vars start... */ "
 
         for leaf in self.get_node_leaves_based_on_access(cb_node,read_only):
-            print "  cma_value_t "+self.names_short[self.names[leaf]]+"_val;"
             if function.find('set')!=-1:
                 print "/*Update this field with the correct data before setting into object*/"
-            print "  bool "+self.names_short[self.names[leaf]]+"_val_valid = "+function+"(obj,"+self.names[leaf]+",&"+self.names_short[self.names[leaf]]+"_val);"
+            print "  cma_value_t "+self.names_short[self.names[leaf]]+"_val;"
+            print "  const bool "+self.names_short[self.names[leaf]]+"_val_valid = "+function+"(obj,"+self.names[leaf]+",&"+self.names_short[self.names[leaf]]+"_val);"
             if function.find('get')!=-1:
-                print "  /* Check to see if the attribute exists in the object and set it into your internal data strcutre */"
+                print "  /* Check to see if the attribute exists in the object and set it into your internal data structure */"
             print "  (void)"+self.names_short[self.names[leaf]]+"_val_valid;"
             print ""
         print "/* Instance vars end... */ "
@@ -229,7 +229,8 @@ class Language:
         print ""
         print "  if (obj==NULL) return cps_api_ret_code_ERR;"
         print "  if (!cps_api_object_list_append(param->list,obj)) {"
-        print "     cps_api_object_delete(obj); return cps_api_ret_code_ERR;"
+        print "     cps_api_object_delete(obj);"
+        print "     return cps_api_ret_code_ERR;"
         print "  }"
         print ""
         print "  cps_api_key_copy(cps_api_object_key(obj),key);"
