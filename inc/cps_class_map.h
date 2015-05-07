@@ -48,6 +48,17 @@ typedef struct {
  */
 cps_api_return_code_t cps_class_map_init(const cps_api_attr_id_t *ids, size_t ids_len, cps_class_map_node_details *details);
 
+
+/**
+ * Convert the CPS API key to attribute IDs - the length of ids needs to be big enough
+ * @param ids the pointer to the IDs to set
+ * @param ids_len the length of the ids array
+ * @param key the key to convert
+ * @return true if successfully converted otherwise false
+ */
+bool cps_api_key_to_class_attr(cps_api_attr_id_t *ids, size_t ids_len, const cps_api_key_t * key);
+
+
 /**
  * Determine if the node within a CPS object has embedded data
  *
@@ -57,7 +68,7 @@ cps_api_return_code_t cps_class_map_init(const cps_api_attr_id_t *ids, size_t id
  * @param ids_len the length of the array
  * @return true if it has an embedded attribute
  */
-bool cps_class_attr_is_embedded(const cps_api_key_t *key,const cps_api_attr_id_t *ids, size_t ids_len);
+bool cps_class_attr_is_embedded(const cps_api_attr_id_t *ids, size_t ids_len);
 
 /**
  * Check the element to see if it is valid.
@@ -67,7 +78,7 @@ bool cps_class_attr_is_embedded(const cps_api_key_t *key,const cps_api_attr_id_t
  * @param ids_len the length of the array
  * @return true if the attribute is a known type
  */
-bool cps_class_attr_is_valid(const cps_api_key_t *key,const cps_api_attr_id_t *ids, size_t ids_len);
+bool cps_class_attr_is_valid(const cps_api_attr_id_t *ids, size_t ids_len);
 
 /**
  *
@@ -77,7 +88,7 @@ bool cps_class_attr_is_valid(const cps_api_key_t *key,const cps_api_attr_id_t *i
  * @param ids_len the length of the array
  * @return the character pointer containing the elements name
  */
-const char * cps_class_attr_name(const cps_api_key_t *key,const cps_api_attr_id_t *ids, size_t ids_len);
+const char * cps_class_attr_name(const cps_api_attr_id_t *ids, size_t ids_len);
 
 /**
  * Load all cps class descriptions in the directory specified.  Use the prefix to determine which
@@ -96,6 +107,31 @@ bool cps_class_objs_load(const char *path, const char * prefix);
  * @return true if found otherwise false
  */
 bool cps_class_string_to_key(const char *str, cps_api_attr_id_t *ids, size_t *max_ids);
+
+/**
+ * From the attribute ID, return the full path of the element.
+ *
+ * @param id the ID to check
+ * @return the full name or NULL
+ */
+const char * cps_attr_id_to_name(cps_api_attr_id_t id);
+
+/**
+ * Given a name give a attribute ID for the element.
+ * @param name the name of the field
+ * @return the attribute value or -1 if not found.
+ */
+cps_api_attr_id_t cps_name_to_attr(const char *name);
+
+/**
+ * Given a attribute ID, return the corresponding key
+ * @param key a pointer to the destiation to hold the key
+ * @param id the attribute ID for which to find the key
+ * @param key_start_pos is the start position in the destination key where the found key is copied
+ * @return true if possible otherwise false and key is not altered
+ */
+bool cps_api_key_from_attr(cps_api_key_t *key,cps_api_attr_id_t id,size_t key_start_pos);
+
 
 /**
 @}

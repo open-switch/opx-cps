@@ -49,13 +49,11 @@ TEST(cps_class_map,keys) {
     for ( ; ix < lst_len ; ++ix ) {
         cps_class_map_init(&(lst[ix]._ids[0]),lst[ix]._ids.size(),&lst[ix].details);
     }
-    cps_api_key_t k;
-    cps_api_key_init(&k,cps_api_qualifier_TARGET,
-                19,1,0,0);
-    cps_api_attr_id_t ids[]= {1};
+
+    cps_api_attr_id_t ids[]= {1,19,1};
     size_t ids_len = 1;
 
-    ASSERT_TRUE(cps_class_attr_is_valid(&k,ids,ids_len));
+    ASSERT_TRUE(cps_class_attr_is_valid(ids,ids_len));
 }
 
 int main(int argc, char **argv) {

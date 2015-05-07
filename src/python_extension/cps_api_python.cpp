@@ -94,16 +94,16 @@ static void py_obj_dump_level(PyObject * d, std::vector<cps_api_attr_id_t> &pare
             cur[level] = cps_api_object_attr_id(it->attr);
             snprintf(buff,sizeof(buff)-1,"%d",(int)cur[level]);
 
-            const char * name = cps_class_attr_name(&key,&cur[0],cur.size());
+            const char * name = cps_attr_id_to_name(cur[level]);
 
-            if (!cps_class_attr_is_valid(&key,&cur[0],cur.size()) || name==NULL) {
+            if (!cps_class_attr_is_valid(&cur[0],cur.size()) || name==NULL) {
                 PyDict_SetItem(d,PyString_FromString(buff),
                         PyByteArray_FromStringAndSize((const char *)cps_api_object_attr_data_bin(it->attr),
                         cps_api_object_attr_len(it->attr)));
                 break;
             }
 
-            bool emb = cps_class_attr_is_embedded(&key,&cur[0],cur.size());
+            bool emb = cps_class_attr_is_embedded(&cur[0],cur.size());
             if (emb) {
                 PyObject * subd = PyDict_New();
                 if (subd==NULL) break;
@@ -145,11 +145,10 @@ static void add_to_object(std::vector<cps_api_attr_id_t> &level,
     while (PyDict_Next(d, &pos, &key, &value)) {
         const char * k = PyString_AS_STRING(key);
 
-        cps_class_map_node_details_int_t cm;
-
-        if (!cps_class_map_query(&level[0],level.size()-1,k,cm)) {
+        level[depth] = cps_name_to_attr(k);
+        if (level[depth]==((cps_api_attr_id_t)-1)) {
             level[depth] = (cps_api_attr_id_t)atoi(k);
-        } else level[depth] = cm.id;
+        }
 
         if (PyDict_Check(value)) {
             std::vector<cps_api_attr_id_t> v = level;
@@ -272,7 +271,7 @@ static PyObject * py_cps_info(PyObject *self, PyObject *args) {
     for ( ; ix < mx ; ++ix ) {
         PyDict_SetItem(d,
                 PyString_FromString(cps_class_ids_to_string(lst[ix].ids).c_str()),
-                PyString_FromString(lst[ix].name.c_str()));
+                PyString_FromString(lst[ix].full_path.c_str()));
     }
     return d;
 }
