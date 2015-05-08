@@ -62,8 +62,6 @@ bool cps_api_key_to_class_attr(cps_api_attr_id_t *ids, size_t ids_len, const cps
 /**
  * Determine if the node within a CPS object has embedded data
  *
- * @param key the object key that includes the object category and subcat, and other yang model
- * elements besides the unique key attributes
  * @param ids the array of the ids of attribute in the object
  * @param ids_len the length of the array
  * @return true if it has an embedded attribute
@@ -72,8 +70,6 @@ bool cps_class_attr_is_embedded(const cps_api_attr_id_t *ids, size_t ids_len);
 
 /**
  * Check the element to see if it is valid.
- * @param key the object key that includes the object category and subcat, and other yang model
- * elements besides the unique key attributes
  * @param ids the array of the ids of attribute in the object
  * @param ids_len the length of the array
  * @return true if the attribute is a known type
@@ -82,8 +78,6 @@ bool cps_class_attr_is_valid(const cps_api_attr_id_t *ids, size_t ids_len);
 
 /**
  *
- * @param key the object key that includes the object category and subcat, and other yang model
- * elements besides the unique key attributes
  * @param ids the array of the ids of attribute in the object
  * @param ids_len the length of the array
  * @return the character pointer containing the elements name
