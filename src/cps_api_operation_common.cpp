@@ -198,6 +198,9 @@ static cps_api_return_code_t ds_tran_op_append(cps_api_transaction_params_t * pa
     return cps_api_ret_code_OK;
 }
 
+void cps_api_object_set_type_operation(cps_api_key_t *key,cps_api_operation_types_t op)  {
+    cps_api_key_set_attr(key,op);
+}
 
 cps_api_operation_types_t cps_api_object_type_operation(cps_api_key_t *key)  {
     return  (cps_api_operation_types_t) cps_api_key_get_attr(key);

@@ -163,7 +163,9 @@ class COutputFormat:
                 print "*/\n"
         print ""
 
-    def header_file_open(self,src_file, mod_name, stream):
+    def header_file_open(self,model, stream):
+        src_file = model.module.name()
+        mod_name = model.module.name()
 
         stream.write( "\n" )
         stream.write( "/*\n" )
@@ -177,6 +179,13 @@ class COutputFormat:
         stream.write( "#define "+self.lang.to_string(mod_name+"_H") +"\n")
         stream.write( "" +"\n")
         stream.write( "#include \"cps_api_operation.h\"\n")
+
+        module = model.imports['module']
+
+        for i in module:
+            if i.find('dell')==-1: continue
+            stream.write( "#include \""+i+".h\"\n")
+
         stream.write( "#include <stdint.h>\n")
         stream.write( "#include <stdbool.h>\n")
         stream.write( "" +"\n")
@@ -186,7 +195,7 @@ class COutputFormat:
         stream.write("#endif"+"\n" )
 
     def show(self,model):
-        self.header_file_open(model.module.name(),model.module.name(),sys.stdout)
+        self.header_file_open(model,sys.stdout)
 
         print ""
         id = self.lang.history.get_global(self.lang.get_category())

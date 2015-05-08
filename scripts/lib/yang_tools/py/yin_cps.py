@@ -52,10 +52,16 @@ class CPSParser:
         et = ET.parse(self.filename)
         self.root_node = et.getroot()
         self.module = yin_ns.Module(self.filename,self.root_node)
-        self.imports = list()
+        self.imports = {}
+        self.imports['module'] = list()
+        self.imports['prefix'] = list()
 
         for i in self.root_node.findall(self.module.ns()+"import"):
             self.context['loader'].load(i.get('module')+".yang")
+            self.imports['module'].append(i.get('module'))
+            prefix = i.find(self.module.ns()+'prefix')
+            if prefix!=None:
+                self.imports['prefix'].append(prefix.get('value'))
 
         self.has_children_nodes = self.module.prepend_ns_to_list(supported_list_containing_children)
         self.has_attr_ids = self.module.prepend_ns_to_list(supported_list_of_leaves_have_attr_ids)

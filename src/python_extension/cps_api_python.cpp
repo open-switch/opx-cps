@@ -15,7 +15,6 @@
 #include <map>
 
 
-const static size_t KEY_STR_LEN=500;
 const static size_t MAX_EVENT_BUFF=20000;
 const static unsigned int CUSTOM_KEY_POS = 2;
 
