@@ -287,6 +287,7 @@ cps_api_operation_types_t cps_api_object_type_operation(cps_api_key_t *key) ;
  * Set the operation type of the provided key to the operation type specified.
  *
  * @param key the key to update with the operation type
+ * @param op  the operation that will be set on the key
  */
 void cps_api_object_set_type_operation(cps_api_key_t *key,cps_api_operation_types_t op) ;
 
