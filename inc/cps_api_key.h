@@ -157,6 +157,7 @@ static inline void cps_api_key_copy(cps_api_key_t *dest, cps_api_key_t *src) {
 
 int cps_api_key_matches(cps_api_key_t * key, cps_api_key_t * prefix, bool exact) ;
 
+#define CPS_API_KEY_STR_MAX (1024)
 /**
  * A debug API to print the key into a passed in buffer.
  * @param key to convert to string
@@ -165,7 +166,6 @@ int cps_api_key_matches(cps_api_key_t * key, cps_api_key_t * prefix, bool exact)
  * @return a pointer to buff passed in
  */
 char * cps_api_key_print(cps_api_key_t *key, char *buff, size_t len);
-
 
 /**
  * An API that takes a key as a string and returns the key object filled in

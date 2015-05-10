@@ -3,12 +3,13 @@ import time
 
 def get_cb(methods, params):
     print "Get..."
-    for entries in params['keys']:
-        print entries
-        d = {}
-        d['node'] = 'Cliff'
-        params['result'][entries] = d
 
+    d = {'key':params['filter']['key']+"2",'data': { 'pyobj/node': 'Cliff' } }
+    params['list'].append(d)
+    d = {'key':params['filter']['key']+"3",'data': { 'pyobj/node': 'Cliff' } }
+    params['list'].append(d)
+
+    print params
     return True
 
 def trans_cb(methods, params):
@@ -16,9 +17,8 @@ def trans_cb(methods, params):
     print params['operation']
 
     if params['operation'] == 'set':
-        for i in params['change'].keys():
-            params['change'][i]['node'] = "Clifford"
-            params['change'][i]['time'] = time.asctime()
+        params['change']['data']['pyobj/node'] = "Clifford"
+        params['change']['data']['pyobj/time'] = time.asctime()
     print params
     return True
 

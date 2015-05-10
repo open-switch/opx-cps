@@ -14,6 +14,7 @@
 #include "cps_api_object_attr.h"
 #include "cps_api_object.h"
 #include "cps_api_errors.h"
+#include "cps_api_operation.h"
 
 #include <stdbool.h>
 
@@ -126,6 +127,16 @@ cps_api_attr_id_t cps_name_to_attr(const char *name);
  */
 bool cps_api_key_from_attr(cps_api_key_t *key,cps_api_attr_id_t id,size_t key_start_pos);
 
+
+/**
+ * Get a CPS compatible key with the specified qualifier given a cps ID
+ * @param key the destination key
+ * @param id the CPS attribute ID
+ * @param cat the category that of the output key
+ * @return true if can be done or false if not found.
+ */
+bool cps_api_key_from_attr_with_qual(cps_api_key_t *key,cps_api_attr_id_t id,
+		cps_api_qualifier_t cat);
 
 /**
 @}

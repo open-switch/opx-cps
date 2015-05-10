@@ -97,35 +97,34 @@ struct cps_class_map_key_subcomp {
     }
 };
 
-void cps_class_ids_from_key(std::vector<cps_api_attr_id_t> &v,
-        cps_api_key_t *key, size_t start, size_t len) {
-    v.resize(0);
-    size_t max_len = cps_api_key_get_len(key);
-    if (max_len==0) return;
-
-    if (len > (max_len-start)) {
-        len = (max_len - start);
-    }
-    v.resize(len);
-
-    size_t ix = 0;
-    for ( ; ix < len ; ++ix ) {
-        v[ix] = cps_api_key_element_at(key,ix+start);
-    }
-}
-
-
 using cps_class_map_type_t = std::map<cps_api_attr_id_t,cps_class_map_node_details_int_t>;
 using cps_class_map_reverse_string_t = std::map<std::string,cps_api_attr_id_t>;
 
 
 static std_mutex_lock_create_static_init_fast(lock);
-
-extern "C" {
-
 static ids_to_string_map _id_to_string;
 static cps_class_map_type_t _cmt;
 static cps_class_map_reverse_string_t _rev_string;
+
+void cps_class_ids_from_key(std::vector<cps_api_attr_id_t> &v,
+        cps_api_key_t *key) {
+	v.resize(0);
+	size_t max_len = cps_api_key_get_len(key);
+    if (max_len < 1 ) return;
+    --max_len;
+
+    for ( ; max_len > 0 ; --max_len) {
+    	cps_api_attr_id_t id = cps_api_key_element_at(key,max_len);
+    	auto it = _cmt.find(id);
+    	if (it==_cmt.end()) continue;
+    	if (it->second.embedded) {
+    		v = it->second.ids;
+    	}
+    }
+}
+
+extern "C" {
+
 
 const char * cps_attr_id_to_name(cps_api_attr_id_t id) {
     auto it = _cmt.find(id);
@@ -153,6 +152,14 @@ bool cps_api_key_from_attr(cps_api_key_t *key,cps_api_attr_id_t id, size_t key_s
     }
     cps_api_key_set_len(key,key_start_pos+ix);
     return true;
+}
+
+bool cps_api_key_from_attr_with_qual(cps_api_key_t *key,cps_api_attr_id_t id,
+		cps_api_qualifier_t cat) {
+	bool rc = cps_api_key_from_attr(key,id,1); // first pos is cat
+	if (!rc) return false;
+	cps_api_key_set(key,0,cat);
+	return true;
 }
 
 cps_api_return_code_t cps_class_map_init(const cps_api_attr_id_t *ids, size_t ids_len, cps_class_map_node_details *details) {
