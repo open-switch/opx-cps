@@ -13,6 +13,7 @@
 #include <vector>
 #include <memory>
 #include <map>
+#include <string>
 
 
 const static size_t MAX_EVENT_BUFF=20000;
@@ -23,15 +24,21 @@ class PyRef {
 public:
     PyRef(PyObject *o,bool inc=false) {
         _o = o;
-
         if (_o!=NULL && inc) Py_INCREF(_o);
     }
+    void decref() {
+        if (_o!=NULL) Py_DECREF(_o);
+        release();
+    }
+
     bool valid() { return _o != NULL; }
     void release() { _o = NULL;}
-    PyObject * get() { return _o; }
-    ~PyRef() {
-        if (_o!=NULL) Py_DECREF(_o);
+    void set(PyObject *o) {
+        decref();
+        _o = o;
     }
+    PyObject * get() { return _o; }
+    ~PyRef() { decref(); }
 };
 
 class GILLock {
@@ -44,6 +51,45 @@ public:
         PyGILState_Release(_gstate);
     }
 };
+namespace {
+bool SetItemToDict(PyObject *d, const char * item, PyObject *o, bool gc=true) {
+    PyRef r(o);
+    if (gc==false) r.release();
+
+    if (!PyDict_Check(d)) return false;
+    if (PyDict_SetItemString(d,item,o)) {
+        return false;
+    }
+    r.release();
+    return true;
+}
+
+bool SetItemToList(PyObject *l, size_t ix , PyObject *o , bool gc = true) {
+    PyRef r(o);
+    if (gc==false) r.release();
+
+    if (!PyList_Check(l)) return false;
+    if (PyList_SetItem(l,ix,o)) {
+        return false;
+    }
+    r.release();
+    return true;
+}
+
+bool AppendItemToList(PyObject *l, PyObject *o , bool gc = true) {
+    PyRef r(o);
+    if (gc==false) r.release();
+
+    if (!PyList_Check(l)) return false;
+    if (PyList_Append(l,o)) {
+        return false;
+    }
+    r.release();
+    return true;
+}
+
+}
+
 struct py_callbacks_t {
     PyObject * _methods;
 
@@ -53,7 +99,9 @@ struct py_callbacks_t {
     }
 
     PyObject *execute(const char * method, PyObject *param) {
-        if (!contains(method)) return NULL;
+        if (!contains(method)) {
+            return NULL;
+        }
 
         PyObject *o = PyDict_GetItemString(_methods,method);
         PyObject * args = Py_BuildValue("OO", _methods,param);
@@ -96,9 +144,9 @@ static void py_obj_dump_level(PyObject * d, std::vector<cps_api_attr_id_t> &pare
             const char * name = cps_attr_id_to_name(cur[level]);
 
             if (!cps_class_attr_is_valid(&cur[0],cur.size()) || name==NULL) {
-                PyDict_SetItem(d,PyString_FromString(buff),
-                        PyByteArray_FromStringAndSize((const char *)cps_api_object_attr_data_bin(it->attr),
-                        cps_api_object_attr_len(it->attr)));
+                PyObject *by  = PyByteArray_FromStringAndSize((const char *)cps_api_object_attr_data_bin(it->attr),
+                        cps_api_object_attr_len(it->attr));
+                SetItemToDict(d,buff,by);
                 break;
             }
 
@@ -109,11 +157,12 @@ static void py_obj_dump_level(PyObject * d, std::vector<cps_api_attr_id_t> &pare
                 cps_api_object_it_t contained_it = *it;
                 cps_api_object_it_inside(&contained_it);
                 py_obj_dump_level(subd,cur,&contained_it);
-                PyDict_SetItem(d,PyString_FromString(name),subd);
+                SetItemToDict(d,name,subd);
                 break;
             }
-            PyDict_SetItem(d,PyString_FromString(name),
-                            PyByteArray_FromStringAndSize((const char *)cps_api_object_attr_data_bin(it->attr),
+
+            SetItemToDict(d,name,
+                 PyByteArray_FromStringAndSize((const char *)cps_api_object_attr_data_bin(it->attr),
                                     cps_api_object_attr_len(it->attr)));
         } while (0);
         cps_api_object_it_next(it);
@@ -121,17 +170,28 @@ static void py_obj_dump_level(PyObject * d, std::vector<cps_api_attr_id_t> &pare
 }
 
 static PyObject * cps_obj_to_dict(cps_api_object_t obj) {
+    if (obj==NULL) return PyDict_New();
     cps_api_key_t *key = cps_api_object_key(obj);
-    std::vector<cps_api_attr_id_t> lst;
 
-    //get the cat and sub cat
-    cps_class_ids_from_key(lst,key,CPS_OBJ_KEY_INST_POS+1,2);
+    std::vector<cps_api_attr_id_t> lst;
+    cps_class_ids_from_key(lst,key);
 
     cps_api_object_it_t it;
     cps_api_object_it_begin(obj, &it);
+
     PyObject *d = PyDict_New();
+
+    if (d==NULL) return NULL;
     py_obj_dump_level(d,lst,&it);
-    return d;
+
+    PyObject *o = PyDict_New();
+    PyRef _o(o);
+
+    SetItemToDict(o,"data",d);
+    SetItemToDict(o,"key",PyString_FromString(cps_key_to_string(cps_api_object_key(obj)).c_str()));
+
+    _o.release();
+    return o;
 }
 
 static void add_to_object(std::vector<cps_api_attr_id_t> &level,
@@ -180,6 +240,15 @@ static cps_api_object_t dict_to_cps_obj(const char *path, PyObject *dict) {
     add_to_object(level,obj,dict,level.size());
     cps_api_key_from_string(cps_api_object_key(obj),path);
     return og.release();
+}
+
+static cps_api_object_t dict_to_cps_obj(PyObject *dict) {
+    if (!PyDict_Check(dict)) return NULL;
+    PyObject * key = PyDict_GetItemString(dict,"key");
+    if (key==NULL || !PyString_Check(key)) return NULL;
+    PyObject * d = PyDict_GetItemString(dict,"data");
+    if (d==NULL || !PyDict_Check(d)) return NULL;
+    return dict_to_cps_obj(PyString_AsString(key),d);
 }
 
 static PyObject * py_cps_map_init(PyObject *self, PyObject *args) {
@@ -271,12 +340,35 @@ static PyObject * py_cps_info(PyObject *self, PyObject *args) {
     size_t mx = lst.size();
     for ( ; ix < mx ; ++ix ) {
         char buff[40]; //just enough for the attribute id
-        snprintf(buff,sizeof(buff),"%d",lst[ix].id);
-        PyDict_SetItem(d,
-                PyString_FromString(buff),
+        snprintf(buff,sizeof(buff),"%lld",(long long)lst[ix].id);
+        SetItemToDict(d,buff,
                 PyString_FromString(lst[ix].full_path.c_str()));
     }
     return d;
+}
+
+static PyObject * py_cps_key_from_name(PyObject *self, PyObject *args) {
+    const char * path=NULL, *cat=NULL;
+    if (! PyArg_ParseTuple( args, "ss", &cat, &path)) return NULL;
+
+    static const std::map<std::string,cps_api_qualifier_t> _cat = {
+            { "target",cps_api_qualifier_TARGET },
+            { "observed",cps_api_qualifier_OBSERVED },
+            { "proposed",cps_api_qualifier_PROPOSED},
+            { "realtime",cps_api_qualifier_REALTIME}
+    };
+    auto i  = _cat.find(cat);
+    if (i==_cat.end()) {
+        return PyString_FromString("");
+    }
+    cps_api_attr_id_t at = cps_name_to_attr(path);
+    cps_api_key_t k;
+    if (!cps_api_key_from_attr_with_qual(&k,at,i->second)) {
+        return PyString_FromString("");
+    }
+    char buff[CPS_API_KEY_STR_MAX];
+
+    return PyString_FromString(cps_api_key_print(&k,buff,sizeof(buff)-1));
 }
 
 static PyObject * py_cps_event_connect(PyObject *self, PyObject *args) {
@@ -340,13 +432,7 @@ static PyObject * py_cps_event_wait(PyObject *self, PyObject *args) {
     cps_api_object_reserve(obj,MAX_EVENT_BUFF);
 
     if (cps_api_wait_for_event(*handle,obj)==cps_api_ret_code_OK) {
-        PyRef r(cps_obj_to_dict(obj));
-        PyObject *ret = PyDict_New();
-        if (ret==NULL) return ret;
-        PyDict_SetItemString(ret,"data",r.get());
-        PyDict_SetItemString(ret,"key",PyString_FromString(cps_key_to_string(cps_api_object_key(obj)).c_str()));
-        r.release();
-        return ret;
+        return (cps_obj_to_dict(obj));
     }
     return PyDict_New();
 }
@@ -384,36 +470,63 @@ static PyObject * py_cps_get(PyObject *self, PyObject *args) {
 
     cps_api_get_request_guard rg(&gr);
 
-    PyObject *dict_obj;
+    PyObject *res_obj;
 
-    if (! PyArg_ParseTuple( args, "O!O!", &PyList_Type, &param_list, &PyDict_Type,&dict_obj)) {
+    if (! PyArg_ParseTuple( args, "O!O", &PyList_Type, &param_list,&res_obj)) {
         Py_RETURN_FALSE;
     }
 
+    PyObject * lst = NULL;
+
+    if (PyDict_Check(res_obj)) {
+        PyObject *l = PyList_New(0);
+        if (l==NULL) {
+            Py_RETURN_FALSE;
+
+        }
+        if (PyDict_GetItemString(res_obj,"list")!=NULL)
+            PyDict_DelItemString(res_obj,"list");
+
+        if (!SetItemToDict(res_obj,"list",l)) {
+            Py_RETURN_FALSE;
+        }
+        lst = l;
+    }
+    if (PyList_Check(res_obj)) {
+        lst = res_obj;
+    }
+    if (lst==NULL) {
+        Py_RETURN_FALSE;
+    }
     Py_ssize_t str_keys = PyList_Size(param_list);
-
-    if (str_keys<0) return NULL;
-
-    std::unique_ptr<cps_api_key_t[]> keys;
-
-    try {
-        keys = std::unique_ptr<cps_api_key_t[]>(new cps_api_key_t[str_keys]);
-    } catch (...) {
-        Py_RETURN_FALSE;
-    }
-
     {
         Py_ssize_t ix = 0;
         for ( ;ix < str_keys ; ++ix ) {
             PyObject *strObj = PyList_GetItem(param_list, ix);
-            if (!cps_api_key_from_string(&(keys[ix]),PyString_AS_STRING(strObj))) {
-                Py_RETURN_FALSE;
+            if (PyString_Check(strObj)) {
+                //
+                cps_api_object_t o = cps_api_object_list_create_obj_and_append(gr.filters);
+                if (o==NULL) {
+                    Py_RETURN_FALSE;
+                }
+                if (!cps_api_key_from_string(cps_api_object_key(o),PyString_AsString(strObj))) {
+                    Py_RETURN_FALSE;
+                }
+            }
+            if (PyDict_Check(strObj)) {
+                cps_api_object_t o = dict_to_cps_obj(strObj);
+                if (o==NULL) {
+                    Py_RETURN_FALSE;
+                }
+                if (!cps_api_object_list_append(gr.filters,o)) {
+                    cps_api_object_delete(o);
+                    Py_RETURN_FALSE;
+                }
             }
         }
     }
-
-    gr.keys = &(keys[0]);
-    gr.key_count = str_keys;
+    gr.keys = NULL;
+    gr.key_count = 0;
     if (cps_api_get(&gr)!=cps_api_ret_code_OK) {
         Py_RETURN_FALSE;
     }
@@ -422,9 +535,15 @@ static PyObject * py_cps_get(PyObject *self, PyObject *args) {
     size_t mx = cps_api_object_list_size(gr.list);
     for ( ; ix < mx ; ++ix) {
         cps_api_object_t obj = cps_api_object_list_get(gr.list,ix);
-        cps_api_key_t *key = cps_api_object_key(obj);
-
-        PyDict_SetItemString(dict_obj,cps_key_to_string(key).c_str(),cps_obj_to_dict(obj));
+        PyObject *d = cps_obj_to_dict(obj);
+        PyRef r(d);
+        if (d==NULL) {
+            Py_RETURN_FALSE;
+        }
+        if (PyList_Append(lst,d)) {
+            Py_RETURN_FALSE;
+        }
+        r.release();
     }
 
     Py_RETURN_TRUE;
@@ -452,14 +571,9 @@ static bool py_add_object_to_trans( cps_api_transaction_params_t *tr, PyObject *
 
     cps_oper oper = trans[PyString_AsString(_op)];
 
-    PyObject *key = PyDict_GetItemString(_req,"key");
-    PyObject *d = PyDict_GetItemString(_req,"data");
-    if (!PyString_Check(key) || !PyDict_Check(d)) {
-        return false;
-    }
-
-    cps_api_object_t obj = dict_to_cps_obj(PyString_AsString(key),d);
+    cps_api_object_t obj = dict_to_cps_obj(_req);
     cps_api_object_guard og(obj);
+    if (!og.valid()) return false;
 
     if (oper(tr,obj)!=cps_api_ret_code_OK) {
         return false;
@@ -510,7 +624,10 @@ static PyObject * py_cps_trans(PyObject *self, PyObject *args) {
         PyDict_SetItemString(_req,"key",
                 PyString_FromString(cps_key_to_string(cps_api_object_key(obj)).c_str()));
 
-        PyDict_SetItemString(_req,"data",cps_obj_to_dict(obj));
+        if (PyDict_GetItemString(dict,"change")!=NULL)
+            PyDict_DelItemString(dict,"change");
+
+        SetItemToDict(dict,"change",cps_obj_to_dict(obj));
     }
 
     cps_api_transaction_close(&tr);
@@ -534,36 +651,31 @@ static cps_api_return_code_t _read_function (void * context, cps_api_get_params_
 
     PyObject *p = PyDict_New();
     PyRef dict(p);
-    PyObject *lst = PyList_New(1);  //create with one element
 
-    PyDict_SetItemString(p,"keys",lst);
-    PyDict_SetItemString(p,"result",PyDict_New());
-
-    //set the only element to the correct key
-    PyList_SetItem(lst,0,PyString_FromString(cps_key_to_string(&param->keys[key_ix]).c_str()));
+    SetItemToDict(p,"filter",cps_obj_to_dict(cps_api_object_list_get(
+            param->filters,key_ix)));
+    SetItemToDict(p,"list",PyList_New(0));
 
     PyObject * res = cb->execute("get",p);
-    if (!PyBool_Check(res) || (Py_False == (res))) {
-        return cps_api_ret_code_ERR;
-    }
     PyRef ret(res);
-
-    PyObject *d = PyDict_GetItemString(p,"result");
-    if (d==NULL) {
+    if (res==NULL || !PyBool_Check(res) || (Py_False == (res))) {
         return cps_api_ret_code_ERR;
     }
-    PyObject *key, *value;
-    Py_ssize_t pos = 0;
 
-    while (PyDict_Next(d, &pos, &key, &value)) {
-        const char * k = PyString_AsString(key);
-        if (!PyDict_Check(value)) return cps_api_ret_code_ERR;
-        cps_api_object_guard og(dict_to_cps_obj(k,value));
-        if (!og.valid()) return cps_api_ret_code_ERR;
-        if (!cps_api_object_list_append(param->list,og.get())) {
+    PyObject *d = PyDict_GetItemString(p,"list");
+    if (d!=NULL && PyList_Check(d)) {
+        size_t ix = 0;
+        size_t mx = PyList_Size(d);
+        for ( ; ix < mx ; ++ix ) {
+            PyObject *o = PyList_GetItem(d,ix);
+            if (o==NULL || !PyDict_Check(o)) continue;
+            cps_api_object_guard og(dict_to_cps_obj(o));
+            if (og.valid() && cps_api_object_list_append(param->list,og.get())) {
+                og.release();
+                continue;
+            }
             return cps_api_ret_code_ERR;
         }
-        og.release();
     }
     return cps_api_ret_code_OK;
 }
@@ -575,54 +687,51 @@ static cps_api_return_code_t _write_function(void * context, cps_api_transaction
     cps_api_object_t obj = cps_api_object_list_get(param->change_list,ix);
     if (obj==NULL) return cps_api_ret_code_ERR;
 
-    cps_api_object_t prev = cps_api_object_create();
-    if (prev==NULL) return cps_api_ret_code_ERR;
-    if (!cps_api_object_list_append(param->prev,prev)) {
-        cps_api_object_delete(prev);
-        return cps_api_ret_code_ERR;
+    cps_api_object_t prev = cps_api_object_list_get(param->prev,ix);
+    if(prev==NULL) {
+        prev = cps_api_object_list_create_obj_and_append(param->prev);
     }
+    if (prev==NULL) return cps_api_ret_code_ERR;
 
     cps_api_operation_types_t op = cps_api_object_type_operation(cps_api_object_key(obj));
 
     PyObject *p = PyDict_New();
     PyRef dict(p);
 
-    PyObject *req = PyDict_New();
-    PyObject * o = cps_obj_to_dict(obj);
-    PyDict_SetItemString(req,cps_key_to_string(cps_api_object_key(obj)).c_str(),o);
+    SetItemToDict(p,"change",cps_obj_to_dict(obj));
+    SetItemToDict(p,"previous",cps_obj_to_dict(prev));
 
-    PyDict_SetItemString(p,"change",req);
-    PyDict_SetItemString(p,"previous",PyDict_New());
-
-    static std::map<int,std::string> trans = {
+    static const std::map<int,std::string> trans = {
             {cps_api_oper_DELETE,"delete" },
             {cps_api_oper_CREATE,"create"},
-            { cps_api_oper_SET, "set"},
+            {cps_api_oper_SET, "set"},
             {cps_api_oper_ACTION,"rpc"}
     };
 
-    PyDict_SetItemString(p,"operation",PyString_FromString(trans[op].c_str()));
+    SetItemToDict(p,"operation",PyString_FromString(trans.at(op).c_str()));
 
     py_callbacks_t *cb = (py_callbacks_t*)context;
     PyObject *res = cb->execute("transaction",p);
 
-    if (!PyBool_Check(res) || (Py_False==(res))) {
+    if (res==NULL || !PyBool_Check(res) || (Py_False==(res))) {
         return cps_api_ret_code_ERR;
     }
     PyRef ret(res);
 
-    PyObject *key, *value;
-    Py_ssize_t pos = 0;
+    PyObject *ch = PyDict_GetItemString(p,"change");
+    if (ch==NULL) return cps_api_ret_code_ERR;
 
-    while (PyDict_Next(req, &pos, &key, &value)) {
-        const char * k = PyString_AsString(key);
-
-        if (!PyDict_Check(value)) return cps_api_ret_code_ERR;
-
-        cps_api_object_guard og(dict_to_cps_obj(k,value));
-        if (!og.valid()) return cps_api_ret_code_ERR;
+    cps_api_object_t o = dict_to_cps_obj(ch);
+    cps_api_object_guard og(o);
+    if(og.valid()) {
         cps_api_object_clone(obj,og.get());
-        break;
+    }
+
+    PyObject *pr = PyDict_GetItemString(p,"previous");
+    if (pr==NULL) return cps_api_ret_code_ERR;
+    og.set(dict_to_cps_obj(pr));
+    if (og.valid()) {
+        cps_api_object_clone(prev,og.get());
     }
     return cps_api_ret_code_OK;
 }
@@ -705,6 +814,7 @@ static PyMethodDef cps_methods[] = {
     {"convdict",  py_cps_obj_to_array, METH_VARARGS, cps_cps_generic_doc__},
     {"info",  py_cps_info, METH_VARARGS, cps_cps_generic_doc__},
     {"config",py_cps_config, METH_VARARGS, cps_cps_generic_doc__ },
+    {"key_from_name",py_cps_key_from_name, METH_VARARGS, cps_cps_generic_doc__ },
 
     //Event processing
     {"event_register",  py_cps_event_reg, METH_VARARGS, cps_cps_generic_doc__},

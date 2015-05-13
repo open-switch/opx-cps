@@ -38,7 +38,7 @@ bool cps_class_map_query(const cps_api_attr_id_t *ids, size_t max_ids, const cha
 void cps_class_ids_from_string(std::vector<cps_api_attr_id_t> &v, const char * str);
 std::string cps_class_ids_to_string(const std::vector<cps_api_attr_id_t> &v);
 
-void cps_class_ids_from_key(std::vector<cps_api_attr_id_t> &v, cps_api_key_t *key, size_t start, size_t end);
+void cps_class_ids_from_key(std::vector<cps_api_attr_id_t> &v, cps_api_key_t *key);
 std::string cps_key_to_string(const cps_api_key_t * key);
 
 #endif /* CPS_API_INC_PRIVATE_CPS_CLASS_MAP_QUERY_H_ */

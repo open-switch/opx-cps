@@ -14,12 +14,12 @@ data_store = dict()
 def get_cb(methods, params):
     retval = False
     # print "Get...", params
-    for key in params['keys']:
-        # For all keys that match the prefix
-        for ds_key in data_store.keys():
-            if ds_key.startswith(key):
-                params['result'][ds_key] = data_store[ds_key]
-                retval = True
+    key = params['filter']['key']
+    # For all keys that match the prefix
+    for ds_key in data_store.keys():
+        if ds_key.startswith(key):
+            params['list'].append(data_store[ds_key])
+            retval = True
 
     return retval
 
@@ -29,14 +29,13 @@ def transaction_cb(methods, params):
     op = params['operation']
     if (op == 'set') or (op == 'create'):
         # Create a new entry in our data store
-        for key in params['change'].keys():
-            data_store[key] = params['change'][key]
+        data_store[params['change']['key']] = params['change']
     elif (op == 'delete'):
         # Delete an entry from the data store
-        for key in params['change'].keys():
-            if not key in data_store:
-                return False
-            del data_store[key]
+        key = params['change']['key']
+        if not key in data_store:
+            return False
+        del data_store[key]
     else:
         # Unknown operation
         return False

@@ -207,6 +207,5 @@ class COutputFormat:
         self.print_enums(model)
         self.print_container(model)
 
-        self.dump_keys(model)
         self.header_file_close(sys.stdout)
 

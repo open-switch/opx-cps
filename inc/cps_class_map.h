@@ -10,11 +10,11 @@
 
 #include "std_error_codes.h"
 #include "cps_api_object_category.h"
-#include "cps_api_operation.h"
 #include "cps_api_key.h"
 #include "cps_api_object_attr.h"
 #include "cps_api_object.h"
 #include "cps_api_errors.h"
+#include "cps_api_operation.h"
 
 #include <stdbool.h>
 

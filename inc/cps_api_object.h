@@ -479,7 +479,7 @@ public:
      * @param o
      */
     void set(cps_api_object_t o) {
-        if (obj!=NULL) free();
+        free();
         obj = o;
     }
 };
