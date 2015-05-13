@@ -119,6 +119,7 @@ void cps_class_ids_from_key(std::vector<cps_api_attr_id_t> &v,
         if (it==_cmt.end()) continue;
         if (it->second.embedded) {
             v = it->second.ids;
+            break;
         }
     }
 }
