@@ -47,7 +47,7 @@ TEST(cps_class_map,load) {
 TEST(cps_class_map,keys) {
    size_t ix = 0;
     for ( ; ix < lst_len ; ++ix ) {
-        cps_class_map_init(&(lst[ix]._ids[0]),lst[ix]._ids.size(),&lst[ix].details);
+        cps_class_map_init(ix,&(lst[ix]._ids[0]),lst[ix]._ids.size(),&lst[ix].details);
     }
 
     cps_api_attr_id_t ids[]= {1,19,1};

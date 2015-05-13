@@ -6,7 +6,7 @@
  */
 
 #include "cps_api_key.h"
-
+#include "cps_api_object_key.h"
 #include "std_utils.h"
 
 #include <limits.h>
@@ -81,3 +81,16 @@ bool cps_api_key_from_string(cps_api_key_t *key,const char *buff) {
     return rc;
 
 }
+
+cps_api_object_attr_t cps_api_get_key_data(cps_api_object_t obj,cps_api_attr_id_t id) {
+    cps_api_attr_id_t ids[] = {CPS_API_ATTR_KEY_ID,id};
+    return cps_api_object_e_get(obj,ids,sizeof(ids)/sizeof(*ids));
+}
+
+
+bool cps_api_set_key_data(cps_api_object_t obj,cps_api_attr_id_t id,
+        cps_api_object_ATTR_TYPE_t type, const void *data, size_t len) {
+    cps_api_attr_id_t ids[] = {CPS_API_ATTR_KEY_ID,id};
+    return cps_api_object_e_add(obj,ids,sizeof(ids)/sizeof(*ids),type,data,len);
+}
+

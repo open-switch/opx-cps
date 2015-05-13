@@ -124,10 +124,11 @@ class history:
                     if filename.find('.yhist')==-1: continue
 
                     if filename in found_names:
-                        print("Error.. found two instances of " + filename + " at "+dirpath)
-                        print("other files found are:")
-                        print f
-                        sys.exit(1)
+                        continue
+                        #print("Error.. found two instances of " + filename + " at "+dirpath)
+                        #print("other files found are:")
+                        #print f
+                        #sys.exit(1)
 
                     f.append(os.path.join(dirpath,filename))
                     found_names.append(filename)

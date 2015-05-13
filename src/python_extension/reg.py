@@ -29,9 +29,9 @@ if __name__=='__main__':
     d['transaction'] = trans_cb
 
     cps.obj_register(handle,'1.2.3.4',d)
-    cps.config('2.3','pyobj','',True,"node")
-    cps.config('2.3.1','pyobj/node','',False,"node")
-    cps.config('2.3.2','pyobj/time','',False,"node")
+    cps.config('10','2.3','pyobj','',True,"node")
+    cps.config('11','2.3.1','pyobj/node','',False,"node")
+    cps.config('12','2.3.2','pyobj/time','',False,"node")
     while True:
         time.sleep(1)
 

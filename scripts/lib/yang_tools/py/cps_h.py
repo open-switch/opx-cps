@@ -95,11 +95,12 @@ class COutputFormat:
         subcat_name = model.module.name()+"_objects"
         print "typedef enum{"
         for c in model.container_map[model.module.name()]:
-            name = c.name
-            node = model.container_map[name]
-            en_name = self.lang.to_string(name+"_obj")
+            comment = ""
+            en_name = self.lang.names[c.name]
             value = str(history.get_enum(en_name,None))
-            comment = self.get_comment(model,c.node)
+            if c.name in model.container_map:
+                node = model.container_map[c.name]
+                comment = self.get_comment(model,c.node)
             if len(comment)>0: print comment
             print "  "+en_name+" = "+value+","
             print ""

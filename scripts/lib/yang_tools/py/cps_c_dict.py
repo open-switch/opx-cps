@@ -22,11 +22,22 @@ class COutputFormat:
         print ""
         print "static struct {"
         print "  std::vector<cps_api_attr_id_t> _ids;"
+        print "  cps_api_attr_id_t id;"
         print "  cps_class_map_node_details details;"
         print "} lst[] = {"
-        for i in self.model.name_to_id.keys():
-            line = "{"
-            line += self.lang.path_to_ids(self.model,i)+", { \""
+        for i in self.model.keys:
+
+            if i == self.lang.category: continue
+            line = "{ {"
+            key_str = ""
+            for key in self.model.keys[i].split():
+                key_str+= self.lang.names[key]+","
+
+            if len(key_str)==0: key_str = self.lang.names[i]+","
+            key_str = key_str [:-1]
+            line +=key_str+"},"
+            line += self.lang.names[i]+","
+            line += " { \""
             line += i+"\",\"\","
 
             if not i in self.model.container_map:
@@ -47,7 +58,7 @@ class COutputFormat:
         print "  t_std_error module_init(void) {"
         print "    size_t ix = 0;"
         print "    for ( ; ix < lst_len ; ++ix ) { "
-        print "        cps_class_map_init(&(lst[ix]._ids[0]),lst[ix]._ids.size(),&lst[ix].details); "
+        print "        cps_class_map_init(lst[ix].id,&(lst[ix]._ids[0]),lst[ix]._ids.size(),&lst[ix].details); "
         print "    }"
         print "    return STD_ERR_OK;"
         print "  }"

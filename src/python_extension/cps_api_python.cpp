@@ -7,7 +7,7 @@
 #include "cps_api_events.h"
 
 
-
+#include <stdlib.h>
 #include "python2.7/Python.h"
 #include <stdio.h>
 #include <vector>
@@ -234,9 +234,11 @@ static PyObject * py_cps_obj_to_array(PyObject *self, PyObject *args) {
 }
 
 static PyObject * py_cps_config(PyObject *self, PyObject *args) {
-    const char * path=NULL, *name, *desc,*type;
+    const char * path=NULL, *name, *desc,*type,*_id;
     PyObject *has_emb;
-    if (! PyArg_ParseTuple( args, "sssO!s", &path,&name,&desc,&PyBool_Type,&has_emb, &type )) return NULL;
+    if (! PyArg_ParseTuple( args, "ssssO!s", &_id,&path,&name,&desc,&PyBool_Type,&has_emb, &type )) return NULL;
+
+    long long id = strtoll(_id,NULL,0);
 
     std::vector<cps_api_attr_id_t> ids;
     cps_class_ids_from_string(ids,path);
@@ -246,7 +248,7 @@ static PyObject * py_cps_config(PyObject *self, PyObject *args) {
     details.name = name;
     details.embedded = has_emb != Py_False;
     details.type = cps_api_object_ATTR_T_BIN;
-    if (cps_class_map_init(&ids[0],ids.size(),&details)!=cps_api_ret_code_OK) {
+    if (cps_class_map_init((cps_api_attr_id_t)id,&ids[0],ids.size(),&details)!=cps_api_ret_code_OK) {
         Py_RETURN_FALSE;
     }
     Py_RETURN_TRUE;

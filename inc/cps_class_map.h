@@ -10,6 +10,7 @@
 
 #include "std_error_codes.h"
 #include "cps_api_object_category.h"
+#include "cps_api_operation.h"
 #include "cps_api_key.h"
 #include "cps_api_object_attr.h"
 #include "cps_api_object.h"
@@ -46,7 +47,7 @@ typedef struct {
  * @param details the details
  * @return STD_ERR_OK if successful otherwise a return code indicating the error type
  */
-cps_api_return_code_t cps_class_map_init(const cps_api_attr_id_t *ids, size_t ids_len, cps_class_map_node_details *details);
+cps_api_return_code_t cps_class_map_init(cps_api_attr_id_t id, const cps_api_attr_id_t *ids, size_t ids_len, cps_class_map_node_details *details);
 
 
 /**
@@ -126,6 +127,17 @@ cps_api_attr_id_t cps_name_to_attr(const char *name);
  */
 bool cps_api_key_from_attr(cps_api_key_t *key,cps_api_attr_id_t id,size_t key_start_pos);
 
+
+/**
+ * Create a key from an attribute ID with a qualifier as the first position.
+ *
+ * @param key the CPS key that will hold the finished key
+ * @param id the attribute ID to find the key path for
+ * @param cat the category (target, obsered, etc..)
+ * @return true if the key can be generated
+ */
+bool cps_api_key_from_attr_with_qual(cps_api_key_t *key,cps_api_attr_id_t id,
+        cps_api_qualifier_t cat);
 
 /**
 @}

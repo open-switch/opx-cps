@@ -16,7 +16,7 @@ supported_list_containing_children = [
     "container","grouping","choice", "list", "rpc" , "case", "module","type","typedef"]
 
 supported_list_of_leaves_have_attr_ids = [
-    "container","grouping","case", "list", "leaf","leaf-list", "rpc", "uses" ]
+    "container","case", "list", "leaf","leaf-list", "rpc", "choice" ]
 
 class CPSContainerElement:
     name = None
@@ -47,21 +47,26 @@ class CPSParser:
     def load_module(self,filename):
         f = search_path_for_file(filename)
 
-    def load(self):
+    def load(self,prefix=None):
 
         et = ET.parse(self.filename)
         self.root_node = et.getroot()
         self.module = yin_ns.Module(self.filename,self.root_node)
+        if prefix!=None:
+                self.module.module_name = prefix
+
         self.imports = {}
         self.imports['module'] = list()
         self.imports['prefix'] = list()
 
         for i in self.root_node.findall(self.module.ns()+"import"):
-            self.context['loader'].load(i.get('module')+".yang")
-            self.imports['module'].append(i.get('module'))
             prefix = i.find(self.module.ns()+'prefix')
             if prefix!=None:
-                self.imports['prefix'].append(prefix.get('value'))
+                prefix = prefix.get('value')
+            if prefix!=None:
+                self.imports['prefix'].append(prefix)
+            self.context['loader'].load(i.get('module')+".yang",prefix=prefix)
+            self.imports['module'].append(i.get('module'))
 
         self.has_children_nodes = self.module.prepend_ns_to_list(supported_list_containing_children)
         self.has_attr_ids = self.module.prepend_ns_to_list(supported_list_of_leaves_have_attr_ids)
@@ -146,7 +151,6 @@ class CPSParser:
 
             self.parent[n_path]=path
 
-
             if tag == 'grouping':
                 tag = 'typedef'
 
@@ -200,8 +204,6 @@ class CPSParser:
                 if type_name.find(':')==-1:
                     raise Exception("Missing type name... should already be specified")
 
-                #type_name = type_name.replace(':','_')
-
                 if not type_name in self.context['types']:
                     print self.context['types'].keys()
                     print type_name
@@ -224,4 +226,26 @@ class CPSParser:
                 continue
             self.elem_with_keys[i] = self.container_keys[i]
 
+        self.keys = {}
+        for k in self.all_node_map:
+            if not self.is_id_element(self.all_node_map[k]) : continue
+            self.fill_element_key(k)
+
+    def fill_element_key(self,key):
+        key_base = ""
+
+        if key.find('/')!=-1:
+            if key in self.container_keys:
+                key_base = self.container_keys[key]
+            else:
+                parent = self.parent[key]
+                if not parent in self.keys:
+                    self.fill_element_key(parent)
+                key_base += self.keys[parent]
+                key_base += " "
+                key_base += key
+        else:
+            keys_base = self.container_keys[key]
+
+        self.keys[key] = key_base
 

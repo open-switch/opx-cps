@@ -21,13 +21,13 @@ class CPSYinFiles:
             yin_utils.create_yin_file(filename,yin_file)
         return yin_file
 
-    def get_parsed_yin(self,filename):
+    def get_parsed_yin(self,filename,prefix):
         key_name = os.path.splitext(filename)[0]
         key_name = os.path.split(key_name)[1]
         if key_name not in self.yin_map:
             f = self.get_yin_file(filename)
             self.yin_map[key_name] = yin_cps.CPSParser(self.context,f)
-            self.yin_map[key_name].load()
+            self.yin_map[key_name].load(prefix=prefix)
             self.yin_map[key_name].walk()
 
             self.context['model-names'][self.yin_map[key_name].module.name()] = key_name
@@ -56,8 +56,8 @@ class CPSYinFiles:
 
         context['current_depends'].append(module)
 
-    def load(self,yang_file):
-        return self.get_parsed_yin(yang_file)
+    def load(self,yang_file,prefix=None):
+        return self.get_parsed_yin(yang_file,prefix)
 
     def seed(self,filename):
         s = set()
@@ -113,11 +113,6 @@ class CPSYangModel:
 
         for i in self.context['args']['output'].split(','):
             self.context['output']['language'][i].write()
-
-        #self.context['output']['language'].setup(self.model)
-
-        #self.write_details('header')
-        #self.write_details('src')
 
 
     def write_details(self,key):

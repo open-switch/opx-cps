@@ -9,6 +9,8 @@ def to_string(s):
     s = s.replace('-','_')
     s = s.replace(':','_')
     s = s.replace('/','_')
+    s = s.replace('+','_plus')
+    s = s.replace('.','_dot')
     return s.upper();
 
 valid_types = {
@@ -52,65 +54,6 @@ class Language:
         return type.get('name')
 
 
-    def show_enum(self,name):
-        node = self.model.context['enum'][name]
-        enum = node.find('enumeration')
-
-        for i in node.iter():
-            if self.model.module.filter_ns(i.tag) == 'enum':
-                self.names[name+"/"+i.get('name')]= to_string(name+"_"+i.get('name'))
-
-        if not name in self.names:
-            self.names[name] = to_string(name)+"_t";
-
-    def handle_enums(self):
-        name = self.model.module.name()
-        for i in self.model.context['enum'].keys():
-            if i.find(name)==-1: continue
-            self.show_enum(i)
-
-    def handle_container(self):
-        for name in self.model.container_map.keys():
-            if name == self.model.module.name(): continue
-
-            node = self.model.container_map[name]
-            if len(node)==0: continue
-
-            for c in node:
-                if c.name == self.model.module.name(): continue
-                self.names[c.name] = to_string(c.name)
-
-            if not name in self.names:
-                self.names[name] = to_string(name)+"_t"
-
-        if len(self.model.container_map[self.model.module.name()])==0:
-            return
-
-        subcat_name = self.model.module.name()+"_objects"
-
-        for c in self.model.container_map[self.model.module.name()]:
-            name = c.name
-            node = self.model.container_map[name]
-            self.names[name] = to_string(name+"_obj")
-
-        if not subcat_name in self.names:
-            self.names[subcat_name] = to_string(subcat_name)+"_t"
-
-    def handle_types(self):
-        for i in self.model.context['types'].keys():
-            name = self.model.module.name()
-            if i.find(name)==-1: continue
-
-            if i in self.model.context['enum']: continue #already printed
-
-            i = self.model.context['types'][i]
-            if i.tag == self.model.module.ns()+'grouping': continue #not printable
-
-            name = i.get('name');
-
-            if not name in self.names:
-                self.names[name] = to_string(name)+"_t"
-
     def determine_key_types(self):
         for cont_key in self.model.elem_with_keys.keys():
             for i in self.model.elem_with_keys[cont_key].split():
@@ -127,38 +70,31 @@ class Language:
                     self.types[cname] = self.get_type(node)
                 self.types[cname] = type_to_lang_type(self.types[cname])
 
-    def handle_keys(self):
-        for i in self.model.elem_with_keys.keys():
-            new_key=""
-            key_str = self.model.elem_with_keys[i]
-            for elem in key_str.split():
-                new_key+=self.names[elem]+","
-
-            new_key = new_key[:-1]
-            self.keys[self.names[i]] = new_key
-        self.determine_key_types()
 
     def get_category(self):
         return self.category
+
+    def init_names(self):
+        for i in self.model.all_node_map:
+            self.names[i] = self.to_string(i)
+            self.names[self.names[i]] = i
+        self.names[self.model.module.name()] = self.category
+
+        for c in self.model.container_map[self.model.module.name()]:
+            if c.name == self.model.module.name(): continue
+            en_name = self.to_string(c.name+"_obj")
+            self.names[c.name] = en_name
 
     def setup(self,model):
         self.model = model
 
         self.category = "cps_api_obj_CAT_"+to_string(model.module.name())
 
-        self.names[model.module.name()] = self.category
+        self.init_names()
 
         hist_file_name = yin_utils.get_yang_history_file_name(model.filename)
 
         self.history = object_history.init(hist_file_name,self.category);
-
-        self.handle_types()
-        self.handle_enums()
-        self.handle_container()
-        self.handle_keys()
-
-        self.setup_enums(model)
-
 
     def __init__(self,context):
         self.context = context
@@ -167,38 +103,6 @@ class Language:
         self.types = {}
         self.context['output']['header']['cps']=cps_h
         self.context['output']['src']['cps']=cps_c_dict
-
-    def setup_enums(self,module):
-        #alias
-        history = self.history
-        category = self.category
-
-        for name in module.container_map.keys():
-            if name == module.module.name(): continue
-            node = module.container_map[name]
-            if len(node)==0: continue
-
-            for c in node:
-                if c.name == module.module.name(): continue
-                en_name = self.to_string(c.name)
-                value = str(history.get_enum(en_name,None))
-                module.name_to_id[c.name]= value
-
-        if len(module.container_map[module.module.name()])==0:
-            return
-
-        subcat_name = module.module.name()+"_objects"
-        for c in module.container_map[module.module.name()]:
-            name = c.name
-            node = module.container_map[name]
-            en_name = self.to_string(name+"_obj")
-            value = str(history.get_enum(en_name,None))
-            module.name_to_id[c.name]= value
-
-        id = history.get_global(category)
-        module.name_to_id[category] = id
-        #alias to module name too
-        module.name_to_id[module.module.name()] = id
 
     def path_to_ids(self,module,path):
         array="}"
