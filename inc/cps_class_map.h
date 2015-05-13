@@ -42,6 +42,7 @@ typedef struct {
  * path from the root of the yang (and therefore CPS) tree.
  * eg.. category, subcat, ....
  *
+ * @param id the actual attribute ID of this current string (must be unique)
  * @param ids the array of the ids including the category, subcategory, etc..
  * @param ids_len the length of the array
  * @param details the details
