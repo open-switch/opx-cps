@@ -270,8 +270,10 @@ static PyObject * py_cps_info(PyObject *self, PyObject *args) {
     size_t ix = 0;
     size_t mx = lst.size();
     for ( ; ix < mx ; ++ix ) {
+        char buff[40]; //just enough for the attribute id
+        snprintf(buff,sizeof(buff),"%d",lst[ix].id);
         PyDict_SetItem(d,
-                PyString_FromString(cps_class_ids_to_string(lst[ix].ids).c_str()),
+                PyString_FromString(buff),
                 PyString_FromString(lst[ix].full_path.c_str()));
     }
     return d;

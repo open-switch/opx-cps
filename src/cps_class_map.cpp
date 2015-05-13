@@ -156,9 +156,9 @@ bool cps_api_key_from_attr(cps_api_key_t *key,cps_api_attr_id_t id, size_t key_s
 
 bool cps_api_key_from_attr_with_qual(cps_api_key_t *key,cps_api_attr_id_t id,
         cps_api_qualifier_t cat) {
-    bool rc = cps_api_key_from_attr(key,id,1); // first pos is cat
+    bool rc = cps_api_key_from_attr(key,id,CPS_OBJ_KEY_INST_POS+1);
     if (!rc) return false;
-    cps_api_key_set(key,0,cat);
+    cps_api_key_set(key,CPS_OBJ_KEY_INST_POS,cat);
     return true;
 }
 
