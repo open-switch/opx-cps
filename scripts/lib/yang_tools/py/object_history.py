@@ -170,7 +170,6 @@ class history:
         return self.the_dict[self.GLOBAL_SECTION].get_value(name, None)
 
     def get_enum(self,name, requested,parent=None):
-
         if parent==None:
             parent = self.MODULE_SECTION
         else:
@@ -178,7 +177,7 @@ class history:
                 self.the_dict[parent] = enum_tracker_int(IndexTracker(None),parent)
 
         res = self.the_dict[parent].get_value(name,requested)
-        if name == self.MODULE_SECTION:
+        if parent == self.MODULE_SECTION:
             res += (self.get_global(self.category) << 16)
 
         return res
