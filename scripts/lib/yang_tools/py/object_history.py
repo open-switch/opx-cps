@@ -80,8 +80,8 @@ class IndexFile:
 class IndexTracker :
     def __init__(self,start):
         self.last_index = 1
-        if self!=None:
-                self.last_index = start
+        if start!=None:
+            self.last_index = start
 
     def get_free_enum(self):
         return self.last_index
@@ -154,7 +154,9 @@ class history:
             while True:
                 d = ix_reader.get()
                 if not 'name' in d : break
-                if not d['name'] in self.the_dict: continue
+                if not d['name'] in self.the_dict:
+                    self.the_dict[d['name']] = enum_tracker_int(IndexTracker(None),d['name'])
+
                 self.the_dict[d['name']].setup(d['list'])
 
             the_file.close()
@@ -167,9 +169,19 @@ class history:
     def get_global(self,name):
         return self.the_dict[self.GLOBAL_SECTION].get_value(name, None)
 
-    def get_enum(self,name, requested):
-        return (self.the_dict[self.MODULE_SECTION].get_value(name,requested) +
-            (self.get_global(self.category) << 16))
+    def get_enum(self,name, requested,parent=None):
+
+        if parent==None:
+            parent = self.MODULE_SECTION
+        else:
+            if parent not in self.the_dict:
+                self.the_dict[parent] = enum_tracker_int(IndexTracker(None),parent)
+
+        res = self.the_dict[parent].get_value(name,requested)
+        if name == self.MODULE_SECTION:
+            res += (self.get_global(self.category) << 16)
+
+        return res
 
     def write(self):
         print "Writing history to "+self.the_name

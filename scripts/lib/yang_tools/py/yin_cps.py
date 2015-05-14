@@ -13,10 +13,10 @@ supported_ids_at_root = [
     "list","container","rpc" ]
 
 supported_list_containing_children = [
-    "container","grouping","choice", "list", "rpc" , "case", "module","type","typedef"]
+    "container","grouping","choice", "list", "rpc" , "case", "module","type","typedef","input","output"]
 
 supported_list_of_leaves_have_attr_ids = [
-    "container","case", "list", "leaf","leaf-list", "rpc", "choice" ]
+    "container","case", "list", "leaf","leaf-list", "rpc", "choice","input","output" ]
 
 class CPSContainerElement:
     name = None
@@ -166,7 +166,7 @@ class CPSParser:
                 self.walk_nodes(i,path)
                 continue
 
-            if tag == 'choice':
+            if tag == 'choice' or tag == 'input' or tag=='output' or tag=='rpc':
                 tag = 'container'
 
             if tag == 'case':

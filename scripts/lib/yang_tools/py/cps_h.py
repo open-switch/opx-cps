@@ -50,7 +50,7 @@ class COutputFormat:
             if model.module.filter_ns(i.tag) == 'enum':
                 en_name = self.lang.to_string(name+"_"+i.get('name'))
                 value = self.get_value(model,i)
-                value = str(history.get_enum(en_name,value))
+                value = str(history.get_enum(en_name,value,parent=name))
                 comment = self.get_comment(model,i)
                 print "  "+en_name+" = "+value+", "+comment
 
