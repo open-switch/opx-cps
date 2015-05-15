@@ -171,7 +171,7 @@ class history:
 
     def get_enum(self,name, requested,parent=None):
         if parent==None:
-            parent = category
+            parent = self.category
         else:
             if parent not in self.the_dict:
                 self.the_dict[parent] = enum_tracker_int(IndexTracker(None),parent)
