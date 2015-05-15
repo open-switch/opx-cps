@@ -13,9 +13,6 @@ od_src=$3
 #the yang file to parse
 yf=$1
 
-
-of=$od/$(basename $1 .yang).h
-
 if [ ! -f $TOOL_ROOT/yin_parser.py ] ; then
     echo "Please set TOOL_ROOT to be the directory containing the yin parser"
     exit 1
@@ -33,7 +30,7 @@ if [ -z $YANG_PATH ] ; then
     exit 1
 fi
 export YANG_MODPATH=$YANG_PATH
-python $TOOL_ROOT/yin_parser.py file=$yf cmsheader=$of cmssrc=$od_src output=cms
+python $TOOL_ROOT/yin_parser.py file=$yf cmsheader=$od cmssrc=$od_src output=cms
 if [ ! $? = 0 ] ; then
     rm $of
     exit 1

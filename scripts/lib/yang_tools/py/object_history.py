@@ -145,7 +145,7 @@ class history:
 
         self.load_all_globals()
         self.category = category
-        self.the_dict[self.MODULE_SECTION] = enum_tracker_int(self.module,category)
+        self.the_dict[category] = enum_tracker_int(self.module,category)
         self.the_dict[self.GLOBAL_SECTION] = enum_tracker_int(self.GLOBAL_enums.indexer,self.GLOBAL_SECTION)
 
         try:
@@ -171,7 +171,7 @@ class history:
 
     def get_enum(self,name, requested,parent=None):
         if parent==None:
-            parent = self.MODULE_SECTION
+            parent = category
         else:
             if parent not in self.the_dict:
                 self.the_dict[parent] = enum_tracker_int(IndexTracker(None),parent)
