@@ -41,6 +41,12 @@ extern "C" {
 @{
 */
 
+/**
+ * These are internally reserved attribute IDs for internal CPS usage.
+ */
+#define CPS_API_ATTR_RESERVE_RANGE_END ((cps_api_attr_id_t)-1)
+#define CPS_API_ATTR_RESERVE_RANGE_START ((cps_api_attr_id_t)-10)
+
 typedef enum cps_api_object_ATTR_TYPE_t {
     cps_api_object_ATTR_T_U16,
     cps_api_object_ATTR_T_U32,

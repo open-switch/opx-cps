@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define CPS_API_ATTR_KEY_ID CPS_API_ATTR_RESERVE_RANGE_START
 
 int cps_api_key_matches( cps_api_key_t *  key, cps_api_key_t * comparison, bool exact) {
     int src_len = cps_api_key_get_len_in_bytes(key);
