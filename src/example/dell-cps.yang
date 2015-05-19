@@ -24,14 +24,14 @@ description
 * Example of an enumeration.  Comments in C style comment.
 */
 
-typedef enumeration-name-type { 
+typedef enumeration-name-type {
 
-        description "Description describes the enumeration and enumeration use" ; 
-        
+        description "Description describes the enumeration and enumeration use" ;
+
         type enumeration {
             enum ENUMERATION_ONE;
             enum ENUMERATION_TWO {
-               value 3; 
+               value 3;
                description "if you know the value you need for the enumeration specify it but must be done for all enums in the enumeration";
             }
         }
@@ -45,15 +45,15 @@ typedef some-special-id {
 
 
 list object-list-type {
-    key  "obj-list-ix obj-id" ; 
+    key  "obj-list-ix obj-id" ;
 	description "descripton of object and how to use";
-    
+
     leaf obj-list-ix {
         type uint32;
         description "some description - eg rolls at x";
     }
     leaf obj-id {
-        type uint32; 
+        type uint32;
         description "part of the object's key";
     }
 
@@ -71,6 +71,18 @@ list object-list-type {
  	  config false;
       type uint32;
 	  description "this attribute is available for get - there is no configuration that can be done on it";
+	}
+	rpc do-it {
+		input {
+			leaf state {
+				type string;
+			}			
+		}
+		output {
+			leaf output {
+				type string;
+			}
+		}
 	}
 }
 
