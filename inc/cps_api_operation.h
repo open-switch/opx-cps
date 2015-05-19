@@ -123,14 +123,17 @@ static inline uint32_t cps_api_key_get_subcat(cps_api_key_t *key) {
 /*
  * The structure for a get request.  Each get request can have one or more keys
  * and will receive a list of objects in response.
- @
- * Each object will contain its own key.
+ *
+ * A request will be made for each object listed in filters followed by a query for each key
+ * in the keys list.
+ *
+ * In the response "list", each object will contain its own key.
  */
 typedef struct {
-    cps_api_key_t   *keys;
+    cps_api_key_t   *keys;                //!< A list of keys to be queried
     size_t           key_count;
     cps_api_object_list_t list;
-    cps_api_object_list_t filters;
+    cps_api_object_list_t filters;        //!< a list of objects to be queried.
 }cps_api_get_params_t;
 
 
