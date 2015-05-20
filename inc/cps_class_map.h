@@ -26,6 +26,9 @@ extern "C" {
 @{
 */
 
+#define CPS_DEF_SEARCH_PATH "/opt/ngos/lib"        //the location of the generated class
+#define CPS_DEF_CLASS_FILE_NAME "cpsclass"      //must match with the generated lib name
+
 /**
  * Structure representing a node in the CPS yang map.  This map can be used to get extended inforamtion
  * about a CPS object.
@@ -139,6 +142,14 @@ bool cps_api_key_from_attr(cps_api_key_t *key,cps_api_attr_id_t id,size_t key_st
  */
 bool cps_api_key_from_attr_with_qual(cps_api_key_t *key,cps_api_attr_id_t id,
         cps_api_qualifier_t cat);
+
+
+/**
+ * Search through all of the available class maps on the system and load them.
+ * The class map will by default also search through all of the LD_LIBRARY_PATHS along with the
+ * /opt/ngos/lib folder if it exists
+ */
+void cps_api_class_map_init(void);
 
 /**
 @}
