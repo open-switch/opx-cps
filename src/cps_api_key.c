@@ -85,7 +85,9 @@ bool cps_api_key_from_string(cps_api_key_t *key,const char *buff) {
 
 cps_api_object_attr_t cps_api_get_key_data(cps_api_object_t obj,cps_api_attr_id_t id) {
     cps_api_attr_id_t ids[] = {CPS_API_ATTR_KEY_ID,id};
-    return cps_api_object_e_get(obj,ids,sizeof(ids)/sizeof(*ids));
+    cps_api_object_attr_t p = cps_api_object_e_get(obj,ids,sizeof(ids)/sizeof(*ids));
+    if (p==NULL) p = cps_api_object_e_get(obj,&id,1);
+    return p;
 }
 
 
