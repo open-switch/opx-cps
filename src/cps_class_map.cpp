@@ -293,10 +293,8 @@ void cps_api_class_map_init(void) {
 
         size_t ix = 0;
         size_t mx =  std_parse_string_num_tokens(handle);
-        printf("Found %d tokens to parse for lib init \n",(int)mx);
         for ( ; ix < mx ; ++ix ) {
             const char * p = std_parse_string_at(handle,ix);
-            printf("Loading class library %d %s\n",(int)ix,p );
             cps_class_objs_load(p,CPS_DEF_CLASS_FILE_NAME);
         }
     } while (0);
