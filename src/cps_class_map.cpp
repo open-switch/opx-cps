@@ -293,15 +293,12 @@ void cps_api_class_map_init(void) {
     if (!std_parse_string(&handle,path,":")) {
         return;
     }
-    do {
-
-        size_t ix = 0;
-        size_t mx =  std_parse_string_num_tokens(handle);
-        for ( ; ix < mx ; ++ix ) {
-            const char * p = std_parse_string_at(handle,ix);
-            cps_class_objs_load(p,CPS_DEF_CLASS_FILE_NAME);
-        }
-    } while (0);
+    size_t ix = 0;
+    size_t mx =  std_parse_string_num_tokens(handle);
+    for ( ; ix < mx ; ++ix ) {
+       const char * p = std_parse_string_at(handle,ix);
+       cps_class_objs_load(p,CPS_DEF_CLASS_FILE_NAME);
+    }
     std_parse_string_free(handle);
 }
 
