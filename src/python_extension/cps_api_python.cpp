@@ -143,11 +143,14 @@ static void py_obj_dump_level(PyObject * d, std::vector<cps_api_attr_id_t> &pare
 
             const char * name = cps_attr_id_to_name(cur[level]);
 
-            if (!cps_class_attr_is_valid(&cur[0],cur.size()) || name==NULL) {
+            if (!cps_class_attr_is_valid(&cur[0],cur.size())) {
                 PyObject *by  = PyByteArray_FromStringAndSize((const char *)cps_api_object_attr_data_bin(it->attr),
                         cps_api_object_attr_len(it->attr));
                 SetItemToDict(d,buff,by);
                 break;
+            }
+            if (name == NULL) {
+                name = buff;
             }
 
             bool emb = cps_class_attr_is_embedded(&cur[0],cur.size());

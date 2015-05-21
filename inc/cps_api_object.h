@@ -41,6 +41,12 @@ extern "C" {
 @{
 */
 
+/**
+ * These are internally reserved attribute IDs for internal CPS usage.
+ */
+#define CPS_API_ATTR_RESERVE_RANGE_END ((cps_api_attr_id_t)-1)
+#define CPS_API_ATTR_RESERVE_RANGE_START ((cps_api_attr_id_t)-10)
+
 typedef enum cps_api_object_ATTR_TYPE_t {
     cps_api_object_ATTR_T_U16,
     cps_api_object_ATTR_T_U32,
@@ -482,6 +488,48 @@ public:
         free();
         obj = o;
     }
+};
+
+/**
+ * Cleanup after a list automatically for a user.  This just simplifies cleanup and avoids memory issues
+ *
+ */
+class cps_api_object_list_guard {
+    cps_api_object_list_t lst;
+public:
+    /**
+     * Create the object guard passing in the object.
+     * @param l the list to manage
+     */
+    cps_api_object_list_guard(cps_api_object_list_t l) : lst(l){}
+    /**
+     * Release the contained list and don't clean it on destruction
+     */
+    void release() { lst=NULL;}
+    /**
+     * Free the contained object if there is any.
+     */
+    void free() {
+        if (lst!=NULL) cps_api_object_list_destroy(lst,true);
+        lst = NULL;
+    }
+    /**
+     * Set a new list into the object guard
+     * @param l the list to monitor
+     */
+    void set(cps_api_object_list_t l) { free(); lst = l; }
+    /**
+     * Get the currently managed list
+     * @return the guarded list
+     */
+    cps_api_object_list_t get() { return lst; }
+    /**
+     * Clean up when going out of scope
+     */
+    ~cps_api_object_list_guard() {
+        free();
+    }
+
 };
 
 #endif

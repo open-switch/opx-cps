@@ -13,6 +13,7 @@
 #include "event_log.h"
 #include "private/cps_class_map_query.h"
 #include "std_utils.h"
+#include "std_envvar.h"
 
 
 #include <errno.h>
@@ -101,7 +102,7 @@ using cps_class_map_type_t = std::map<cps_api_attr_id_t,cps_class_map_node_detai
 using cps_class_map_reverse_string_t = std::map<std::string,cps_api_attr_id_t>;
 
 
-static std_mutex_lock_create_static_init_fast(lock);
+static std_mutex_lock_create_static_init_rec(lock);
 static ids_to_string_map _id_to_string;
 static cps_class_map_type_t _cmt;
 static cps_class_map_reverse_string_t _rev_string;
@@ -144,6 +145,14 @@ cps_api_attr_id_t cps_name_to_attr(const char *name) {
 }
 
 bool cps_api_key_from_attr(cps_api_key_t *key,cps_api_attr_id_t id, size_t key_start_pos) {
+    std_mutex_simple_lock_guard lg(&lock);
+    static bool init=false;
+    if (!init) {
+        cps_api_class_map_init();
+        init = true;
+    }
+
+
     auto it = _cmt.find(id);
     if (it ==_cmt.end()) return false;
     size_t ix = 0;
@@ -164,10 +173,13 @@ bool cps_api_key_from_attr_with_qual(cps_api_key_t *key,cps_api_attr_id_t id,
 }
 
 cps_api_return_code_t cps_class_map_init(cps_api_attr_id_t id, const cps_api_attr_id_t *ids, size_t ids_len, cps_class_map_node_details *details) {
+
+    std_mutex_simple_lock_guard lg(&lock);
+
     cps_class_map_key::vector v(ids,ids+(ids_len));
     if(ids_len==0) return cps_api_ret_code_ERR;
 
-    if (_cmt.find(ids[ids_len-1])!=_cmt.end()) {
+    if (_cmt.find(id)!=_cmt.end()) {
         return cps_api_ret_code_ERR;
     }
 
@@ -190,6 +202,8 @@ cps_api_return_code_t cps_class_map_init(cps_api_attr_id_t id, const cps_api_att
 }
 
 bool cps_class_attr_is_embedded(const cps_api_attr_id_t *ids, size_t ids_len) {
+    if ((ids[ids_len-1]>=CPS_API_ATTR_RESERVE_RANGE_START) &&
+            (ids[ids_len-1]<=CPS_API_ATTR_RESERVE_RANGE_END)) return true;
     std_mutex_simple_lock_guard lg(&lock);
     const auto it = _cmt.find(ids[ids_len-1]);
     if (it==_cmt.end()) return false;
@@ -197,6 +211,8 @@ bool cps_class_attr_is_embedded(const cps_api_attr_id_t *ids, size_t ids_len) {
 }
 
 bool cps_class_attr_is_valid(const cps_api_attr_id_t *ids, size_t ids_len) {
+    if ((ids[ids_len-1]>=CPS_API_ATTR_RESERVE_RANGE_START) &&
+            (ids[ids_len-1]<=CPS_API_ATTR_RESERVE_RANGE_END)) return true;
     std_mutex_simple_lock_guard lg(&lock);
     const auto it = _cmt.find(ids[ids_len-1]);
     if (it==_cmt.end()) return false;
@@ -210,6 +226,8 @@ const char * cps_class_attr_name(const cps_api_attr_id_t *ids, size_t ids_len) {
 }
 
 bool cps_class_string_to_key(const char *str, cps_api_attr_id_t *ids, size_t *max_ids) {
+    std_mutex_simple_lock_guard lg(&lock);
+
     auto nit = _rev_string.find(str);
     if (nit!=_rev_string.end()) return false;
 
@@ -254,6 +272,7 @@ bool cps_class_objs_load(const char *path, const char * prefix) {
 }
 
 bool cps_api_key_to_class_attr(cps_api_attr_id_t *ids, size_t ids_len, const cps_api_key_t * key) {
+    std_mutex_simple_lock_guard lg(&lock);
     size_t klen = cps_api_key_get_len(const_cast<cps_api_key_t *>(key));
     if (ids_len < klen) {
         return false;
@@ -263,6 +282,33 @@ bool cps_api_key_to_class_attr(cps_api_attr_id_t *ids, size_t ids_len, const cps
         ids[ix] = cps_api_key_element_at(const_cast<cps_api_key_t *>(key),ix);
     }
     return true;
+}
+
+void cps_api_class_map_init(void) {
+    const char * path = std_getenv("LD_LIBRARY_PATH");
+    if (path==NULL) {
+        path = CPS_DEF_SEARCH_PATH;
+    }
+    std_parsed_string_t handle = NULL;
+    if (!std_parse_string(&handle,path,":")) {
+        return;
+    }
+    size_t ix = 0;
+    size_t mx =  std_parse_string_num_tokens(handle);
+    for ( ; ix < mx ; ++ix ) {
+       const char * p = std_parse_string_at(handle,ix);
+       cps_class_objs_load(p,CPS_DEF_CLASS_FILE_NAME);
+    }
+    std_parse_string_free(handle);
+
+
+    cps_api_attr_id_t key_id = CPS_API_ATTR_RESERVE_RANGE_END;
+    cps_class_map_node_details key_d;
+    key_d.desc = "CPS Internal Key info";
+    key_d.embedded = true;
+    key_d.name = "cps/key_data";
+    key_d.type = cps_api_object_ATTR_T_BIN;
+    cps_class_map_init(key_id,&key_id,1,&key_d);
 }
 
 }

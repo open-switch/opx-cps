@@ -177,7 +177,7 @@ class history:
                 self.the_dict[parent] = enum_tracker_int(IndexTracker(None),parent)
 
         res = self.the_dict[parent].get_value(name,requested)
-        if parent == self.MODULE_SECTION:
+        if parent == self.category:
             res += (self.get_global(self.category) << 16)
 
         return res

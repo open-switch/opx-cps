@@ -23,12 +23,6 @@ extern "C" {
 */
 
 /**
- * Attribute ID used for keys instance data
- */
-#define CPS_API_ATTR_KEY_ID ((cps_api_attr_id_t)-1)
-
-
-/**
  * Query the object to get the key instance data.
  * @param obj the object that contains the key instance data
  * @param id the attribute ID of the key instance data
