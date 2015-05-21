@@ -490,6 +490,48 @@ public:
     }
 };
 
+/**
+ * Cleanup after a list automatically for a user.  This just simplifies cleanup and avoids memory issues
+ *
+ */
+class cps_api_object_list_guard {
+    cps_api_object_list_t lst;
+public:
+    /**
+     * Create the object guard passing in the object.
+     * @param l the list to manage
+     */
+    cps_api_object_list_guard(cps_api_object_list_t l) : lst(l){}
+    /**
+     * Release the contained list and don't clean it on destruction
+     */
+    void release() { lst=NULL;}
+    /**
+     * Free the contained object if there is any.
+     */
+    void free() {
+        if (lst!=NULL) cps_api_object_list_destroy(lst,true);
+        lst = NULL;
+    }
+    /**
+     * Set a new list into the object guard
+     * @param l the list to monitor
+     */
+    void set(cps_api_object_list_t l) { free(); lst = l; }
+    /**
+     * Get the currently managed list
+     * @return the guarded list
+     */
+    cps_api_object_list_t get() { return lst; }
+    /**
+     * Clean up when going out of scope
+     */
+    ~cps_api_object_list_guard() {
+        free();
+    }
+
+};
+
 #endif
 
 #endif /* CPS_API_COMMON_LIST_H_ */
