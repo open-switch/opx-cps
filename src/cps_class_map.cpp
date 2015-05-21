@@ -202,6 +202,8 @@ cps_api_return_code_t cps_class_map_init(cps_api_attr_id_t id, const cps_api_att
 }
 
 bool cps_class_attr_is_embedded(const cps_api_attr_id_t *ids, size_t ids_len) {
+    if ((ids[ids_len-1]>=CPS_API_ATTR_RESERVE_RANGE_START) &&
+            (ids[ids_len-1]<=CPS_API_ATTR_RESERVE_RANGE_END)) return true;
     std_mutex_simple_lock_guard lg(&lock);
     const auto it = _cmt.find(ids[ids_len-1]);
     if (it==_cmt.end()) return false;
@@ -209,6 +211,8 @@ bool cps_class_attr_is_embedded(const cps_api_attr_id_t *ids, size_t ids_len) {
 }
 
 bool cps_class_attr_is_valid(const cps_api_attr_id_t *ids, size_t ids_len) {
+    if ((ids[ids_len-1]>=CPS_API_ATTR_RESERVE_RANGE_START) &&
+            (ids[ids_len-1]<=CPS_API_ATTR_RESERVE_RANGE_END)) return true;
     std_mutex_simple_lock_guard lg(&lock);
     const auto it = _cmt.find(ids[ids_len-1]);
     if (it==_cmt.end()) return false;
@@ -281,7 +285,7 @@ bool cps_api_key_to_class_attr(cps_api_attr_id_t *ids, size_t ids_len, const cps
 }
 
 void cps_api_class_map_init(void) {
-    const char * path = std_getenv("LD_LIBRAY_PATH");
+    const char * path = std_getenv("LD_LIBRARY_PATH");
     if (path==NULL) {
         path = CPS_DEF_SEARCH_PATH;
     }
