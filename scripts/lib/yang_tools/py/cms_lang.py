@@ -6,8 +6,7 @@ cma_gen_file_c_includes = """
 #include \"cps_api_operation.h\"
 #include \"cma_utilities.h\"
 #include \"cma_init.h\"
-
-
+#include \"cma_errnum.h\"
 """
 write_statement_switch = """
   t_std_error retval = STD_ERR_OK;
@@ -297,7 +296,8 @@ class Language:
     def write_headers(self, elem):
         print "/*Generated for "+elem+"*/"
         print cma_gen_file_c_includes
-        print "#include \""+self.module+"_xmltag.h\""
+        print "#include \""+self.module+"_xmltag.h\"\n"
+
 
     def xmltag_mapping(self):
             print "/* OPENSOURCELICENSE */"
