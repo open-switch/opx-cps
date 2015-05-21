@@ -300,6 +300,15 @@ void cps_api_class_map_init(void) {
        cps_class_objs_load(p,CPS_DEF_CLASS_FILE_NAME);
     }
     std_parse_string_free(handle);
+
+
+    cps_api_attr_id_t key_id = CPS_API_ATTR_RESERVE_RANGE_END;
+    cps_class_map_node_details key_d;
+    key_d.desc = "CPS Internal Key info";
+    key_d.embedded = true;
+    key_d.name = "cps/key_data";
+    key_d.type = cps_api_object_ATTR_T_BIN;
+    cps_class_map_init(key_id,&key_id,1,&key_d);
 }
 
 }
