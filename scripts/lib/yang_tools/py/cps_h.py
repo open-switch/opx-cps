@@ -59,7 +59,7 @@ class COutputFormat:
     def print_enums(self,model):
         name = model.module.name()
         for i in model.context['enum'].keys():
-            if i.find(name)==-1: continue
+            if i.find(name+'/')!=0: continue
             self.show_enum(model,i)
 
     def print_container(self,model):
