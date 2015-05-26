@@ -59,7 +59,7 @@ class COutputFormat:
     def print_enums(self,model):
         name = model.module.name()
         for i in model.context['enum'].keys():
-            if i.find(name+'/')!=0: continue
+            if i.find(name+':')!=0: continue
             self.show_enum(model,i)
 
     def print_container(self,model):
@@ -137,10 +137,10 @@ class COutputFormat:
 
     def print_types(self,model):
         print ""
-
+        name = model.module.name()
         for i in model.context['types'].keys():
-            name = model.module.name()
-            if i.find(name)==-1: continue
+
+            if i.find(name+':')!=0: continue
             if i in model.context['enum']: continue #already printed
 
             node = model.context['types'][i]
