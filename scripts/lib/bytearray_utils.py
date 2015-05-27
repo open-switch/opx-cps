@@ -1,8 +1,6 @@
 #!/usr/bin/python
 
-import os
 import struct
-import binascii
 import sys
 
 pack_type_map = { 'uint8_t':'<B',
@@ -34,7 +32,6 @@ def to_ba(val,datatype):
     s = bytearray(length)
     s[0:length] = struct.pack(pack_type_map[datatype],val)
     return s
-
 
 def from_ba(val,datatype):
     if datatype not in pack_len_map:
