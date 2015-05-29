@@ -24,6 +24,12 @@
 #include <algorithm>
 #include <ctype.h>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+
+
 class cps_class_map_key {
 public:
     using vector = std::vector<cps_api_attr_id_t>;
@@ -101,11 +107,28 @@ struct cps_class_map_key_subcomp {
 using cps_class_map_type_t = std::map<cps_api_attr_id_t,cps_class_map_node_details_int_t>;
 using cps_class_map_reverse_string_t = std::map<std::string,cps_api_attr_id_t>;
 
-
 static std_mutex_lock_create_static_init_rec(lock);
 static ids_to_string_map _id_to_string;
 static cps_class_map_type_t _cmt;
 static cps_class_map_reverse_string_t _rev_string;
+static std::map<std::string,struct stat> _loaded_libs;
+
+static void cps_class_data_has_been_loaded(void) {
+    static bool _map_init=false;
+    if (!_map_init) {
+        cps_api_class_map_init();
+        _map_init = true;
+    }
+}
+
+cps_class_map_type_t::iterator find_from_id(cps_api_attr_id_t id) {
+    cps_class_data_has_been_loaded();
+    return _cmt.find(id);
+}
+cps_class_map_reverse_string_t::iterator find_from_name(const char *name) {
+    cps_class_data_has_been_loaded();
+    return _rev_string.find(name);
+}
 
 void cps_class_ids_from_key(std::vector<cps_api_attr_id_t> &v,
         cps_api_key_t *key) {
@@ -129,7 +152,8 @@ extern "C" {
 
 
 const char * cps_attr_id_to_name(cps_api_attr_id_t id) {
-    auto it = _cmt.find(id);
+    std_mutex_simple_lock_guard lg(&lock);
+    auto it = find_from_id(id);
     if (it!=_cmt.end()) {
         return it->second.full_path.c_str();
     }
@@ -137,7 +161,8 @@ const char * cps_attr_id_to_name(cps_api_attr_id_t id) {
 }
 
 cps_api_attr_id_t cps_name_to_attr(const char *name) {
-    auto it = _rev_string.find(name);
+    std_mutex_simple_lock_guard lg(&lock);
+    auto it = find_from_name(name);
     if (it!=_rev_string.end()) {
         return it->second;
     }
@@ -146,14 +171,7 @@ cps_api_attr_id_t cps_name_to_attr(const char *name) {
 
 bool cps_api_key_from_attr(cps_api_key_t *key,cps_api_attr_id_t id, size_t key_start_pos) {
     std_mutex_simple_lock_guard lg(&lock);
-    static bool init=false;
-    if (!init) {
-        cps_api_class_map_init();
-        init = true;
-    }
-
-
-    auto it = _cmt.find(id);
+    auto it = find_from_id(id);
     if (it ==_cmt.end()) return false;
     size_t ix = 0;
     size_t mx = it->second.ids.size();
@@ -173,7 +191,6 @@ bool cps_api_key_from_attr_with_qual(cps_api_key_t *key,cps_api_attr_id_t id,
 }
 
 cps_api_return_code_t cps_class_map_init(cps_api_attr_id_t id, const cps_api_attr_id_t *ids, size_t ids_len, cps_class_map_node_details *details) {
-
     std_mutex_simple_lock_guard lg(&lock);
 
     cps_class_map_key::vector v(ids,ids+(ids_len));
@@ -205,7 +222,7 @@ bool cps_class_attr_is_embedded(const cps_api_attr_id_t *ids, size_t ids_len) {
     if ((ids[ids_len-1]>=CPS_API_ATTR_RESERVE_RANGE_START) &&
             (ids[ids_len-1]<=CPS_API_ATTR_RESERVE_RANGE_END)) return true;
     std_mutex_simple_lock_guard lg(&lock);
-    const auto it = _cmt.find(ids[ids_len-1]);
+    auto it = find_from_id(ids[ids_len-1]);
     if (it==_cmt.end()) return false;
     return it->second.embedded;
 }
@@ -214,13 +231,13 @@ bool cps_class_attr_is_valid(const cps_api_attr_id_t *ids, size_t ids_len) {
     if ((ids[ids_len-1]>=CPS_API_ATTR_RESERVE_RANGE_START) &&
             (ids[ids_len-1]<=CPS_API_ATTR_RESERVE_RANGE_END)) return true;
     std_mutex_simple_lock_guard lg(&lock);
-    const auto it = _cmt.find(ids[ids_len-1]);
+    auto it = find_from_id(ids[ids_len-1]);
     if (it==_cmt.end()) return false;
     return true;
 }
 const char * cps_class_attr_name(const cps_api_attr_id_t *ids, size_t ids_len) {
     std_mutex_simple_lock_guard lg(&lock);
-    const auto it = _cmt.find(ids[ids_len-1]);
+    auto it = find_from_id(ids[ids_len-1]);
     if (it==_cmt.end()) return false;
     return it->second.name.c_str();
 }
@@ -228,7 +245,7 @@ const char * cps_class_attr_name(const cps_api_attr_id_t *ids, size_t ids_len) {
 bool cps_class_string_to_key(const char *str, cps_api_attr_id_t *ids, size_t *max_ids) {
     std_mutex_simple_lock_guard lg(&lock);
 
-    auto nit = _rev_string.find(str);
+    auto nit = find_from_name(str);
     if (nit!=_rev_string.end()) return false;
 
     auto it = _cmt.find(nit->second);
@@ -246,6 +263,15 @@ bool cps_class_string_to_key(const char *str, cps_api_attr_id_t *ids, size_t *ma
 static bool _cps_class_data(const char *name, std_dir_file_TYPE_t type,void *context) {
     if (type != std_dir_file_T_FILE) return true;
 
+     struct stat _stats;
+     if (stat(name,&_stats)!=0) {
+         memset(&_stats,0,sizeof(_stats));
+     }
+
+    //avoid duplicate loaded libs..
+    if (_loaded_libs.find(name)!=_loaded_libs.end()) {
+        if (_loaded_libs[name].st_ino == _stats.st_ino) return true;
+    }
     if (strstr(name,(const char*)context)!=NULL) {
         void (*class_data_init)(void);
          static std_shlib_func_map_t func_map[] = {
@@ -257,11 +283,14 @@ static bool _cps_class_data(const char *name, std_dir_file_TYPE_t type,void *con
          if (STD_ERR_OK != std_shlib_load(name, &lib_hndl, func_map, func_map_size)) {
              EV_LOG(ERR,DSAPI,0,"cps_class_data","Can not load function map");
          } else {
+             _loaded_libs[name] = _stats;
+
              class_data_init();
              //Since we don't need to use any functions in the library after initialized
              //then we can unload the library
              std_shlib_unload(lib_hndl);
          }
+
     }
     return true;
 }
