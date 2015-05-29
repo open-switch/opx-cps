@@ -255,11 +255,7 @@ static cps_api_object_t dict_to_cps_obj(PyObject *dict) {
 }
 
 static PyObject * py_cps_map_init(PyObject *self, PyObject *args) {
-    const char * path=NULL,*prefix=NULL;
-    if (! PyArg_ParseTuple( args, "ss", &path, &prefix)) return NULL;
-
-    cps_class_objs_load(path,prefix);
-
+    cps_api_class_map_init();
     Py_RETURN_TRUE;
 }
 

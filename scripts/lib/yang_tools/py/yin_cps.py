@@ -96,6 +96,19 @@ class CPSParser:
         self.fix_namespace(self.root_node)
         self.walk_nodes(self.root_node, self.module.name())
         self.handle_keys()
+        self.fix_enums()
+
+    def path_to_prefix(self,dict,key):
+        if key.find(self.module.name()+"/")==0:
+            node = key.replace(self.module.name()+"/",self.module.name()+":",1)
+            dict[node] = dict[key]
+
+    def fix_enums(self):
+        for i in self.context['enum'].keys():
+            self.path_to_prefix(self.context['enum'],i)
+        for i in self.context['types'].keys():
+            self.path_to_prefix(self.context['types'],i)
+
 
     def fix_namespace(self,node):
         for i in node.iter():

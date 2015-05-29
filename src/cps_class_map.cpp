@@ -24,6 +24,12 @@
 #include <algorithm>
 #include <ctype.h>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+
+
 class cps_class_map_key {
 public:
     using vector = std::vector<cps_api_attr_id_t>;
@@ -106,6 +112,7 @@ static std_mutex_lock_create_static_init_rec(lock);
 static ids_to_string_map _id_to_string;
 static cps_class_map_type_t _cmt;
 static cps_class_map_reverse_string_t _rev_string;
+static std::map<std::string,struct stat> _loaded_libs;
 
 void cps_class_ids_from_key(std::vector<cps_api_attr_id_t> &v,
         cps_api_key_t *key) {
@@ -246,6 +253,15 @@ bool cps_class_string_to_key(const char *str, cps_api_attr_id_t *ids, size_t *ma
 static bool _cps_class_data(const char *name, std_dir_file_TYPE_t type,void *context) {
     if (type != std_dir_file_T_FILE) return true;
 
+     struct stat _stats;
+     if (stat(name,&_stats)!=0) {
+         memset(&_stats,0,sizeof(_stats));
+     }
+
+    //avoid duplicate loaded libs..
+    if (_loaded_libs.find(name)!=_loaded_libs.end()) {
+        if (_loaded_libs[name].st_ino == _stats.st_ino) return true;
+    }
     if (strstr(name,(const char*)context)!=NULL) {
         void (*class_data_init)(void);
          static std_shlib_func_map_t func_map[] = {
@@ -257,11 +273,14 @@ static bool _cps_class_data(const char *name, std_dir_file_TYPE_t type,void *con
          if (STD_ERR_OK != std_shlib_load(name, &lib_hndl, func_map, func_map_size)) {
              EV_LOG(ERR,DSAPI,0,"cps_class_data","Can not load function map");
          } else {
+             _loaded_libs[name] = _stats;
+
              class_data_init();
              //Since we don't need to use any functions in the library after initialized
              //then we can unload the library
              std_shlib_unload(lib_hndl);
          }
+
     }
     return true;
 }
