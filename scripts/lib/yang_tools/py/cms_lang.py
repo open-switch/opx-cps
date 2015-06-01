@@ -6,7 +6,8 @@ cma_gen_file_c_includes = """
 #include \"cps_api_operation.h\"
 #include \"cma_utilities.h\"
 #include \"cma_init.h\"
-#include \"cma_errnum.h\"
+
+
 """
 write_statement_switch = """
   t_std_error retval = STD_ERR_OK;
@@ -296,8 +297,7 @@ class Language:
     def write_headers(self, elem):
         print "/*Generated for "+elem+"*/"
         print cma_gen_file_c_includes
-        print "#include \""+self.module+"_xmltag.h\"\n"
-
+        print "#include \""+self.module+"_xmltag.h\""
 
     def xmltag_mapping(self):
             print "/* OPENSOURCELICENSE */"
@@ -310,8 +310,14 @@ class Language:
                 if i in self.model.all_node_map and self.model.is_id_element(self.model.all_node_map[i]):
                     print "#define "+self.names[i]+" "+self.cps_names[i]+" "
 
-            print ""
-            print """
+            print "#endif"
+
+    def xmltag_init_mapping_hdr(self):
+        print "/* OPENSOURCELICENSE */"
+        print "#ifndef __"+self.name_to_cms_name(self.module)+"_init_mapping_xmltag_h"
+        print "#define __"+self.name_to_cms_name(self.module)+"_init_mapping_xmltag_h"
+
+        print """
 
 #ifdef __cplusplus
 #include <unordered_map>
@@ -320,12 +326,10 @@ class Language:
 
 void init_"""+self.name_to_cms_name(self.module)+"""_xmltag(std::unordered_map<std::string,uint32_t> &ref);
 
-
 #endif
-            """
-
-            print "#endif"
-
+#endif
+"""
+        
     def xmltag_mapping_src(self):
             print "/* OPENSOURCELICENSE */"
             print "#include \""+self.module+".h\""
@@ -360,8 +364,13 @@ void init_"""+self.name_to_cms_name(self.module)+"""_xmltag(std::unordered_map<s
         with open(os.path.join(self.context['args']['cmsheader'],self.module+"_xmltag.h"),"w") as sys.stdout:
             self.xmltag_mapping()
 
+        with open(os.path.join(self.context['args']['cmsheader'],self.module+"_init_mapping_xmltag.h"),"w") as sys.stdout:
+            self.xmltag_init_mapping_hdr()
+
         with open(os.path.join(self.context['args']['cmssrc'],self.module+"_xmltag.cpp"),"w") as sys.stdout:
             self.xmltag_mapping_src()
+
+
 
         for elem in self.cb_node_keys:
             with open(os.path.join(self.context['args']['cmssrc'],elem+".h"),"w") as sys.stdout:
