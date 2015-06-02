@@ -17,15 +17,23 @@ pack_len_map = {  'uint8_t':1,
 	       }
 
 def usage():
-    print "val_to_bytearray(1234,'uint32_t')"
-    print "bin_to_bytearray('24fgd',len('24fgd'))"
-    print "bytearray_to_val('\x01\x00\x00\x00','uint32_t')"
-    print "bytearray_to_str('\x01\x00\x00\x00',4)"
+    print "\nusage: "
+    print "\nto_ba(val(numeric),type('uint8_t', 'uint16_t', 'uint32_t', 'uint64_t'))"
+    print "to_ba(1234,'uint32_t')\n"
+
+    print "str_to_ba(string, string_length)"
+    print "str_to_ba('24fgd',len('24fgd'))\n"
+
+    print "from_ba(bytearray,type('uint8_t', 'uint16_t', 'uint32_t', 'uint64_t'))"
+    print "from_ba('\\x01\\x00\\x00\\x00','uint32_t')\n"
+
+    print "ba_to_str(bytearray, bytearray_length)"
+    print "ba_to_str('\\x01\\x00\\x00\\x00',4)\n"
     sys.exit()
 
 def to_ba(val,datatype):
     if datatype not in pack_len_map:
-        print "Invlalid type " + datatype
+        print "\nInvalid type " + datatype
         usage()
 
     length = pack_len_map[datatype]
@@ -35,7 +43,7 @@ def to_ba(val,datatype):
 
 def from_ba(val,datatype):
     if datatype not in pack_len_map:
-        print "Invlalid type " + datatype
+        print "\nInvalid type " + datatype
         usage()
 
     length = pack_len_map[datatype]
