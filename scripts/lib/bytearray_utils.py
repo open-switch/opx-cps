@@ -16,46 +16,62 @@ pack_len_map = {  'uint8_t':1,
 		  'uint64_t':8
 	       }
 
-def usage():
-    print "\nusage: "
-    print "\nto_ba(val(numeric),type('uint8_t', 'uint16_t', 'uint32_t', 'uint64_t'))"
-    print "to_ba(1234,'uint32_t')\n"
-
-    print "str_to_ba(string, string_length)"
-    print "str_to_ba('24fgd',len('24fgd'))\n"
-
-    print "from_ba(bytearray,type('uint8_t', 'uint16_t', 'uint32_t', 'uint64_t'))"
-    print "from_ba('\\x01\\x00\\x00\\x00','uint32_t')\n"
-
-    print "ba_to_str(bytearray, bytearray_length)"
-    print "ba_to_str('\\x01\\x00\\x00\\x00',4)\n"
-    sys.exit()
 
 def to_ba(val,datatype):
+
+    """
+    Converts a numeric value(uint8_t, uint16_t, uint32_t, uint64_t) to a byte array of
+    appropriate data type.
+
+    val is the numeric value
+    datatype is the type of val
+    return bytearray of the value
+    """
     if datatype not in pack_len_map:
-        print "\nInvalid type " + datatype
-        usage()
+        raise TypeError("Invalid data type - " + str(datatype))
+        return
 
     length = pack_len_map[datatype]
     s = bytearray(length)
     s[0:length] = struct.pack(pack_type_map[datatype],val)
     return s
 
-def from_ba(val,datatype):
+def from_ba(ba,datatype):
+    """
+    Converts from byte array to a numeric value(uint8_t, uint16_t, uint32_t, uint64_t)
+
+    ba - bytearray containing value
+    datatype - the type of bytearray
+    return numeric value of bytearray
+    """
     if datatype not in pack_len_map:
-        print "\nInvalid type " + datatype
-        usage()
+        raise TypeError("Invalid data type - " + str(datatype))
+        return
 
     length = pack_len_map[datatype]
     s = struct.unpack(pack_type_map[datatype],val[0:length])[0]
     return s
 
-def str_to_ba(val,length):
+def str_to_ba(str,length):
+    """
+    Converts a string to a bytearray.
+
+    str - string to be converted
+    length - length of string
+    return bytearray of the string
+    """
     s = bytearray(length)
     s[0:length] = struct.pack('<'+str(length)+'s',val)
     return s
 
-def ba_to_str(val,length):
+def ba_to_str(ba,length):
+    """
+    Converts a bytearray to string
+
+    ba - bytearray of the string
+    length - length of bytearray
+    return string of the bytearray
+    """
     s = struct.unpack('<'+str(length)+'s',val[0:length])[0]
     return s
 
