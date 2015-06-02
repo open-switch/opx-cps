@@ -226,7 +226,7 @@ class Language:
         print ""
         print "  cps_api_object_t filter = cps_api_object_list_get(param->filters,key_ix);"
         print "  cps_api_key_t *key    = cps_api_object_key(filter);"
-        print "  cps_api_object_t *obj = cps_api_object_create();"
+        print "  cps_api_object_t obj = cps_api_object_create();"
         print ""
         print "  if (obj==NULL) return cps_api_ret_code_ERR;"
         print "  if (!cps_api_object_list_append(param->list,obj)) {"
