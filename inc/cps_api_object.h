@@ -55,6 +55,13 @@ typedef enum cps_api_object_ATTR_TYPE_t {
 } cps_api_object_ATTR_TYPE_t;
 
 /**
+ * Return the cps_api_object_ATTR_TYPE for the given int size
+ * @param len the length if the integer quantity (2,4,8)
+ * @return the corresponding attribute type or BIN if not a valid size
+ */
+cps_api_object_ATTR_TYPE_t cps_api_object_int_type_for_len(size_t len);
+
+/**
  * Each CPS Object has a object key along with a number of attributes.
  */
 typedef void * cps_api_object_t;
@@ -226,6 +233,22 @@ bool cps_api_object_it(cps_api_object_t obj, cps_api_attr_id_t *id,
  */
 bool cps_api_object_e_add(cps_api_object_t obj, cps_api_attr_id_t *id,
         size_t id_size, cps_api_object_ATTR_TYPE_t type, const void *data, size_t len);
+
+/**
+ * A helper function to add a int type to an object.  The int type can be 1, 2, 4, 8 bytes long and
+ * will return set the element with the proper endian
+ *
+ * @param obj the object to add the attribute to
+ * @param id the attribute id list
+ * @param id_size the length of the attribute list
+ * @param data the data to add
+ * @param len the size of the data
+ * @return true if the method passed successfully otherwise a false and the object is untouched
+ */
+static inline bool cps_api_object_e_add_int(cps_api_object_t obj, cps_api_attr_id_t *id,
+        size_t id_size, const void *data, size_t len) {
+    return cps_api_object_e_add(obj,id,id_size,cps_api_object_int_type_for_len(len),data,len);
+}
 
 /**
  * Add an attribute to the object.  The attribute will be copied into the object.

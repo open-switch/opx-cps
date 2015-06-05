@@ -261,6 +261,47 @@ TEST(cps_api_object,ram_based) {
     }
 }
 
+TEST(cps_api_object,cps_obj_attr) {
+    cps_api_object_t obj = cps_api_object_create();
+    ASSERT_TRUE(obj!=nullptr);
+    uint8_t u8=1;
+    uint16_t u16=2;
+    uint32_t u32=3;
+    uint64_t u64=4;
+
+    ASSERT_TRUE(cps_api_object_int_type_for_len(sizeof(u64))==cps_api_object_ATTR_T_U64);
+    ASSERT_TRUE(cps_api_object_int_type_for_len(sizeof(u16))==cps_api_object_ATTR_T_U16);
+    ASSERT_TRUE(cps_api_object_int_type_for_len(sizeof(u32))==cps_api_object_ATTR_T_U32);
+    ASSERT_TRUE(cps_api_object_int_type_for_len(sizeof(u8))==cps_api_object_ATTR_T_BIN);
+
+    cps_api_attr_id_t id = u8;
+    ASSERT_TRUE(cps_api_object_e_add_int(obj,&id,1,&u8,sizeof(u8)));
+    id = u16;
+    ASSERT_TRUE(cps_api_object_e_add_int(obj,&id,1,&u16,sizeof(u16)));
+    id = u32;
+    ASSERT_TRUE(cps_api_object_e_add_int(obj,&id,1,&u32,sizeof(u32)));
+    id = u64;
+    ASSERT_TRUE(cps_api_object_e_add_int(obj,&id,1,&u64,sizeof(u64)));
+
+    cps_api_object_attr_t a = cps_api_object_attr_get(obj,u8);
+    ASSERT_TRUE(a!=nullptr);
+    ASSERT_TRUE(cps_api_object_attr_data_uint(a)==u8);
+
+    a = cps_api_object_attr_get(obj,u16);
+    ASSERT_TRUE(a!=nullptr);
+    ASSERT_TRUE(cps_api_object_attr_data_uint(a)==u16);
+
+    a = cps_api_object_attr_get(obj,u32);
+    ASSERT_TRUE(a!=nullptr);
+    ASSERT_TRUE(cps_api_object_attr_data_uint(a)==u32);
+
+    a = cps_api_object_attr_get(obj,u64);
+    ASSERT_TRUE(a!=nullptr);
+    ASSERT_TRUE(cps_api_object_attr_data_uint(a)==0);
+
+    cps_api_object_delete(obj);
+}
+
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

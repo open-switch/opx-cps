@@ -12,6 +12,7 @@ extern "C" {
 #endif
 
 #include "std_tlv.h"
+#include "std_type_defs.h"
 
 #include <stdint.h>
 #include <stddef.h>
@@ -147,6 +148,16 @@ uint32_t cps_api_object_attr_data_u32(cps_api_object_attr_t attr);
 uint64_t cps_api_object_attr_data_u64(cps_api_object_attr_t attr);
 
 /**
+ * Get the data from the attribute as a uint_t ensuring proper endianess.
+ * Supports 1, 2 and 4 byte integers only
+ *
+ * @param attr the attribute to query
+ * @return the data as a uint_t (eg..data should be a 1,2,4 bytes in length otherwise will return 0
+ */
+uint_t cps_api_object_attr_data_uint(cps_api_object_attr_t attr);
+
+
+/**
  * Get the data from the attribute as a binary blob - this will not ensure proper endianess
  * so the data should already be formatted in a way that is endian neutral for users
  * @param attr the attribute to query
@@ -154,6 +165,16 @@ uint64_t cps_api_object_attr_data_u64(cps_api_object_attr_t attr);
  */
 void *cps_api_object_attr_data_bin(cps_api_object_attr_t attr);
 
+
+/**
+ * Compare the two attributes and return a numerical value determining difference
+ * @param lhs one of the attributes to compare
+ * @param rhs the second attribute to compare
+ * @return 0 if the attributes are the same
+ *            1 if the lhs is greater then the rhs (after comparison)
+ *            -1 if the lhs is lower then the rhs (after comparison)
+ */
+int cps_api_object_attrs_compare(cps_api_object_attr_t lhs, cps_api_object_attr_t rhs);
 
 /**
  * @}

@@ -49,12 +49,12 @@ void cps_api_create_process_address(std_socket_address_t *addr) {
     static std_mutex_lock_create_static_init_fast(lock);
     std_mutex_simple_lock_guard mg(&lock);
     static uint32_t id = 0; //unique regardless of the number of times called in a
-    						//process/thread
+                            //process/thread
 
     snprintf(addr->address.str,sizeof(addr->address.str)-1,
             "/tmp/cps_inst_%d-%d-%d",(int)std_thread_id_get(),
-			(int)std_process_id_get(),
-			++id);
+            (int)std_process_id_get(),
+            ++id);
 }
 
 void cps_api_ns_get_address(std_socket_address_t *addr) {
@@ -124,19 +124,58 @@ bool cps_api_ns_register(cps_api_channel_t handle, cps_api_object_owner_reg_t &r
     return cps_api_send_data(handle,&reg,sizeof(reg));
 }
 
+//@TODO switch to a map instead of a vector for efficiency sake
+static bool insert_entry(client_reg_t &r) {
+    size_t ix = 0;
+    size_t mx = active_registraitons.size();
+    size_t key_size = cps_api_key_get_len(&r.details.key);
+    for ( ; ix < mx ; ++ix ) {
+        if (cps_api_key_matches(&r.details.key,&active_registraitons[ix].details.key,false)==0) {
+            size_t target_len = cps_api_key_get_len(&active_registraitons[ix].details.key);
+            if (key_size < target_len) continue;
+            char buffA[CPS_API_KEY_STR_MAX];
+            char buffB[CPS_API_KEY_STR_MAX];
+            EV_LOG(INFO,DSAPI,0,"NS","Inserting %s after %s",
+                    cps_api_key_print(&active_registraitons[ix].details.key,buffA,sizeof(buffA)-1),
+                    cps_api_key_print(&r.details.key,buffB,sizeof(buffB)-1)
+                    );
+
+            try {
+                active_registraitons.insert(active_registraitons.begin()+ix,r);
+            }catch (...) {
+                return false;
+            }
+            return true;
+        }
+    }
+    try {
+        active_registraitons.push_back(r);
+    }catch (...) {
+        return false;
+    }
+
+    return true;
+}
+
+
 static bool process_registration(int fd,size_t len) {
     client_reg_t r;
     r.fd = fd;
     r.count = 0;
     if (len!=sizeof(r.details)) return false;
     if (!cps_api_receive_data(fd,&r.details,sizeof(r.details))) return false;
-    active_registraitons.push_back(r);
-    char buff[100];
 
-    EV_LOG(INFO,DSAPI,0,"NS","Added registration for %s at %s",
-    		cps_api_key_print(&r.details.key,buff,sizeof(buff)-1),
-			r.details.addr.address.str);
-    return true;
+    char buff[CPS_API_KEY_STR_MAX];
+
+    bool rc = insert_entry(r);
+
+    EV_LOG(INFO,DSAPI,0,"NS","%s registration for %s at %s",
+            (rc==true ? "Added" : "Failed to add"),
+            cps_api_key_print(&r.details.key,buff,sizeof(buff)-1),
+            r.details.addr.address.str);
+
+
+    return rc;
 }
 
 static cps_api_object_owner_reg_t * find_owner(cps_api_key_t &key) {
@@ -157,11 +196,11 @@ static bool process_query(int fd, size_t len) {
     cps_api_object_owner_reg_t *p = find_owner(key);
 
     {
-	char ink[DEF_KEY_PRINT_BUFF];//enough to handle key printing
-	char matchk[DEF_KEY_PRINT_BUFF];//enough to handle key printing
-	EV_LOG(TRACE,DSAPI,0,"NS","NS query for %s found %s",
-    		cps_api_key_print(&key,ink,sizeof(ink)-1),
-			p!=NULL ? cps_api_key_print(&p->key,matchk,sizeof(matchk)-1) : "missing");
+    char ink[DEF_KEY_PRINT_BUFF];//enough to handle key printing
+    char matchk[DEF_KEY_PRINT_BUFF];//enough to handle key printing
+    EV_LOG(TRACE,DSAPI,0,"NS","NS query for %s found %s",
+            cps_api_key_print(&key,ink,sizeof(ink)-1),
+            p!=NULL ? cps_api_key_print(&p->key,matchk,sizeof(matchk)-1) : "missing");
     }
 
     if (p==NULL) {

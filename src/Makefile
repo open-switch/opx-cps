@@ -16,6 +16,9 @@ cps-api-common_SRCS=cps_api_object.cpp \
         cps_api_operation_common.cpp \
         cps_api_key.c
 
+cps-api-common_SRCS+=cps_api_object_attr.cpp
+
+
 cps-api-common_SRCS+= cps_ns.cpp \
 					cps_api_operation_service.cpp \
 					cps_api_client_ipc.cpp

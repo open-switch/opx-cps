@@ -45,6 +45,19 @@ bool cps_api_set_key_data(cps_api_object_t obj,cps_api_attr_id_t id,
 
 
 /**
+ * Set the key data based on the size of the uint passed in. If 1 byte add a char, 2 bytes add a short, etc
+ * @param obj the object to add
+ * @param id the attribute of the key data
+ * @param data the data pointer to use
+ * @param len the length of the int (1,2,4,8 supported)
+ * @return true if successful otherwise an error
+ */
+bool cps_api_set_key_data_uint(cps_api_object_t obj,cps_api_attr_id_t id,
+        const void *data, size_t len) {
+    return cps_api_set_key_data(obj,id,cps_api_object_int_type_for_len(len),data,len);
+}
+
+/**
  * @}
  */
 
