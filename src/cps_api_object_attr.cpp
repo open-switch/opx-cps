@@ -9,6 +9,9 @@
 #include "cps_api_object_attr.h"
 
 #include <stdio.h>
+#include <algorithm>
+#include <string.h>
+
 extern "C" {
 
 uint_t cps_api_object_attr_data_uint(cps_api_object_attr_t attr) {
@@ -56,6 +59,16 @@ uint64_t cps_api_object_attr_data_u64(cps_api_object_attr_t attr) {
 
 void *cps_api_object_attr_data_bin(cps_api_object_attr_t attr) {
     return std_tlv_data(attr);
+}
+
+int cps_api_object_attrs_compare(cps_api_object_attr_t lhs, cps_api_object_attr_t rhs) {
+    size_t len_l = cps_api_object_attr_len(lhs);
+    size_t len_r = cps_api_object_attr_len(rhs);
+    size_t smallest = std::min(len_l,len_r);
+    int rc = memcmp( cps_api_object_attr_data_bin(lhs),
+            cps_api_object_attr_data_bin(rhs),smallest);
+    if (rc!=0) return rc;
+    return  len_l - len_r;
 }
 
 }

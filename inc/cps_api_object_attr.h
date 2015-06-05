@@ -167,6 +167,16 @@ void *cps_api_object_attr_data_bin(cps_api_object_attr_t attr);
 
 
 /**
+ * Compare the two attributes and return a numerical value determining difference
+ * @param lhs one of the attributes to compare
+ * @param rhs the second attribute to compare
+ * @return 0 if the attributes are the same
+ *            1 if the lhs is greater then the rhs (after comparison)
+ *            -1 if the lhs is lower then the rhs (after comparison)
+ */
+int cps_api_object_attrs_compare(cps_api_object_attr_t lhs, cps_api_object_attr_t rhs);
+
+/**
  * @}
  */
 
