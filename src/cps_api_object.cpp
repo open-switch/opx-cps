@@ -88,8 +88,6 @@ static void * add_get_tlv_pos_with_enough_space(cps_api_object_internal_t * p, u
     return std_tlv_offset(obj_data(p), obj_used_len(p));
 }
 
-extern "C" {
-
 struct tracker_detail {
     const char *desc;
     unsigned int ln;
@@ -99,6 +97,26 @@ typedef std::map<cps_api_object_t,tracker_detail> tTrackerList;
 
 static std_mutex_lock_create_static_init_rec(db_tracker_lock);
 static tTrackerList trackers;
+
+extern "C" {
+
+cps_api_object_ATTR_TYPE_t cps_api_object_int_type_for_len(size_t len) {
+    static const cps_api_object_ATTR_TYPE_t types[] = {
+            cps_api_object_ATTR_T_BIN,    //0
+            cps_api_object_ATTR_T_BIN,    //1
+            cps_api_object_ATTR_T_U16,    //2
+            cps_api_object_ATTR_T_BIN,    //3
+            cps_api_object_ATTR_T_U32,    //4
+            cps_api_object_ATTR_T_BIN,    //5
+            cps_api_object_ATTR_T_BIN,    //6
+            cps_api_object_ATTR_T_BIN,    //7
+            cps_api_object_ATTR_T_U64,    //8
+    };
+    if (len >= (sizeof(types)/sizeof(*types))) {
+        return cps_api_object_ATTR_T_BIN;
+    }
+    return types[len];
+}
 
 cps_api_object_t cps_api_object_init(void *data, size_t bufflen) {
     if (bufflen < CPS_API_MIN_OBJ_LEN) return NULL;
@@ -344,11 +362,6 @@ bool cps_api_object_e_add(cps_api_object_t obj, cps_api_attr_id_t *id,
     return add_embedded((cps_api_object_internal_t*)obj,id,id_size,data,dlen);
 }
 
-void cps_api_object_it_from_attr(cps_api_object_attr_t attr, cps_api_object_it_t *iter) {
-    iter->len = std_tlv_total_len(attr);
-    iter->attr = attr;
-}
-
 void cps_api_object_attr_fill_list(cps_api_object_t obj, size_t base_attr_id, cps_api_object_attr_t *attr, size_t len) {
     void * ptr = (cps_api_object_attr_t)obj_data((cps_api_object_internal_t*)obj);
     size_t used_len = obj_used_len((cps_api_object_internal_t*)obj);
@@ -366,44 +379,6 @@ void cps_api_object_attr_fill_list(cps_api_object_t obj, size_t base_attr_id, cp
     }
 }
 
-void cps_api_object_it_begin(cps_api_object_t obj, cps_api_object_it_t *it) {
-    it->len = obj_used_len( (cps_api_object_internal_t*)obj );
-    it->attr =obj_data( (cps_api_object_internal_t*)obj );
-}
-
-const char * cps_api_object_attr_to_string(cps_api_object_attr_t attr, char *buff, size_t len) {
-    snprintf(buff,len,"Attr %X, Len %d",(int)cps_api_object_attr_id(attr),
-            (int)cps_api_object_attr_len(attr));
-    return buff;
-}
-
-void cps_api_object_attr_id_as_enum(cps_api_object_attr_t attr, void *enumptr) {
-    *reinterpret_cast<int*>(enumptr) = static_cast<int>(std_tlv_tag(attr));
-}
-
-cps_api_attr_id_t cps_api_object_attr_id(cps_api_object_attr_t attr) {
-    return std_tlv_tag(attr);
-}
-
-size_t cps_api_object_attr_len(cps_api_object_attr_t attr) {
-    return (size_t)std_tlv_len(attr);
-}
-
-uint16_t cps_api_object_attr_data_u16(cps_api_object_attr_t attr) {
-    return std_tlv_data_u16(attr);
-}
-
-uint32_t cps_api_object_attr_data_u32(cps_api_object_attr_t attr) {
-    return std_tlv_data_u32(attr);
-}
-
-uint64_t cps_api_object_attr_data_u64(cps_api_object_attr_t attr) {
-    return std_tlv_data_u64(attr);
-}
-
-void *cps_api_object_attr_data_bin(cps_api_object_attr_t attr) {
-    return std_tlv_data(attr);
-}
 
 size_t cps_api_object_to_array_len(cps_api_object_t obj) {
     cps_api_object_internal_t* p = (cps_api_object_internal_t*)obj;
@@ -437,6 +412,11 @@ typedef std::vector<cps_api_object_t> tObjList;
 cps_api_object_list_t cps_api_object_list_create(void) {
     tObjList * p = new tObjList;
     return (cps_api_object_list_t)p;
+}
+
+void cps_api_object_it_begin(cps_api_object_t obj, cps_api_object_it_t *it) {
+    it->len = obj_used_len( (cps_api_object_internal_t*)obj );
+    it->attr =obj_data( (cps_api_object_internal_t*)obj );
 }
 
 void cps_api_object_list_destroy(cps_api_object_list_t list, bool delete_all_objects) {

@@ -12,6 +12,7 @@ extern "C" {
 #endif
 
 #include "std_tlv.h"
+#include "std_type_defs.h"
 
 #include <stdint.h>
 #include <stddef.h>
@@ -145,6 +146,16 @@ uint32_t cps_api_object_attr_data_u32(cps_api_object_attr_t attr);
  * @return the data as a uint64_t
  */
 uint64_t cps_api_object_attr_data_u64(cps_api_object_attr_t attr);
+
+/**
+ * Get the data from the attribute as a uint_t ensuring proper endianess.
+ * Supports 1, 2 and 4 byte integers only
+ *
+ * @param attr the attribute to query
+ * @return the data as a uint_t (eg..data should be a 1,2,4 bytes in length otherwise will return 0
+ */
+uint_t cps_api_object_attr_data_uint(cps_api_object_attr_t attr);
+
 
 /**
  * Get the data from the attribute as a binary blob - this will not ensure proper endianess

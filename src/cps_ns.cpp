@@ -124,6 +124,7 @@ bool cps_api_ns_register(cps_api_channel_t handle, cps_api_object_owner_reg_t &r
     return cps_api_send_data(handle,&reg,sizeof(reg));
 }
 
+//@TODO switch to a map instead of a vector for efficiency sake
 static bool insert_entry(client_reg_t &r) {
     size_t ix = 0;
     size_t mx = active_registraitons.size();

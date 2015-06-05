@@ -240,9 +240,19 @@ cps_api_return_code_t cps_api_process_commit_request(cps_api_transaction_params_
                     EV_LOG(ERR,DSAPI,0,"CPS IPC","Transaction response missing resp object..");
                     break;
                 }
-                if (cps_api_object_list_append(param->prev,og.get())) {
-                    og.release();
-                    rc = cps_api_ret_code_OK;
+                obj = cps_api_object_list_get(param->prev,ix);
+
+                if (obj==NULL) { //if there was no previous object passed by client override
+                    if (cps_api_object_list_append(param->prev,og.get())) {
+                        og.release();
+                        rc = cps_api_ret_code_OK;
+                    }
+                } else {
+                    //take the previous provided by the client if the key is valid
+                    //assume that the data is valid too
+                    if (cps_api_key_get_len(cps_api_object_key(og.get()))>0) {
+                        cps_api_object_clone(obj,og.get());
+                    }
                 }
             }
         }

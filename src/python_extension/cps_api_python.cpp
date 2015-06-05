@@ -5,7 +5,7 @@
 #include "cps_class_map.h"
 #include "cps_class_map_query.h"
 #include "cps_api_events.h"
-
+#include "cps_api_object_key.h"
 
 #include <stdlib.h>
 #include "python2.7/Python.h"
@@ -123,6 +123,19 @@ static cps_api_object_t cps_obj_from_array(PyObject *array) {
         return NULL;
     }
     return og.release();
+}
+
+static void py_dict_set_from_attr(PyObject *d, cps_api_attr_id_t id, cps_api_object_attr_t attr) {
+    char buff[100]; //enough space to write an int :)
+    const char * name = cps_attr_id_to_name(id);
+    if (name==NULL) {
+        snprintf(buff,sizeof(buff),"%llu",(long long unsigned int)id);
+        name = buff;
+    }
+    PyObject *by = PyByteArray_FromStringAndSize(
+            (const char *)cps_api_object_attr_data_bin(attr),
+                            cps_api_object_attr_len(attr));
+    SetItemToDict(d,buff,by);
 }
 
 static void py_obj_dump_level(PyObject * d, std::vector<cps_api_attr_id_t> &parent, cps_api_object_it_t *it) {
@@ -344,6 +357,30 @@ static PyObject * py_cps_info(PyObject *self, PyObject *args) {
                 PyString_FromString(lst[ix].full_path.c_str()));
     }
     return d;
+}
+
+static PyObject * py_cps_get_keys(PyObject *self, PyObject *args) {
+    PyObject *d = NULL;
+    if (! PyArg_ParseTuple( args, "O!",&PyDict_Type, &d)) return NULL;
+
+    PyObject *new_dict = PyDict_New();
+    if(new_dict==NULL) return NULL;
+
+    cps_api_object_t obj = dict_to_cps_obj(d);
+    cps_api_object_guard g(obj);
+    if (!g.valid()) return new_dict;
+
+    cps_api_key_t *k = cps_api_object_key(obj);
+
+    size_t mx = cps_api_key_get_len(k);
+    size_t ix = 0;
+    for ( ; ix < mx ; ++ix ) {
+        cps_api_attr_id_t id = cps_api_key_element_at(k,ix);
+        cps_api_object_attr_t a = cps_api_get_key_data(obj,id);
+        if (a==NULL) continue;
+        py_dict_set_from_attr(new_dict,id,a);
+    }
+    return new_dict;
 }
 
 static PyObject * py_cps_key_from_name(PyObject *self, PyObject *args) {
@@ -814,6 +851,7 @@ static PyMethodDef cps_methods[] = {
     {"info",  py_cps_info, METH_VARARGS, cps_cps_generic_doc__},
     {"config",py_cps_config, METH_VARARGS, cps_cps_generic_doc__ },
     {"key_from_name",py_cps_key_from_name, METH_VARARGS, cps_cps_generic_doc__ },
+    {"get_keys",py_cps_get_keys, METH_VARARGS, cps_cps_generic_doc__ },
 
     //Event processing
     {"event_register",  py_cps_event_reg, METH_VARARGS, cps_cps_generic_doc__},
