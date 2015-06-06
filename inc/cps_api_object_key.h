@@ -52,7 +52,7 @@ bool cps_api_set_key_data(cps_api_object_t obj,cps_api_attr_id_t id,
  * @param len the length of the int (1,2,4,8 supported)
  * @return true if successful otherwise an error
  */
-bool cps_api_set_key_data_uint(cps_api_object_t obj,cps_api_attr_id_t id,
+static inline bool cps_api_set_key_data_uint(cps_api_object_t obj,cps_api_attr_id_t id,
         const void *data, size_t len) {
     return cps_api_set_key_data(obj,id,cps_api_object_int_type_for_len(len),data,len);
 }

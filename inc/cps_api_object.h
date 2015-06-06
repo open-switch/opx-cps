@@ -235,8 +235,7 @@ bool cps_api_object_e_add(cps_api_object_t obj, cps_api_attr_id_t *id,
         size_t id_size, cps_api_object_ATTR_TYPE_t type, const void *data, size_t len);
 
 /**
- * A helper function to add a int type to an object.  The int type can be 1, 2, 4, 8 bytes long and
- * will return set the element with the proper endian
+ * A helper function to add a int type to an object.  The int type can be 1, 2, 4, 8 bytes long
  *
  * @param obj the object to add the attribute to
  * @param id the attribute id list
