@@ -111,20 +111,23 @@ bool cps_api_send_data(cps_api_channel_t handle, void *data, size_t len) {
 }
 
  cps_api_object_t cps_api_receive_object(cps_api_channel_t handle,size_t len) {
-    cps_api_object_t obj = cps_api_object_create();
+    if (len==0) return NULL;
+
+    cps_api_object_guard og(cps_api_object_create());
     t_std_error rc = STD_ERR_OK;
+
     do {
-        if (cps_api_object_get_reserve_len(obj) < len) {
-            if (!cps_api_object_reserve(obj,len)) break;
+        if (cps_api_object_get_reserve_len(og.get()) < len) {
+            if (!cps_api_object_reserve(og.get(),len)) break;
         }
 
-        int by = std_read(handle,cps_api_object_array(obj),len,true,&rc);
+        int by = std_read(handle,cps_api_object_array(og.get()),len,true,&rc);
         if (by!=(int)len) break;
 
-        if (!cps_api_object_received(obj,len)) break;
-        return obj;
+        if (!cps_api_object_received(og.get(),len)) break;
+        return og.release();
+
     } while (0);
-    cps_api_object_delete(obj);
     EV_LOG(ERR,DSAPI,0,"CPS IPC","Was not able to read the object - MSG (%X)",rc);
     return NULL;
 }
@@ -207,6 +210,7 @@ cps_api_return_code_t cps_api_process_commit_request(cps_api_transaction_params_
     cps_api_return_code_t rc = cps_api_ret_code_ERR;
 
     cps_api_object_t obj = cps_api_object_list_get(param->change_list,ix);
+    cps_api_object_t pre = cps_api_object_list_get(param->prev,ix);
     if (obj==NULL) return rc;
 
     cps_api_channel_t handle;
@@ -216,10 +220,8 @@ cps_api_return_code_t cps_api_process_commit_request(cps_api_transaction_params_
     rc = cps_api_ret_code_ERR;
 
     do {
-        if (!cps_api_send_header(handle,cps_api_msg_o_COMMIT,
-                cps_api_object_to_array_len(obj))) break;
-
-        if (!cps_api_send_object(handle,obj)) break;
+        if (!cps_api_send_one_object(handle,cps_api_msg_o_COMMIT_CHANGE,obj)) break;
+        if (!cps_api_send_one_object(handle,cps_api_msg_o_COMMIT_PREV,pre)) break;
 
         uint32_t op;
         size_t len;
@@ -233,8 +235,11 @@ cps_api_return_code_t cps_api_process_commit_request(cps_api_transaction_params_
                 break;
             }
             cps_api_object_clone(obj,og.get());
+
             if (!cps_api_receive_header(handle,op,len)) break;
-            if (op == cps_api_msg_o_COMMIT_OBJECT) {
+            if (op!=cps_api_msg_o_COMMIT_OBJECT) break;
+
+            if (len>0) {
                 cps_api_object_guard og(cps_api_receive_object(handle,len));
                 if (!og.valid()) {
                     EV_LOG(ERR,DSAPI,0,"CPS IPC","Transaction response missing resp object..");
@@ -253,6 +258,7 @@ cps_api_return_code_t cps_api_process_commit_request(cps_api_transaction_params_
                     if (cps_api_key_get_len(cps_api_object_key(og.get()))>0) {
                         cps_api_object_clone(obj,og.get());
                     }
+                    rc = cps_api_ret_code_OK;
                 }
             }
         }
@@ -295,4 +301,26 @@ cps_api_return_code_t cps_api_process_rollback_request(cps_api_transaction_param
     cps_api_disconnect_owner(handle);
 
     return rc;
+}
+
+cps_api_object_t cps_api_recv_one_object(cps_api_channel_t handle,
+        cps_api_msg_operation_t expected, bool &valid) {
+    uint32_t act;
+    size_t len;
+
+    if (!cps_api_receive_header(handle,act,len)) {
+        valid = false;
+        return NULL;
+    }
+    if (act!=expected) return NULL;
+
+    if (len == 0) {
+        valid = true;
+        return NULL;
+    }
+
+    //receive an object and set valid true if the object was returned
+    cps_api_object_t ptr = cps_api_receive_object(handle,len);
+    valid = ptr!=NULL;
+    return ptr;
 }

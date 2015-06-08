@@ -50,12 +50,7 @@ static cps_api_return_code_t db_write_function(void * context, cps_api_transacti
         char buff[100];
         printf("Set... Found attr %s \n",cps_api_object_attr_to_string(it.attr,buff,sizeof(buff)));
     }
-    cps_api_object_t old = cps_api_object_create();
-    if (!cps_api_object_clone(old,obj)) return cps_api_ret_code_ERR;
-    if (!cps_api_object_list_append(param->prev,old)) {
-        cps_api_object_delete(old);
-        return cps_api_ret_code_ERR;
-    }
+
     cps_api_object_attr_t attr = cps_api_object_attr_get(obj,4);
     if (attr!=NULL) {
         return cps_api_ret_code_ERR;
