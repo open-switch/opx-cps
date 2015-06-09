@@ -294,6 +294,7 @@ static bool add_embedded(cps_api_object_internal_t * obj, cps_api_attr_id_t *id,
         tlv = std_tlv_find_next(tlv,&len,id[ix]);
         if (tlv==NULL) break;
         tlv = std_tlv_data(tlv);
+        len -= STD_TLV_HDR_LEN;
     }
 
     size_t remaining_needed = dlen + (STD_TLV_HDR_LEN * (id_size - ix));

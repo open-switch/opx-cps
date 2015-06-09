@@ -86,20 +86,39 @@ static bool  cps_api_handle_get(cps_api_operation_data_t *op, int fd,size_t len)
 
 static bool cps_api_handle_commit(cps_api_operation_data_t *op, int fd, size_t len) {
     std_rw_lock_read_guard g(&op->db_lock);
-
     cps_api_return_code_t rc =cps_api_ret_code_OK;
 
+    //receive changed object
     cps_api_object_guard o(cps_api_receive_object(fd,len));
     if (!o.valid()) return false;
 
+    //initialize transaction
     cps_api_transaction_params_t param;
     if (cps_api_transaction_init(&param)!=cps_api_ret_code_OK) return false;
 
     cps_api_transaction_guard tr(&param);
 
+    //add request to change list
     if (!cps_api_object_list_append(param.change_list,o.get())) return false;
-
     cps_api_object_t l = o.release();
+
+
+    //check the previous data sent by client
+    uint32_t act;
+    if (!cps_api_receive_header(fd,act,len)) {
+        return false;
+    }
+    if(act!=cps_api_msg_o_COMMIT_PREV) {
+        return false;
+    }
+
+    //read and add to list the previous object if passed
+    if (len > 0) {
+        cps_api_object_guard prev(cps_api_receive_object(fd,len));
+        if (!prev.valid()) return false;
+        if (!cps_api_object_list_append(param.prev,prev.get())) return false;
+        prev.release();
+    }
 
     size_t func_ix = 0;
     size_t func_mx = op->db_functions.size();
@@ -175,7 +194,7 @@ static bool  _some_data_( void *context, int fd ) {
     size_t len;
     if(!cps_api_receive_header(fd,op,len)) return false;
     if (op==cps_api_msg_o_GET) return cps_api_handle_get(p,fd,len);
-    if (op==cps_api_msg_o_COMMIT) return cps_api_handle_commit(p,fd,len);
+    if (op==cps_api_msg_o_COMMIT_CHANGE) return cps_api_handle_commit(p,fd,len);
     if (op==cps_api_msg_o_REVERT) return cps_api_handle_revert(p,fd,len);
 
     return true;

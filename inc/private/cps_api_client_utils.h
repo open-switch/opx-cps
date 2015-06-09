@@ -21,7 +21,9 @@ enum cps_api_msg_operation_t {
     cps_api_msg_o_COMMIT,
     cps_api_msg_o_COMMIT_OBJECT,
     cps_api_msg_o_RETURN_CODE,
-    cps_api_msg_o_REVERT
+    cps_api_msg_o_REVERT,
+    cps_api_msg_o_COMMIT_CHANGE,
+    cps_api_msg_o_COMMIT_PREV
 };
 
 
@@ -33,8 +35,10 @@ cps_api_return_code_t cps_api_process_rollback_request(cps_api_transaction_param
 bool cps_api_send(cps_api_channel_t handle, uint32_t op,
         const struct iovec *iov,
         size_t count);
+
 bool cps_api_send_header(cps_api_channel_t handle, uint32_t op,
         size_t len);
+
 bool cps_api_send_data(cps_api_channel_t handle, void *data, size_t len);
 bool cps_api_send_key(cps_api_channel_t handle, cps_api_key_t &key) ;
 bool cps_api_send_object(cps_api_channel_t handle, cps_api_object_t obj);
@@ -68,9 +72,9 @@ static inline bool cps_api_send_return_code(cps_api_channel_t handle,uint32_t op
 
 static inline bool cps_api_send_one_object(cps_api_channel_t handle, cps_api_msg_operation_t op,
         cps_api_object_t obj) {
-    size_t len = cps_api_object_to_array_len(obj);
+    size_t len = obj!=NULL ? cps_api_object_to_array_len(obj) : 0;
     if (cps_api_send_header(handle,op,len)) {
-        return cps_api_send_object(handle,obj);
+        return len > 0 ? cps_api_send_object(handle,obj) : true;
     }
     return false;
 }
