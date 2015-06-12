@@ -20,15 +20,17 @@ struct cps_class_map_node_details_int_t {
     std::string name;
     std::string full_path;
     std::string desc;
-    bool embedded;
-    cps_api_object_ATTR_TYPE_t type;
-    cps_api_attr_id_t id;
+    bool embedded=false;
+    uint_t type=0;
+    cps_api_attr_id_t id=0;
     std::vector<cps_api_attr_id_t> ids;
 };
 
 using cps_class_node_detail_list_t = std::vector<cps_class_map_node_details_int_t>;
 
 void cps_class_map_level(const cps_api_attr_id_t *ids, size_t max_ids, cps_class_node_detail_list_t &details);
+
+bool cps_class_map_detail(const cps_api_attr_id_t id, cps_class_map_node_details_int_t &details);
 
 
 bool cps_class_map_query(const cps_api_attr_id_t *ids, size_t max_ids, const char * node,
