@@ -179,7 +179,7 @@ static void py_obj_dump_level(PyObject * d, std::vector<cps_api_attr_id_t> &pare
                 break;
             }
 
-            if (details.type & CPS_CLASS_ATTR_T_LEAF_LIST) {
+            if ((details.type & CPS_CLASS_ATTR_T_LEAF_LIST)==CPS_CLASS_ATTR_T_LEAF_LIST) {
                 PyObject *o = PyDict_GetItemString(d,name);
                 if (o == NULL) {
                     o = PyList_New(0);
