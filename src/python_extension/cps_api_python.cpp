@@ -154,7 +154,10 @@ static void py_obj_dump_level(PyObject * d, std::vector<cps_api_attr_id_t> &pare
             cur[level] = cps_api_object_attr_id(it->attr);
             snprintf(buff,sizeof(buff)-1,"%d",(int)cur[level]);
 
-            const char * name = cps_attr_id_to_name(cur[level]);
+            cps_class_map_node_details_int_t details;
+            bool found = cps_class_map_detail(cur[level],details);
+
+            const char * name = found ? details.full_path.c_str() : nullptr;
 
             if (!cps_class_attr_is_valid(&cur[0],cur.size())) {
                 PyObject *by  = PyByteArray_FromStringAndSize((const char *)cps_api_object_attr_data_bin(it->attr),
@@ -162,18 +165,29 @@ static void py_obj_dump_level(PyObject * d, std::vector<cps_api_attr_id_t> &pare
                 SetItemToDict(d,buff,by);
                 break;
             }
-            if (name == NULL) {
+            if (name == nullptr) {
                 name = buff;
             }
 
-            bool emb = cps_class_attr_is_embedded(&cur[0],cur.size());
-            if (emb) {
+            if (details.embedded) {
                 PyObject * subd = PyDict_New();
                 if (subd==NULL) break;
                 cps_api_object_it_t contained_it = *it;
                 cps_api_object_it_inside(&contained_it);
                 py_obj_dump_level(subd,cur,&contained_it);
                 SetItemToDict(d,name,subd);
+                break;
+            }
+
+            if ((details.type & CPS_CLASS_ATTR_T_LEAF_LIST)==CPS_CLASS_ATTR_T_LEAF_LIST) {
+                PyObject *o = PyDict_GetItemString(d,name);
+                if (o == NULL) {
+                    o = PyList_New(0);
+                }
+                PyList_Append(o,PyByteArray_FromStringAndSize(
+                        (const char *)cps_api_object_attr_data_bin(it->attr),
+                                    cps_api_object_attr_len(it->attr)));
+                PyDict_SetItemString(d,name,o);
                 break;
             }
 

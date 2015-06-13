@@ -45,6 +45,15 @@ class COutputFormat:
             else :
                 line+="true"
             line+=","
+            if i in self.model.all_node_map:
+                ele = self.model.all_node_map[i]
+                tag = self.model.module.filter_ns(ele.tag)
+                if tag == 'leaf-list':
+                    line+="CPS_CLASS_ATTR_T_LEAF_LIST|"
+                if tag == 'leaf':
+                    line+="CPS_CLASS_ATTR_T_LEAF|"
+            if i in self.model.container_map:
+                line+="CPS_CLASS_ATTR_T_CONTAINER|"
             line+= self.lang.determine_type(i)
             line+="}},"
             print line

@@ -148,6 +148,15 @@ void cps_class_ids_from_key(std::vector<cps_api_attr_id_t> &v,
     }
 }
 
+bool cps_class_map_detail(const cps_api_attr_id_t id, cps_class_map_node_details_int_t &details) {
+    auto it = find_from_id(id);
+    if (it!=_cmt.end()) {
+        details = it->second;
+        return true;
+    }
+    return false;
+}
+
 extern "C" {
 
 
