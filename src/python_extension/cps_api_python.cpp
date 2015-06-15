@@ -135,7 +135,7 @@ static void py_dict_set_from_attr(PyObject *d, cps_api_attr_id_t id, cps_api_obj
     PyObject *by = PyByteArray_FromStringAndSize(
             (const char *)cps_api_object_attr_data_bin(attr),
                             cps_api_object_attr_len(attr));
-    SetItemToDict(d,buff,by);
+    SetItemToDict(d,name,by);
 }
 
 static void py_obj_dump_level(PyObject * d, std::vector<cps_api_attr_id_t> &parent, cps_api_object_it_t *it) {
