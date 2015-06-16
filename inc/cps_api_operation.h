@@ -120,6 +120,25 @@ static inline uint32_t cps_api_key_get_subcat(cps_api_key_t *key) {
     return cps_api_key_element_at(key,CPS_OBJ_KEY_SUBCAT_POS);
 }
 
+/**
+ * Given a filter object (used in a get request) set a count attribute that can be used to specify the maximum
+ * number of objects of that time returned at one time.
+ *
+ * @param obj the filter in question
+ * @param obj_count the maximum count of elements
+ * @return true if successful otherwise false
+ */
+bool cps_api_filter_set_count(cps_api_object_t obj, size_t obj_count);
+
+/**
+ * Given a filter object, determine if it has a count (max number of objects to be retrieved at any one time)
+ *
+ * @param obj the filter in question
+ * @param obj_count the count of objects
+ * @return true if found the count otherwise there is no limit to the get request
+ */
+bool cps_api_filter_get_count(cps_api_object_t obj, size_t *obj_count);
+
 /*
  * The structure for a get request.  Each get request can have one or more keys
  * and will receive a list of objects in response.
