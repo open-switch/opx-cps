@@ -79,20 +79,21 @@ def ba_to_str(ba,length):
 
 def macstr_to_ba(macstr):
     """
-    Converts a MAC address octet string to bytearray
+    Converts a MAC address string representation to bytearray
 
-    macstr - MAC address octet string with ':' separeted octets
-             eg: '01:02:03:04:05:06'
+    macstr - MAC address octet string with ':' separated hexadecimal octets
+             Each octet should be a hexadecimal number
+             eg: '01:02:03:BC:05:06'
     return bytearray
     """
     return binascii.unhexlify(macstr.replace(':', ''))
 
 def ba_to_macstr(ba):
     """
-    Converts a bytearray to MAC address octet string
+    Converts a bytearray to MAC address string representation
 
     ba - bytearray of the MAC
-    return MAC address octet string with each octet separated by ':'
+    return MAC address hexadecimal octet string with each octet separated by ':'
     """
     macstr = binascii.hexlify(ba)
     it=iter(macstr)
@@ -100,10 +101,10 @@ def ba_to_macstr(ba):
 
 def ipv4str_to_ba(ipv4str):
     """
-    Converts a IPv4 address octet string to bytearray
+    Converts a IPv4 address string representation to bytearray
 
-    ipv4str - IP address octet string with '.' separeted octets.
-              Hex not allowed
+    ipv4str - IP address decimal string with '.' separeted decimal octets.
+              Each octet should be a decimal number - Hex not allowed
               eg: '23.0.0.1'
     return bytearray
     """
@@ -111,18 +112,19 @@ def ipv4str_to_ba(ipv4str):
 
 def ba_to_ipv4str(ba):
     """
-    Converts a bytearray to IPv4 address octet string
+    Converts a bytearray to IPv4 address string representation
 
     ba - bytearray of the IPv4 address
-    return IPv4 address octet string with each octet separated by '.'
+    return IPv4 address decimal string with each decimal octet seperated by '.'
     """
     return socket.inet_ntop(socket.AF_INET, ba)
 
 def ipv6str_to_ba(ipv6str):
     """
-    Converts a IPv6 address octet string to bytearray
+    Converts a IPv6 address string representation to bytearray
 
-    ipv4str - IPv6 address string with ':' separating every 2 octets
+    ipv4str - IPv6 address hexadecimal octet string with ':' separating every 2 octets
+             Each octet should be a hexadecimal number
              eg: '2001:0db8:85a3:0000:0000:8a2e:0370:7334'
              or  '2001:0db8:85a3::8a2e:0370:7334'
     return bytearray
