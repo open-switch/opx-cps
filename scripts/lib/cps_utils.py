@@ -36,6 +36,11 @@ class CPSTypes:
         t = self.find_type(key,val)
         return bytearray_utils.value_to_ba(t,val)
 
+    def print_object(self,obj):
+        data = obj['data']
+        print "Key: "+obj['key']
+        for k in data:
+            print k +" = "+str(self.from_data(k,data[k]))
 
 class CPSLibInit:
     def load_class_details(self):
