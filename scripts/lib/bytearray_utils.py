@@ -77,7 +77,7 @@ def ba_to_str(ba,length):
     s = struct.unpack('<'+str(length)+'s',val[0:length])[0]
     return s
 
-def macstr_to_ba(macstr):
+def macstr_to_ba(t, macstr):
     """
     Converts a MAC address string representation to bytearray
 
@@ -88,7 +88,7 @@ def macstr_to_ba(macstr):
     """
     return binascii.unhexlify(macstr.replace(':', ''))
 
-def ba_to_macstr(ba):
+def ba_to_macstr(t, ba):
     """
     Converts a bytearray to MAC address string representation
 
@@ -99,7 +99,7 @@ def ba_to_macstr(ba):
     it=iter(macstr)
     return ':'.join(a+b for a,b in zip(it, it))
 
-def ipv4str_to_ba(ipv4str):
+def ipv4str_to_ba(t, ipv4str):
     """
     Converts a IPv4 address string representation to bytearray
 
@@ -110,7 +110,7 @@ def ipv4str_to_ba(ipv4str):
     """
     return socket.inet_pton(socket.AF_INET, ipv4str)
 
-def ba_to_ipv4str(ba):
+def ba_to_ipv4str(t, ba):
     """
     Converts a bytearray to IPv4 address string representation
 
@@ -119,7 +119,7 @@ def ba_to_ipv4str(ba):
     """
     return socket.inet_ntop(socket.AF_INET, ba)
 
-def ipv6str_to_ba(ipv6str):
+def ipv6str_to_ba(t, ipv6str):
     """
     Converts a IPv6 address string representation to bytearray
 
@@ -131,7 +131,7 @@ def ipv6str_to_ba(ipv6str):
     """
     return socket.inet_pton(socket.AF_INET6, ipv6str)
 
-def ba_to_ipv6str(ba):
+def ba_to_ipv6str(t, ba):
     """
     Converts a bytearray to IPv6 address string representation
 
