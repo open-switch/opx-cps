@@ -65,3 +65,75 @@ def init():
 def key_mapper():
     return CPSKeys()
 
+def create_cps_transaction_object(op,qual,module):
+    """
+    Create a cps object for performing transaction
+    @op = operation type ("create","delete","set")
+    @qual = qualifier type ("target","observed",..)
+    @module = module key string ("base-xxx/yyy")
+    @return a cps object
+    """
+    cps_op = {}
+    obj = {'key':'','data':{}}
+    cps_op['change'] = obj
+    cps_op['operation'] = op
+    cps_op['root_path'] = module+"/"
+    cps_op['attr_type'] = cps_utils.CPSTypes()
+    obj['key'] = cps.key_from_name(qual,module)
+    return cps_op
+
+
+def cps_object_add_attr(cps_object,attr_str,val):
+    """
+    Add Attributes to cps object
+    @cps_object = cps object
+    @attr_str = attr string in yang("id", "base-port/interface/id")
+    @val = value of attribute
+    @return none
+    """
+    if "/" in attr_str:
+        cps_object['change']['data'][attr_str] = cps_object['attr_type'].to_data(attr_str,val)
+    else:
+        cps_object['change']['data'][cps_object['root_path']+attr_str] = \
+        cps_object['attr_type'].to_data(cps_object['root_path']+attr_str,val)
+
+
+def cps_object_add_attr_type(cps_object,attr_str,date_type):
+    """
+    Add attribute Data Type for yang model attribute
+    @cps_object - cps object
+    @attr_str - attribute string in yang ("id","base-port/xxx")
+    @data_type - data type of attribute
+    """
+    if "/" in attr_str:
+        cps_object['attr_type'].add_type(attr_str,data_type)
+    else:
+        cps_object['attr_type'].add_type(cps_object['root_path']+attr_str,data_type)
+
+
+def create_cps_get_object(qual,module):
+    """
+    Create a cps get operation object
+    @qual = qualifier type ("target","observed",..)
+    @module = module string ("base-xxx/yyy")
+    @return a cps get object with keys populated
+    """
+    obj = {'key':'','data':{}}
+    obj['key'] = cps.key_from_name(qual,module)
+    obj['root_path'] = module+"/"
+    obj['attr_type'] = cps_utils.CPSTypes()
+    return obj
+
+def cps_object_add_filter(cps_get_object,attr_str,val):
+    """
+    Add Filter Attributes to cps_get_object
+    @cps_get_object = cps get object
+    @attr_str = attr string in yang("id", "port")
+    @val = value of attribute
+    @return a dictioanry with all cps data populated
+    """
+    if "/" in attr_str:
+        cps_get_object['data'][attr_str] = cps_get_object['attr_type'].to_data(attr_str,val)
+    else:
+        cps_get_object['data'][cps_get_object['root_path']+attr_str] = \
+        cps_get_object['attr_type'].to_data(cps_get_object['root_path']+attr_str,val)
