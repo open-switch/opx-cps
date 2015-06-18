@@ -6,6 +6,7 @@ cma_gen_file_c_includes = """
 #include \"cps_api_operation.h\"
 #include \"cma_utilities.h\"
 #include \"cma_init.h\"
+#include \"cma_errnum.h\"
 
 
 """
