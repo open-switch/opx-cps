@@ -29,6 +29,11 @@ if [ -z $YANG_PATH ] ; then
     echo "Please set YANG_PATH to a : separated list of directories containing the Yang files"
     exit 1
 fi
+
+if [ ! -d history ] ; then
+    mkdir -p history
+fi
+
 export YANG_MODPATH=$YANG_PATH
 python $TOOL_ROOT/yin_parser.py file=$yf cmsheader=$od cmssrc=$od_src output=cms history=history
 if [ ! $? = 0 ] ; then
