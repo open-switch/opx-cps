@@ -94,7 +94,7 @@ class Language:
 
         hist_file_name = yin_utils.get_yang_history_file_name(model.filename)
 
-        self.history = object_history.init(hist_file_name,self.category);
+        self.history = object_history.init(self.context,hist_file_name,self.category);
 
     def __init__(self,context):
         self.context = context

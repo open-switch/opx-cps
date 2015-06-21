@@ -34,7 +34,7 @@ if [ -z $YANG_PATH ] ; then
     exit 1
 fi
 export YANG_MODPATH=$YANG_PATH
-python $TOOL_ROOT/yin_parser.py file=$yf cpsheader=$of cpssrc=$of_src output=cps
+python $TOOL_ROOT/yin_parser.py file=$yf cpsheader=$of cpssrc=$of_src output=cps history=history
 if [ ! $? = 0 ] ; then
     rm $of
     exit 1

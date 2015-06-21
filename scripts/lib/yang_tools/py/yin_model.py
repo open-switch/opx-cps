@@ -5,6 +5,7 @@ import tempfile
 import cps_c_lang
 import cms_lang
 import sys
+import shutil
 
 class CPSYinFiles:
     yin_map = dict()
@@ -80,9 +81,8 @@ class CPSYinFiles:
         for i in context['current_depends']:
             self.yin_map[i].parse()
 
-    def __exit__(self, type, value, traceback):
-         os.rmdir(self.tmpdir)
-        #self.yin_map[key_name].parse()
+    def cleanup(self):
+        shutil.rmtree(self.tmpdir)
 
 class CPSYangModel:
     model = None
@@ -98,6 +98,8 @@ class CPSYangModel:
         self.context['output']['language']= {}
         self.context['output']['language']['cps'] = cps_c_lang.Language(self.context)
         self.context['output']['language']['cms'] = cms_lang.Language(self.context)
+        self.context['history'] = {}
+        self.context['history']['output'] = self.args['history']
 
         self.context['types'] = {}
         self.context['enum'] = {}
@@ -127,4 +129,6 @@ class CPSYangModel:
     def close(self):
         for i in self.context['output']['language']:
             self.context['output']['language'][i].close()
+
+        self.context['loader'].cleanup()
 

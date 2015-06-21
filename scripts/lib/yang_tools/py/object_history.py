@@ -32,10 +32,15 @@ class enum_tracker_int:
             self.the_dict[name] = int(requested)
         return self.the_dict[name]
 
-    def setup(self,dic):
+    def setup(self,dic,must_be_unique=False):
         for en in dic:
-            self.add_enum(en,int(dic[en]) & int("ffff", 16))
 
+            val = int(dic[en]) & int("ffff", 16)
+            if must_be_unique==True:
+                for e in self.the_dict:
+                    if self.the_dict[e] == val:
+                         raise Exception("Found duplicate entries... "+str(val)+" A:"+e+" B:"+en)
+            self.add_enum(en,val)
 
 class IndexFile:
     def __init__(self,file):
@@ -44,7 +49,7 @@ class IndexFile:
     def write(self,enum):
         file = self.file
         file.write("++obj "+enum.the_name+"\n")
-        for k in enum.the_dict.keys():
+        for k in sorted(enum.the_dict.keys()):
             file.write(k+"="+str(enum.the_dict[k])+"\n")
         file.write("--obj "+enum.the_name+" end\n");
 
@@ -110,7 +115,11 @@ class history:
                     d = ix_reader.get()
                     if 'name' not in d: break
                     if d['name'] != self.GLOBAL_SECTION: continue
-                    self.GLOBAL_enums.setup(d['list'])
+
+                    self.GLOBAL_enums.setup(d['list'],must_be_unique=True)
+
+                    cur_enums = self.GLOBAL_enums.the_dict
+
                     break;
 
     def load_all_globals(self):
@@ -138,7 +147,8 @@ class history:
     staticmethod (get_global_enums)
     staticmethod (load_all_globals)
 
-    def __init__(self, filename, category):
+    def __init__(self, context,filename, category):
+        self.context = context
         self.the_name = filename
         self.the_dict = dict()
         self.module = IndexTracker(1)
@@ -183,15 +193,16 @@ class history:
         return res
 
     def write(self):
+        self.the_name = os.path.join(self.context['history']['output'],os.path.basename(self.the_name))
         print "Writing history to "+self.the_name
         with open(self.the_name,"w") as f:
             f.write("# writing "+self.the_name+"\n")
             writer = IndexFile(f)
-            for k in self.the_dict.keys():
+            for k in sorted(self.the_dict.keys()):
                 writer.write(self.the_dict[k])
 
-def init(file,category):
-    h = history(file,category)
+def init(context,file,category):
+    h = history(context,file,category)
     return h
 
 def close(hist):
