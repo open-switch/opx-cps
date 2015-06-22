@@ -71,4 +71,17 @@ int cps_api_object_attrs_compare(cps_api_object_attr_t lhs, cps_api_object_attr_
     return  len_l - len_r;
 }
 
+void cps_api_object_it_attr_replace(const cps_api_object_it_t *it, const cps_api_attr_id_t *match,
+        const cps_api_attr_id_t *replace, size_t len) {
+    cps_api_object_it_t cp = *it;
+    while (cps_api_object_it_valid(&cp)) {
+        cps_api_attr_id_t id = cps_api_object_attr_id(cp.attr);
+        size_t ix = 0;
+        for ( ; ix < len ; ++ix ) {
+            if (id==match[ix]) std_tlv_set_tag(cp.attr,replace[ix]);
+        }
+        cps_api_object_it_next(&cp);
+    }
+}
+
 }

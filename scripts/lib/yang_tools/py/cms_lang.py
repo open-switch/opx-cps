@@ -49,7 +49,7 @@ write_statement_switch = """
 class Language:
 
     supported_list_containing_cb = [
-        "container","grouping","case", "list", "rpc"
+        "container","grouping","case", "list", "rpc", "choice"
         ]
 
     def __init__(self,context):
@@ -330,7 +330,7 @@ void init_"""+self.name_to_cms_name(self.module)+"""_xmltag(std::unordered_map<s
 #endif
 #endif
 """
-        
+
     def xmltag_mapping_src(self):
             print "/* OPENSOURCELICENSE */"
             print "#include \""+self.module+".h\""
