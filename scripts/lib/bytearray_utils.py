@@ -54,7 +54,7 @@ def from_ba(ba,datatype):
     s = struct.unpack(pack_type_map[datatype],ba[0:length])[0]
     return s
 
-def str_to_ba(str,length):
+def str_to_ba(string,length):
     """
     Converts a string to a bytearray.
 
@@ -62,20 +62,20 @@ def str_to_ba(str,length):
     length - length of string
     return bytearray of the string
     """
-    s = bytearray(length)
-    s[0:length] = struct.pack('<'+str(length)+'s',val)
+    s = bytearray(length+1)
+    s[0:length+1] = struct.pack('<'+str(length+1)+'s',string+"\0")
     return s
 
 def ba_to_str(ba,length):	
-	"""	
+    """	
     Converts a bytearray to string
 
     ba - bytearray of the string
     length - length of bytearray
     return string of the bytearray
     """
-	s = struct.unpack('<'+str(length)+'s',ba[0:length])[0]
-	return s.rstrip('\0')
+    s = struct.unpack('<'+str(length)+'s',ba[0:length])[0]
+    return s.rstrip('\0')
 
 def macstr_to_ba(t, macstr):
     """
