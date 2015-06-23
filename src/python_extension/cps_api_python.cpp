@@ -224,6 +224,12 @@ static PyObject * cps_obj_to_dict(cps_api_object_t obj) {
     return o;
 }
 
+static bool add_bytearray_to_obj(cps_api_object_t obj, cps_api_attr_id_t *ids, size_t len, PyObject *o) {
+    if (!PyByteArray_Check(o)) return false;
+    return cps_api_object_e_add(obj,ids,len,cps_api_object_ATTR_T_BIN,
+                        PyByteArray_AsString(o), PyByteArray_Size(o));
+}
+
 static void add_to_object(std::vector<cps_api_attr_id_t> &level,
         cps_api_object_t obj, PyObject *d, size_t start_level ) {
     PyObject *key, *value;
@@ -244,14 +250,24 @@ static void add_to_object(std::vector<cps_api_attr_id_t> &level,
             add_to_object(v,obj,value,start_level);
             continue;
         }
+        cps_api_attr_id_t *ids =&level[start_level];
+        size_t id_len = level.size()-start_level;
 
+        if (PyList_Check(value)) {
+            size_t ix = 0;
+            size_t mx = PyList_Size(value);
+            for ( ; ix < mx ; ++ix ) {
+                PyObject *o = PyList_GetItem(value,ix);
+                if (o==NULL) continue;
+                add_bytearray_to_obj(obj,ids,id_len,o);
+            }
+        }
         if (PyByteArray_Check(value)) {
-            cps_api_object_e_add(obj,&level[start_level],level.size()-start_level,cps_api_object_ATTR_T_BIN,
-                    PyByteArray_AsString(value), PyByteArray_Size(value));
+            add_bytearray_to_obj(obj,ids,id_len,value);
             continue;
         }
         if (PyString_Check(value)) {
-            cps_api_object_e_add(obj,&level[start_level],level.size()-start_level,cps_api_object_ATTR_T_BIN,
+            cps_api_object_e_add(obj,ids,id_len,cps_api_object_ATTR_T_BIN,
                     PyString_AS_STRING(value), PyString_GET_SIZE(value));
             continue;
         }

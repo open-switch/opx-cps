@@ -7,6 +7,7 @@
 
 
 #include "cps_api_object_attr.h"
+#include "std_assert.h"
 
 #include <stdio.h>
 #include <algorithm>
@@ -83,5 +84,20 @@ void cps_api_object_it_attr_replace(const cps_api_object_it_t *it, const cps_api
         cps_api_object_it_next(&cp);
     }
 }
+
+bool cps_api_object_it_attr_walk(cps_api_object_it_t *it, cps_api_attr_id_t attr_id) {
+    cps_api_object_attr_t attr = cps_api_object_it_find(it,attr_id);
+    if (attr==NULL) {
+        it->attr = ((char*)it->attr)+it->len;
+        it->len = 0;
+        return false;
+    }
+    size_t offset =  ((char*)attr - (char*)it->attr);
+    STD_ASSERT(offset < it->len);
+    it->len -= offset;    //Calculate offset of returned data
+    it->attr = attr;
+    return true;
+}
+
 
 }
