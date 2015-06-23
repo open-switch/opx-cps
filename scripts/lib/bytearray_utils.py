@@ -63,7 +63,7 @@ def str_to_ba(string,length):
     return bytearray of the string
     """
     s = bytearray(length+1)
-    s[0:length+1] = bytearray(struct.pack('<'+str(length+1)+'s',string+"\0"))
+    s[0:length+1] = struct.pack('<'+str(length+1)+'s',string+"\0")
     return s
 
 def ba_to_str(ba,length):	
