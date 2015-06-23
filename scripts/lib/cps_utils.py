@@ -36,6 +36,11 @@ class CPSTypes:
         t = self.find_type(key,val)
         return bytearray_utils.value_to_ba(t,val)
 
+    def print_object(self,obj):
+        data = obj['data']
+        print "Key: "+obj['key']
+        for k in data:
+            print k +" = "+str(self.from_data(k,data[k]))
 
 class CPSLibInit:
     def load_class_details(self):
@@ -78,38 +83,26 @@ def create_cps_transaction_object(op,qual,module):
     cps_op['change'] = obj
     cps_op['operation'] = op
     cps_op['root_path'] = module+"/"
-    cps_op['attr_type'] = cps_utils.CPSTypes()
     obj['key'] = cps.key_from_name(qual,module)
     return cps_op
 
+def cps_generate_attr_path(cps_object, attr_str):
+    if "/" in attr_str:
+        return attr_str
+    else:
+        return cps_object['root_path']+attr_str
 
-def cps_object_add_attr(cps_object,attr_str,val):
+def cps_object_add_attr(cps_object,types_obj,attr_str,val):
     """
     Add Attributes to cps object
     @cps_object = cps object
+    @types_obj = cps utils tyeps object
     @attr_str = attr string in yang("id", "base-port/interface/id")
     @val = value of attribute
     @return none
     """
-    if "/" in attr_str:
-        cps_object['change']['data'][attr_str] = cps_object['attr_type'].to_data(attr_str,val)
-    else:
-        cps_object['change']['data'][cps_object['root_path']+attr_str] = \
-        cps_object['attr_type'].to_data(cps_object['root_path']+attr_str,val)
-
-
-def cps_object_add_attr_type(cps_object,attr_str,date_type):
-    """
-    Add attribute Data Type for yang model attribute
-    @cps_object - cps object
-    @attr_str - attribute string in yang ("id","base-port/xxx")
-    @data_type - data type of attribute
-    """
-    if "/" in attr_str:
-        cps_object['attr_type'].add_type(attr_str,data_type)
-    else:
-        cps_object['attr_type'].add_type(cps_object['root_path']+attr_str,data_type)
-
+    cps_object['change']['data'][cps_generate_attr_path(cps_object,attr_str)] = \
+    types_obj.to_data(cps_generate_attr_path(cps_object,attr_str),val)
 
 def create_cps_get_object(qual,module):
     """
@@ -121,19 +114,16 @@ def create_cps_get_object(qual,module):
     obj = {'key':'','data':{}}
     obj['key'] = cps.key_from_name(qual,module)
     obj['root_path'] = module+"/"
-    obj['attr_type'] = cps_utils.CPSTypes()
     return obj
 
-def cps_object_add_filter(cps_get_object,attr_str,val):
+def cps_object_add_filter(cps_get_object,types_obj,attr_str,val):
     """
     Add Filter Attributes to cps_get_object
     @cps_get_object = cps get object
+    @types_obj = cps utils tyeps object
     @attr_str = attr string in yang("id", "port")
     @val = value of attribute
     @return a dictioanry with all cps data populated
     """
-    if "/" in attr_str:
-        cps_get_object['data'][attr_str] = cps_get_object['attr_type'].to_data(attr_str,val)
-    else:
-        cps_get_object['data'][cps_get_object['root_path']+attr_str] = \
-        cps_get_object['attr_type'].to_data(cps_get_object['root_path']+attr_str,val)
+    cps_get_object['data'][cps_generate_attr_path(cps_get_object,attr_str)] = \
+    types_obj.to_data(cps_generate_attr_path(cps_get_object,attr_str),val)

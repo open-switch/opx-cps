@@ -30,7 +30,7 @@ if [ -z $YANG_PATH ] ; then
     exit 1
 fi
 export YANG_MODPATH=$YANG_PATH
-python $TOOL_ROOT/yin_parser.py file=$yf cmsheader=$od cmssrc=$od_src output=cms
+python $TOOL_ROOT/yin_parser.py file=$yf cmsheader=$od cmssrc=$od_src output=cms history=history
 if [ ! $? = 0 ] ; then
     rm $of
     exit 1

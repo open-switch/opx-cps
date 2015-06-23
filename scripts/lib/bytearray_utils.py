@@ -66,16 +66,17 @@ def str_to_ba(string,length):
     s[0:length+1] = struct.pack('<'+str(length+1)+'s',string+"\0")
     return s
 
-def ba_to_str(ba,length):
-    """
+def ba_to_str(ba,length):	
+	"""	
     Converts a bytearray to string
 
     ba - bytearray of the string
     length - length of bytearray
     return string of the bytearray
     """
+
     s = struct.unpack('<'+str(length)+'s',ba[0:length])[0]
-    return s.rstrip("\0")
+    return s.rstrip('\0')
 
 def macstr_to_ba(t, macstr):
     """
@@ -140,8 +141,8 @@ def ba_to_ipv6str(t, ba):
     """
     return socket.inet_ntop(socket.AF_INET6, ba)
 
-def ba_to_str_wr(t,ba):
-    return ba_to_str(ba,len(ba)-1)
+def ba_to_str_wr(t,val):
+    return ba_to_str(val,len(val))
 
 def ba_to_int_type(t,val):
     return from_ba(val,t)

@@ -54,6 +54,18 @@ static inline bool cps_api_object_it_valid(cps_api_object_it_t *it) {
 }
 
 /**
+ * Search for the attributes in the match list and replace them with the corresponding
+ *     ones in the replace list.
+ *
+ * @param it the iterator to use
+ * @param match the list of matching attribute IDs
+ * @param replace the list of attributes that will be replace the attribute
+ * @param len the length of matches
+ */
+void cps_api_object_it_attr_replace(const cps_api_object_it_t *it, const cps_api_attr_id_t *match,
+        const cps_api_attr_id_t *replace, size_t len);
+
+/**
  * Start to iterate through all of the contained attributes by the current attribute
  * @param iter the current iterator that we will navigate inside
  */

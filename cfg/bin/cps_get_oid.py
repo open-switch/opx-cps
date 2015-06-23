@@ -1,6 +1,8 @@
 #!/usr/bin/python
 import sys
 import cps
+import cps_utils
+
 if __name__=='__main__':
 	if len(sys.argv)==1:
 		print "Missing args.  Please enter a CPS key path in the format of a.b.c"
@@ -8,7 +10,13 @@ if __name__=='__main__':
 		print "Example wait for all TARGET events is 1"
 		exit(1)
 	l = []
-	cps.get(sys.argv[1:],l)
+	k = []
+	for e in sys.argv[1:]:
+		k.append(cps.key_from_name('target',e))
+	t = cps_utils.CPSTypes()
+	cps.get(k,l)
 	for entry in l:
-		print entry['key']
-		print entry['data']
+                print ""
+		print "Key: " + entry['key']
+		for k in entry['data']:
+			print k +" = "+ str(t.from_data(k,entry['data'][k]))
