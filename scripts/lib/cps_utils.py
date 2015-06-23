@@ -119,7 +119,7 @@ def cps_create_get_object(qual,module):
     obj['root_path'] = module+"/"
     return obj
 
-def cps_object_add_filter(cps_get_object,types_obj,attr_str,val):
+def cps_object_add_filter(cps_get_object,attr_str,val):
     """
     Add Filter Attributes to cps_get_object
     @cps_get_object = cps get object
@@ -144,3 +144,30 @@ def cps_obj_key_compare(cps_api_obj, key_dict):
             if key_dict[key] != cps_api_obj['change']['data'][key]:
                 return False
     return True
+
+
+def cps_object_add_embd_attr(cps_object,attr_str,attr_list,val):
+    """
+    Add the embedded attribute to the cps transaction object
+    @cps_object = cps object
+    @attr_str = attr string in yang("id", "base-port/interface/id")
+    @attr_list = embedded attribute string array
+    @val = value of attribute
+    """
+    embed_dict = cps_attr_types_map.to_data(cps_generate_attr_path(cps_object,attr_str),val)
+
+    for attr in reversed(attr_list):
+        embd_obj = {}
+        embd_obj[cps_generate_attr_path(cps_object,attr_str)] = embed_dict
+        embed_dict = embd_obj
+
+    cps_object['change']['data'][cps_generate_attr_path(cps_object,attr_str)] = embed_dict
+
+def print_obj(cps_object):
+    """
+    Print cps transaction object
+    @cps_object - cps transaction object
+    @return - none
+    """
+    cps_attr_types_map.print_object(cps_object['change'])
+
