@@ -74,7 +74,7 @@ cps_attr_types_map = CPSTypes()
 def cps_add_attr_type(attr_str,val):
     cps_attr_types_map.add_type(attr_str,val)
 
-def create_cps_transaction_object(op,qual,module):
+def cps_create_transaction_object(op,qual,module):
     """
     Create a cps object for performing transaction
     @op = operation type ("create","delete","set")
@@ -107,7 +107,7 @@ def cps_object_add_attr(cps_object,attr_str,val):
     cps_object['change']['data'][cps_generate_attr_path(cps_object,attr_str)] = \
     cps_attr_types_map.to_data(cps_generate_attr_path(cps_object,attr_str),val)
 
-def create_cps_get_object(qual,module):
+def cps_create_get_object(qual,module):
     """
     Create a cps get operation object
     @qual = qualifier type ("target","observed",..)
@@ -130,5 +130,17 @@ def cps_object_add_filter(cps_get_object,types_obj,attr_str,val):
     cps_get_object['data'][cps_generate_attr_path(cps_get_object,attr_str)] = \
     cps_attr_types_map.to_data(cps_generate_attr_path(cps_get_object,attr_str),val)
 
-
-
+def cps_obj_key_compare(cps_api_obj, key_dict):
+    """
+    Find if the keys in key dictionary are present in the cps obj
+    and has the same value
+    @cps_api_obj - cps transcation object
+    @key_dict - dictionary which has keys and values
+    @return - True if all keys and its values are same in the obj,
+              false if key is matched but not its value
+    """
+    for key in key_dict:
+        if key in cps_api_obj['change']['data']:
+            if key_dict[key] != cps_api_obj['change']['data'][key]:
+                return False
+    return True
