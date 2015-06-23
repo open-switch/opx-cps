@@ -69,10 +69,9 @@ def init():
 def key_mapper():
     return CPSKeys()
 
+
 cps_attr_types_map = CPSTypes()
 
-def cps_add_attr_type(attr_str,val):
-    cps_attr_types_map.add_type(attr_str,val)
 
 def cps_create_transaction_object(op,qual,module):
     """
@@ -90,11 +89,17 @@ def cps_create_transaction_object(op,qual,module):
     obj['key'] = cps.key_from_name(qual,module)
     return cps_op
 
+
 def cps_generate_attr_path(cps_object, attr_str):
     if "/" in attr_str:
         return attr_str
     else:
         return cps_object['root_path']+attr_str
+
+
+def cps_add_attr_type(cps_object,attr_str,val):
+    cps_attr_types_map.add_type(cps_generate_attr_path(cps_object,attr_str),val)
+
 
 def cps_object_add_attr(cps_object,attr_str,val):
     """
@@ -106,6 +111,7 @@ def cps_object_add_attr(cps_object,attr_str,val):
     """
     cps_object['change']['data'][cps_generate_attr_path(cps_object,attr_str)] = \
     cps_attr_types_map.to_data(cps_generate_attr_path(cps_object,attr_str),val)
+
 
 def cps_create_get_object(qual,module):
     """
@@ -119,6 +125,7 @@ def cps_create_get_object(qual,module):
     obj['root_path'] = module+"/"
     return obj
 
+
 def cps_object_add_filter(cps_get_object,attr_str,val):
     """
     Add Filter Attributes to cps_get_object
@@ -129,6 +136,7 @@ def cps_object_add_filter(cps_get_object,attr_str,val):
     """
     cps_get_object['data'][cps_generate_attr_path(cps_get_object,attr_str)] = \
     cps_attr_types_map.to_data(cps_generate_attr_path(cps_get_object,attr_str),val)
+
 
 def cps_obj_key_compare(cps_api_obj, key_dict):
     """
@@ -162,6 +170,7 @@ def cps_object_add_embd_attr(cps_object,attr_str,attr_list,val):
         embed_dict = embd_obj
 
     cps_object['change']['data'][cps_generate_attr_path(cps_object,attr_str)] = embed_dict
+
 
 def print_obj(cps_object):
     """
