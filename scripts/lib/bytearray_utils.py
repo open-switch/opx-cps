@@ -63,18 +63,17 @@ def str_to_ba(string,length):
     return bytearray of the string
     """
     s = bytearray(length+1)
-    s[0:length+1] = struct.pack('<'+str(length+1)+'s',string+"\0")
+    s[0:length+1] = bytearray(struct.pack('<'+str(length+1)+'s',string+"\0"))
     return s
 
 def ba_to_str(ba,length):	
-	"""	
+    """	
     Converts a bytearray to string
 
     ba - bytearray of the string
     length - length of bytearray
     return string of the bytearray
     """
-
     s = struct.unpack('<'+str(length)+'s',ba[0:length])[0]
     return s.rstrip('\0')
 
