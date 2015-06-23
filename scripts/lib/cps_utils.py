@@ -3,7 +3,6 @@ import os
 
 import bytearray_utils
 
-
 class CPSTypes:
     def __init__(self):
         self.types = {}
@@ -70,6 +69,11 @@ def init():
 def key_mapper():
     return CPSKeys()
 
+cps_attr_types_map = CPSTypes()
+
+def cps_add_attr_type(attr_str,val):
+    cps_attr_types_map.add_type(attr_str,val)
+
 def create_cps_transaction_object(op,qual,module):
     """
     Create a cps object for performing transaction
@@ -92,17 +96,16 @@ def cps_generate_attr_path(cps_object, attr_str):
     else:
         return cps_object['root_path']+attr_str
 
-def cps_object_add_attr(cps_object,types_obj,attr_str,val):
+def cps_object_add_attr(cps_object,attr_str,val):
     """
     Add Attributes to cps object
     @cps_object = cps object
-    @types_obj = cps utils tyeps object
     @attr_str = attr string in yang("id", "base-port/interface/id")
     @val = value of attribute
     @return none
     """
     cps_object['change']['data'][cps_generate_attr_path(cps_object,attr_str)] = \
-    types_obj.to_data(cps_generate_attr_path(cps_object,attr_str),val)
+    cps_attr_types_map.to_data(cps_generate_attr_path(cps_object,attr_str),val)
 
 def create_cps_get_object(qual,module):
     """
@@ -120,10 +123,12 @@ def cps_object_add_filter(cps_get_object,types_obj,attr_str,val):
     """
     Add Filter Attributes to cps_get_object
     @cps_get_object = cps get object
-    @types_obj = cps utils tyeps object
     @attr_str = attr string in yang("id", "port")
     @val = value of attribute
     @return a dictioanry with all cps data populated
     """
     cps_get_object['data'][cps_generate_attr_path(cps_get_object,attr_str)] = \
-    types_obj.to_data(cps_generate_attr_path(cps_get_object,attr_str),val)
+    cps_attr_types_map.to_data(cps_generate_attr_path(cps_get_object,attr_str),val)
+
+
+
