@@ -300,6 +300,26 @@ TEST(cps_api_object,cps_obj_attr) {
     ASSERT_TRUE(cps_api_object_attr_data_uint(a)==0);
 
     cps_api_object_delete(obj);
+
+    obj = cps_api_object_create();
+
+    cps_api_object_attr_add_u32(obj,0,1);
+    cps_api_object_attr_add_u32(obj,0,1);
+    cps_api_object_attr_add_u32(obj,1,1);
+    cps_api_object_attr_add_u32(obj,0,1);
+    cps_api_object_attr_add_u32(obj,1,1);
+    cps_api_object_attr_add_u32(obj,0,1);
+
+    {
+        cps_api_object_it_t it;
+        size_t ix  = 0;
+        for ( cps_api_object_it_begin(obj,&it) ; cps_api_object_it_attr_walk(&it,0) ; cps_api_object_it_next(&it) ) {
+            ++ix;
+        }
+        ASSERT_TRUE(ix==4);
+    }
+    cps_api_object_delete(obj);
+
 }
 
 int main(int argc, char **argv) {
