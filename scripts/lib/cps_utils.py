@@ -148,6 +148,7 @@ class CPSObject:
     def __init__(self,module,qual="target",op = "create",data={}):
         self.set_obj = {}
         self.root_path = ""
+        self.embed_dict = {}
         obj = {'key':'','data':{}}
         self.set_obj['change'] = obj
         self.set_obj['operation'] = op
@@ -163,6 +164,12 @@ class CPSObject:
     def generate_path(self, attr_str):
         if "/" in attr_str:
             return attr_str
+        elif type(attr_str) == list:
+            ret_str = self.root_path
+            for i in attr_str:
+                if not i.isdigit():
+                    ret_str += i +"/"
+            return ret_str[:-1]
         else:
             return self.root_path+attr_str
 
@@ -180,17 +187,31 @@ class CPSObject:
             self.add_attr(key,val)
 
     def add_embed_attr(self,attr_list,val):
-        embed_dict = cps_attr_types_map.to_data(self.generate_path(attr_list[0]),val)
+        #Convert Values in bytearray
+        attr_val = cps_attr_types_map.to_data(self.generate_path(attr_list),val)
+
+        # Check if a nested dictioanry for first element in attr_list exist
+        # if so then append to that dictioanry, otherwise create a new
+        embed_dict = {}
+        if self.generate_path(attr_list[0]) in self.set_obj['change']['data']:
+            embed_dict = self.set_obj['change']['data'][self.generate_path(attr_list[0])]
+        else:
+            self.set_obj['change']['data'][self.generate_path(attr_list[0])] = embed_dict
 
         for attr in reversed(attr_list[1:]):
-            embd_obj = {}
+            obj = {}
+            # if a string is a digit treat is as a list index
+            # if index exist in dictionary append to it, or add first key
             if attr.isdigit():
-                embd_obj[int(attr)] = embed_dict
+                if attr in embed_dict:
+                    exsisting_nested_dict = embed_dict[attr]
+                    exsisting_nested_dict[attr_val.keys()[0]] = attr_val.values()[0]
+                else:
+                    embed_dict[attr] = attr_val
             else:
-                embd_obj[self.generate_path(attr)] = embed_dict
-            embed_dict = embd_obj
+                obj[self.generate_path(attr_list)] = attr_val
+            attr_val = obj
 
-        self.set_obj['change']['data'][self.generate_path(attr_list[0])] = embed_dict
 
     def key_compare(self,key_dict):
         for key in key_dict:

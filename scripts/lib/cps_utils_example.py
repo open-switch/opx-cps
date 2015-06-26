@@ -12,13 +12,22 @@ d = { "id" : "1", "vlan" : "5"}
 # pass CPSObject("xxx",qual="yyy",op="zzz",data=d)
 # Passing Data Dictionary is also optional
 obj = CPSObject("stg",data=d)
-
+print obj.get()
 #Change Operation
 obj.set_operation("set")
 
 # Embedded Attribute list
 el = [ "intf","0","state"]
 obj.add_embed_attr(el,"10")
+
+el = [ "intf","1","state"]
+obj.add_embed_attr(el,"11")
+
+el = [ "intf","1","name"]
+obj.add_embed_attr(el,"e00-1")
+
+el = [ "myvlan","1","name"]
+obj.add_embed_attr(el,"vlan1")
 
 # Another Dictionary to add it to object
 fd = { "viraj" : "127.0.0.1"}
