@@ -214,11 +214,27 @@ class Language:
             if function.find('set')!=-1:
                 print "/*Update this field with the correct data before setting into object*/"
             print "  cma_value_t "+self.names_short[self.names[leaf]]+"_val;"
-            print "  const bool "+self.names_short[self.names[leaf]]+"_val_valid = "+function+"(obj,"+self.names[leaf]+",&"+self.names_short[self.names[leaf]]+"_val);"
-            if function.find('get')!=-1:
-                print "  /* Check to see if the attribute exists in the object and set it into your internal data structure */"
-            print "  (void)"+self.names_short[self.names[leaf]]+"_val_valid;"
+
+            if self.model.all_node_map[leaf].tag == self.model.module.ns()+'leaf-list':
+                if function.find('get')!=-1:
+                    print "  /* Iterate inside for the leaf-list */"
+                    print "  for(cma_get_tag_it_inside(obj,"+self.names[leaf]+",&it);" 
+                    print "      cps_api_object_it_valid(&it);"
+                    print "      cps_api_object_it_next(&it)) {"
+                    print "    if(cma_it_to_cma_value(&it,&"+self.names_short[self.names[leaf]]+"_val)){;" 
+                    print "        /* process data here - i.e. val_valid */ "
+                    print "        ;"
+                    print "    }"
+                    print "  }"
+                else:
+                    print "/*leaf-list iterate get TBD*/"
+            else:
+                print "  const bool "+self.names_short[self.names[leaf]]+"_val_valid = "+function+"(obj,"+self.names[leaf]+",&"+self.names_short[self.names[leaf]]+"_val);"
+                if function.find('get')!=-1:
+                    print "  /* Check to see if the attribute exists in the object and set it into your internal data structure */"
+                    print "  (void)"+self.names_short[self.names[leaf]]+"_val_valid;"
             print ""
+
         print "/* Instance vars end... */ "
 
 
@@ -246,6 +262,11 @@ class Language:
         print ""
     def write_cb_node(self,cb_node):
         print "cps_api_return_code_t _set_"+cb_node+"(void * context, cps_api_transaction_params_t * param, size_t key_ix) {"
+        print ""
+        print "  /*iterator for leaf-list*/"
+        print "  cps_api_object_it_t it;"
+        print "  (void)it;"
+
         print ""
         print "  /*object that contains the data to set*/ "
         print "  cps_api_object_t obj = cps_api_object_list_get(param->change_list,key_ix);"
