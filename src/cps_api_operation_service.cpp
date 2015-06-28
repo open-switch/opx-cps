@@ -29,6 +29,8 @@ struct cps_api_operation_data_t {
     std_mutex_type_t mutex;
     reg_functions_t db_functions;
     cps_api_channel_t ns_handle;
+
+    void insert_functions(cps_api_registration_functions_t*fun);
 };
 
 static bool  cps_api_handle_get(cps_api_operation_data_t *op, int fd,size_t len) {
@@ -62,7 +64,7 @@ static bool  cps_api_handle_get(cps_api_operation_data_t *op, int fd,size_t len)
         if ((p->_read_function!=NULL) &&
                 (cps_api_key_matches(param.keys,&p->key,false)==0)) {
             rc = p->_read_function(p->context,&param,0);
-            if (rc!=cps_api_ret_code_OK) break;
+            break;
         }
     }
 
@@ -127,7 +129,7 @@ static bool cps_api_handle_commit(cps_api_operation_data_t *op, int fd, size_t l
         if ((p->_write_function!=NULL) &&
                 (cps_api_key_matches(cps_api_object_key(l),&p->key,false)==0)) {
             rc = p->_write_function(p->context,&param,0);
-            if (rc!=cps_api_ret_code_OK) break;
+            break;
         }
     }
 
@@ -179,7 +181,7 @@ static bool cps_api_handle_revert(cps_api_operation_data_t *op, int fd, size_t l
         if ((p->_rollback_function!=NULL) &&
                 (cps_api_key_matches(cps_api_object_key(l),&p->key,false)==0)) {
             rc = p->_rollback_function(p->context,&param,0);
-            if (rc!=cps_api_ret_code_OK) break;
+            break;
         }
     }
 
@@ -230,6 +232,29 @@ static bool reconnect_with_ns(cps_api_operation_data_t *data) {
     return true;
 }
 
+void cps_api_operation_data_t::insert_functions(cps_api_registration_functions_t*fun) {
+    auto it = db_functions.begin();
+    auto end = db_functions.end();
+
+    size_t key_size = cps_api_key_get_len(&fun->key);
+
+    for ( ; it != end ; ++it ) {
+        if (cps_api_key_matches(&fun->key,&it->key,false)==0) {
+            size_t target_len = cps_api_key_get_len(&it->key);
+            if (key_size < target_len) continue;
+            char buffA[CPS_API_KEY_STR_MAX];
+            char buffB[CPS_API_KEY_STR_MAX];
+            EV_LOG(INFO,DSAPI,0,"NS","Inserting %s after %s",
+                    cps_api_key_print(&it->key,buffA,sizeof(buffA)-1),
+                    cps_api_key_print(&fun->key,buffB,sizeof(buffB)-1)
+                    );
+            db_functions.insert(it,*fun);
+            return ;
+        }
+    }
+    db_functions.push_back(*fun);
+}
+
 cps_api_return_code_t cps_api_register(cps_api_registration_functions_t * reg) {
     STD_ASSERT(reg->handle!=NULL);
     cps_api_operation_data_t *p = (cps_api_operation_data_t *)reg->handle;
@@ -238,7 +263,7 @@ cps_api_return_code_t cps_api_register(cps_api_registration_functions_t * reg) {
     if (p->ns_handle==STD_INVALID_FD) {
         reconnect_with_ns(p);
     }
-    p->db_functions.push_back(*reg);
+    p->insert_functions(reg);
 
     if (p->ns_handle!=STD_INVALID_FD) {
         if (!register_one_key(p,reg->key)) {
