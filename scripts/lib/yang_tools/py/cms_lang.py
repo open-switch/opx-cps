@@ -213,26 +213,25 @@ class Language:
         for leaf in self.get_node_leaves_based_on_access(cb_node,read_only):
             if function.find('set')!=-1:
                 print "/*Update this field with the correct data before setting into object*/"
+                if self.model.all_node_map[leaf].tag == self.model.module.ns()+'leaf-list':
+                    print "/*Repeat for least-list for as many entries available*/"
             print "  cma_value_t "+self.names_short[self.names[leaf]]+"_val;"
 
-            if self.model.all_node_map[leaf].tag == self.model.module.ns()+'leaf-list':
-                if function.find('get')!=-1:
-                    print "  /* Iterate inside for the leaf-list */"
-                    print "  for(cma_get_tag_it_inside(obj,"+self.names[leaf]+",&it);" 
-                    print "      cps_api_object_it_valid(&it);"
-                    print "      cps_api_object_it_next(&it)) {"
-                    print "    if(cma_it_to_cma_value(&it,&"+self.names_short[self.names[leaf]]+"_val)){;" 
-                    print "        /* process data here - i.e. val_valid */ "
-                    print "        ;"
-                    print "    }"
-                    print "  }"
-                else:
-                    print "/*leaf-list iterate get TBD*/"
+            if self.model.all_node_map[leaf].tag == self.model.module.ns()+'leaf-list' and function.find('get')!=-1:
+                print "  /* Iterate inside for the leaf-list */"
+                print "  for(cma_get_tag_it_inside(obj,"+self.names[leaf]+",&it);" 
+                print "      cps_api_object_it_valid(&it);"
+                print "      cps_api_object_it_next(&it)) {"
+                print "    if(cma_it_to_cma_value(&it,&"+self.names_short[self.names[leaf]]+"_val)){;" 
+                print "        /* process data here - i.e. val_valid */ "
+                print "        ;"
+                print "    }"
+                print "  }"
             else:
                 print "  const bool "+self.names_short[self.names[leaf]]+"_val_valid = "+function+"(obj,"+self.names[leaf]+",&"+self.names_short[self.names[leaf]]+"_val);"
                 if function.find('get')!=-1:
                     print "  /* Check to see if the attribute exists in the object and set it into your internal data structure */"
-                    print "  (void)"+self.names_short[self.names[leaf]]+"_val_valid;"
+                print "  (void)"+self.names_short[self.names[leaf]]+"_val_valid;"
             print ""
 
         print "/* Instance vars end... */ "
