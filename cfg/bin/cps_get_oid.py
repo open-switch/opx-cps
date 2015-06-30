@@ -16,7 +16,7 @@ if __name__=='__main__':
 	t = cps_utils.CPSTypes()
 	cps.get(k,l)
 	for entry in l:
-                print ""
+        print ""
 		print "Key: " + entry['key']
 		for k in entry['data']:
 			print k +" = "+ str(t.from_data(k,entry['data'][k]))

@@ -188,6 +188,18 @@ void *cps_api_object_attr_data_bin(cps_api_object_attr_t attr);
  */
 int cps_api_object_attrs_compare(cps_api_object_attr_t lhs, cps_api_object_attr_t rhs);
 
+
+/**
+ * This API will start at the current iterator and find the next location of an attribute.
+ * The iterator will be updated with the new position. If there is no next, the iterator will be invalid.
+ *
+ * @param it the iterator to start to search for an attribute that matches the iterator
+ * @param attr the attribute to search for
+ * @return true if the iterator is valid still otherwise false
+ */
+bool cps_api_object_it_attr_walk(cps_api_object_it_t *it, cps_api_attr_id_t attr);
+
+
 /**
  * @}
  */
