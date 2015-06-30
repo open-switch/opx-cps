@@ -259,7 +259,7 @@ class CPSObject:
     def get(self):
         return self.obj
 
-    def prtint_key_data(self):
+    def print_key_data(self):
         if 'cps/key_data' in self.obj['data']:
             for key,val in obj['data']['cps/key_data'].items():
                 print k +" = "+str(cps_attr_types_map.from_data(k,data[k]))
