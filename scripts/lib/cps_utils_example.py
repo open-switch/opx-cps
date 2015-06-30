@@ -4,17 +4,25 @@ __author__ = 'root'
 from cps_utils import *
 
 
+def str_print(str):
+    print str
+
+def list_print():
+    print "list"
 
 #Dictionay to be filled in the cps object
 d = { "id" : "1", "vlan" : "5"}
-
-# takes qualifier as target by default and operation as create, to change that
-# pass CPSObject("xxx",qual="yyy",op="zzz",data=d)
-# Passing Data Dictionary is also optional
 obj = CPSObject("stg",data=d)
 print obj.get()
-#Change Operation
-obj.set_operation("set")
+t = CPSTransaction()
+t.create(obj.get())
+t.commit()
+
+
+add_print_function(str,str_print)
+add_print_function(list,list_print)
+
+
 
 # Embedded Attribute list
 el = [ "intf","0","state"]
@@ -49,10 +57,10 @@ print "\n\n"
 
 # Create get object, it is created with "target" qualifier by default,to change
 # pass qual="xxx" in below constructor
-get_obj = CPSGetObject("stg",filter=d)
+get_obj = CPSObject("stg",data=d)
 
 #Pass a dictionary which contains filter attributes and values
-get_obj.fill_filter(fd)
+get_obj.fill_data(fd)
 
 #Get the object
 print get_obj.get()
