@@ -35,7 +35,7 @@ def to_ba(val,datatype):
 
     length = pack_len_map[datatype]
     s = bytearray(length)
-    s[0:length] = struct.pack(pack_type_map[datatype],val)
+    s[0:length] = struct.pack(pack_type_map[datatype],int(val))
     return s
 
 def from_ba(ba,datatype):
