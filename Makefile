@@ -4,4 +4,4 @@ LIBRARIES=
 ARCHIVES=
 HEADERS=$(wildcard inc/*.h)
 
-include ${PROJROOT}/tools/workspace.mak
+include ${MAKE_INC}/workspace.mak
