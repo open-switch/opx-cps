@@ -147,6 +147,8 @@ class CPSParser:
         nodes = list(node)
         parent = path   #container path to parent
 
+        parent_tag = self.module.filter_ns(self.all_node_map[parent].tag)
+
         for i in nodes:
             tag = self.module.filter_ns(i.tag)
 
@@ -170,14 +172,14 @@ class CPSParser:
             if tag == 'typedef':
                 continue
 
-            self.all_node_map[n_path] = i
+            #in the case tht the parent tag is a choice and you parsing a non-case... then add a case for the standard
+            if parent_tag == 'choice' and tag != 'case':
+                new_node = ET.Element(self.module.ns()+'case',attrib={'name':i.get('name')})
+                new_node.append(i)
+                i = new_node
+                tag = 'case'
 
-            ignore=False
-            if ignore:
-                #ignore the choice itself.. and consider the cases
-#                for ch in list(i):
-                self.walk_nodes(i,path)
-                continue
+            self.all_node_map[n_path] = i
 
             if tag == 'choice' or tag == 'input' or tag=='output' or tag=='rpc':
                 tag = 'container'
