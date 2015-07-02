@@ -192,7 +192,6 @@ class CPSTransaction:
         self.tr_list.append(tr_obj)
 
     def commit(self):
-        print self.tr_list
         if cps.transaction(self.tr_list):
             return self.tr_list
         return False
