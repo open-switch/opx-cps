@@ -54,7 +54,7 @@ cps_api_receiver_SRCS=unit_test/cps_api_receiver.cpp
 cps_api_receiver_LDFLAGS=-lcps-api-common -lcps-class-map-util
 
 
-include ${PROJROOT}/tools/workspace.mak
+include ${MAKE_INC}/workspace.mak
 
 
 sos: ${BUILD_DN_SYSROOT}/lib/cps.so

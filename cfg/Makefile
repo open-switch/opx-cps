@@ -3,4 +3,4 @@ DN_SCRIPTS=$(wildcard bin/*)
 
 ADDED_FILES+=$(wildcard lib/systemd/system/* etc/systemd/system/runlevel2.target.wants/*)
 
-include ${PROJROOT}/tools/workspace.mak
+include ${MAKE_INC}/workspace.mak
