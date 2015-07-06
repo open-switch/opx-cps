@@ -157,8 +157,21 @@ def print_obj(obj):
         cps_attr_types_map.print_object(obj)
 
 class CPSTransaction:
-    def __init__(self):
+
+    def __init__(self, list_of_op_obj_pairs = []):
+
         self.tr_list = []
+        if not type(list_of_op_obj_pairs) is list:
+            raise ValueError ("Needs List of (operation, obj) pairs")
+
+        for pair in list_of_op_obj_pairs:
+            if not type(pair) is tuple:
+                raise ValueError ("Needs List of (operation, obj) pairs")
+            op = pair[0]
+            op_map = {'create':self.create, 'delete':self.delete , 'set':self.set}
+            if op not in op_map:
+                raise ValueError ("Invalid operation - should be 'create', 'set' or 'delete'")
+            op_map[pair[0]](pair[1])
 
     def create(self,obj):
         tr_obj = {}
