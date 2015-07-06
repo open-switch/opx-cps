@@ -112,7 +112,6 @@ class CPSYangModel:
         for i in self.context['output']['language']:
             self.context['output']['language'][i].setup(self.model)
 
-
         for i in self.context['args']['output'].split(','):
             self.context['output']['language'][i].write()
 

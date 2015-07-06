@@ -124,7 +124,7 @@ class history:
 
     def load_all_globals(self):
         l = []
-        path = os.getenv('YANG_PATH','')
+        path = self.context['history']['output']
         f = []
         found_names = []
         for i in path.split(':'):
