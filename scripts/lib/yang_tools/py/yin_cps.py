@@ -173,7 +173,10 @@ class CPSParser:
                 continue
 
             #in the case tht the parent tag is a choice and you parsing a non-case... then add a case for the standard
-            if parent_tag == 'choice' and tag != 'case':
+            # As a shorthand, the "case" statement can be omitted if the branch contains a single "anyxml", "container", 
+            # "leaf", "list", or "leaf-list" statement.  In this case, the identifier of the case node is the same as 
+            # the identifier in the branch statement.  
+            if parent_tag == 'choice' and (tag == 'anyxml' or tag == 'container' or tag == 'leaf' or tag =='list' or tag == 'leaf-list'):
                 new_node = ET.Element(self.module.ns()+'case',attrib={'name':i.get('name')})
                 new_node.append(i)
                 i = new_node
