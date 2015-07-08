@@ -358,3 +358,24 @@ def cps_obj_key_compare(cps_api_obj, key_dict):
                 return False
     return True
 
+def cps_object_add_list_attr(cps_object,attr_str,value):
+    """
+    Add list of  attributes to cps object
+    @cps_object = cps object
+    @attr_str = attr string in yang("id", "base-port/interface/id")
+    @value = value of attribute list as list or can also given as
+             space separated parameter in a single string
+    @return none
+    """
+
+    port_list = []
+    value_list = []
+
+    if isinstance(value,list):
+        value_list = value
+    else:
+        value_list = str.split(value)
+    for val in value_list:
+        port_list.append(cps_attr_types_map.to_data(cps_generate_attr_path(cps_object,attr_str),val))
+
+    cps_object['change']['data'][cps_generate_attr_path(cps_object,attr_str)] = port_list
