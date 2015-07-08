@@ -51,6 +51,20 @@ public:
         PyGILState_Release(_gstate);
     }
 };
+
+class NonBlockingPythonContext {
+     PyThreadState *_save = NULL;
+public:
+
+     NonBlockingPythonContext() {
+        _save = PyEval_SaveThread();
+    }
+
+    ~NonBlockingPythonContext() {
+        PyEval_RestoreThread(_save);
+    }
+};
+
 namespace {
 bool SetItemToDict(PyObject *d, const char * item, PyObject *o, bool gc=true) {
     PyRef r(o);
@@ -464,7 +478,14 @@ static PyObject * py_cps_event_reg(PyObject *self, PyObject *args) {
     reg.objects = &key;
     reg.priority = 0;
 
-    if (cps_api_event_client_register(*handle,&reg)==cps_api_ret_code_OK) {
+    cps_api_return_code_t rc;
+
+    {
+        NonBlockingPythonContext l;
+        rc = cps_api_event_client_register(*handle,&reg);
+    }
+
+    if (rc==cps_api_ret_code_OK) {
         Py_RETURN_TRUE;
     }
     Py_RETURN_FALSE;
@@ -479,7 +500,10 @@ static PyObject * py_cps_event_close(PyObject *self, PyObject *args) {
     if (PyByteArray_Size(o)!=sizeof(*handle)) {
         return NULL;
     }
-    cps_api_event_client_disconnect(*handle);
+    {
+        NonBlockingPythonContext l;
+        cps_api_event_client_disconnect(*handle);
+    }
     Py_RETURN_TRUE;
 }
 
@@ -497,7 +521,13 @@ static PyObject * py_cps_event_wait(PyObject *self, PyObject *args) {
     cps_api_object_guard og(obj);
     cps_api_object_reserve(obj,MAX_EVENT_BUFF);
 
-    if (cps_api_wait_for_event(*handle,obj)==cps_api_ret_code_OK) {
+    cps_api_return_code_t rc;
+    {
+        NonBlockingPythonContext l;
+        rc = cps_api_wait_for_event(*handle,obj);
+    }
+
+    if (rc==cps_api_ret_code_OK) {
         return (cps_obj_to_dict(obj));
     }
     return PyDict_New();
@@ -520,7 +550,12 @@ static PyObject * py_cps_event_send(PyObject *self, PyObject *args) {
         Py_RETURN_FALSE;
     }
 
-    if (cps_api_event_publish(*handle,obj)==cps_api_ret_code_OK) {
+    cps_api_return_code_t rc;
+    {
+        NonBlockingPythonContext l;
+        rc = cps_api_event_publish(*handle,obj);
+    }
+    if (rc ==cps_api_ret_code_OK) {
         Py_RETURN_TRUE;
     }
     Py_RETURN_FALSE;
@@ -593,7 +628,14 @@ static PyObject * py_cps_get(PyObject *self, PyObject *args) {
     }
     gr.keys = NULL;
     gr.key_count = 0;
-    if (cps_api_get(&gr)!=cps_api_ret_code_OK) {
+
+    cps_api_return_code_t rc;
+    {
+        NonBlockingPythonContext l;
+        rc = cps_api_get(&gr);
+    }
+
+    if (rc!=cps_api_ret_code_OK) {
         Py_RETURN_FALSE;
     }
 
@@ -667,7 +709,12 @@ static PyObject * py_cps_trans(PyObject *self, PyObject *args) {
         }
     }
 
-    if (cps_api_commit(&tr)!=cps_api_ret_code_OK) {
+    cps_api_return_code_t rc;
+    {
+        NonBlockingPythonContext l;
+        rc = cps_api_commit(&tr);
+    }
+    if (rc!=cps_api_ret_code_OK) {
         Py_RETURN_FALSE;
     }
 
@@ -703,7 +750,13 @@ static PyObject * py_cps_trans(PyObject *self, PyObject *args) {
 
 static PyObject * py_cps_obj_init(PyObject *self, PyObject *args) {
     cps_api_operation_handle_t handle;
-    if (cps_api_operation_subsystem_init(&handle,1)!=cps_api_ret_code_OK) {
+
+    cps_api_return_code_t rc;
+    {
+        NonBlockingPythonContext l;
+        rc = cps_api_operation_subsystem_init(&handle,1);
+    }
+    if (rc!=cps_api_ret_code_OK) {
         return PyByteArray_FromStringAndSize(NULL,0);
     }
     return PyByteArray_FromStringAndSize((const char *)&handle,sizeof(handle));
@@ -809,7 +862,6 @@ static cps_api_return_code_t _rollback_function(void * context,
     return cps_api_ret_code_ERR;
 }
 
-
 static PyObject * py_cps_obj_reg(PyObject *self, PyObject *args) {
     cps_api_operation_handle_t *handle=NULL;
     PyObject *h,*o;
@@ -835,10 +887,16 @@ static PyObject * py_cps_obj_reg(PyObject *self, PyObject *args) {
     f._rollback_function = _rollback_function;
 
     if (!cps_api_key_from_string(&f.key,path)) {
-        return NULL;
+        Py_RETURN_FALSE;
     }
 
-    if (cps_api_register(&f)!=cps_api_ret_code_OK) {
+    cps_api_return_code_t rc;
+    {
+        NonBlockingPythonContext l;
+        rc = cps_api_register(&f);
+    }
+
+    if (rc!=cps_api_ret_code_OK) {
         Py_RETURN_FALSE;
     }
     p.release();

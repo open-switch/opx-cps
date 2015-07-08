@@ -127,6 +127,9 @@ cps_api_object_t cps_api_object_init(void *data, size_t bufflen) {
     p->remain = bufflen - sizeof(cps_api_object_data_t);
     p->len = p->remain;
 
+    //incase people use non-zero'ed arrays
+    cps_api_key_set_len(cps_api_object_key((cps_api_object_t)data),0);
+
     return (cps_api_object_t)(data);
 }
 
