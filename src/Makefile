@@ -10,18 +10,16 @@ cps-class-map-util_SRCS=cps_class_map.cpp
 cps-class-map-util_CFLAGS=-std=c++11
 cps-class-map-util_LDFLAGS=-ldn_common -levent_log -lcps-api-common -lpthread
 
-cps-api-common_SRCS=cps_api_object.cpp \
-        cps_api_events.cpp \
-        cps_api_base_event_adapter.cpp \
-        cps_api_operation_common.cpp \
-        cps_api_key.c
 
+cps-api-common_SRCS+=cps_api_object.cpp
+cps-api-common_SRCS+=cps_api_events.cpp
+cps-api-common_SRCS+=cps_api_base_event_adapter.cpp
+cps-api-common_SRCS+=cps_api_operation_common.cpp
+cps-api-common_SRCS+=cps_api_key.c
 cps-api-common_SRCS+=cps_api_object_attr.cpp
-
-
-cps-api-common_SRCS+= cps_ns.cpp \
-					cps_api_operation_service.cpp \
-					cps_api_client_ipc.cpp
+cps-api-common_SRCS+= cps_ns.cpp
+cps-api-common_SRCS+=cps_api_operation_service.cpp
+cps-api-common_SRCS+=cps_api_client_ipc.cpp
 
 cps-api-common_LDFLAGS = -levent_log -ldn_common -lpthread
 
