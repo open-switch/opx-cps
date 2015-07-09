@@ -368,7 +368,7 @@ def cps_object_add_list_attr(cps_object,attr_str,value):
     @return none
     """
 
-    port_list = []
+    bytearray_list = []
     value_list = []
 
     if isinstance(value,list):
@@ -376,6 +376,6 @@ def cps_object_add_list_attr(cps_object,attr_str,value):
     else:
         value_list = str.split(value)
     for val in value_list:
-        port_list.append(cps_attr_types_map.to_data(cps_generate_attr_path(cps_object,attr_str),val))
+        bytearray_list.append(cps_attr_types_map.to_data(cps_generate_attr_path(cps_object,attr_str),val))
 
-    cps_object['change']['data'][cps_generate_attr_path(cps_object,attr_str)] = port_list
+    cps_object['change']['data'][cps_generate_attr_path(cps_object,attr_str)] = bytearray_list
