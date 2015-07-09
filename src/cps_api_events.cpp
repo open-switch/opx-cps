@@ -155,6 +155,7 @@ cps_api_return_code_t cps_api_event_thread_reg(cps_api_event_reg_t * reg,
 }
 
 cps_api_return_code_t cps_api_event_thread_publish(cps_api_object_t object) {
+    std_mutex_simple_lock_guard l(&mutex);
     return cps_api_event_publish(handle,object);
 }
 
