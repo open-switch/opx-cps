@@ -379,3 +379,23 @@ def cps_object_add_list_attr(cps_object,attr_str,value):
         bytearray_list.append(cps_attr_types_map.to_data(cps_generate_attr_path(cps_object,attr_str),val))
 
     cps_object['change']['data'][cps_generate_attr_path(cps_object,attr_str)] = bytearray_list
+
+def cps_object_add_embd_attr(cps_object,attr_str,value_list,param):
+
+    '''
+    This method will add the embedded object
+    @cps_object = cps object
+    @attr_str = attr string in yang("id", "base-port/interface/id")
+    @param = contain the  attribute that we want to set as embedded object
+    @value_list = attribute list that will stored as embedded object
+    '''
+
+    #This will contain the list of the dictionary
+    attr_dict = {}
+    for i,val  in enumerate(value_list):
+        inner_dict = {}
+        inner_dict[param] = \
+          cps_attr_types_map.to_data(cps_generate_attr_path(cps_object,attr_str),val)
+        attr_dict[str(i)] = inner_dict
+        del inner_dict
+    cps_object['change']['data'][cps_generate_attr_path(cps_object,attr_str)] = attr_dict
