@@ -383,19 +383,35 @@ def cps_object_add_list_attr(cps_object,attr_str,value):
 def cps_object_add_embd_attr(cps_object,attr_str,value_list,param):
 
     '''
-    This method will add the embedded object
+    This method will add the embedded object. If the given parameter
+    is available then it will add in to the existing paramer or else
+    it will create a new object and add in to it.
+
     @cps_object = cps object
     @attr_str = attr string in yang("id", "base-port/interface/id")
     @param = contain the  attribute that we want to set as embedded object
     @value_list = attribute list that will stored as embedded object
     '''
 
-    #This will contain the list of the dictionary
     attr_dict = {}
-    for i,val  in enumerate(value_list):
-        inner_dict = {}
+
+    # Check if a nested dictioanry for attr_str if exist
+    # then append to that dictioanry, otherwise create a new
+    if cps_generate_attr_path(cps_object,attr_str) in cps_object['change']['data']:
+        attr_dict = cps_object['change']['data'][cps_generate_attr_path(cps_object,attr_str)]
+    else:
+        cps_object['change']['data'][cps_generate_attr_path(cps_object,attr_str)] = attr_dict
+
+    for i,val in enumerate(value_list):
+
+        if str(i) in attr_dict.keys():
+            inner_dict = attr_dict[str(i)]
+        else:
+            inner_dict = {}
+
         inner_dict[param] = \
           cps_attr_types_map.to_data(cps_generate_attr_path(cps_object,attr_str),val)
         attr_dict[str(i)] = inner_dict
         del inner_dict
+
     cps_object['change']['data'][cps_generate_attr_path(cps_object,attr_str)] = attr_dict
