@@ -358,3 +358,60 @@ def cps_obj_key_compare(cps_api_obj, key_dict):
                 return False
     return True
 
+def cps_object_add_list_attr(cps_object,attr_str,value):
+    """
+    Add list of  attributes to cps object
+    @cps_object = cps object
+    @attr_str = attr string in yang("id", "base-port/interface/id")
+    @value = value of attribute list as list or can also given as
+             space separated parameter in a single string
+    @return none
+    """
+
+    bytearray_list = []
+    value_list = []
+
+    if isinstance(value,list):
+        value_list = value
+    else:
+        value_list = str.split(value)
+    for val in value_list:
+        bytearray_list.append(cps_attr_types_map.to_data(cps_generate_attr_path(cps_object,attr_str),val))
+
+    cps_object['change']['data'][cps_generate_attr_path(cps_object,attr_str)] = bytearray_list
+
+def cps_object_add_embd_attr(cps_object,attr_str,value_list,param):
+
+    '''
+    This method will add the embedded object. If the given parameter
+    is available then it will add in to the existing paramer or else
+    it will create a new object and add in to it.
+
+    @cps_object = cps object
+    @attr_str = attr string in yang("id", "base-port/interface/id")
+    @param = contain the  attribute that we want to set as embedded object
+    @value_list = attribute list that will stored as embedded object
+    '''
+
+    attr_dict = {}
+
+    # Check if a nested dictioanry for attr_str if exist
+    # then append to that dictioanry, otherwise create a new
+    if cps_generate_attr_path(cps_object,attr_str) in cps_object['change']['data']:
+        attr_dict = cps_object['change']['data'][cps_generate_attr_path(cps_object,attr_str)]
+    else:
+        cps_object['change']['data'][cps_generate_attr_path(cps_object,attr_str)] = attr_dict
+
+    for i,val in enumerate(value_list):
+
+        if str(i) in attr_dict.keys():
+            inner_dict = attr_dict[str(i)]
+        else:
+            inner_dict = {}
+
+        inner_dict[param] = \
+          cps_attr_types_map.to_data(cps_generate_attr_path(cps_object,attr_str),val)
+        attr_dict[str(i)] = inner_dict
+        del inner_dict
+
+    cps_object['change']['data'][cps_generate_attr_path(cps_object,attr_str)] = attr_dict
