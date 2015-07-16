@@ -169,12 +169,14 @@ const char * cps_attr_id_to_name(cps_api_attr_id_t id) {
     return NULL;
 }
 
-cps_api_attr_id_t cps_name_to_attr(const char *name) {
+cps_api_attr_id_t cps_name_to_attr(const char *name, bool & found) {
     std_mutex_simple_lock_guard lg(&lock);
     auto it = find_from_name(name);
     if (it!=_rev_string.end()) {
+    	found = true;
         return it->second;
     }
+    found = false;
     return cps_api_attr_id_t(-1);
 }
 

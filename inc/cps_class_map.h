@@ -123,9 +123,10 @@ const char * cps_attr_id_to_name(cps_api_attr_id_t id);
 /**
  * Given a name give a attribute ID for the element.
  * @param name the name of the field
+ * @param found will be set to true if the value is located
  * @return the attribute value or -1 if not found.
  */
-cps_api_attr_id_t cps_name_to_attr(const char *name);
+cps_api_attr_id_t cps_name_to_attr(const char *name, bool &found);
 
 /**
  * Given a attribute ID, return the corresponding key
