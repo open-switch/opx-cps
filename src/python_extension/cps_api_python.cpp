@@ -254,9 +254,12 @@ static void add_to_object(std::vector<cps_api_attr_id_t> &level,
     while (PyDict_Next(d, &pos, &key, &value)) {
         const char * k = PyString_AS_STRING(key);
 
-        level[depth] = cps_name_to_attr(k);
-        if (level[depth]==((cps_api_attr_id_t)-1)) {
-            level[depth] = (cps_api_attr_id_t)atoi(k);
+        bool valid_name = false;
+
+        level[depth] = cps_name_to_attr(k,valid_name);
+
+        if (!valid_name) {
+            level[depth] = strtoll(k,NULL,0);
         }
 
         if (PyDict_Check(value)) {
@@ -441,7 +444,11 @@ static PyObject * py_cps_key_from_name(PyObject *self, PyObject *args) {
     if (i==_cat.end()) {
         return PyString_FromString("");
     }
-    cps_api_attr_id_t at = cps_name_to_attr(path);
+    bool valid_name = false;
+    cps_api_attr_id_t at = cps_name_to_attr(path,valid_name);
+    if (!valid_name) {
+        return PyString_FromString("");
+    }
     cps_api_key_t k;
     if (!cps_api_key_from_attr_with_qual(&k,at,i->second)) {
         return PyString_FromString("");
