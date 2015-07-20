@@ -446,6 +446,9 @@ static PyObject * py_cps_key_from_name(PyObject *self, PyObject *args) {
     }
     bool valid_name = false;
     cps_api_attr_id_t at = cps_name_to_attr(path,valid_name);
+    if (!valid_name) {
+        return PyString_FromString("");
+    }
     cps_api_key_t k;
     if (!cps_api_key_from_attr_with_qual(&k,at,i->second)) {
         return PyString_FromString("");
