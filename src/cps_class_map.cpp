@@ -169,17 +169,6 @@ const char * cps_attr_id_to_name(cps_api_attr_id_t id) {
     return NULL;
 }
 
-cps_api_attr_id_t cps_name_to_attr(const char *name, bool & found) {
-    std_mutex_simple_lock_guard lg(&lock);
-    auto it = find_from_name(name);
-    if (it!=_rev_string.end()) {
-    	found = true;
-        return it->second;
-    }
-    found = false;
-    return cps_api_attr_id_t(-1);
-}
-
 bool cps_api_key_from_attr(cps_api_key_t *key,cps_api_attr_id_t id, size_t key_start_pos) {
     std_mutex_simple_lock_guard lg(&lock);
     auto it = find_from_id(id);
@@ -423,4 +412,16 @@ bool cps_class_map_query(const cps_api_attr_id_t *ids, size_t max_ids, const cha
     }
     return false;
 }
+
+cps_api_attr_id_t cps_name_to_attr(const char *name, bool & found) {
+    std_mutex_simple_lock_guard lg(&lock);
+    auto it = find_from_name(name);
+    if (it!=_rev_string.end()) {
+        found = true;
+        return it->second;
+    }
+    found = false;
+    return cps_api_attr_id_t(-1);
+}
+
 
