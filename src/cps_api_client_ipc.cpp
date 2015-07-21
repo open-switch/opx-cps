@@ -132,7 +132,6 @@ bool cps_api_send_data(cps_api_channel_t handle, void *data, size_t len) {
     return NULL;
 }
 
-
 void cps_api_disconnect_owner(cps_api_channel_t handle) {
     close(handle);
 }
@@ -158,7 +157,6 @@ bool cps_api_get_handle(cps_api_key_t &key, cps_api_channel_t &handle) {
     }
     return rc;
 }
-
 
 cps_api_return_code_t cps_api_process_get_request(cps_api_get_params_t *param, size_t ix) {
     cps_api_return_code_t rc = cps_api_ret_code_ERR;
