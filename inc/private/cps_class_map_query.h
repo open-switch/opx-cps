@@ -43,4 +43,14 @@ std::string cps_class_ids_to_string(const std::vector<cps_api_attr_id_t> &v);
 void cps_class_ids_from_key(std::vector<cps_api_attr_id_t> &v, cps_api_key_t *key);
 std::string cps_key_to_string(const cps_api_key_t * key);
 
+
+
+/**
+ * Given a name give a attribute ID for the element.
+ * @param name the name of the field
+ * @param found will be set to true if the value is located
+ * @return the attribute value or -1 if not found.
+ */
+cps_api_attr_id_t cps_name_to_attr(const char *name, bool &found);
+
 #endif /* CPS_API_INC_PRIVATE_CPS_CLASS_MAP_QUERY_H_ */
