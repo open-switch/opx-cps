@@ -95,7 +95,12 @@ static inline cps_api_to_std_event_map_t* handle_to_data(cps_api_event_service_h
     return (cps_api_to_std_event_map_t*) handle;
 }
 
-static void _close_channel(cps_api_event_service_handle_t handle) {
+/*
+ * The following APIs should be called by locked function calls and therefore do not
+ * need additional locks
+ * */
+
+static void __close_channel(cps_api_event_service_handle_t handle) {
     if (handle_to_data(handle)->connected) {
         std_server_client_disconnect(handle_to_data(handle)->handle);
         handle_to_data(handle)->handle = -1;
@@ -103,7 +108,7 @@ static void _close_channel(cps_api_event_service_handle_t handle) {
     }
 }
 
-static void _resync_regs(cps_api_event_service_handle_t handle) {
+static void __resync_regs(cps_api_event_service_handle_t handle) {
     auto it = handle_to_data(handle)->keys.begin();
     auto end = handle_to_data(handle)->keys.end();
     std_event_key_t key;
@@ -112,14 +117,14 @@ static void _resync_regs(cps_api_event_service_handle_t handle) {
         _int_key_to_std_key(&key,it->first);
         if (std_client_register_interest(handle_to_std_handle(handle),
                 &key,1)!=STD_ERR_OK) {
-            _close_channel(handle);
+            __close_channel(handle);
             break;
         }
         it->second.sync = true;
     }
 }
 
-static void _clear_reg_states(cps_api_event_service_handle_t handle) {
+static void __clear_reg_states(cps_api_event_service_handle_t handle) {
     auto it = handle_to_data(handle)->keys.begin();
     auto end = handle_to_data(handle)->keys.end();
     for ( ; it != end ; ++it ) {
@@ -127,19 +132,19 @@ static void _clear_reg_states(cps_api_event_service_handle_t handle) {
     }
 }
 
-static bool _connect_to_service(cps_api_event_service_handle_t handle) {
+static bool __connect_to_service(cps_api_event_service_handle_t handle) {
     if (handle_to_data(handle)->connected) return true;
 
     std::string ns = cps_api_user_queue(CPS_API_EVENT_CHANNEL_NAME);
 
     cps_api_to_std_event_map_t *p = (cps_api_to_std_event_map_t*) handle;
     if (std_server_client_connect(&p->handle,ns.c_str()) == STD_ERR_OK) {
-        _clear_reg_states(p);
+        __clear_reg_states(p);
         p->connected = true;
     }
 
     if (p->connected) {
-        _resync_regs(handle);
+        __resync_regs(handle);
     }
 
     return p->connected;
@@ -152,11 +157,11 @@ static cps_api_return_code_t _cps_api_event_service_client_connect(cps_api_event
 
     std_mutex_lock_init_non_recursive(&p->lock);
     std_mutex_simple_lock_guard lg(&p->lock);
-    bool rc = _connect_to_service(p);
+    bool rc = __connect_to_service(p);
     if (!rc) {
         EV_LOG(INFO,DSAPI,0,"CPS-EV-CONN","Not able to connect to event service - will retry based on use.");
     }
-
+    *handle = p;
     return cps_api_ret_code_OK;
 }
 
@@ -185,7 +190,7 @@ static cps_api_return_code_t _cps_api_event_service_client_register(
     }
 
     if (p->connected) {
-        _resync_regs(p);
+        __resync_regs(p);
     }
 
     return cps_api_ret_code_OK;
@@ -208,11 +213,11 @@ static cps_api_return_code_t _cps_api_event_service_publish_msg(cps_api_event_se
     cps_api_to_std_key(&key,_okey);
 
     cps_api_to_std_event_map_t *p = handle_to_data(handle);
-    std_mutex_simple_lock_guard lg(&p->lock);
 
     int retry = (int)p->retry;
     for (; retry > 0 ; --retry) {
-        if (!_connect_to_service(handle)) {
+        std_mutex_simple_lock_guard lg(&p->lock);
+        if (!__connect_to_service(handle)) {
             std_usleep(MILLI_TO_MICRO(1));
             continue;
         }
@@ -222,7 +227,7 @@ static cps_api_return_code_t _cps_api_event_service_publish_msg(cps_api_event_se
                 cps_api_object_array(msg),
                 cps_api_object_to_array_len(msg));
         if (rc!=STD_ERR_OK) {
-            _close_channel(handle);
+            __close_channel(handle);
         } else {
             return cps_api_ret_code_OK;
         }
@@ -234,9 +239,10 @@ static cps_api_return_code_t _cps_api_event_service_client_deregister(cps_api_ev
     cps_api_to_std_event_map_t * h = handle_to_data(handle);
 
     //no point in locking the handle on close..
-    //clients will be messed up anyway if they try to have multiple threads using and destroying
-    //event channels
-    _close_channel(handle);
+    //clients will be messed up anyway if they try to have multiple threads
+    //using and destroying event channels
+
+    __close_channel(handle);
     delete h;
 
     return cps_api_ret_code_OK;
@@ -248,24 +254,30 @@ static cps_api_return_code_t _cps_api_wait_for_event(
 
     std_event_msg_t m;
     while (true) {
+        std_event_client_handle h;
         cps_api_to_std_event_map_t *p = handle_to_data(handle);
-        std_mutex_simple_lock_guard lg(&p->lock);
 
-        if (!_connect_to_service(handle)) {
-            //retry every 50ms
-            std_usleep(MILLI_TO_MICRO(50));
-            continue;
+        {
+            std_mutex_simple_lock_guard lg(&p->lock);
+
+            if (!__connect_to_service(handle)) {
+                //retry every 50ms
+                std_usleep(MILLI_TO_MICRO(50));
+                continue;
+            }
+
+            h = handle_to_std_handle(handle);
         }
 
-        if (std_client_wait_for_event_data(handle_to_std_handle(handle),
-                &m, cps_api_object_array(msg),
+        if (std_client_wait_for_event_data(h,&m, cps_api_object_array(msg),
                 cps_api_object_get_reserve_len(msg))!=STD_ERR_OK) {
-            _close_channel(handle);
+            __close_channel(handle);
             continue;
         }
+
         if (!cps_api_object_received(msg,m.data_len)) {
             EV_LOG(ERR,DSAPI,0,"CPS-EV-RX","Invalid message received... returning to client");
-            _close_channel(handle);
+            __close_channel(handle);
             continue;
         }
         break;
