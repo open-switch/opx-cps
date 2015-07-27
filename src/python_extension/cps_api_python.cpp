@@ -667,8 +667,22 @@ static PyObject * py_cps_get(PyObject *self, PyObject *args) {
 static bool py_add_object_to_trans( cps_api_transaction_params_t *tr, PyObject *dict) {
     PyObject *_req = PyDict_GetItemString(dict,"change");
     PyObject *_op = PyDict_GetItemString(dict,"operation");
+
     if (_op==NULL || _req==NULL) {
         return false;
+    }
+    PyObject *_prev = PyDict_GetItemString(dict,"previous");
+    if (_prev!=NULL) {
+        if (cps_api_object_list_size(tr->change_list)!=
+                cps_api_object_list_size(tr->prev)) {
+            return false;
+        }
+        cps_api_object_guard og(dict_to_cps_obj(_req));
+        if (!og.valid()) return false;
+        if (!cps_api_object_list_append(tr->prev,og.get())) {
+            return false;
+        }
+        og.release();
     }
 
     using cps_oper = cps_api_return_code_t (*)(cps_api_transaction_params_t * trans,
@@ -680,6 +694,7 @@ static bool py_add_object_to_trans( cps_api_transaction_params_t *tr, PyObject *
             {"set",cps_api_set},
             {"rpc",cps_api_action}
     };
+
     if (trans.find(PyString_AsString(_op))==trans.end()) {
         return false;
     }

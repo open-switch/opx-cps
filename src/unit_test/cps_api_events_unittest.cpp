@@ -45,7 +45,6 @@ bool _cps_api_event_thread_callback_2(cps_api_object_t object,void * context) {
 
 
 bool threaded_client_test() {
-    if (cps_api_event_thread_init()!=cps_api_ret_code_OK) return false;
 
     cps_api_event_reg_t reg;
     reg.priority = 0;
@@ -101,7 +100,6 @@ void * push_client_messages(void *) {
         if ((ix %10)==0) {
             if (cps_api_event_client_disconnect(handle)!=cps_api_ret_code_OK) return false;
             if (cps_api_event_client_connect(&handle)!=cps_api_ret_code_OK) return false;
-            sleep(1);
         }
         cps_api_key_init(cps_api_object_key(obj),q[ix%2],c[ix%3],1,2,ix%3,ix);
         if (cps_api_event_publish(handle,obj)!=cps_api_ret_code_OK) exit(1);
@@ -152,6 +150,37 @@ bool simple_client_use() {
     return true;
 }
 
+bool _cps_api_event_term(cps_api_object_t object,void * context) {
+     char buff[1024];
+     static int cnt=0;
+     printf("%d(%d) - Obj %s\n",__LINE__,cnt,cps_api_object_to_string(object,buff,sizeof(buff)));
+     ++cnt;
+     if (cnt==(10000-1)) exit(0);
+     return true;
+}
+
+bool full_reg() {
+
+    cps_api_event_reg_t reg;
+    reg.priority = 0;
+
+    cps_api_key_t key[2];
+
+    cps_api_key_init(&key[0],cps_api_qualifier_OBSERVED,0,0,0);
+    cps_api_key_init(&key[1],cps_api_qualifier_TARGET,0,0,0);
+
+    reg.objects = key;
+    reg.number_of_objects = 2 ;
+
+    if (cps_api_event_thread_reg(&reg, _cps_api_event_term,NULL)!=cps_api_ret_code_OK)
+        return false;
+
+    if (cps_api_event_thread_reg(&reg,_cps_api_event_term,
+            NULL)!=cps_api_ret_code_OK)
+        return false;
+    return true;
+}
+
 bool test_init() {
     static std_event_server_handle_t _handle=NULL;
     std_event_server_init(&_handle,CPS_API_EVENT_CHANNEL_NAME,CPS_API_EVENT_THREADS );
@@ -160,9 +189,9 @@ bool test_init() {
 
 TEST(cps_api_events,init) {
     ASSERT_TRUE(test_init());
-
+    ASSERT_TRUE(cps_api_event_thread_init()==cps_api_ret_code_OK);
+    ASSERT_TRUE(full_reg());
     ASSERT_TRUE(threaded_client_test());
-
     ASSERT_TRUE(simple_client_use());
 
 }

@@ -66,7 +66,7 @@ typedef struct {
 static std_rw_lock_t rw_lock;
 static bool initied = false;
 static bool is_running = false;
-static cps_api_event_service_handle_t handle;
+static cps_api_event_service_handle_t _thread_handle;
 static std_thread_create_param_t params;
 
 typedef std::vector<cps_api_event_thread_cbs_t> key_list_t;
@@ -85,7 +85,7 @@ static  void * _thread_function_(void * param) {
     cps_api_object_t obj=cps_api_object_create();
     cps_api_object_reserve(obj,CPS_API_EVENT_THREAD_MAX_OBJ);
     while (is_running) {
-        if (cps_api_wait_for_event(handle,obj)==cps_api_ret_code_OK) {
+        if (cps_api_wait_for_event(_thread_handle,obj)==cps_api_ret_code_OK) {
             std_rw_lock_read_guard rg(&rw_lock);
             key_list_t::iterator it = cb_map.begin();
             key_list_t::iterator end = cb_map.end();
@@ -99,8 +99,8 @@ static  void * _thread_function_(void * param) {
         } else {
             //if there is a failure reading from the client - disconnect and reconnect
             //ideally this will be hidden beneath the handle itself in the very near future
-            cps_api_event_client_disconnect(handle);
-            cps_api_event_client_connect(&handle);
+            cps_api_event_client_disconnect(_thread_handle);
+            cps_api_event_client_connect(&_thread_handle);
         }
     }
     return NULL;
@@ -112,7 +112,7 @@ cps_api_return_code_t cps_api_event_thread_init(void) {
     {
         std_mutex_simple_lock_guard l(&mutex);
         if (is_running) return cps_api_ret_code_OK;
-        if (cps_api_event_client_connect(&handle)!=cps_api_ret_code_OK) {
+        if (cps_api_event_client_connect(&_thread_handle)!=cps_api_ret_code_OK) {
             return cps_api_ret_code_ERR;
         }
         is_running=true;
@@ -125,7 +125,7 @@ cps_api_return_code_t cps_api_event_thread_init(void) {
     params.param = NULL;
 
     if (std_thread_create(&params)!=STD_ERR_OK) {
-        cps_api_event_client_disconnect(handle);
+        cps_api_event_client_disconnect(_thread_handle);
         std_thread_destroy_struct(&params);
         is_running = false;
         return cps_api_ret_code_ERR;
@@ -137,7 +137,7 @@ cps_api_return_code_t cps_api_event_thread_init(void) {
 cps_api_return_code_t cps_api_event_thread_reg(cps_api_event_reg_t * reg,
         cps_api_event_thread_callback_t cb, void * context ) {
 
-    if (cps_api_event_client_register(handle,reg)!=cps_api_ret_code_OK) {
+    if (cps_api_event_client_register(_thread_handle,reg)!=cps_api_ret_code_OK) {
         return cps_api_ret_code_ERR;
     }
     cps_api_event_thread_cbs_t p ;
@@ -156,7 +156,7 @@ cps_api_return_code_t cps_api_event_thread_reg(cps_api_event_reg_t * reg,
 
 cps_api_return_code_t cps_api_event_thread_publish(cps_api_object_t object) {
     std_mutex_simple_lock_guard l(&mutex);
-    return cps_api_event_publish(handle,object);
+    return cps_api_event_publish(_thread_handle,object);
 }
 
 cps_api_return_code_t cps_api_event_thread_shutdown(void) {

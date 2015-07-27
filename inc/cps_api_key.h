@@ -101,6 +101,13 @@ static inline uint32_t * cps_api_key_elem_start(cps_api_key_t *elem) {
 }
 
 /**
+ * Given a key return the hash that should be pretty unique
+ * @param elem the key to hash
+ * @return the hash value
+ */
+size_t cps_api_key_hash(cps_api_key_t *elem);
+
+/**
  * Get a const pointer to the first element of the key
  * @param elem the key
  * @return a pointer to the first element in the key
