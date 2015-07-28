@@ -13,10 +13,11 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <functional>
 
 #define CPS_API_ATTR_KEY_ID CPS_API_ATTR_RESERVE_RANGE_END
 
-int cps_api_key_matches( cps_api_key_t *  key, cps_api_key_t * comparison, bool exact) {
+extern "C" int cps_api_key_matches( cps_api_key_t *  key, cps_api_key_t * comparison, bool exact) {
     int src_len = cps_api_key_get_len_in_bytes(key);
     int comp_len = cps_api_key_get_len_in_bytes(comparison);
     int match_len = (src_len > comp_len) ? comp_len : src_len;
@@ -36,7 +37,7 @@ int cps_api_key_matches( cps_api_key_t *  key, cps_api_key_t * comparison, bool 
 
 #define REQUIRED_ADDITIONAL_SPACE (12) //10 chars + ws + 1 extra :)
 
-char * cps_api_key_print(cps_api_key_t *key, char *buff, size_t len) {
+extern "C" char * cps_api_key_print(cps_api_key_t *key, char *buff, size_t len) {
     STD_ASSERT(buff!=NULL);
 
     size_t klen = cps_api_key_get_len((cps_api_key_t *)key);
@@ -62,7 +63,7 @@ char * cps_api_key_print(cps_api_key_t *key, char *buff, size_t len) {
     return buff;
 }
 
-bool cps_api_key_from_string(cps_api_key_t *key,const char *buff) {
+extern "C" bool cps_api_key_from_string(cps_api_key_t *key,const char *buff) {
     std_parsed_string_t handle;
     if (!std_parse_string(&handle,buff,".")) return false;
     memset(key,0,sizeof(*key));
@@ -83,7 +84,7 @@ bool cps_api_key_from_string(cps_api_key_t *key,const char *buff) {
 
 }
 
-cps_api_object_attr_t cps_api_get_key_data(cps_api_object_t obj,cps_api_attr_id_t id) {
+extern "C" cps_api_object_attr_t cps_api_get_key_data(cps_api_object_t obj,cps_api_attr_id_t id) {
     cps_api_attr_id_t ids[] = {CPS_API_ATTR_KEY_ID,id};
     cps_api_object_attr_t p = cps_api_object_e_get(obj,ids,sizeof(ids)/sizeof(*ids));
     if (p==NULL) p = cps_api_object_e_get(obj,&id,1);
@@ -91,9 +92,22 @@ cps_api_object_attr_t cps_api_get_key_data(cps_api_object_t obj,cps_api_attr_id_
 }
 
 
-bool cps_api_set_key_data(cps_api_object_t obj,cps_api_attr_id_t id,
+extern "C" bool cps_api_set_key_data(cps_api_object_t obj,cps_api_attr_id_t id,
         cps_api_object_ATTR_TYPE_t type, const void *data, size_t len) {
     cps_api_attr_id_t ids[] = {CPS_API_ATTR_KEY_ID,id};
     return cps_api_object_e_add(obj,ids,sizeof(ids)/sizeof(*ids),type,data,len);
 }
 
+extern "C" size_t cps_api_key_hash(cps_api_key_t *key) {
+    size_t ix = 0;
+    size_t mx = (CPS_OBJ_KEY_HEADER_SIZE + cps_api_key_get_len_in_bytes(key)) / CPS_OBJ_KEY_ELEM_SIZE;
+    uint32_t *ptr = (uint32_t *)(*key);
+    size_t hash = 0;
+    std::hash<uint32_t> h;
+
+    for ( ; ix < mx ; ++ix ) {
+        hash <<=1;
+        hash^=h(*(ptr++));
+    }
+    return hash;
+}
