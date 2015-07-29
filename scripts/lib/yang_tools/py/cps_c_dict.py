@@ -53,8 +53,9 @@ class COutputFormat:
                 if tag == 'leaf':
                     line+="CPS_CLASS_ATTR_T_LEAF|"
             if i in self.model.container_map:
-                line+="CPS_CLASS_ATTR_T_CONTAINER|"
-            line+= self.lang.determine_type(i)
+                line+="CPS_CLASS_ATTR_T_CONTAINER"
+            line+=","
+            line+= self.lang.cps_map_type(i)
             line+="}},"
             print line
 

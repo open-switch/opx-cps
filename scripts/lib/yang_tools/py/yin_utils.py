@@ -1,12 +1,14 @@
 # This file contains a few general purpose YIN utilities
 import os
 import subprocess
-
+import sys
 def run_cmd(args):
     p = subprocess.Popen(args,stdout=subprocess.PIPE)
     stdout = p.communicate()[0]
-    if p.wait()!=0:
+    wv = p.wait()
+    if wv!=0:
         print(stdout)
+        print("Wait result is %d" % wv)
 
 
 def search_path_for_file(filename):

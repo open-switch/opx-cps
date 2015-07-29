@@ -211,7 +211,8 @@ cps_api_return_code_t cps_class_map_init(cps_api_attr_id_t id, const cps_api_att
     ref.name = std::move(name);
     ref.full_path = details->name;
     ref.embedded = details->embedded;
-    ref.type = details->type;
+    ref.attr_type = details->attr_type;
+    ref.data_type = details->data_type;
     ref.id = id;
 
     _rev_string[ref.full_path] = ref.id;
@@ -336,7 +337,8 @@ void cps_api_class_map_init(void) {
     key_d.desc = "CPS Internal Key info";
     key_d.embedded = true;
     key_d.name = "cps/key_data";
-    key_d.type = cps_api_object_ATTR_T_BIN;
+    key_d.attr_type = CPS_CLASS_ATTR_T_CONTAINER;
+    key_d.data_type = CPS_CLASS_DATA_TYPE_T_EMBEDDED;
     cps_class_map_init(key_id,&key_id,1,&key_d);
 }
 

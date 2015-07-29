@@ -18,6 +18,7 @@
 
 #include <stdbool.h>
 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -26,14 +27,40 @@ extern "C" {
 @{
 */
 
+#define CPS_CLASS_MAP_VER (2)
+
 #define CPS_DEF_SEARCH_PATH "/opt/ngos/lib"        //the location of the generated class
 #define CPS_DEF_CLASS_FILE_NAME "cpsclass"      //must match with the generated lib name
 
 typedef enum  {
-    CPS_CLASS_ATTR_T_LEAF=1<<4,
-    CPS_CLASS_ATTR_T_LEAF_LIST=2<<4,
-    CPS_CLASS_ATTR_T_CONTAINER=3<<4,
+    CPS_CLASS_ATTR_T_LEAF=1,
+    CPS_CLASS_ATTR_T_LEAF_LIST=1<<2,
+    CPS_CLASS_ATTR_T_CONTAINER=1<<3,
+    CPS_CLASS_ATTR_T_SUBSYSTEM=1<<4
 }CPS_CLASS_ATTR_TYPES_t;
+
+typedef enum {
+    CPS_CLASS_DATA_TYPE_T_UINT8,
+    CPS_CLASS_DATA_TYPE_T_UINT16,
+    CPS_CLASS_DATA_TYPE_T_UINT32,
+    CPS_CLASS_DATA_TYPE_T_UINT64,
+    CPS_CLASS_DATA_TYPE_T_INT8,
+    CPS_CLASS_DATA_TYPE_T_INT16,
+    CPS_CLASS_DATA_TYPE_T_INT32,
+    CPS_CLASS_DATA_TYPE_T_INT64,
+    CPS_CLASS_DATA_TYPE_T_STRING,
+    CPS_CLASS_DATA_TYPE_T_ENUM,
+    CPS_CLASS_DATA_TYPE_T_BOOL,
+    CPS_CLASS_DATA_TYPE_T_OBJ_ID,
+    CPS_CLASS_DATA_TYPE_T_DATE,
+    CPS_CLASS_DATA_TYPE_T_IPV4,
+    CPS_CLASS_DATA_TYPE_T_IPV6,
+    CPS_CLASS_DATA_TYPE_T_IP,
+    CPS_CLASS_DATA_TYPE_T_BIN,
+    CPS_CLASS_DATA_TYPE_T_DOUBLE,
+    CPS_CLASS_DATA_TYPE_T_EMBEDDED,
+}CPS_CLASS_DATA_TYPE_t;
+
 /**
  * Structure representing a node in the CPS yang map.  This map can be used to get extended inforamtion
  * about a CPS object.
@@ -42,7 +69,8 @@ typedef struct {
     const char *name;   //!name of the class element
     const char *desc;   //!Description of the element
     bool embedded;      //!true if the element is embedded
-    uint_t type;        //!the type of the element
+    CPS_CLASS_ATTR_TYPES_t attr_type;
+    CPS_CLASS_DATA_TYPE_t data_type;
 } cps_class_map_node_details;
 
 /**

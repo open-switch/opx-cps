@@ -10,6 +10,7 @@
 
 #include "cps_api_object.h"
 #include "cps_api_object_attr.h"
+#include "cps_class_map.h"
 
 #include <stdbool.h>
 #include <string>
@@ -21,7 +22,8 @@ struct cps_class_map_node_details_int_t {
     std::string full_path;
     std::string desc;
     bool embedded=false;
-    uint_t type=0;
+    CPS_CLASS_ATTR_TYPES_t attr_type;
+    CPS_CLASS_DATA_TYPE_t data_type;
     cps_api_attr_id_t id=0;
     std::vector<cps_api_attr_id_t> ids;
 };

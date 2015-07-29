@@ -19,13 +19,13 @@ static struct {
   std::vector<cps_api_attr_id_t> _ids;
   cps_class_map_node_details details;
 } lst[] = {
-{{19,1,4}, { "base-sflow/entry/direction","",false,cps_api_object_ATTR_T_BIN}},
-{{19,1,2}, { "base-sflow/entry/id","",false,cps_api_object_ATTR_T_BIN}},
-{{19}, { "base-sflow","",true,cps_api_object_ATTR_T_BIN}},
-{{19,1,1}, { "base-sflow/entry/oid","",false,cps_api_object_ATTR_T_BIN}},
-{{19,1}, { "base-sflow/entry","",true,cps_api_object_ATTR_T_BIN}},
-{{19,1,5}, { "base-sflow/entry/sampling-rate","",false,cps_api_object_ATTR_T_BIN}},
-{{19,1,3}, { "base-sflow/entry/ifindex","",false,cps_api_object_ATTR_T_BIN}},
+{{19,1,4}, { "base-sflow/entry/direction","",false,CPS_CLASS_ATTR_T_LEAF,CPS_CLASS_DATA_TYPE_T_BIN}},
+{{19,1,2}, { "base-sflow/entry/id","",false,CPS_CLASS_ATTR_T_LEAF,CPS_CLASS_DATA_TYPE_T_BIN}},
+{{19}, { "base-sflow","",true,CPS_CLASS_ATTR_T_LEAF,CPS_CLASS_DATA_TYPE_T_BIN}},
+{{19,1,1}, { "base-sflow/entry/oid","",false,CPS_CLASS_ATTR_T_LEAF,CPS_CLASS_DATA_TYPE_T_BIN}},
+{{19,1}, { "base-sflow/entry","",true,CPS_CLASS_ATTR_T_LEAF,CPS_CLASS_DATA_TYPE_T_BIN}},
+{{19,1,5}, { "base-sflow/entry/sampling-rate","",false,CPS_CLASS_ATTR_T_LEAF,CPS_CLASS_DATA_TYPE_T_BIN}},
+{{19,1,3}, { "base-sflow/entry/ifindex","",false,CPS_CLASS_ATTR_T_LEAF,CPS_CLASS_DATA_TYPE_T_BIN}},
 };
 
 static const size_t lst_len = sizeof(lst)/sizeof(*lst);
