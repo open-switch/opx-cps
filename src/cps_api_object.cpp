@@ -218,7 +218,7 @@ cps_api_object_attr_t cps_api_object_attr_get(cps_api_object_t obj, uint64_t att
     cps_api_object_internal_t *p = (cps_api_object_internal_t*)obj;
     size_t len = obj_used_len(p);
     void *tlv = obj_data(p);
-    while (len > STD_TLV_HDR_LEN) {
+    while (len >= STD_TLV_HDR_LEN) {
         uint64_t tag = std_tlv_tag(tlv);
         if (attr == tag) {
             return (cps_api_object_attr_t)tlv;
