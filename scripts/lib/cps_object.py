@@ -9,7 +9,6 @@ types = cps_utils.cps_attr_types_map
 class CPSObject:
 
     def __init__(self,module="",qual="target",data={},obj={}):
-
         """
         Constructor to create CPS object
         @module - module key string, can be empty in case of
@@ -46,8 +45,6 @@ class CPSObject:
         if not self.obj['key']:
             raise ValueError ("Invalid Module Name or object doesn't have the key")
 
-        if not self.root_path:
-            raise ValueError ("Failed to get the root path")
 
     def set_key(self,key):
         """
@@ -163,7 +160,7 @@ class CPSObject:
         for key in key_dict:
             full_key = self.generate_path(key)
             if full_key in self.obj['data']:
-                if key_dict[key] != self.obj['data'][full_key]:
+                if key_dict[key] != types.from_data(full_key,self.obj['data'][full_key]):
                     return False
         return True
 
