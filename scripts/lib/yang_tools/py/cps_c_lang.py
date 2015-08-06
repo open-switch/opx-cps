@@ -64,6 +64,7 @@ map_types = {
    'host':'CPS_CLASS_DATA_TYPE_T_STRING',
    'uri':'CPS_CLASS_DATA_TYPE_T_STRING',
    'enum':'CPS_CLASS_DATA_TYPE_T_ENUM',
+   'enumeration':'CPS_CLASS_DATA_TYPE_T_ENUM',
 }
 
 def type_to_lang_type(typename):
@@ -83,11 +84,18 @@ class Language:
         global valid_types
         return str in valid_types
 
-    def cps_map_type(self,elem):
+    def cps_map_type(self,global_types,elem):
         global map_types
         type_str = self.get_type(elem)
+
+        while type_str not in map_types and type_str in global_types:
+            elem = global_types[type_str]
+            type_str = self.get_type(elem)
+
         if not type_str in map_types:
-            raise Exception("Failed to translate type...%s = %s" % elem, type_str);
+            print global_types
+            raise Exception("Failed to translate type...%s = %s" % (elem, type_str));
+
         return map_types[type_str]
 
     def type_to_lang_type(self,str):
@@ -97,7 +105,6 @@ class Language:
         type = node.find(self.model.module.ns()+'type')
         if type==None: return 'binary'
         return type.get('name')
-
 
     def determine_key_types(self):
         for cont_key in self.model.elem_with_keys.keys():
