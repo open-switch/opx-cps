@@ -36,7 +36,8 @@ typedef enum  {
     CPS_CLASS_ATTR_T_LEAF=1,
     CPS_CLASS_ATTR_T_LEAF_LIST=1<<2,
     CPS_CLASS_ATTR_T_CONTAINER=1<<3,
-    CPS_CLASS_ATTR_T_SUBSYSTEM=1<<4
+    CPS_CLASS_ATTR_T_SUBSYSTEM=1<<4,
+    CPS_CLASS_ATTR_T_LIST=1<<4,
 }CPS_CLASS_ATTR_TYPES_t;
 
 typedef enum {
@@ -85,16 +86,6 @@ typedef struct {
  * @return STD_ERR_OK if successful otherwise a return code indicating the error type
  */
 cps_api_return_code_t cps_class_map_init(cps_api_attr_id_t id, const cps_api_attr_id_t *ids, size_t ids_len, cps_class_map_node_details *details);
-
-
-/**
- * Convert the CPS API key to attribute IDs - the length of ids needs to be big enough
- * @param ids the pointer to the IDs to set
- * @param ids_len the length of the ids array
- * @param key the key to convert
- * @return true if successfully converted otherwise false
- */
-bool cps_api_key_to_class_attr(cps_api_attr_id_t *ids, size_t ids_len, const cps_api_key_t * key);
 
 
 /**

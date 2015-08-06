@@ -219,10 +219,10 @@ class Language:
 
             if self.model.all_node_map[leaf].tag == self.model.module.ns()+'leaf-list' and function.find('get')!=-1:
                 print "  /* Iterate inside for the leaf-list */"
-                print "  for(cma_get_tag_it_inside(obj,"+self.names[leaf]+",&it);" 
+                print "  for(cma_get_tag_it_inside(obj,"+self.names[leaf]+",&it);"
                 print "      cps_api_object_it_valid(&it);"
                 print "      cps_api_object_it_next(&it)) {"
-                print "    if(cma_get_data_fr_it(&it,&"+self.names_short[self.names[leaf]]+"_val)){;" 
+                print "    if(cma_get_data_fr_it(&it,&"+self.names_short[self.names[leaf]]+"_val)){;"
                 print "        /* process data here - i.e. val_valid */ "
                 print "        ;"
                 print "    }"
@@ -418,6 +418,12 @@ void init_"""+self.name_to_cms_name(self.module)+"""_xmltag(std::unordered_map<s
                 ro_node = self.node_rw_access(elem)==False
                 rw_elems = len(self.get_node_leaves_based_on_access(elem,False))!=0
                 ro_elems = len(self.get_node_leaves_based_on_access(elem,True))!=0
+
+                real_node = self.model. elem
+                if rpc:
+                    rw_elems = 1
+                    ro_elems = 0
+
 
                 if ro_node or ((not ro_node) and ro_elems):
                     self.read_cb_node(elem)

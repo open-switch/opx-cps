@@ -5,6 +5,6 @@ setup(name="cps", version="0.0",
 									"cps_api_python.cpp",
 									"cps_api_python_utils.cpp",
 									"cps_api_python_events.cpp",
-									"cps_api_python_operation.cpp"],
+									"cps_api_python_operation.cpp"],	
     libraries=['cps-api-common',"cps-class-map-util"],
     )])

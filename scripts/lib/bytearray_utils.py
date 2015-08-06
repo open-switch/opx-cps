@@ -5,7 +5,8 @@ import sys
 import binascii
 import socket
 
-pack_type_map = { 'uint8_t':'<B',
+pack_type_map = {
+		  'uint8_t':'<B',
 		  'uint16_t':'<H',
 		  'uint32_t':'<I',
 		  'uint64_t':'<Q',

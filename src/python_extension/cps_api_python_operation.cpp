@@ -7,7 +7,7 @@
 
 #include "cps_api_operation.h"
 #include "cps_api_python.h"
-#include "cps_class_map_query.h"
+#include "private/cps_class_map_query.h"
 
 #include "Python.h"
 #include <map>

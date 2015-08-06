@@ -3,7 +3,9 @@
 #include "cps_api_operation.h"
 #include "cps_api_key.h"
 #include "cps_class_map.h"
-#include "cps_class_map_query.h"
+
+#include "private/cps_class_map_query.h"
+
 #include "cps_api_events.h"
 #include "cps_api_object_key.h"
 
@@ -16,7 +18,13 @@
 #include <memory>
 #include <map>
 #include <string>
+#include <algorithm>
 
+PyObject *cps_error_exception = nullptr;
+
+void py_set_error_string(const char * msg) {
+    PyErr_SetString(cps_error_exception, msg);
+}
 
 static PyObject * py_cps_map_init(PyObject *self, PyObject *args) {
     cps_api_class_map_init();
@@ -38,7 +46,6 @@ static PyObject * py_cps_byte_array_key(PyObject *self, PyObject *args) {
 
     return PyString_FromString(cps_key_to_string(cps_api_object_key(obj)).c_str());
 }
-
 
 static PyObject * py_cps_byte_array_to_obj(PyObject *self, PyObject *args) {
     PyObject *array;
@@ -65,11 +72,14 @@ static PyObject * py_cps_obj_to_array(PyObject *self, PyObject *args) {
             cps_api_object_to_array_len(obj));
 }
 
+
+
 static const std::map<std::string,CPS_CLASS_ATTR_TYPES_t> _attr_types = {
         {"leaf",CPS_CLASS_ATTR_T_LEAF},
         {"leaf-list",CPS_CLASS_ATTR_T_LEAF_LIST },
         {"container",CPS_CLASS_ATTR_T_CONTAINER },
-        {"subsystem",CPS_CLASS_ATTR_T_SUBSYSTEM }
+        {"subsystem",CPS_CLASS_ATTR_T_SUBSYSTEM },
+        {"list",CPS_CLASS_ATTR_T_LIST },
 };
 
 static const std::map<std::string,CPS_CLASS_DATA_TYPE_t> _data_types = {
@@ -94,6 +104,12 @@ static const std::map<std::string,CPS_CLASS_DATA_TYPE_t> _data_types = {
         {"embedded",CPS_CLASS_DATA_TYPE_T_EMBEDDED},
 };
 
+struct _attr_type_match {
+    uint32_t _val;
+    template <typename T> bool operator()(T &it) const {
+        return (uint32_t)it->second == _val;
+    }
+};
 
 static PyObject * py_cps_config(PyObject *self, PyObject *args) {
     const char * path=NULL, *name, *desc,*_id,*attr_type,*data_type;
@@ -130,12 +146,13 @@ static PyObject * py_cps_config(PyObject *self, PyObject *args) {
     Py_RETURN_TRUE;
 }
 
+
 static PyObject * py_cps_info(PyObject *self, PyObject *args) {
     const char * path=NULL;
     if (! PyArg_ParseTuple( args, "s", &path)) return NULL;
 
-    PyObject * d = PyDict_New();
-    if (d==NULL) return NULL;
+    PyRef d(PyDict_New());
+    if (d.get()==nullptr) return nullptr;
 
     std::vector<cps_api_attr_id_t> v;
     cps_class_ids_from_string(v,path);
@@ -143,16 +160,85 @@ static PyObject * py_cps_info(PyObject *self, PyObject *args) {
     cps_class_node_detail_list_t lst;
     cps_class_map_level(&v[0],v.size(),lst);
 
+    PyRef names(PyDict_New());
+    PyRef ids(PyDict_New());
+    if (names.get()==nullptr || ids.get()==nullptr) {
+        return nullptr;
+    }
+    if (!py_cps_util_set_item_to_dict(d.get(),"names",names.get(),false)) return nullptr;
+    if (!py_cps_util_set_item_to_dict(d.get(),"ids",ids.get(),false)) return nullptr;
+
     size_t ix = 0;
     size_t mx = lst.size();
     for ( ; ix < mx ; ++ix ) {
         char buff[40]; //just enough for the attribute id
         snprintf(buff,sizeof(buff),"%lld",(long long)lst[ix].id);
-        py_cps_util_set_item_to_dict(d,buff,
+        py_cps_util_set_item_to_dict(ids.get(),buff,
                 PyString_FromString(lst[ix].full_path.c_str()));
+        py_cps_util_set_item_to_dict(names.get(),lst[ix].full_path.c_str(),
+                PyString_FromString(buff));
     }
-    return d;
+    names.release();
+    ids.release();
+
+    return d.release();
 }
+
+static PyObject * py_cps_types(PyObject *self, PyObject *args) {
+    const char * path=NULL;
+    if (! PyArg_ParseTuple( args, "s", &path)) return NULL;
+
+    PyRef d(PyDict_New());
+
+    if (d.get()==NULL) return NULL;
+
+    const cps_class_map_node_details_int_t * ref = cps_dict_find_by_name(path);
+
+    if (ref==nullptr) {
+        std::vector<cps_api_attr_id_t> v;
+        cps_class_ids_from_string(v,path);
+        if (v.size()> 0 ) {
+            ref = cps_dict_find_by_id(v[v.size()-1]);
+        }
+    }
+    if (ref==nullptr) {
+        py_set_error_string("Invalid key specified - no dictionary entry found.");
+        return NULL;
+    }
+    PyObject *dict = d.get();
+    d.release();
+
+    py_cps_util_set_item_to_dict(dict,"name", PyString_FromString(ref->full_path.c_str()));
+    py_cps_util_set_item_to_dict(dict,"key", PyString_FromString(cps_class_ids_to_string(ref->ids).c_str()));
+    py_cps_util_set_item_to_dict(dict,"description", PyString_FromString(ref->desc.c_str()));
+    py_cps_util_set_item_to_dict(dict,"embedded", PyString_FromString(ref->embedded?"True":"False"));
+
+    {
+    static const size_t ID_BUFF_LEN=100;
+    char buff[ID_BUFF_LEN];
+    snprintf(buff,sizeof(buff),"%" PRId64,(int64_t)ref->id);
+    py_cps_util_set_item_to_dict(dict,"id", PyString_FromString(buff));
+    }
+
+    auto attr_it = std::find_if(_attr_types.begin(),_attr_types.end(),[&ref]
+        (const std::map<std::string,CPS_CLASS_ATTR_TYPES_t>::value_type &it){
+            return (it.second == ref->attr_type);
+        });
+    if (attr_it!=_attr_types.end()) {
+        py_cps_util_set_item_to_dict(dict,"attribute_type", PyString_FromString(attr_it->first.c_str()));
+    }
+
+    auto data_it = std::find_if(_data_types.begin(),_data_types.end(),[&ref]
+        (const std::map<std::string,CPS_CLASS_DATA_TYPE_t>::value_type &it){
+            return (it.second == ref->data_type);
+        });
+    if (data_it!=_data_types.end()) {
+        py_cps_util_set_item_to_dict(dict,"data_type", PyString_FromString(data_it->first.c_str()));
+    }
+
+    return dict;
+}
+
 
 static PyObject * py_cps_get_keys(PyObject *self, PyObject *args) {
     PyObject *d = NULL;
@@ -192,13 +278,12 @@ static PyObject * py_cps_key_from_name(PyObject *self, PyObject *args) {
     if (i==_cat.end()) {
         return PyString_FromString("");
     }
-    bool valid_name = false;
-    cps_api_attr_id_t at = cps_name_to_attr(path,valid_name);
-    if (!valid_name) {
-        return PyString_FromString("");
-    }
+
+    const cps_class_map_node_details_int_t *ent = cps_dict_find_by_name(path);
+    if (ent==nullptr) return PyString_FromString("");
+
     cps_api_key_t k;
-    if (!cps_api_key_from_attr_with_qual(&k,at,i->second)) {
+    if (!cps_api_key_from_attr_with_qual(&k,ent->id,i->second)) {
         return PyString_FromString("");
     }
     char buff[CPS_API_KEY_STR_MAX];
@@ -221,7 +306,10 @@ static PyMethodDef cps_methods[] = {
     {"convarray",  py_cps_byte_array_to_obj, METH_VARARGS, cps_cps_generic_doc__},
     {"arraykey",  py_cps_byte_array_key, METH_VARARGS, cps_cps_generic_doc__},
     {"convdict",  py_cps_obj_to_array, METH_VARARGS, cps_cps_generic_doc__},
+
     {"info",  py_cps_info, METH_VARARGS, cps_cps_generic_doc__},
+    {"type",  py_cps_types, METH_VARARGS, cps_cps_generic_doc__},
+
     {"config",py_cps_config, METH_VARARGS, cps_cps_generic_doc__ },
     {"key_from_name",py_cps_key_from_name, METH_VARARGS, cps_cps_generic_doc__ },
     {"get_keys",py_cps_get_keys, METH_VARARGS, cps_cps_generic_doc__ },
@@ -251,5 +339,9 @@ PyMODINIT_FUNC initcps(void) {
     if (! PyEval_ThreadsInitialized()) {
         PyEval_InitThreads();
     }
+
+    cps_error_exception = PyErr_NewException((char*)"cps.error", NULL, NULL);
+    Py_INCREF(cps_error_exception);
+    PyModule_AddObject(m, "error", cps_error_exception);
     cps_api_event_service_init();
 }

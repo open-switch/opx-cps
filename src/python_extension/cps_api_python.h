@@ -12,6 +12,8 @@
 
 #include "Python.h"
 
+#include <string>
+
 class PyRef {
     PyObject *_o;
 public:
@@ -25,7 +27,11 @@ public:
     }
 
     bool valid() { return _o != NULL; }
-    void release() { _o = NULL;}
+    PyObject * release() {
+        PyObject *r =_o;
+        _o = NULL;
+        return r;
+    }
     void set(PyObject *o) {
         decref();
         _o = o;
@@ -81,6 +87,12 @@ public:
 };
 
 /**
+ * Error messages can be set with the following method
+ */
+void py_set_error_string(const char * msg) ;
+
+
+/**
  * Events
  */
 PyObject * py_cps_event_connect(PyObject *self, PyObject *args);
@@ -109,6 +121,9 @@ cps_api_object_t cps_obj_from_array(PyObject *array);
 cps_api_object_t dict_to_cps_obj(PyObject *dict);
 cps_api_object_t dict_to_cps_obj(const char *path, PyObject *dict) ;
 PyObject * cps_obj_to_dict(cps_api_object_t obj) ;
+
 void py_dict_set_from_attr(PyObject *d, cps_api_attr_id_t id, cps_api_object_attr_t attr);
+
+std::string py_str_from_attr_id(cps_api_attr_id_t id);
 
 #endif /* CPS_API_SRC_PYTHON_EXTENSION_CPS_API_PYTHON_H_ */
