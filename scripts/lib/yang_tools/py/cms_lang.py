@@ -419,12 +419,6 @@ void init_"""+self.name_to_cms_name(self.module)+"""_xmltag(std::unordered_map<s
                 rw_elems = len(self.get_node_leaves_based_on_access(elem,False))!=0
                 ro_elems = len(self.get_node_leaves_based_on_access(elem,True))!=0
 
-                real_node = self.model.elem
-                if rpc:
-                    rw_elems = 1
-                    ro_elems = 0
-
-
                 if ro_node or ((not ro_node) and ro_elems):
                     self.read_cb_node(elem)
                     read_res = True
