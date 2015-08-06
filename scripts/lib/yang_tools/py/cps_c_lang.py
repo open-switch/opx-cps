@@ -65,6 +65,7 @@ map_types = {
    'uri':'CPS_CLASS_DATA_TYPE_T_STRING',
    'enum':'CPS_CLASS_DATA_TYPE_T_ENUM',
    'enumeration':'CPS_CLASS_DATA_TYPE_T_ENUM',
+   'union': 'CPS_CLASS_DATA_TYPE_T_BIN'
 }
 
 def type_to_lang_type(typename):

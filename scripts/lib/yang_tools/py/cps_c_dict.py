@@ -54,11 +54,11 @@ class COutputFormat:
 
             if tag == 'leaf-list':
                 line+="CPS_CLASS_ATTR_T_LEAF_LIST"
-            if tag == 'leaf':
+            elif tag == 'leaf':
                 line+="CPS_CLASS_ATTR_T_LEAF"
-            if tag == 'list':
+            elif tag == 'list':
                 line+="CPS_CLASS_ATTR_T_LIST"
-            if len(line)==0:
+            else:
                 line+="CPS_CLASS_ATTR_T_CONTAINER"
             line+=","
             if ele!=None:
