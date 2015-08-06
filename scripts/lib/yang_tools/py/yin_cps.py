@@ -65,6 +65,7 @@ class CPSParser:
                 prefix = prefix.get('value')
             if prefix!=None:
                 self.imports['prefix'].append(prefix)
+            print "Loading module with prefix %s" % prefix
             self.context['loader'].load(i.get('module')+".yang",prefix=prefix)
             self.imports['module'].append(i.get('module'))
 
@@ -94,6 +95,7 @@ class CPSParser:
         self.all_node_map[self.module.name()] = self.root_node
         self.container_keys[self.module.name()] = self.module.name()+ " "
         self.parse_types(self.root_node)
+        print self.context['types']
         self.fix_namespace(self.root_node)
         self.walk_nodes(self.root_node, self.module.name())
         self.handle_keys()
