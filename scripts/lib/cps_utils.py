@@ -1,27 +1,22 @@
 import cps
 import os
+from os.path import isfile, join
 import bytearray_utils
 import socket
 import re
+from copy import deepcopy
 
-module_prefix_map = {
-                    "stg" : "base-stg/entry",
-                    "mirror" : "base-stg/entry",
-                    "sflow" : "base-sflow/entry",
-                    "lag" : "base-lag/entry",
-                    "vlan" : "base-vlan/entry",
-                    "acl-table" : "base-acl/table",
-                    "acl-entry" : "base-acl/entry",
-                    "mac" : "base-mac/table",
-                    "physical" : "base-port/physical",
-                    "interface" : "base-port/interface",
-                    "route" : "base-route/obj/entry",
-                    "switch" : "base-switch/switching-entities/switching-entity",
-                    "interface-stat" : "base-stats/interfaces/interface",
-                    "vlan-stat" : "base-stats/vlans/vlan"
-                   }
+
+module_path = "/opt/ngos/lib/python"
+
+print_methods = {}
+convert_methods = {}
 
 def is_ipv4_addr(ip_addr):
+    """
+    Check if string is valid ipv4 address
+    @ip_addr - ipv4 address string
+    """
     try:
         socket.inet_pton(socket.AF_INET,ip_addr)
     except socket.error:
@@ -29,6 +24,10 @@ def is_ipv4_addr(ip_addr):
     return True
 
 def is_ipv6_addr(ip_addr):
+    """
+    Check if string is valid ipv6 address
+    @ip_addr - ipv6 address string
+    """
     try:
         socket.inet_pton(socket.AF_INET6,ip_addr)
     except socket.error:
@@ -36,11 +35,19 @@ def is_ipv6_addr(ip_addr):
     return True
 
 def is_mac_addr(mac_addr):
+    """
+    Check if string is a valid mac address
+    @mac_addr - mac address string
+    """
     if re.match("[0-9a-f]{2}([:])[0-9a-f]{2}(\\1[0-9a-f]{2}){4}$", mac_addr.lower()):
         return True
     return False
 
 def is_int(val):
+    """
+    Check if string is integer
+    @val - numeric string
+    """
     if val.isdigit():
         return True
     return False
@@ -62,10 +69,6 @@ def get_string_type(val):
 class CPSTypes:
     def __init__(self):
         self.types = {}
-        self.print_methods = {}
-
-    def add_print_method(self,type,func):
-        self.print_methods[type] = func
 
     def add_type(self, key, typ):
         self.types[key] = typ
@@ -78,6 +81,14 @@ class CPSTypes:
         if type(val) == bytearray:
             if len(val)==4:
                 return 'uint32_t'
+            if len(val)==8:
+                return 'uint64_t'
+            if len(val)==2:
+                return 'uint16_t'
+            if len(val)==1:
+                return 'uint8_t'
+            if len(val)==6:
+                return 'mac'
         return None
 
     def find_type(self,key,val):
@@ -95,16 +106,37 @@ class CPSTypes:
 
     def to_data(self,key,val):
         t = self.find_type(key,val)
+        self.add_type(key, t)
         return bytearray_utils.value_to_ba(t,val)
+
+    def print_list(self,attr_str,list):
+        val_str = ""
+        for item in list:
+            val_str = val_str + str(self.from_data(attr_str,item)) + " , "
+        print attr_str," = " ,val_str
+
+    def print_dict(self,data):
+        for k in data:
+            if k in print_methods:
+                print_methods[k](data[k])
+            elif type(data[k]) in print_methods:
+                print_methods[type(data[k])](data[k])
+            elif type(data[k]) == list:
+                self.print_list(k,data[k])
+            elif type(data[k]) == dict:
+               self.print_dict(data[k])
+            else:
+                print k +" = "+str(self.from_data(k,data[k]))
 
     def print_object(self,obj):
         data = obj['data']
         print "Key: "+obj['key']
-        for k in data:
-            if type(k) in self.print_methods:
-                    self.print_methods[type(k)](k)
-            else:
-                print k +" = "+str(self.from_data(k,data[k]))
+        module = "/".join(data.keys()[0].split("/")[0:-1])
+        if module in print_methods:
+            print_methods[module](data)
+        else:
+            self.print_dict(data)
+
 
 class CPSLibInit:
     def load_class_details(self):
@@ -134,284 +166,65 @@ def init():
 def key_mapper():
     return CPSKeys()
 
-
-
-def find_module(module_name):
-    if "/" in module_name:
-        return module_name
-    if module_name in module_prefix_map:
-        return module_prefix_map[module_name]
-    for key,val in module_prefix_map.items():
-        if module_name in val.split("/")[0]:
-            return val
-
 cps_attr_types_map = CPSTypes()
 
+
 def add_print_function(type,func):
-    cps_attr_types_map.add_print_method(type,func)
+    """
+    Register a custom print function for entire module, single attribute or
+    a specific type to be called when the object is being printed via
+    print_obj method of this package.
+    @type - Any string (module_key/attribute_id/python data type)
+    @func - function to be called when type is matched while printing
+            the object
+    """
+    print_methods[type] = func
+
+
+def add_convert_function(attr,func):
+    """
+    Register a function for pre processing the attribute value before
+    adding it to a object. For ex. when adding a leaf-list value, value
+    could be a string which has to be converted to list before it can be
+    added to cps object.
+    @attr - attribute id in string
+    @func - function to be called before adding this attribute and its value
+            to object
+    """
+    convert_methods[attr] = func
+
+
+def add_attr_type(attr_str,dtype):
+    """
+    Add the type of the attribute id in the types map
+    to convert attribute value to/from bytearray
+    @attr_str - attribute id in string
+    @dtype - data type of the attribute
+    """
+    cps_attr_types_map.add_type(attr_str, dtype)
+
 
 def print_obj(obj):
+    """
+    Print the cps object in a user-friendly format
+    @obj - cps object to be printed
+    """
     if 'change' in obj:
         cps_attr_types_map.print_object(obj['change'])
     else:
         cps_attr_types_map.print_object(obj)
 
-class CPSTransaction:
 
-    def __init__(self, list_of_op_obj_pairs = []):
-
-        self.tr_list = []
-        if not type(list_of_op_obj_pairs) is list:
-            raise ValueError ("Needs List of (operation, obj) pairs")
-
-        for pair in list_of_op_obj_pairs:
-            if not type(pair) is tuple:
-                raise ValueError ("Needs List of (operation, obj) pairs")
-            op = pair[0]
-            op_map = {'create':self.create, 'delete':self.delete , 'set':self.set}
-            if op not in op_map:
-                raise ValueError ("Invalid operation - should be 'create', 'set' or 'delete'")
-            op_map[pair[0]](pair[1])
-
-    def create(self,obj):
-        tr_obj = {}
-        tr_obj['change'] = obj
-        tr_obj['operation'] = "create"
-        self.tr_list.append(tr_obj)
-
-    def delete(self,obj):
-        tr_obj = {}
-        tr_obj['change'] = obj
-        tr_obj['operation'] = "delete"
-        self.tr_list.append(tr_obj)
-
-    def set(self,obj):
-        tr_obj = {}
-        tr_obj['change'] = obj
-        tr_obj['operation'] = "set"
-        self.tr_list.append(tr_obj)
-
-    def commit(self):
-        if cps.transaction(self.tr_list):
-            return self.tr_list
-        return False
-
-
-class CPSObject:
-
-    def __init__(self,module,qual="target",data={}):
-        self.obj = {'key':'','data':{}}
-        self.root_path = ""
-        self.embed_dict = {}
-        module= find_module(module)
-        self.root_path = module+"/"
-        self.obj['key'] = cps.key_from_name(qual,module)
-        for key,val in data.items():
-            self.add_attr(key,val)
-
-    def generate_path(self, attr_str):
-        if "/" in attr_str:
-            return attr_str
-        elif type(attr_str) == list:
-            ret_str = self.root_path
-            for i in attr_str:
-                if not i.isdigit():
-                    ret_str += i +"/"
-            return ret_str[:-1]
-        else:
-            return self.root_path+attr_str
-
-    def add_attr_type(self,attr_str,val):
-        cps_attr_types_map.add_type(self.generate_path(attr_str),val)
-        return
-
-    def add_attr(self,attr_str,val):
-         self.obj['data'][self.generate_path(attr_str)] = \
-            cps_attr_types_map.to_data(self.generate_path(attr_str),val)
-
-
-    def fill_data(self,data_dict):
-        for key,val in data_dict.items():
-            self.add_attr(key,val)
-
-    def add_embed_attr(self,attr_list,val):
-        #Convert Values in bytearray
-        attr_val = cps_attr_types_map.to_data(self.generate_path(attr_list),val)
-
-        # Check if a nested dictioanry for first element in attr_list exist
-        # if so then append to that dictioanry, otherwise create a new
-        embed_dict = {}
-        if self.generate_path(attr_list[0]) in self.obj['data']:
-            embed_dict = self.obj['data'][self.generate_path(attr_list[0])]
-        else:
-            self.obj['data'][self.generate_path(attr_list[0])] = embed_dict
-
-        for attr in reversed(attr_list[1:]):
-            obj = {}
-            # if a string is a digit treat is as a list index
-            # if index exist in dictionary append to it, or add first key
-            if attr.isdigit():
-                if attr in embed_dict:
-                    exsisting_nested_dict = embed_dict[attr]
-                    exsisting_nested_dict[attr_val.keys()[0]] = attr_val.values()[0]
-                else:
-                    embed_dict[attr] = attr_val
-            else:
-                obj[self.generate_path(attr_list)] = attr_val
-            attr_val = obj
-
-
-    def key_compare(self,key_dict):
-        for key in key_dict:
-            full_key = self.generate_path(key)
-            if full_key in self.obj['data']:
-                if key_dict[key] != self.obj['data'][full_key]:
-                    return False
-        return True
-
-    def get(self):
-        return self.obj
-
-    def print_key_data(self):
-        if 'cps/key_data' in self.obj['data']:
-            for key,val in obj['data']['cps/key_data'].items():
-                print k +" = "+str(cps_attr_types_map.from_data(k,data[k]))
-
-
-def cps_create_transaction_object(op,qual,module):
+def get_modules_list():
     """
-    Create a cps object for performing transaction
-    @op = operation type ("create","delete","set")
-    @qual = qualifier type ("target","observed",..)
-    @module = module key string ("base-xxx/yyy")
-    @return a cps object
+    Get the list of base python utlity modules
     """
-    cps_op = {}
-    obj = {'key':'','data':{}}
-    cps_op['change'] = obj
-    cps_op['operation'] = op
-    cps_op['root_path'] = module+"/"
-    obj['key'] = cps.key_from_name(qual,module)
-    return cps_op
+    file_list= [ f.split(".")[0] for f in os.listdir(module_path) if isfile(join(module_path,f))]
+    file_set = set(file_list)
+    return list(file_set)
 
 
-def cps_generate_attr_path(cps_object, attr_str):
-    if "/" in attr_str:
-        return attr_str
-    else:
-        return cps_object['root_path']+attr_str
+from cps_object import *
+from cps_operations import *
 
 
-def cps_add_attr_type(cps_object,attr_str,val):
-    cps_attr_types_map.add_type(cps_generate_attr_path(cps_object,attr_str),val)
-
-
-def cps_object_add_attr(cps_object,attr_str,val):
-    """
-    Add Attributes to cps object
-    @cps_object = cps object
-    @attr_str = attr string in yang("id", "base-port/interface/id")
-    @val = value of attribute
-    @return none
-    """
-    cps_object['change']['data'][cps_generate_attr_path(cps_object,attr_str)] = \
-    cps_attr_types_map.to_data(cps_generate_attr_path(cps_object,attr_str),val)
-
-
-def cps_create_get_object(qual,module):
-    """
-    Create a cps get operation object
-    @qual = qualifier type ("target","observed",..)
-    @module = module string ("base-xxx/yyy")
-    @return a cps get object with keys populated
-    """
-    obj = {'key':'','data':{}}
-    obj['key'] = cps.key_from_name(qual,module)
-    obj['root_path'] = module+"/"
-    return obj
-
-
-def cps_object_add_filter(cps_get_object,attr_str,val):
-    """
-    Add Filter Attributes to cps_get_object
-    @cps_get_object = cps get object
-    @attr_str = attr string in yang("id", "port")
-    @val = value of attribute
-    @return a dictioanry with all cps data populated
-    """
-    cps_get_object['data'][cps_generate_attr_path(cps_get_object,attr_str)] = \
-    cps_attr_types_map.to_data(cps_generate_attr_path(cps_get_object,attr_str),val)
-
-
-def cps_obj_key_compare(cps_api_obj, key_dict):
-    """
-    Find if the keys in key dictionary are present in the cps obj
-    and has the same value
-    @cps_api_obj - cps transcation object
-    @key_dict - dictionary which has keys and values
-    @return - True if all keys and its values are same in the obj,
-              false if key is matched but not its value
-    """
-    for key in key_dict:
-        if key in cps_api_obj['change']['data']:
-            if key_dict[key] != cps_api_obj['change']['data'][key]:
-                return False
-    return True
-
-def cps_object_add_list_attr(cps_object,attr_str,value):
-    """
-    Add list of  attributes to cps object
-    @cps_object = cps object
-    @attr_str = attr string in yang("id", "base-port/interface/id")
-    @value = value of attribute list as list or can also given as
-             space separated parameter in a single string
-    @return none
-    """
-
-    bytearray_list = []
-    value_list = []
-
-    if isinstance(value,list):
-        value_list = value
-    else:
-        value_list = str.split(value)
-    for val in value_list:
-        bytearray_list.append(cps_attr_types_map.to_data(cps_generate_attr_path(cps_object,attr_str),val))
-
-    cps_object['change']['data'][cps_generate_attr_path(cps_object,attr_str)] = bytearray_list
-
-def cps_object_add_embd_attr(cps_object,attr_str,value_list,param):
-
-    '''
-    This method will add the embedded object. If the given parameter
-    is available then it will add in to the existing paramer or else
-    it will create a new object and add in to it.
-
-    @cps_object = cps object
-    @attr_str = attr string in yang("id", "base-port/interface/id")
-    @param = contain the  attribute that we want to set as embedded object
-    @value_list = attribute list that will stored as embedded object
-    '''
-
-    attr_dict = {}
-
-    # Check if a nested dictioanry for attr_str if exist
-    # then append to that dictioanry, otherwise create a new
-    if cps_generate_attr_path(cps_object,attr_str) in cps_object['change']['data']:
-        attr_dict = cps_object['change']['data'][cps_generate_attr_path(cps_object,attr_str)]
-    else:
-        cps_object['change']['data'][cps_generate_attr_path(cps_object,attr_str)] = attr_dict
-
-    for i,val in enumerate(value_list):
-
-        if str(i) in attr_dict.keys():
-            inner_dict = attr_dict[str(i)]
-        else:
-            inner_dict = {}
-
-        inner_dict[param] = \
-          cps_attr_types_map.to_data(cps_generate_attr_path(cps_object,attr_str),val)
-        attr_dict[str(i)] = inner_dict
-        del inner_dict
-
-    cps_object['change']['data'][cps_generate_attr_path(cps_object,attr_str)] = attr_dict

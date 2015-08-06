@@ -261,6 +261,19 @@ TEST(cps_api_object,ram_based) {
     }
 }
 
+TEST(cps_api_object,cps_obj_attr_null) {
+    cps_api_object_guard og(cps_api_object_create());
+    ASSERT_TRUE(og.valid());
+    cps_api_object_attr_add(og.get(),0,NULL,0);
+    ASSERT_TRUE(cps_api_object_attr_get(og.get(),0)!=NULL);
+    cps_api_attr_id_t ids[4];    //don't really care about the values
+    ids[0] = 0;
+    ASSERT_TRUE(cps_api_object_e_get(og.get(),ids,1)!=NULL);
+
+    ASSERT_TRUE(cps_api_object_e_add(og.get(),ids,4,cps_api_object_ATTR_T_BIN,NULL,0));
+    ASSERT_TRUE(cps_api_object_e_get(og.get(),ids,4)!=NULL);
+}
+
 TEST(cps_api_object,cps_obj_attr) {
     cps_api_object_t obj = cps_api_object_create();
     ASSERT_TRUE(obj!=nullptr);
