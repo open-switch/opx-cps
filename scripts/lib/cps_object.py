@@ -198,14 +198,20 @@ class CPSObject:
         value exist in the obejct, return the value otherwise raise an value exceprtion
         @attr - attribute id whose value is to be returned
         """
-        if self.generate_path(attr) in self.obj['data']:
-            return types.from_data(self.generate_path(attr)\
-                                                ,self.obj['data'][self.generate_path(attr)])
+        attr_path = self.generate_path(attr)
+        l = []
+        if attr_path in self.obj['data']:
+            if type(self.obj['data'][attr_path]) == list:
+                for i in self.obj['data'][attr_path]:
+                    l.append(types.from_data(attr_path,i))
+                return l
+            return types.from_data(self.generate_path(attr),\
+                                   self.obj['data'][self.generate_path(attr)])
 
         if 'cps/key_data' in self.obj['data']:
-            if self.generate_path(attr) in self.obj['data']['cps/key_data']:
-                return types.from_data(self.generate_path(attr)\
-                       ,self.obj['data']['cps/key_data'][self.generate_path(attr)])
+            if attr_path in self.obj['data']['cps/key_data']:
+                return types.from_data(attr_path,\
+                       self.obj['data']['cps/key_data'][attr_path])
 
         raise ValueError(attr + "does not exist in the obect")
 
