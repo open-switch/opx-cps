@@ -65,7 +65,10 @@ map_types = {
    'uri':'CPS_CLASS_DATA_TYPE_T_STRING',
    'enum':'CPS_CLASS_DATA_TYPE_T_ENUM',
    'enumeration':'CPS_CLASS_DATA_TYPE_T_ENUM',
-   'union': 'CPS_CLASS_DATA_TYPE_T_BIN'
+   'union': 'CPS_CLASS_DATA_TYPE_T_BIN',
+   'bits':'CPS_CLASS_DATA_TYPE_T_BIN',
+   'empty':'CPS_CLASS_DATA_TYPE_T_BOOL',
+   'leafref':'CPS_CLASS_DATA_TYPE_T_STRING',
 }
 
 def type_to_lang_type(typename):
@@ -94,7 +97,6 @@ class Language:
             type_str = self.get_type(elem)
 
         if not type_str in map_types:
-            print global_types
             raise Exception("Failed to translate type...%s = %s" % (elem, type_str));
 
         return map_types[type_str]

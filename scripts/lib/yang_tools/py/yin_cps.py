@@ -94,12 +94,15 @@ class CPSParser:
         self.container_map[self.module.name()] = list()
         self.all_node_map[self.module.name()] = self.root_node
         self.container_keys[self.module.name()] = self.module.name()+ " "
+        print "Creating type mapping..."
         self.parse_types(self.root_node)
-        print self.context['types']
+        print "Updating prefix (%s) related mapping" % self.module.name()
         self.fix_namespace(self.root_node)
+        print "Scanning yang nodes"
         self.walk_nodes(self.root_node, self.module.name())
         self.handle_keys()
         self.fix_enums()
+        print "Yang processing complete"
 
     def path_to_prefix(self,dict,key):
         if key.find(self.module.name()+"/")==0:

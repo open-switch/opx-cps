@@ -1,5 +1,6 @@
 import os
 import sys
+import yin_utils
 
 class COutputFormat:
 
@@ -28,44 +29,49 @@ class COutputFormat:
         for i in self.model.keys:
 
             if i == self.lang.category: continue
-            line = "{ {"
+
+            ele = None
+            tag = None
+
+            if i not in self.model.all_node_map:
+                continue
+
+            ele = self.model.all_node_map[i]
+            tag = self.model.module.filter_ns(ele.tag)
+
+            #start the key encoding...
             key_str = ""
             for key in self.model.keys[i].split():
                 key_str+= self.lang.names[key]+","
 
             if len(key_str)==0: key_str = self.lang.names[i]+","
             key_str = key_str [:-1]
-            line +=key_str+"},"
-            line += self.lang.names[i]+","
-            line += " { \""
-            line += i+"\",\"\","
 
-            if not i in self.model.container_map:
-                line+="false"
-            else :
-                line+="true"
-            line+=","
+            line = "{ { %s }, %s, " % (key_str, self.lang.names[i])
 
-            tag = ""
-            ele = None
-            if i in self.model.all_node_map:
-                ele = self.model.all_node_map[i]
-                tag = self.model.module.filter_ns(ele.tag)
+            #Create the structure contianing type and etc details
 
+            _n_name = i
+            _n_desc = yin_utils.node_get_desc(self.model.module,ele)
+            _n_desc = _n_desc.translate(None,'\n#![]$\"')
+            _n_emb = 'false'
+
+            if i in self.model.container_map:
+                _n_emb="true"
+
+            _n_attr_type = 'CPS_CLASS_ATTR_T_CONTAINER'
             if tag == 'leaf-list':
-                line+="CPS_CLASS_ATTR_T_LEAF_LIST"
+                _n_attr_type="CPS_CLASS_ATTR_T_LEAF_LIST"
             elif tag == 'leaf':
-                line+="CPS_CLASS_ATTR_T_LEAF"
+                _n_attr_type="CPS_CLASS_ATTR_T_LEAF"
             elif tag == 'list':
-                line+="CPS_CLASS_ATTR_T_LIST"
-            else:
-                line+="CPS_CLASS_ATTR_T_CONTAINER"
-            line+=","
-            if ele!=None:
-                line+= self.lang.cps_map_type(self.context['types'],ele)
-            else:
-                line+= "CPS_CLASS_DATA_TYPE_T_BIN";
-            line+="}},"
+                _n_attr_type="CPS_CLASS_ATTR_T_LIST"
+
+            _n_data_type = self.lang.cps_map_type(self.context['types'],ele)
+
+            line += "{ \"%s\", \"%s\", %s, %s, %s }" % (_n_name,_n_desc,_n_emb,_n_attr_type,_n_data_type)
+
+            line+="},"
             print line
 
         print "};"

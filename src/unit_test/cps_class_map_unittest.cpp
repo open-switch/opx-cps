@@ -31,8 +31,8 @@ static struct {
 static const size_t lst_len = sizeof(lst)/sizeof(*lst);
 
 TEST(cps_class_map,load) {
-    ASSERT_TRUE(cps_class_objs_load("workspace/debian/jessie/x86_64/sysroot/opt/ngos/lib","libcpsclass-"));
-    std::vector<cps_api_attr_id_t> ids = {19,1};
+    //ASSERT_TRUE(cps_class_objs_load("workspace/debian/jessie/x86_64/sysroot/opt/ngos/lib","libcpsclass_"));
+    std::vector<cps_api_attr_id_t> ids ;
     cps_class_node_detail_list_t lst;
     cps_class_map_level(&ids[0],ids.size(),lst);
 

@@ -95,7 +95,15 @@ class CPSTypes:
         if key in self.types:
             t = self.types[key]
         else:
-            t = self.guess_type_for_len(val)
+            try:
+                data_type = cps.type(key)
+            except:
+                data_type = {}
+
+            if 'data_type' in data_type:
+                t = data_type['data_type']
+            else:
+                t = self.guess_type_for_len(val)
             if t==None:
                 t = 'bytearray'
         return t

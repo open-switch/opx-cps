@@ -39,19 +39,19 @@ def create_yin_file(yang_file, yin_file):
     #print "converting "+yang_file+" to "+ yin_file
     run_cmd([ 'pyang','-o',yin_file,'-f', 'yin',yang_file])
 
+def get_node_text(namespace,node):
+    node = node.find(namespace+'text')
+    if node!=None:
+        node = node.text
+    if node == None:
+        node = ""
+    return node
+
 def node_get_desc(module,node):
     d = node.find(module.ns()+'description')
     if d == None:
         return ""
-    s = ""
-    if d.get('name')!=None:
-        s = d.get('name')
-    t = d.find(module.ns()+'text')
-    if t != None:
-        if t.text != None:
-            return t.text
-    return s
-
+    return get_node_text(module.ns(),d)
 
 def get_node_tag(module,node):
     return node.tag[len(module.ns()):]
