@@ -174,7 +174,6 @@ static bool process_registration(int fd,size_t len) {
             cps_api_key_print(&r.details.key,buff,sizeof(buff)-1),
             r.details.addr.address.str);
 
-
     return rc;
 }
 

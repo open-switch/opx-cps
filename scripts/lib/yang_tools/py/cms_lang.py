@@ -219,10 +219,10 @@ class Language:
 
             if self.model.all_node_map[leaf].tag == self.model.module.ns()+'leaf-list' and function.find('get')!=-1:
                 print "  /* Iterate inside for the leaf-list */"
-                print "  for(cma_get_tag_it_inside(obj,"+self.names[leaf]+",&it);" 
+                print "  for(cma_get_tag_it_inside(obj,"+self.names[leaf]+",&it);"
                 print "      cps_api_object_it_valid(&it);"
                 print "      cps_api_object_it_next(&it)) {"
-                print "    if(cma_get_data_fr_it(&it,&"+self.names_short[self.names[leaf]]+"_val)){;" 
+                print "    if(cma_get_data_fr_it(&it,&"+self.names_short[self.names[leaf]]+"_val)){;"
                 print "        /* process data here - i.e. val_valid */ "
                 print "        ;"
                 print "    }"

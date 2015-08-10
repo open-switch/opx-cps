@@ -6,7 +6,7 @@ UNIT_TEST=cps_api_key_unittest cps_api_object_unittest cps_api_operation_unittes
 
 CXXFLAGS+=-std=c++11
 
-cps-class-map-util_SRCS=cps_class_map.cpp
+cps-class-map-util_SRCS=cps_class_map_query.cpp
 cps-class-map-util_CFLAGS=-std=c++11
 cps-class-map-util_LDFLAGS=-ldn_common -levent_log -lcps-api-common -lpthread
 
@@ -20,6 +20,9 @@ cps-api-common_SRCS+=cps_api_object_attr.cpp
 cps-api-common_SRCS+= cps_ns.cpp
 cps-api-common_SRCS+=cps_api_operation_service.cpp
 cps-api-common_SRCS+=cps_api_client_ipc.cpp
+cps-api-common_SRCS+=cps_dictionary.cpp
+cps-api-common_SRCS+=cps_dictionary_loader.cpp
+
 
 cps-api-common_LDFLAGS = -levent_log -ldn_common -lpthread
 
@@ -64,11 +67,11 @@ PY_OBJ_PATH=${BUILD_CURDIR}/pybuild
 ADDED_FOLDERS+=${PY_OBJ_PATH}
 include ${MAKE_INC}/additional_directories.mak
 
-cps_python_CFLAGS=-DMAJOR_VERSION=1 -DMINOR_VERSION=0 -Ipython2.7 -std=c++11
+cps_python_CFLAGS=-DMAJOR_VERSION=1 -DMINOR_VERSION=0 -Ipython2.7 -std=c++11 -I.
 
 ${BUILD_DN_SYSROOT}/lib/cps.so: $(wildcard python_extension/*) | ${PY_OBJ_PATH}
 	cp -f $(wildcard python_extension/*) ${PY_OBJ_PATH}
-	cp -f $(wildcard ../inc/private/*.h) ${PY_OBJ_PATH}
+	mkdir -p ${PY_OBJ_PATH}/private && cp -f $(wildcard ../inc/private/*.h) ${PY_OBJ_PATH}/private
 	cd ${PY_OBJ_PATH} && DISTUTILS_DEBUG=1 LDFLAGS="${ADDED_LDFLAGS}" CFLAGS="${ADDED_CFLAGS} ${cps_python_CFLAGS}" CC="${CC}" python setup.py build -v --build-lib ${PY_OBJ_PATH}
 	cp ${PY_OBJ_PATH}/cps.so ${BUILD_DN_SYSROOT}/lib/cps.so && cp ${PY_OBJ_PATH}/cps.so ${SW_SYSROOT_LIB}
 

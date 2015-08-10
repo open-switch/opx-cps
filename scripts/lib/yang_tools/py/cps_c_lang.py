@@ -28,6 +28,49 @@ valid_types = {
    'binary':'uint8_t*'
 }
 
+map_types = {
+   'boolean':'CPS_CLASS_DATA_TYPE_T_BOOL',
+   'decimal64':'CPS_CLASS_DATA_TYPE_T_DOUBLE',
+   'int8':'CPS_CLASS_DATA_TYPE_T_INT8',
+   'int16':'CPS_CLASS_DATA_TYPE_T_INT16',
+   'int32':'CPS_CLASS_DATA_TYPE_T_INT32',
+   'int64':'CPS_CLASS_DATA_TYPE_T_INT64',
+   'uint8':'CPS_CLASS_DATA_TYPE_T_UINT8',
+   'uint16':'CPS_CLASS_DATA_TYPE_T_UINT16',
+   'uint32':'CPS_CLASS_DATA_TYPE_T_UINT32',
+   'uint64':'CPS_CLASS_DATA_TYPE_T_UINT64',
+   'string':'CPS_CLASS_DATA_TYPE_T_STRING',
+   'binary':'CPS_CLASS_DATA_TYPE_T_BIN',
+   'counter32' : 'CPS_CLASS_DATA_TYPE_T_UINT32',
+   'zero-based-counter32' : 'CPS_CLASS_DATA_TYPE_T_UINT32',
+   'counter64' : 'CPS_CLASS_DATA_TYPE_T_UINT64',
+   'zero-based-counter64' : 'CPS_CLASS_DATA_TYPE_T_UINT64',
+   'guage32' : 'CPS_CLASS_DATA_TYPE_T_UINT32',
+   'guage64' : 'CPS_CLASS_DATA_TYPE_T_UINT64',
+   'object-identifier' : 'CPS_CLASS_DATA_TYPE_T_OBJ_ID',
+   'object-identifier-128' : 'CPS_CLASS_DATA_TYPE_T_OBJ_ID',
+   'date-and-time' : 'CPS_CLASS_DATA_TYPE_T_DATE',
+   'phy-address':'CPS_CLASS_DATA_TYPE_T_BIN',
+   'mac-address':'CPS_CLASS_DATA_TYPE_T_BIN',
+   'ip-version':'CPS_CLASS_DATA_TYPE_T_ENUM',
+   'port-number':'CPS_CLASS_DATA_TYPE_T_UINT16',
+   'ip-address':'CPS_CLASS_DATA_TYPE_T_IP',
+   'ip4-address':'CPS_CLASS_DATA_TYPE_T_IPV4',
+   'ip6-address':'CPS_CLASS_DATA_TYPE_T_IPV6',
+   'ip-prefix':'CPS_CLASS_DATA_TYPE_T_IP',
+   'ip4-prefix':'CPS_CLASS_DATA_TYPE_T_IPV4',
+   'ip6-prefix':'CPS_CLASS_DATA_TYPE_T_IPV6',
+   'domain-name':'CPS_CLASS_DATA_TYPE_T_STRING',
+   'host':'CPS_CLASS_DATA_TYPE_T_STRING',
+   'uri':'CPS_CLASS_DATA_TYPE_T_STRING',
+   'enum':'CPS_CLASS_DATA_TYPE_T_ENUM',
+   'enumeration':'CPS_CLASS_DATA_TYPE_T_ENUM',
+   'union': 'CPS_CLASS_DATA_TYPE_T_BIN',
+   'bits':'CPS_CLASS_DATA_TYPE_T_BIN',
+   'empty':'CPS_CLASS_DATA_TYPE_T_BOOL',
+   'leafref':'CPS_CLASS_DATA_TYPE_T_STRING',
+}
+
 def type_to_lang_type(typename):
     global valid_types
     if not typename in valid_types:
@@ -45,6 +88,19 @@ class Language:
         global valid_types
         return str in valid_types
 
+    def cps_map_type(self,global_types,elem):
+        global map_types
+        type_str = self.get_type(elem)
+
+        while type_str not in map_types and type_str in global_types:
+            elem = global_types[type_str]
+            type_str = self.get_type(elem)
+
+        if not type_str in map_types:
+            raise Exception("Failed to translate type...%s = %s" % (elem, type_str));
+
+        return map_types[type_str]
+
     def type_to_lang_type(self,str):
         return type_to_lang_type(str)
 
@@ -52,7 +108,6 @@ class Language:
         type = node.find(self.model.module.ns()+'type')
         if type==None: return 'binary'
         return type.get('name')
-
 
     def determine_key_types(self):
         for cont_key in self.model.elem_with_keys.keys():
