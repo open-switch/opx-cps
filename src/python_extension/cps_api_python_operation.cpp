@@ -18,7 +18,8 @@ PyObject * py_cps_get(PyObject *self, PyObject *args) {
 
     cps_api_get_params_t gr;
     if (cps_api_get_request_init (&gr)==cps_api_ret_code_ERR) {
-        Py_RETURN_FALSE;
+        py_set_error_string("Failed to initialize the get req");
+        return nullptr;
     }
 
     cps_api_get_request_guard rg(&gr);
@@ -26,7 +27,8 @@ PyObject * py_cps_get(PyObject *self, PyObject *args) {
     PyObject *res_obj;
 
     if (! PyArg_ParseTuple( args, "O!O", &PyList_Type, &param_list,&res_obj)) {
-        Py_RETURN_FALSE;
+        py_set_error_string("Failed to parse input args.");
+        return nullptr;
     }
 
     PyObject * lst = NULL;
@@ -34,14 +36,15 @@ PyObject * py_cps_get(PyObject *self, PyObject *args) {
     if (PyDict_Check(res_obj)) {
         PyObject *l = PyList_New(0);
         if (l==NULL) {
-            Py_RETURN_FALSE;
-
+            py_set_error_string("Can not create a list.");
+            return nullptr;
         }
         if (PyDict_GetItemString(res_obj,"list")!=NULL)
             PyDict_DelItemString(res_obj,"list");
 
         if (!py_cps_util_set_item_to_dict(res_obj,"list",l)) {
-            Py_RETURN_FALSE;
+            py_set_error_string("Can not create a list.");
+            return nullptr;
         }
         lst = l;
     }
@@ -49,7 +52,8 @@ PyObject * py_cps_get(PyObject *self, PyObject *args) {
         lst = res_obj;
     }
     if (lst==NULL) {
-        Py_RETURN_FALSE;
+        py_set_error_string("The return args are invalid.");
+        return nullptr;
     }
     Py_ssize_t str_keys = PyList_Size(param_list);
     {
@@ -60,20 +64,24 @@ PyObject * py_cps_get(PyObject *self, PyObject *args) {
                 //
                 cps_api_object_t o = cps_api_object_list_create_obj_and_append(gr.filters);
                 if (o==NULL) {
-                    Py_RETURN_FALSE;
+                    py_set_error_string("Memory allocation error.");
+                    return nullptr;
                 }
                 if (!cps_api_key_from_string(cps_api_object_key(o),PyString_AsString(strObj))) {
-                    Py_RETURN_FALSE;
+                    py_set_error_string("Memory allocation error.");
+                    return nullptr;
                 }
             }
             if (PyDict_Check(strObj)) {
                 cps_api_object_t o = dict_to_cps_obj(strObj);
                 if (o==NULL) {
-                    Py_RETURN_FALSE;
+                    py_set_error_string("Can't convert from a python to internal object");
+                    return nullptr;
                 }
                 if (!cps_api_object_list_append(gr.filters,o)) {
                     cps_api_object_delete(o);
-                    Py_RETURN_FALSE;
+                    py_set_error_string("Memory allocation error.");
+                    return nullptr;
                 }
             }
         }
@@ -98,10 +106,12 @@ PyObject * py_cps_get(PyObject *self, PyObject *args) {
         PyObject *d = cps_obj_to_dict(obj);
         PyRef r(d);
         if (d==NULL) {
-            Py_RETURN_FALSE;
+            py_set_error_string("Memory allocation error.");
+            return nullptr;
         }
         if (PyList_Append(lst,d)) {
-            Py_RETURN_FALSE;
+            py_set_error_string("Memory allocation error.");
+            return nullptr;
         }
         r.release();
     }
@@ -163,7 +173,8 @@ PyObject * py_cps_trans(PyObject *self, PyObject *args) {
 
     cps_api_transaction_params_t tr;
     if (cps_api_transaction_init(&tr)!=cps_api_ret_code_OK) {
-        Py_RETURN_FALSE;
+        py_set_error_string("Memory allocation error.");
+        return nullptr;
     }
     cps_api_transaction_guard pg(&tr);
 
@@ -172,7 +183,8 @@ PyObject * py_cps_trans(PyObject *self, PyObject *args) {
     for ( ; ix < mx ; ++ix ) {
         PyObject *dict = PyList_GetItem(list,ix);
         if (!py_add_object_to_trans(&tr,dict)) {
-            Py_RETURN_FALSE;
+            py_set_error_string("Could not translate the request to a transaction");
+            return nullptr;
         }
     }
 
@@ -190,16 +202,19 @@ PyObject * py_cps_trans(PyObject *self, PyObject *args) {
     for ( ; ix < mx ; ++ix ) {
         PyObject *dict = PyList_GetItem(list,ix);
         if (dict==NULL || !PyDict_Check(dict)) {
-            Py_RETURN_FALSE;
+            py_set_error_string("Failed to convert the transaction response.");
+            return nullptr;
         }
         PyObject *_req = PyDict_GetItemString(dict,"change");
         if (_req==NULL || !PyDict_Check(_req)) {
-            Py_RETURN_FALSE;
+            py_set_error_string("Failed to convert the transaction response.");
+            return nullptr;
         }
 
         cps_api_object_t obj = cps_api_object_list_get(tr.change_list,ix);
         if (obj==NULL) {
-            Py_RETURN_FALSE;
+            py_set_error_string("Failed to convert the transaction response.");
+            return nullptr;
         }
         PyDict_SetItemString(_req,"key",
                 PyString_FromString(cps_key_to_string(cps_api_object_key(obj)).c_str()));
@@ -224,7 +239,8 @@ PyObject * py_cps_obj_init(PyObject *self, PyObject *args) {
         rc = cps_api_operation_subsystem_init(&handle,1);
     }
     if (rc!=cps_api_ret_code_OK) {
-        return PyByteArray_FromStringAndSize(NULL,0);
+        py_set_error_string("Failed to initialize the infrastructure.");
+        return nullptr;
     }
     return PyByteArray_FromStringAndSize((const char *)&handle,sizeof(handle));
 }
@@ -337,11 +353,13 @@ PyObject * py_cps_obj_reg(PyObject *self, PyObject *args) {
 
     handle = (cps_api_operation_handle_t*)PyByteArray_AsString(h);
     if (PyByteArray_Size(h)!=sizeof(*handle)) {
-        Py_RETURN_FALSE;
+        py_set_error_string("Invalid handle");
+        return nullptr;
     }
     std::unique_ptr<py_callbacks_t> p (new py_callbacks_t);
     if (p.get()==NULL) {
-        Py_RETURN_FALSE;
+        py_set_error_string("Memory allocation error");
+        return nullptr;
     }
     p->_methods = o;
 
@@ -354,7 +372,8 @@ PyObject * py_cps_obj_reg(PyObject *self, PyObject *args) {
     f._rollback_function = _rollback_function;
 
     if (!cps_api_key_from_string(&f.key,path)) {
-        Py_RETURN_FALSE;
+        py_set_error_string("Key translation error");
+        return nullptr;
     }
 
     cps_api_return_code_t rc;

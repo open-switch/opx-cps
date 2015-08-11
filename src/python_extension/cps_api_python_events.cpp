@@ -9,6 +9,7 @@
 #include "cps_api_events.h"
 
 #include "Python.h"
+#include <stdio.h>
 
 const static size_t MAX_EVENT_BUFF=20000;
 
@@ -28,7 +29,7 @@ PyObject * py_cps_event_reg(PyObject *self, PyObject *args) {
 
     handle = (cps_api_event_service_handle_t*)PyByteArray_AsString(o);
     if (PyByteArray_Size(o)!=sizeof(*handle)) {
-        return NULL;
+        return nullptr;
     }
 
     cps_api_event_reg_t reg;
@@ -59,7 +60,7 @@ PyObject * py_cps_event_close(PyObject *self, PyObject *args) {
 
     handle = (cps_api_event_service_handle_t*)PyByteArray_AsString(o);
     if (PyByteArray_Size(o)!=sizeof(*handle)) {
-        return NULL;
+        return nullptr;
     }
     {
         NonBlockingPythonContext l;
@@ -75,7 +76,7 @@ PyObject * py_cps_event_wait(PyObject *self, PyObject *args) {
 
     handle = (cps_api_event_service_handle_t*)PyByteArray_AsString(o);
     if (PyByteArray_Size(o)!=sizeof(*handle)) {
-        return NULL;
+        return nullptr;
     }
 
     cps_api_object_t obj=cps_api_object_create();
@@ -91,6 +92,7 @@ PyObject * py_cps_event_wait(PyObject *self, PyObject *args) {
     if (rc==cps_api_ret_code_OK) {
         return (cps_obj_to_dict(obj));
     }
+    fprintf(stderr,"No object received.\n");
     return PyDict_New();
 }
 
@@ -102,13 +104,13 @@ PyObject * py_cps_event_send(PyObject *self, PyObject *args) {
 
     handle = (cps_api_event_service_handle_t*)PyByteArray_AsString(h);
     if (PyByteArray_Size(h)!=sizeof(*handle)) {
-        return NULL;
+        return nullptr;
     }
 
     cps_api_object_t obj = dict_to_cps_obj(path,dict);
     cps_api_object_guard og(obj);
     if (!og.valid()) {
-        Py_RETURN_FALSE;
+        return nullptr;
     }
 
     cps_api_return_code_t rc;
