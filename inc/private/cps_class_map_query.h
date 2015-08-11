@@ -22,7 +22,8 @@
 
 using cps_class_node_detail_list_t = std::vector<cps_class_map_node_details_int_t>;
 
-void cps_class_map_level(const cps_api_attr_id_t *ids, size_t max_ids, cps_class_node_detail_list_t &details);
+void cps_class_map_level(const cps_api_attr_id_t *ids,
+        size_t max_ids, cps_class_node_detail_list_t &details, bool children_only=false);
 
 bool cps_class_map_detail(const cps_api_attr_id_t id, cps_class_map_node_details_int_t &details);
 

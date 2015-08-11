@@ -148,17 +148,26 @@ static PyObject * py_cps_config(PyObject *self, PyObject *args) {
 
 
 static PyObject * py_cps_info(PyObject *self, PyObject *args) {
+    PyObject *bool_cur_level=nullptr;
     const char * path=NULL;
-    if (! PyArg_ParseTuple( args, "s", &path)) return NULL;
+    if (! PyArg_ParseTuple( args, "s|O!", &path, &PyBool_Type, &bool_cur_level)) return NULL;
 
     PyRef d(PyDict_New());
     if (d.get()==nullptr) return nullptr;
 
     std::vector<cps_api_attr_id_t> v;
-    cps_class_ids_from_string(v,path);
+
+    const cps_class_map_node_details_int_t * ref = cps_dict_find_by_name(path);
+    if (ref!=nullptr) {
+        //then assume that it is a valid object id
+        v = ref->ids;
+    } else {
+        cps_class_ids_from_string(v,path);
+    }
 
     cps_class_node_detail_list_t lst;
-    cps_class_map_level(&v[0],v.size(),lst);
+
+    cps_class_map_level(&v[0],v.size(),lst,bool_cur_level!=Py_False);
 
     PyRef names(PyDict_New());
     PyRef ids(PyDict_New());

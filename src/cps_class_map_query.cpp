@@ -96,21 +96,28 @@ struct walk_struct {
     cps_class_node_detail_list_t *lst;
     const cps_api_attr_id_t *ids;
     size_t max_ids;
+    bool current_level;
 };
 
 static bool __cps_dict_walk_fun__(void * context, const cps_class_map_node_details_int_t *ptr) {
     walk_struct *ws = (walk_struct*)context;
+    if (ws->current_level) {
+        //filter non matching level
+        if (ptr->ids.size()!=(ws->max_ids+1))
+            return true;
+    }
     if (!cps_attr_id_key_compare_match( &(ptr->ids[0]),ptr->ids.size(),ws->ids,ws->max_ids)) return true;
     ws->lst->push_back(*ptr);
     return true;
 }
 
 void cps_class_map_level(const cps_api_attr_id_t *ids, size_t max_ids,
-        cps_class_node_detail_list_t &details) {
+        cps_class_node_detail_list_t &details, bool only_children) {
     walk_struct ws;
     ws.ids = ids;
     ws.max_ids = max_ids;
     ws.lst = &details;
+    ws.current_level = only_children;
 
     cps_dict_walk(&ws, __cps_dict_walk_fun__) ;
 }
