@@ -19,7 +19,7 @@ const static unsigned int CUSTOM_KEY_POS = 2;
 
 bool py_cps_util_set_item_to_dict(PyObject *d, const char * item, PyObject *o, bool gc) {
     PyRef r(o);
-    if (gc==false) r.release();
+    if (!gc) r.release();
 
     if (!PyDict_Check(d)) return false;
     if (PyDict_SetItemString(d,item,o)) {
