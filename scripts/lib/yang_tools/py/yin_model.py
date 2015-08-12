@@ -25,14 +25,19 @@ class CPSYinFiles:
     def get_parsed_yin(self,filename,prefix):
         key_name = os.path.splitext(filename)[0]
         key_name = os.path.split(key_name)[1]
-        if key_name not in self.yin_map:
-            f = self.get_yin_file(filename)
-            self.yin_map[key_name] = yin_cps.CPSParser(self.context,f)
-            self.yin_map[key_name].load(prefix=prefix)
-            self.yin_map[key_name].walk()
 
-            self.context['model-names'][self.yin_map[key_name].module.name()] = key_name
-        return self.yin_map[key_name]
+        yin_key = key_name
+        if prefix != None:
+            yin_key += ":"+prefix
+
+        if yin_key not in self.yin_map:
+            f = self.get_yin_file(filename)
+            self.yin_map[yin_key] = yin_cps.CPSParser(self.context,f)
+            self.yin_map[yin_key].load(prefix=prefix)
+            self.yin_map[yin_key].walk()
+
+            self.context['model-names'][self.yin_map[yin_key].module.name()] = yin_key
+        return self.yin_map[yin_key]
 
     def check_deps_loaded(self,module,context):
         entry = self.yin_map[module]

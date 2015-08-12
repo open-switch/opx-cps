@@ -65,6 +65,7 @@ class CPSParser:
                 prefix = prefix.get('value')
             if prefix!=None:
                 self.imports['prefix'].append(prefix)
+            print "Loading module with prefix %s" % prefix
             self.context['loader'].load(i.get('module')+".yang",prefix=prefix)
             self.imports['module'].append(i.get('module'))
 
@@ -93,10 +94,15 @@ class CPSParser:
         self.container_map[self.module.name()] = list()
         self.all_node_map[self.module.name()] = self.root_node
         self.container_keys[self.module.name()] = self.module.name()+ " "
+        print "Creating type mapping..."
+        self.parse_types(self.root_node)
+        print "Updating prefix (%s) related mapping" % self.module.name()
         self.fix_namespace(self.root_node)
+        print "Scanning yang nodes"
         self.walk_nodes(self.root_node, self.module.name())
         self.handle_keys()
         self.fix_enums()
+        print "Yang processing complete"
 
     def path_to_prefix(self,dict,key):
         if key.find(self.module.name()+"/")==0:
@@ -113,13 +119,25 @@ class CPSParser:
     def fix_namespace(self,node):
         for i in node.iter():
             tag = self.module.filter_ns(i.tag)
+            n = None
             if tag == 'uses':
                 n = i.get('name')
+
+            if tag == 'type':
+                name = i.get('name')
+                if name!=None and self.module.name()+':'+name in self.context['types']:
+                    n = name
+
+            if n!=None:
                 if n.find(':')==-1:
                     n = self.module.name()+':'+n
                 i.set('name',n)
 
-        for i in node.iter():
+    def parse_types(self,parent):
+        for i in parent:
+            if len(i) > 0:
+                self.parse_types(i)
+
             tag = self.module.filter_ns(i.tag)
 
             id = self.module.name()+':'+tag
@@ -128,6 +146,11 @@ class CPSParser:
 
             if tag == 'grouping':
                 tag = 'typedef'
+
+            if tag == 'leaf' or tag == 'leaf-list':
+                type = i.find(self.module.ns()+'type')
+                if type.get('name')=='enumeration':
+                    tag = 'typedef'
 
             if tag == 'typedef':
                 if id in self.context['types']:
@@ -173,9 +196,9 @@ class CPSParser:
                 continue
 
             #in the case tht the parent tag is a choice and you parsing a non-case... then add a case for the standard
-            # As a shorthand, the "case" statement can be omitted if the branch contains a single "anyxml", "container", 
-            # "leaf", "list", or "leaf-list" statement.  In this case, the identifier of the case node is the same as 
-            # the identifier in the branch statement.  
+            # As a shorthand, the "case" statement can be omitted if the branch contains a single "anyxml", "container",
+            # "leaf", "list", or "leaf-list" statement.  In this case, the identifier of the case node is the same as
+            # the identifier in the branch statement.
             if parent_tag == 'choice' and (tag == 'anyxml' or tag == 'container' or tag == 'leaf' or tag =='list' or tag == 'leaf-list'):
                 new_node = ET.Element(self.module.ns()+'case',attrib={'name':i.get('name')})
                 new_node.append(i)

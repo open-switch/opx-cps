@@ -5,22 +5,33 @@ import sys
 import binascii
 import socket
 
-pack_type_map = { 'uint8_t':'<B',
+pack_type_map = {
+		  'uint8_t':'<B',
 		  'uint16_t':'<H',
 		  'uint32_t':'<I',
 		  'uint64_t':'<Q',
+		  'enum':'<I',
+		  'bool':'<I',
+		}
+	
+pack_type_map_from_len = {
+		  1:'<B',
+		  2:'<H',
+		  4:'<I',
+		  8:'<Q',
 		}
 	
 
 pack_len_map = {  'uint8_t':1,
 		  'uint16_t':2,
 		  'uint32_t':4,
-		  'uint64_t':8
+		  'uint64_t':8,
+		  'enum':4,
+		  'bool':4,
 	       }
 
 
 def to_ba(val,datatype):
-
     """
     Converts a numeric value(uint8_t, uint16_t, uint32_t, uint64_t) to a byte array of
     appropriate data type.
@@ -51,7 +62,10 @@ def from_ba(ba,datatype):
         return
 
     length = pack_len_map[datatype]
-    s = struct.unpack(pack_type_map[datatype],ba[0:length])[0]
+    if len(ba) < length:
+    	length = len(ba)
+    	
+    s = struct.unpack(pack_type_map_from_len[length],ba[0:length])[0]
     return s
 
 def str_to_ba(string,length):
@@ -158,10 +172,19 @@ ba_to_type={
     'uint16_t': ba_to_int_type,
     'uint32_t': ba_to_int_type,
     'uint64_t': ba_to_int_type,
+	'int8_t': ba_to_int_type,
+	'int16_t': ba_to_int_type,
+	'int32_t': ba_to_int_type,
+	'int64_t': ba_to_int_type,
+	'bool':  ba_to_int_type,
+	'date' : ba_to_str_wr,
+	'enum': ba_to_int_type,
+	'bin' : hex_from_data,
+	'ipv4' : ba_to_ipv4str,
+	'ipv6' : ba_to_ipv6str,
+	'ip' : hex_from_data,
     'hex' : hex_from_data,
     'mac'     : ba_to_macstr,
-    'ipv4'    : ba_to_ipv4str,
-    'ipv6'    : ba_to_ipv6str,
 }
 
 def ba_to_value(typ, val):
@@ -184,10 +207,19 @@ type_to_ba={
     'uint16_t': wr_int_type_to_ba,
     'uint32_t': wr_int_type_to_ba,
     'uint64_t': wr_int_type_to_ba,
+	'int8_t': wr_int_type_to_ba,
+	'int16_t': wr_int_type_to_ba,
+	'int32_t': wr_int_type_to_ba,
+	'int64_t': wr_int_type_to_ba,
+	'enum': wr_int_type_to_ba,
+	'bool': wr_int_type_to_ba,
+	'date': wr_str_to_ba,
     'hex'     : hex_to_ba,
+	'bin'	 : hex_to_ba,
     'mac'     : macstr_to_ba,
     'ipv4'    : ipv4str_to_ba,
     'ipv6'    : ipv6str_to_ba,
+	'ip'	 : hex_to_ba,
 }
 
 def value_to_ba(typ,val):
