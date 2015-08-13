@@ -60,6 +60,15 @@ class COutputFormat:
         name = model.module.name()
         for i in model.context['enum'].keys():
             if i.find(name+':')!=0: continue
+            node = model.context['enum'][i]
+            type_name = node.find(model.module.ns()+'type')
+            if type_name!=None:
+                type_name = type_name.get('name')
+
+            if type_name!=None and type_name!='enumeration':
+                print "Skipping %s due to non enum" % type_name
+                continue
+
             self.show_enum(model,i)
 
     def print_container(self,model):
