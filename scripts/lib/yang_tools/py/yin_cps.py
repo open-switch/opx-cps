@@ -8,6 +8,7 @@ import os
 import xml.etree.ElementTree as ET
 
 import tempfile
+from docutils.parsers.rst.directives import path
 
 supported_ids_at_root = [
     "list","container","rpc" ]
@@ -95,7 +96,7 @@ class CPSParser:
         self.all_node_map[self.module.name()] = self.root_node
         self.container_keys[self.module.name()] = self.module.name()+ " "
         print "Creating type mapping..."
-        self.parse_types(self.root_node)
+        self.parse_types(self.root_node,self.module.name()+':')
         print "Updating prefix (%s) related mapping" % self.module.name()
         self.fix_namespace(self.root_node)
         print "Scanning yang nodes"
@@ -133,16 +134,22 @@ class CPSParser:
                     n = self.module.name()+':'+n
                 i.set('name',n)
 
-    def parse_types(self,parent):
+    def parse_types(self,parent, path):
         for i in parent:
-            if len(i) > 0:
-                self.parse_types(i)
 
             tag = self.module.filter_ns(i.tag)
-
-            id = self.module.name()+':'+tag
+            id = tag
             if i.get('name')!=None:
-                id = self.module.name()+':'+i.get('name')
+                id = i.get('name')
+
+            full_name = path
+            if full_name[len(full_name)-1]!=':':
+                full_name += "/"
+            full_name +=id
+            type_name = self.module.name()+':'+id
+
+            if len(i) > 0:
+                self.parse_types(i,full_name)
 
             if tag == 'grouping':
                 tag = 'typedef'
@@ -153,17 +160,18 @@ class CPSParser:
                     tag = 'typedef'
 
             if tag == 'typedef':
-                if id in self.context['types']:
+                if type_name in self.context['types']:
                     continue
                     #raise Exception("Duplicate entry in type name database..."+id)
 
-                self.context['types'][id] = i
+                self.context['types'][type_name] = i
+
                 type = i.find(self.module.ns()+'type')
                 if type!=None:
                     if type.get('name')=='enumeration':
-                        self.context['enum'][id] = i
+                        self.context['enum'][full_name] = i
                     if type.get('name')=='union':
-                        self.context['union'][id] = i
+                        self.context['union'][full_name] = i
                 continue
 
     def walk_nodes(self, node, path):
