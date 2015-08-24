@@ -258,4 +258,10 @@ bool cps_api_unittest_init(void) {
             cps_api_ns_startup()==cps_api_ret_code_OK;
 }
 
+bool cps_api_is_registered(cps_api_key_t *key, cps_api_return_code_t *rc) {
+	cps_api_object_owner_reg_t owner;
+	if (rc!=nullptr) *rc = cps_api_ret_code_OK;
+	return cps_api_find_owners(key,owner);
+}
+
 }

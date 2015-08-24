@@ -14,4 +14,5 @@ if __name__=='__main__':
 	while True:
 		ev = cps.event_wait(handle)
 		print ev['key']
+		if 'operation' in ev: print "Operation : ",ev['operation']
 		print ev['data']
