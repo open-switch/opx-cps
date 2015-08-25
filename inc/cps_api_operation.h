@@ -153,6 +153,10 @@ typedef struct {
     size_t           key_count;
     cps_api_object_list_t list;
     cps_api_object_list_t filters;        //!< a list of objects to be queried.
+
+    /*An optional timeout allowable on an operation - by default all operations have a
+     * timeout of 10 seconds - set this to 0 to ignore timeout*/
+    size_t timeout;                          //!<a timeout in milliseconds
 }cps_api_get_params_t;
 
 
@@ -168,6 +172,10 @@ typedef struct {
 typedef struct {
     cps_api_object_list_t change_list; //! list of objects to modify
     cps_api_object_list_t prev; //! the previous state of the object modified
+
+    /*An optional timeout allowable on an operation - by default all operations have a
+     * timeout of 10 seconds - set this to 0 to ignore timeout*/
+    size_t timeout;                          //!<a timeout in milliseconds
 }cps_api_transaction_params_t;
 
 

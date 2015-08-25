@@ -10,20 +10,21 @@
 #include "cps_api_object.h"
 #include "event_log.h"
 #include "std_file_utils.h"
+#include "std_select_tools.h"
+#include "std_time_tools.h"
 
 #include <unistd.h>
 
 struct cps_msg_hdr_t {
+    uint32_t version;
     uint32_t len;
     uint32_t operation;
-    uint32_t version;
 };
 
 #define SCRATCH_LOG_BUFF (100)
 
 bool cps_api_send(cps_api_channel_t handle, cps_api_msg_operation_t op,
-        const struct iovec *iov,
-        size_t count) {
+        const struct iovec *iov, size_t count) {
 
     cps_msg_hdr_t hdr;
     hdr.len =0;
@@ -33,6 +34,7 @@ bool cps_api_send(cps_api_channel_t handle, cps_api_msg_operation_t op,
     }
     hdr.version = 0;
     hdr.operation = op;
+
     t_std_error rc = STD_ERR_OK;
     int by = std_write(handle,&hdr,sizeof(hdr),true,&rc);
     if (by!=sizeof(hdr)) return false;
@@ -49,7 +51,6 @@ bool cps_api_send_header(cps_api_channel_t handle, uint32_t op,
     hdr.len =len;
     hdr.operation = op;
     hdr.version = 0;
-
     t_std_error rc = STD_ERR_OK;
     int by = std_write(handle,&hdr,sizeof(hdr),true,&rc);
     if (by!=sizeof(hdr)) {
@@ -158,6 +159,23 @@ bool cps_api_get_handle(cps_api_key_t &key, cps_api_channel_t &handle) {
     return rc;
 }
 
+cps_api_return_code_t cps_api_timeout_wait(int handle, fd_set *r_template, size_t timeout_ms,const char *op) {
+    fd_set _rset = *r_template;
+    struct timeval tv;
+    tv.tv_sec = timeout_ms / 1000;
+    tv.tv_usec = MILLI_TO_MICRO(timeout_ms % 1000);    //just the milliseconds portion
+    int rc = std_select_ignore_intr(handle+1,&_rset,nullptr,nullptr,&tv,nullptr);
+    if (rc==-1) {
+        EV_LOG(ERR,DSAPI,0,"CPS-OP-GET","CPS Operation failed - application close");
+        return cps_api_ret_code_ERR;
+    }
+    if (rc==0) {
+        EV_LOG(ERR,DSAPI,0,"CPS-OP-GET","CPS Operation failed - application time out");
+        return cps_api_ret_code_ERR;
+    }
+    return cps_api_ret_code_OK;
+}
+
 cps_api_return_code_t cps_api_process_get_request(cps_api_get_params_t *param, size_t ix) {
     cps_api_return_code_t rc = cps_api_ret_code_ERR;
     char buff[SCRATCH_LOG_BUFF];
@@ -182,10 +200,17 @@ cps_api_return_code_t cps_api_process_get_request(cps_api_get_params_t *param, s
         }
 
         uint32_t op;
+        fd_set rset;
+        FD_ZERO(&rset);
+        FD_SET(handle,&rset);
 
         do {
+            if (param->timeout > 0) {
+                if ((rc=cps_api_timeout_wait(handle,&rset,param->timeout,"CPS-OP-GET"))!=cps_api_ret_code_OK) {
+                    break;
+                }
+            }
             size_t len;
-
             if (!cps_api_receive_header(handle,op,len)) break;
             if (op!=cps_api_msg_o_GET_RESP) break;
             cps_api_object_guard og (cps_api_receive_object(handle,len));
@@ -217,12 +242,22 @@ cps_api_return_code_t cps_api_process_commit_request(cps_api_transaction_params_
 
     rc = cps_api_ret_code_ERR;
 
+    fd_set rset;
+    FD_ZERO(&rset);
+    FD_SET(handle,&rset);
+
     do {
         if (!cps_api_send_one_object(handle,cps_api_msg_o_COMMIT_CHANGE,obj)) break;
         if (!cps_api_send_one_object(handle,cps_api_msg_o_COMMIT_PREV,pre)) break;
 
         uint32_t op;
         size_t len;
+        if (param->timeout > 0) {
+            if ((rc=cps_api_timeout_wait(handle,&rset,param->timeout,"CPS-OP-TR"))!=cps_api_ret_code_OK) {
+                break;
+            }
+        }
+        rc = cps_api_ret_code_ERR;
 
         if (!cps_api_receive_header(handle,op,len)) break;
 
