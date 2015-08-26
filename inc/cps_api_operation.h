@@ -156,7 +156,7 @@ typedef struct {
 
     /*An optional timeout allowable on an operation - by default all operations have a
      * timeout of 10 seconds - set this to 0 to ignore timeout*/
-    size_t timeout;                          //!<a timeout in milliseconds
+    size_t timeout;                          //!< timeout in ms - set this to 0 to ignore the timeout
 }cps_api_get_params_t;
 
 
@@ -175,7 +175,7 @@ typedef struct {
 
     /* An optional timeout allowable on an operation
      * set this to 0 to ignore timeout which is the default. */
-    size_t timeout;                          //!<a timeout in milliseconds
+    size_t timeout;                          //!<a timeout in ms - set this to 0 to ignore the timeout
 }cps_api_transaction_params_t;
 
 
