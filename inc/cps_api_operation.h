@@ -154,8 +154,8 @@ typedef struct {
     cps_api_object_list_t list;
     cps_api_object_list_t filters;        //!< a list of objects to be queried.
 
-    /*An optional timeout allowable on an operation - by default all operations have a
-     * timeout of 10 seconds - set this to 0 to ignore timeout*/
+    /* An optional timeout allowable on an operation - by default all operations have a
+     * set this to 0 to ignore timeout*/
     size_t timeout;                          //!< timeout in ms - set this to 0 to ignore the timeout
 }cps_api_get_params_t;
 
