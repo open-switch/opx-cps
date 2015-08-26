@@ -17,7 +17,7 @@
 #include <string.h>
 #include <vector>
 #include <stdlib.h>
-#include <map>
+#include <unordered_map>
 #include <stdio.h>
 #include <string>
 
@@ -93,7 +93,7 @@ struct tracker_detail {
     unsigned int ln;
 };
 
-typedef std::map<cps_api_object_t,tracker_detail> tTrackerList;
+typedef std::unordered_map<cps_api_object_t,tracker_detail> tTrackerList;
 
 static std_mutex_lock_create_static_init_rec(db_tracker_lock);
 static tTrackerList trackers;

@@ -153,6 +153,10 @@ typedef struct {
     size_t           key_count;
     cps_api_object_list_t list;
     cps_api_object_list_t filters;        //!< a list of objects to be queried.
+
+    /*An optional timeout allowable on an operation - by default all operations have a
+     * timeout of 10 seconds - set this to 0 to ignore timeout*/
+    size_t timeout;                          //!< timeout in ms - set this to 0 to ignore the timeout
 }cps_api_get_params_t;
 
 
@@ -168,6 +172,10 @@ typedef struct {
 typedef struct {
     cps_api_object_list_t change_list; //! list of objects to modify
     cps_api_object_list_t prev; //! the previous state of the object modified
+
+    /* An optional timeout allowable on an operation
+     * set this to 0 to ignore timeout which is the default. */
+    size_t timeout;                          //!<a timeout in ms - set this to 0 to ignore the timeout
 }cps_api_transaction_params_t;
 
 
@@ -360,6 +368,17 @@ typedef struct {
  * @return standard db return code
  */
 cps_api_return_code_t cps_api_register(cps_api_registration_functions_t * reg);
+
+
+/**
+ * Determine if a an application has registered to receive requests for the given key.
+ *
+ * @param key the actual key that is being checked to see if there is an owner
+ * @param rc in case of false responses, this return code may be able to provide additional details
+ *
+ * @return true if there is a application registered or false if there is no registration found for that key
+ */
+bool cps_api_is_registered(cps_api_key_t *key, cps_api_return_code_t *rc);
 
 #ifdef __cplusplus
 }

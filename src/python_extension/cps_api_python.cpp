@@ -300,6 +300,7 @@ static PyObject * py_cps_key_from_name(PyObject *self, PyObject *args) {
     return PyString_FromString(cps_api_key_print(&k,buff,sizeof(buff)-1));
 }
 
+#define CPS_FN_DOC(x) x##_doc
 
 PyDoc_STRVAR(cps_get__doc__, "Perform a CPS get using an list of keys. Currently the keys should be in x.y.z format.");
 PyDoc_STRVAR(cps_trans__doc__, "Perform a CPS transaction operation the dictionary provided. "
@@ -308,16 +309,26 @@ PyDoc_STRVAR(cps_doc__, "A python interface to the CPS API");
 
 PyDoc_STRVAR(cps_cps_generic_doc__, "A CPS mapping function.");
 
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_map_init), "Initialize the CPS API.  This API is optional and will be initialized on first use.");
+
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_byte_array_to_obj), "Convert a bytearray to a python dictionary containing both 'key' and 'data' elements.");
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_obj_to_array), "Convert a python dictionary containing both 'key' and 'data' elements to a bytearray.");
+
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_info), "Given either a key string or a object element name, return the list of attributes that it contains.  Optionally pass True to the API to get all attributes and contained attributes.");
+
+
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_types), "Return extended details on a specific attribute.  The attribute can be a numeric string or a full attribute name.");
+
 /* A list of all the methods defined by this module. */
 /* "METH_VARGS" tells Python how to call the handler */
 static PyMethodDef cps_methods[] = {
-    {"init",  py_cps_map_init, METH_VARARGS, cps_cps_generic_doc__},
-    {"convarray",  py_cps_byte_array_to_obj, METH_VARARGS, cps_cps_generic_doc__},
+    {"init",  py_cps_map_init, METH_VARARGS, CPS_FN_DOC(py_cps_map_init)},
+    {"convarray",  py_cps_byte_array_to_obj, METH_VARARGS, CPS_FN_DOC(py_cps_byte_array_to_obj)},
     {"arraykey",  py_cps_byte_array_key, METH_VARARGS, cps_cps_generic_doc__},
-    {"convdict",  py_cps_obj_to_array, METH_VARARGS, cps_cps_generic_doc__},
+    {"convdict",  py_cps_obj_to_array, METH_VARARGS, CPS_FN_DOC(py_cps_obj_to_array)},
 
-    {"info",  py_cps_info, METH_VARARGS, cps_cps_generic_doc__},
-    {"type",  py_cps_types, METH_VARARGS, cps_cps_generic_doc__},
+    {"info",  py_cps_info, METH_VARARGS, CPS_FN_DOC(py_cps_info)},
+    {"type",  py_cps_types, METH_VARARGS, CPS_FN_DOC(py_cps_types)},
 
     {"config",py_cps_config, METH_VARARGS, cps_cps_generic_doc__ },
     {"key_from_name",py_cps_key_from_name, METH_VARARGS, cps_cps_generic_doc__ },

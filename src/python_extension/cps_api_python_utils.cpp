@@ -104,7 +104,11 @@ static void py_obj_dump_level(PyObject * d, cps_api_object_it_t *it, std::vector
 
             if (ent==nullptr && par_ent!=nullptr) {
                 if (par_ent->attr_type==CPS_CLASS_ATTR_T_LIST) {
-                    ent = par_ent;
+                    cps_api_object_it_t contained_it = *it;
+                    cps_api_object_it_inside(&contained_it);
+                    if (cps_api_object_it_valid(&contained_it)) {
+                        ent = par_ent;
+                    }
                 }
             }
 
@@ -118,6 +122,7 @@ static void py_obj_dump_level(PyObject * d, cps_api_object_it_t *it, std::vector
             if (ent->embedded) {
                 PyRef r (PyDict_New());
                 if (r.get()==nullptr) break;
+
                 cps_api_object_it_t contained_it = *it;
                 cps_api_object_it_inside(&contained_it);
 
