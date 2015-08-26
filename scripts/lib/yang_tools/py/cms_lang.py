@@ -256,7 +256,7 @@ class Language:
         self.get_instance_vars(cb_node,True,"cma_set_data")
         print ""
         print " /*Return a cps_api_ret_code_OK when you implement and have a successful operation*/"
-        print "  return cps_api_ret_code_ERR;"
+        print "  return cps_api_ret_code_OK;"
         print "}"
         print ""
     def write_cb_node(self,cb_node):
@@ -284,7 +284,7 @@ class Language:
         print "  (void)retval;"
         print " /*Return a cps_api_ret_code_OK when you implement and have a successful operation"
         print "   also can return a module specific return code.*/"
-        print "  return cps_api_ret_code_ERR;"
+        print "  return cps_api_ret_code_OK;"
         print "}"
         print ""
 
