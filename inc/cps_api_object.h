@@ -17,7 +17,6 @@
 #include <stdbool.h>
 #include "std_tlv.h"
 
-#include "cps_api_object_internal.h"
 #include "cps_api_object_attr.h"
 
 #ifdef __cplusplus
