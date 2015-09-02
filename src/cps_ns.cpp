@@ -15,6 +15,7 @@
 #include "std_file_utils.h"
 #include "std_thread_tools.h"
 #include "private/cps_api_client_utils.h"
+#include "cps_api_events.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -157,6 +158,25 @@ static bool insert_entry(client_reg_t &r) {
     return true;
 }
 
+static void send_out_key_event(cps_api_key_t *key, bool how) {
+    char buff[CPS_API_MIN_OBJ_LEN];
+    memset(buff,0,sizeof(buff));
+    cps_api_object_t obj = cps_api_object_init(buff,sizeof(buff));
+    size_t ix = 1;
+    size_t mx = cps_api_key_get_len(key);
+
+    cps_api_key_set(cps_api_object_key(obj),CPS_OBJ_KEY_INST_POS,cps_api_qualifier_REGISTRATION);
+    for ( ; ix < mx ; ++ix ) {
+        cps_api_key_set(cps_api_object_key(obj),ix+1,cps_api_key_element_at(key,ix));
+    }
+    cps_api_key_set_len(cps_api_object_key(obj),ix+1);
+
+    cps_api_object_set_type_operation(cps_api_object_key(obj),
+            (cps_api_operation_types_t)( how ? cps_api_oper_CREATE : cps_api_oper_DELETE));
+
+    cps_api_event_thread_publish(obj);
+}
+
 
 static bool process_registration(int fd,size_t len) {
     client_reg_t r;
@@ -174,6 +194,9 @@ static bool process_registration(int fd,size_t len) {
             cps_api_key_print(&r.details.key,buff,sizeof(buff)-1),
             r.details.addr.address.str);
 
+    if (rc) {
+        send_out_key_event(&r.details.key,true);
+    }
     return rc;
 }
 
@@ -238,6 +261,7 @@ static bool  _client_closed_( void *context, int fd ) {
                     );
 
         active_registraitons.erase(active_registraitons.begin()+ix);
+        send_out_key_event(&active_registraitons[ix].details.key,false);
         ix = 0;
         mx = active_registraitons.size();
     }
@@ -270,6 +294,11 @@ cps_api_return_code_t cps_api_ns_startup() {
         std_socket_service_destroy(handle);
         return cps_api_ret_code_ERR;
     }
+
+
+    cps_api_event_service_init();
+    cps_api_event_thread_init();
+
 
     return cps_api_ret_code_OK;
 }

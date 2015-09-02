@@ -48,7 +48,8 @@ typedef enum {
     cps_api_qualifier_OBSERVED=2,
     cps_api_qualifier_PROPOSED=3,
     cps_api_qualifier_REALTIME=4,
-    cps_api_qualifier_MAX
+    cps_api_qualifier_REGISTRATION=5,
+    cps_api_qualifier_MAX,
 } cps_api_qualifier_t;
 
 /**
