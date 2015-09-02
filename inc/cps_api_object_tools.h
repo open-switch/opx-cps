@@ -21,6 +21,7 @@ extern "C" {
  * @param qual the qualifier of the key (target, observed, etc..
  * @param id the object that contains the key that will be set on the object
  * @param add_defaults if there is defaults found for the object, also set those attributes in the object
+ *             default attributes are only available on objects that support it
  *
  * @return a cps_api_object_t with the key and attributes set appropriately or a NULL on error
  */
