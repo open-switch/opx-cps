@@ -162,7 +162,7 @@ static void send_out_key_event(cps_api_key_t *key, bool how) {
     char buff[CPS_API_MIN_OBJ_LEN];
     memset(buff,0,sizeof(buff));
     cps_api_object_t obj = cps_api_object_init(buff,sizeof(buff));
-    size_t ix = 1;
+    size_t ix = 0;
     size_t mx = cps_api_key_get_len(key);
 
     cps_api_key_set(cps_api_object_key(obj),CPS_OBJ_KEY_INST_POS,cps_api_qualifier_REGISTRATION);
@@ -295,11 +295,10 @@ cps_api_return_code_t cps_api_ns_startup() {
         return cps_api_ret_code_ERR;
     }
 
-
-    cps_api_event_service_init();
-    cps_api_event_thread_init();
-
-
-    return cps_api_ret_code_OK;
+    if (cps_api_event_service_init()==cps_api_ret_code_OK &&
+            cps_api_event_thread_init()==cps_api_ret_code_OK) {
+        return cps_api_ret_code_OK;
+    }
+    return cps_api_ret_code_ERR;
 }
 
