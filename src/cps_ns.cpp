@@ -273,6 +273,11 @@ static std_socket_server_handle_t handle;
 
 cps_api_return_code_t cps_api_ns_startup() {
 
+    if (cps_api_event_service_init()==cps_api_ret_code_OK &&
+            cps_api_event_thread_init()==cps_api_ret_code_OK) {
+        return cps_api_ret_code_OK;
+    }
+
     handle = NULL;
     memset(&service_data,0,sizeof(service_data));
 
@@ -295,10 +300,6 @@ cps_api_return_code_t cps_api_ns_startup() {
         return cps_api_ret_code_ERR;
     }
 
-    if (cps_api_event_service_init()==cps_api_ret_code_OK &&
-            cps_api_event_thread_init()==cps_api_ret_code_OK) {
-        return cps_api_ret_code_OK;
-    }
     return cps_api_ret_code_ERR;
 }
 
