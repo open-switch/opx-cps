@@ -17,7 +17,6 @@
 #include <stdbool.h>
 #include "std_tlv.h"
 
-#include "cps_api_object_internal.h"
 #include "cps_api_object_attr.h"
 
 #ifdef __cplusplus
@@ -74,7 +73,7 @@ typedef void * cps_api_object_t;
 typedef void * cps_api_object_list_t;
 
 
-#define CPS_API_MIN_OBJ_LEN (CPS_API_OBJECT_INTERNAL_SPACE_REQ + 256)
+#define CPS_API_MIN_OBJ_LEN (sizeof(cps_api_key_t) + 100 /*internal use*/ + 256)
 
 /**
  * Create a object from a piece of a array.  The memory for the object will be

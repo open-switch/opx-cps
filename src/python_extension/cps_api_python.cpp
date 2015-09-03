@@ -193,6 +193,20 @@ static PyObject * py_cps_info(PyObject *self, PyObject *args) {
     return d.release();
 }
 
+static PyObject * py_cps_enabled(PyObject *self, PyObject *args) {
+    const char * path=NULL;
+    if (! PyArg_ParseTuple( args, "s",&path)) return NULL;
+
+    cps_api_key_t key;
+
+    cps_api_key_from_string(&key,path);
+    if (cps_api_is_registered(&key,NULL)) {
+    	Py_RETURN_TRUE;
+    }
+    Py_RETURN_FALSE;
+}
+
+
 static PyObject * py_cps_types(PyObject *self, PyObject *args) {
     const char * path=NULL;
     if (! PyArg_ParseTuple( args, "s", &path)) return NULL;
@@ -314,10 +328,10 @@ PyDoc_STRVAR(CPS_FN_DOC(py_cps_map_init), "Initialize the CPS API.  This API is 
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_byte_array_to_obj), "Convert a bytearray to a python dictionary containing both 'key' and 'data' elements.");
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_obj_to_array), "Convert a python dictionary containing both 'key' and 'data' elements to a bytearray.");
 
+
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_info), "Given either a key string or a object element name, return the list of attributes that it contains.  Optionally pass True to the API to get all attributes and contained attributes.");
-
-
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_types), "Return extended details on a specific attribute.  The attribute can be a numeric string or a full attribute name.");
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_enabled), "Given a key, see if there is an object registration.");
 
 /* A list of all the methods defined by this module. */
 /* "METH_VARGS" tells Python how to call the handler */
@@ -329,6 +343,7 @@ static PyMethodDef cps_methods[] = {
 
     {"info",  py_cps_info, METH_VARARGS, CPS_FN_DOC(py_cps_info)},
     {"type",  py_cps_types, METH_VARARGS, CPS_FN_DOC(py_cps_types)},
+	{"enabled", py_cps_enabled, METH_VARARGS, CPS_FN_DOC(py_cps_enabled)},
 
     {"config",py_cps_config, METH_VARARGS, cps_cps_generic_doc__ },
     {"key_from_name",py_cps_key_from_name, METH_VARARGS, cps_cps_generic_doc__ },

@@ -11,6 +11,7 @@
 
 #include "std_tlv.h"
 #include "cps_api_object.h"
+#include "private/cps_api_object_internal.h"
 #include "event_log.h"
 
 #include <endian.h>

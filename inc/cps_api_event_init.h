@@ -88,7 +88,6 @@ typedef struct {
     cps_api_wait_for_event_t wait_for_event_function;
 }cps_api_event_methods_reg_t;
 
-
 /**
  * This API initializes the DB event sub system.  This must be done before anyone
  * tries to use the DS event service and must only be done by one process in AR.
