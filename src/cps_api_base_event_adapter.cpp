@@ -5,7 +5,7 @@
 
 /** OPENSOURCELICENSE */
 
-#include "private/cps_api_event_init.h"
+#include "cps_api_event_init.h"
 
 #include "std_event_service.h"
 #include "cps_api_operation.h"

@@ -11,7 +11,7 @@
 #include "std_assert.h"
 #include "std_rw_lock.h"
 #include "event_log.h"
-#include "private/cps_api_event_init.h"
+#include "cps_api_event_init.h"
 
 #include "private/cps_api_client_utils.h"
 #include "private/cps_ns.h"
