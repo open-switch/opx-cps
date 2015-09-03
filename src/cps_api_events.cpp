@@ -5,7 +5,7 @@
  */
 
 
-#include "cps_api_event_init.h"
+#include "private/cps_api_event_init.h"
 #include "std_mutex_lock.h"
 #include "cps_api_events.h"
 
