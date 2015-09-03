@@ -24,8 +24,8 @@
 
 #define CPS_API_NS_ID "/tmp/cps_api_ns"
 
-
 #define DEF_KEY_PRINT_BUFF (100)
+#define MAX_NS_PENDING_REQUESTS (80)
 
 struct client_reg_t {
     cps_api_object_owner_reg_t details;
@@ -290,6 +290,7 @@ cps_api_return_code_t cps_api_ns_startup() {
     service_data.some_data = _some_data_;
     service_data.del_client = _client_closed_;
     service_data.context = &service_data;
+    service_data.listeners = MAX_NS_PENDING_REQUESTS;
 
     if (std_socket_service_init(&handle,&service_data)!=STD_ERR_OK) {
         return cps_api_ret_code_ERR;
