@@ -10,6 +10,7 @@
 
 #include "cps_api_object_attr.h"
 #include "cps_api_object.h"
+#include "cps_api_operation.h"
 
 #include <stdbool.h>
 

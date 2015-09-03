@@ -273,9 +273,9 @@ static std_socket_server_handle_t handle;
 
 cps_api_return_code_t cps_api_ns_startup() {
 
-    if (cps_api_event_service_init()==cps_api_ret_code_OK &&
-            cps_api_event_thread_init()==cps_api_ret_code_OK) {
-        return cps_api_ret_code_OK;
+    if (!(cps_api_event_service_init()==cps_api_ret_code_OK &&
+            cps_api_event_thread_init()==cps_api_ret_code_OK)) {
+        return cps_api_ret_code_ERR;
     }
 
     handle = NULL;
@@ -300,6 +300,6 @@ cps_api_return_code_t cps_api_ns_startup() {
         return cps_api_ret_code_ERR;
     }
 
-    return cps_api_ret_code_ERR;
+    return cps_api_ret_code_OK;
 }
 
