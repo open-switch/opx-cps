@@ -21,12 +21,12 @@ extern "C" {
  * Create an object and set the key of the object to the key of the specified attribute ID
  * @param qual the qualifier of the key (target, observed, etc..
  * @param id the object that contains the key that will be set on the object
- * @param add_defaults if there is defaults found for the object, also set those attributes in the object
+ * @param use_create_defaults if there is defaults found for the object, also set those attributes in the object
  *             default attributes are only available on objects that support it
  *
  * @return a cps_api_object_t with the key and attributes set appropriately or a NULL on error
  */
-cps_api_object_t cps_api_obj_tool_create(cps_api_qualifier_t qual, cps_api_attr_id_t id, bool add_defaults);
+cps_api_object_t cps_api_obj_tool_create(cps_api_qualifier_t qual, cps_api_attr_id_t id, bool use_create_defaults);
 
 
 /**

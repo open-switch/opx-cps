@@ -72,8 +72,8 @@ typedef void * cps_api_object_t;
  */
 typedef void * cps_api_object_list_t;
 
-
-#define CPS_API_MIN_OBJ_LEN (sizeof(cps_api_key_t) + 100 /*internal use*/ + 256)
+#define CPS_API_OBJ_OVERHEAD (100)
+#define CPS_API_MIN_OBJ_LEN (sizeof(cps_api_key_t) + CPS_API_OBJ_OVERHEAD + 256)
 
 /**
  * Create a object from a piece of a array.  The memory for the object will be
