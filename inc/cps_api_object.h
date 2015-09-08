@@ -108,6 +108,7 @@ cps_api_object_t cps_api_object_init(void *data, size_t bufflen);
  *
  * @param desc the string description of the use of the object or the filename
  * @param line the file line on which the allocation exists.
+ * @param name the name of the file in which this API is called
  * @return the object that is allocated or NULL if not possible to create
  */
 cps_api_object_t cps_api_object_create_int(const char *desc,unsigned int line, const char *name);
