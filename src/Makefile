@@ -23,6 +23,7 @@ cps-api-common_SRCS+=cps_api_client_ipc.cpp
 cps-api-common_SRCS+=cps_dictionary.cpp
 cps-api-common_SRCS+=cps_dictionary_loader.cpp
 cps-api-common_SRCS+=cps_api_object_tools.cpp
+cps-api-common_SRCS+=cps_api_operation_tools.cpp
 
 cps-api-common_LDFLAGS = -levent_log -ldn_common -lpthread
 

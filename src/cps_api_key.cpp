@@ -15,7 +15,6 @@
 #include <stdlib.h>
 #include <functional>
 
-#define CPS_API_ATTR_KEY_ID CPS_API_ATTR_RESERVE_RANGE_END
 
 extern "C" int cps_api_key_matches( cps_api_key_t *  key, cps_api_key_t * comparison, bool exact) {
     int src_len = cps_api_key_get_len_in_bytes(key);
@@ -85,7 +84,7 @@ extern "C" bool cps_api_key_from_string(cps_api_key_t *key,const char *buff) {
 }
 
 extern "C" cps_api_object_attr_t cps_api_get_key_data(cps_api_object_t obj,cps_api_attr_id_t id) {
-    cps_api_attr_id_t ids[] = {CPS_API_ATTR_KEY_ID,id};
+    cps_api_attr_id_t ids[] = {CPS_API_OBJ_KEY_ATTRS,id};
     cps_api_object_attr_t p = cps_api_object_e_get(obj,ids,sizeof(ids)/sizeof(*ids));
     if (p==NULL) p = cps_api_object_e_get(obj,&id,1);
     return p;
@@ -94,7 +93,7 @@ extern "C" cps_api_object_attr_t cps_api_get_key_data(cps_api_object_t obj,cps_a
 
 extern "C" bool cps_api_set_key_data(cps_api_object_t obj,cps_api_attr_id_t id,
         cps_api_object_ATTR_TYPE_t type, const void *data, size_t len) {
-    cps_api_attr_id_t ids[] = {CPS_API_ATTR_KEY_ID,id};
+    cps_api_attr_id_t ids[] = {CPS_API_OBJ_KEY_ATTRS,id};
     return cps_api_object_e_add(obj,ids,sizeof(ids)/sizeof(*ids),type,data,len);
 }
 

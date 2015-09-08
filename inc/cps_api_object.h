@@ -46,6 +46,11 @@ extern "C" {
 #define CPS_API_ATTR_RESERVE_RANGE_END ((cps_api_attr_id_t)-1)
 #define CPS_API_ATTR_RESERVE_RANGE_START ((cps_api_attr_id_t)-10)
 
+/*
+ * These are some reserved IDs for the CPS
+ * */
+#define CPS_API_OBJ_KEY_ATTRS (CPS_API_ATTR_RESERVE_RANGE_END)
+
 typedef enum cps_api_object_ATTR_TYPE_t {
     cps_api_object_ATTR_T_U16,
     cps_api_object_ATTR_T_U32,
@@ -96,7 +101,7 @@ cps_api_object_t cps_api_object_init(void *data, size_t bufflen);
  *                 are passed in for debugging purposes
  */
 #define cps_api_object_create() \
-        cps_api_object_create_int(__FUNCTION__,__LINE__)
+        cps_api_object_create_int(__FUNCTION__,__LINE__,__FILE__)
 
 /**
  * Create a object - don't use directly - use CPS_API_OBJ_ALLOC macro
@@ -105,7 +110,7 @@ cps_api_object_t cps_api_object_init(void *data, size_t bufflen);
  * @param line the file line on which the allocation exists.
  * @return the object that is allocated or NULL if not possible to create
  */
-cps_api_object_t cps_api_object_create_int(const char *desc,unsigned int line);
+cps_api_object_t cps_api_object_create_int(const char *desc,unsigned int line, const char *name);
 
 /**
  * Clone an object to another object

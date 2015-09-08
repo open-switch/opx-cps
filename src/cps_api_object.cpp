@@ -92,6 +92,7 @@ static void * add_get_tlv_pos_with_enough_space(cps_api_object_internal_t * p, u
 struct tracker_detail {
     const char *desc;
     unsigned int ln;
+    const char *file;
 };
 
 typedef std::unordered_map<cps_api_object_t,tracker_detail> tTrackerList;
@@ -132,11 +133,12 @@ cps_api_object_t cps_api_object_init(void *data, size_t bufflen) {
     return (cps_api_object_t)(data);
 }
 
-void db_list_tracker_add(cps_api_object_t obj, const char * label, unsigned int line) {
+void db_list_tracker_add(cps_api_object_t obj, const char * label, unsigned int line,const char *file) {
     std_mutex_simple_lock_guard g(&db_tracker_lock);
     if (obj==NULL) return ;
     try {
-        tracker_detail d={label,line};
+        if (file==nullptr) file = "";
+        tracker_detail d={label,line,file};
         trackers[obj] = d;
     } catch (...) {}
 }
@@ -158,16 +160,15 @@ bool cps_api_list_debug() {
     tTrackerList::iterator end = trackers.end();
     if (it==end) return true;
     for ( ; it != end ; ++it ) {
-        printf("Objects still found from %s:%d\n",it->second.desc,it->second.ln);
+        printf("Objects still found from %s:%s:%d\n",it->second.file,it->second.desc,it->second.ln);
     }
     return false;
 }
 
-cps_api_object_t cps_api_object_create_int(const char *desc, unsigned int line) {
+cps_api_object_t cps_api_object_create_int(const char *desc, unsigned int line, const char *file) {
     cps_api_object_t obj = obj_alloc(DEF_OBJECT_SIZE);
-    db_list_tracker_add(obj, desc, line);
+    db_list_tracker_add(obj, desc, line,file);
     return obj;
-
 }
 
 bool cps_api_object_clone(cps_api_object_t d, cps_api_object_t s) {

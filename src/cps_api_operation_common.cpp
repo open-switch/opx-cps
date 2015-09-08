@@ -138,6 +138,8 @@ cps_api_return_code_t cps_api_get(cps_api_get_params_t * param) {
     new_req.key_count = mx;
     new_req.keys = keys.get();
 
+    cps_api_object_list_swap(param->list,new_req.list);
+
     ix = 0;
     for ( ; ix < mx ; ++ix ) {
         if ((rc=cps_api_process_get_request(&new_req,ix))!=cps_api_ret_code_OK) break;
