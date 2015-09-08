@@ -321,21 +321,21 @@ TEST(cps_api_object,test_tool_obj_test) {
 TEST(cps_api_object,test_tool_op_test) {
     {
     cps_api_object_guard og(cps_api_obj_tool_create(cps_api_qualifier_TARGET,ID_START,true));
-    ASSERT_TRUE(cps_api_commit_one(cps_api_oper_CREATE,og.get(),4)==cps_api_ret_code_OK);
+    ASSERT_TRUE(cps_api_commit_one(cps_api_oper_CREATE,og.get(),4,100)==cps_api_ret_code_OK);
 
     og.set(cps_api_obj_tool_create(cps_api_qualifier_TARGET,ID_START*10,true));
-    ASSERT_FALSE(cps_api_commit_one(cps_api_oper_CREATE,og.get(),1)==cps_api_ret_code_OK);
+    ASSERT_FALSE(cps_api_commit_one(cps_api_oper_CREATE,og.get(),1,100)==cps_api_ret_code_OK);
     }
     {
     cps_api_object_guard og(cps_api_obj_tool_create(cps_api_qualifier_TARGET,ID_START,true));
     cps_api_object_list_guard olg(cps_api_object_list_create());
-    ASSERT_TRUE(cps_api_get_objs(og.get(), olg.get(), 3)==cps_api_ret_code_OK);
+    ASSERT_TRUE(cps_api_get_objs(og.get(), olg.get(), 3,100)==cps_api_ret_code_OK);
     }
     {
     cps_api_object_guard og(cps_api_obj_tool_create(cps_api_qualifier_TARGET,ID_START,true));
     cps_api_object_list_guard olg(cps_api_object_list_create());
     og.set(cps_api_obj_tool_create(cps_api_qualifier_TARGET,ID_START*10,true));
-    ASSERT_FALSE(cps_api_get_objs(og.get(), olg.get(), 3)==cps_api_ret_code_OK);
+    ASSERT_FALSE(cps_api_get_objs(og.get(), olg.get(), 3,1000)==cps_api_ret_code_OK);
     }
 }
 

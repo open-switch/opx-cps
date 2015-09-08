@@ -7,10 +7,12 @@
 
 
 #include "cps_api_object_tools.h"
+#include "std_time_tools.h"
 
+static const size_t BASIC_WAIT_TIME = (200);
 
 extern "C" cps_api_return_code_t cps_api_commit_one(cps_api_operation_types_t type,
-        cps_api_object_t obj, size_t retry_count) {
+        cps_api_object_t obj, size_t retry_count, size_t ms_delay_between) {
 
     cps_api_transaction_params_t tr;
 
@@ -26,6 +28,9 @@ extern "C" cps_api_return_code_t cps_api_commit_one(cps_api_operation_types_t ty
     }
     bool inf = retry_count==0;
 
+    if (ms_delay_between==0) ms_delay_between = BASIC_WAIT_TIME;
+    ms_delay_between = MILLI_TO_MICRO(ms_delay_between);
+
     cps_api_return_code_t rc = cps_api_ret_code_ERR;
     while (inf || (retry_count >0) ) {
         rc = cps_api_commit(&tr);
@@ -34,13 +39,14 @@ extern "C" cps_api_return_code_t cps_api_commit_one(cps_api_operation_types_t ty
             break;
         }
         if (!inf) --retry_count;
+        std_usleep(ms_delay_between);
     }
     cps_api_object_list_remove(tr.change_list,0);
     return rc;
 }
 
 extern "C" cps_api_return_code_t cps_api_get_objs(cps_api_object_t filt, cps_api_object_list_t obj_list,
-        size_t retry_count) {
+        size_t retry_count, size_t ms_delay_between) {
 
     cps_api_return_code_t rc;
     cps_api_get_params_t get_req;
@@ -53,11 +59,15 @@ extern "C" cps_api_return_code_t cps_api_get_objs(cps_api_object_t filt, cps_api
     if (obj==nullptr) return cps_api_ret_code_ERR;
     if (!cps_api_object_clone(obj,filt)) return cps_api_ret_code_ERR;
 
+    if (ms_delay_between==0) ms_delay_between = BASIC_WAIT_TIME;
+    ms_delay_between = MILLI_TO_MICRO(ms_delay_between);
+
     bool inf = retry_count==0;
     while (inf || (retry_count >0) ) {
         rc = cps_api_get(&get_req);
         if (rc==cps_api_ret_code_OK) break;
         if (!inf) --retry_count;
+        std_usleep(ms_delay_between);
     }
 
     return rc;
