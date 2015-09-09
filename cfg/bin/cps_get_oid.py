@@ -24,8 +24,6 @@ if __name__=='__main__':
 			cur_obj.add_attr(res[0],res[1])	
 	
 	k.append(cur_obj.get())
-	for i in k:
-		cps_utils.print_obj(i)
 		
 	cps.get(k,l)
 	for entry in l:
