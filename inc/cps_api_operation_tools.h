@@ -40,7 +40,6 @@ cps_api_return_code_t cps_api_commit_one(cps_api_operation_types_t type, cps_api
  */
 cps_api_return_code_t cps_api_get_objs(cps_api_object_t filt, cps_api_object_list_t obj_list, size_t retry_count, size_t ms_delay_between);
 
-
 #ifdef __cplusplus
 }
 #endif
