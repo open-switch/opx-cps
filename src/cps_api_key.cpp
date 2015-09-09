@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <functional>
+#include <string.h>
 
 
 extern "C" int cps_api_key_matches( cps_api_key_t *  key, cps_api_key_t * comparison, bool exact) {
@@ -109,4 +110,36 @@ extern "C" size_t cps_api_key_hash(cps_api_key_t *key) {
         hash^=h(*(ptr++));
     }
     return hash;
+}
+
+
+bool cps_api_key_insert_element(cps_api_key_t *key, size_t ix, cps_api_key_element_t elem) {
+    if ((cps_api_key_get_len(key)+1) >= CPS_OBJ_MAX_KEY_LEN) {
+        return false;
+    }
+    size_t cur_len = cps_api_key_get_len(key);
+    if (ix > cur_len) return false;
+
+    cps_api_key_element_t * src = cps_api_key_elem_start(key) + ix;
+    cps_api_key_element_t * dest = src+1;
+
+    memmove(dest,src,(cur_len - ix)*CPS_OBJ_KEY_ELEM_SIZE);
+
+    cps_api_key_set_len(key,cur_len+1);
+    cps_api_key_set(key,ix,elem);
+
+    return true;
+}
+
+void cps_api_key_remove_element(cps_api_key_t *key, size_t ix) {
+    size_t cur_len = cps_api_key_get_len(key);
+    if (ix >= cur_len) return ;
+
+    cps_api_key_element_t * dest = cps_api_key_elem_start(key) + ix;
+    cps_api_key_element_t * src = dest+1;
+    --cur_len;
+
+    memmove(dest,src,(cur_len - ix)*CPS_OBJ_KEY_ELEM_SIZE);
+
+    cps_api_key_set_len(key,cur_len);
 }
