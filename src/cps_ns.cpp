@@ -162,14 +162,9 @@ static void send_out_key_event(cps_api_key_t *key, bool how) {
     char buff[CPS_API_MIN_OBJ_LEN];
     memset(buff,0,sizeof(buff));
     cps_api_object_t obj = cps_api_object_init(buff,sizeof(buff));
-    size_t ix = 0;
-    size_t mx = cps_api_key_get_len(key);
 
-    cps_api_key_set(cps_api_object_key(obj),CPS_OBJ_KEY_INST_POS,cps_api_qualifier_REGISTRATION);
-    for ( ; ix < mx ; ++ix ) {
-        cps_api_key_set(cps_api_object_key(obj),ix+1,cps_api_key_element_at(key,ix));
-    }
-    cps_api_key_set_len(cps_api_object_key(obj),ix+1);
+    cps_api_key_copy(cps_api_object_key(obj),key);
+    cps_api_key_insert_element(cps_api_object_key(obj),CPS_OBJ_KEY_INST_POS,cps_api_qualifier_REGISTRATION);
 
     cps_api_object_set_type_operation(cps_api_object_key(obj),
             (cps_api_operation_types_t)( how ? cps_api_oper_CREATE : cps_api_oper_DELETE));
