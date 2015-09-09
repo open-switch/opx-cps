@@ -15,6 +15,7 @@
 
 #include <stdbool.h>
 #include <string.h>
+#include <stddef.h>
 
 #include <endian.h>
 
@@ -50,8 +51,18 @@ extern "C" {
  * @param elem
  * @return the number of elements in the key
  */
-static inline uint32_t cps_api_key_get_len(cps_api_key_t * elem) {
-    return le32toh(((const uint32_t*)elem)[CPS_OBJ_KEY_LEN_POS]);
+static inline size_t cps_api_key_get_len(cps_api_key_t * elem) {
+    return cps_api_key_elem_raw_get(elem,CPS_OBJ_KEY_LEN_POS);
+}
+
+/**
+ * Set the length of the key
+ * @param elem the key to update
+ * @param len the length of the key
+ */
+static inline void cps_api_key_set_len(cps_api_key_t *elem, size_t len) {
+    STD_ASSERT(len < CPS_OBJ_MAX_KEY_LEN);
+    cps_api_key_elem_raw_set(elem,CPS_OBJ_KEY_LEN_POS,(cps_api_key_element_t)len);
 }
 
 /**
@@ -60,26 +71,16 @@ static inline uint32_t cps_api_key_get_len(cps_api_key_t * elem) {
  * @param offset the position to validate
  * @return true if the index is valid
  */
-static inline bool cps_api_key_valid_offset(cps_api_key_t *elem, uint32_t offset) {
+static inline bool cps_api_key_valid_offset(cps_api_key_t *elem, size_t offset) {
     return offset < cps_api_key_get_len(elem);
-}
-
-/**
- * Set the length of the key
- * @param elem the key to update
- * @param len the length of the key
- */
-static inline void cps_api_key_set_len(cps_api_key_t *elem, uint32_t len) {
-    STD_ASSERT(len < CPS_OBJ_MAX_KEY_LEN);
-    ((uint32_t*)elem)[CPS_OBJ_KEY_LEN_POS] = htole32(len);
 }
 
 /**
  * Get the attributes associated with a key
  * @param elem the key to get the attributes from
  */
-static inline uint32_t cps_api_key_get_attr(cps_api_key_t *elem) {
-    return le32toh(((uint32_t*)elem)[CPS_OBJ_KEY_ATTR_POS] );
+static inline cps_api_key_element_t cps_api_key_get_attr(cps_api_key_t *elem) {
+    return cps_api_key_elem_raw_get(elem,CPS_OBJ_KEY_ATTR_POS);
 }
 
 /**
@@ -88,32 +89,25 @@ static inline uint32_t cps_api_key_get_attr(cps_api_key_t *elem) {
  * @param attr the attributes to set on the key
  */
 static inline void cps_api_key_set_attr(cps_api_key_t *elem, uint32_t attr) {
-    ((uint32_t*)elem)[CPS_OBJ_KEY_ATTR_POS] = htole32(attr);
+    cps_api_key_elem_raw_set(elem,CPS_OBJ_KEY_ATTR_POS,(cps_api_key_element_t)attr);
 }
 
 /**
- * Get the pointer to the first element of the key
+ * Get the pointer to the first element of the key - internal use only
  * @param elem the key
  * @return a pointer to the first element in the key
  */
-static inline uint32_t * cps_api_key_elem_start(cps_api_key_t *elem) {
-    return ((uint32_t*)elem)+CPS_OBJ_KEY_ELEM_START;
+static inline cps_api_key_element_t * cps_api_key_elem_start(cps_api_key_t *elem) {
+    return cps_api_key_elem_raw(elem,CPS_OBJ_KEY_ELEM_START);
 }
-
-/**
- * Given a key return the hash that should be pretty unique
- * @param elem the key to hash
- * @return the hash value
- */
-size_t cps_api_key_hash(cps_api_key_t *elem);
 
 /**
  * Get a const pointer to the first element of the key
  * @param elem the key
  * @return a pointer to the first element in the key
  */
-static inline const uint32_t * cps_api_key_elem_start_const(const cps_api_key_t *elem) {
-    return ((const uint32_t*)elem)+CPS_OBJ_KEY_ELEM_START;
+static inline const cps_api_key_element_t * cps_api_key_elem_start_const(const cps_api_key_t *elem) {
+    return (const cps_api_key_element_t *) cps_api_key_elem_raw((cps_api_key_t *)elem,CPS_OBJ_KEY_ELEM_START);
 }
 
 /**
@@ -122,9 +116,9 @@ static inline const uint32_t * cps_api_key_elem_start_const(const cps_api_key_t 
  * @param offset the offset of the field to update (must be less then CPS_OBJ_MAX_KEY_LEN)
  * @param field the uint32_t value to set
  */
-static inline void cps_api_key_set(cps_api_key_t *elem, uint32_t offset, uint32_t field) {
+static inline void cps_api_key_set(cps_api_key_t *elem, uint32_t offset, cps_api_key_element_t field) {
     STD_ASSERT(offset < CPS_OBJ_MAX_KEY_LEN);
-    cps_api_key_elem_start(elem)[offset] = htole32(field);
+    cps_api_key_elem_raw_set(elem,offset+CPS_OBJ_KEY_ELEM_START,field);
 }
 
 /**
@@ -133,9 +127,32 @@ static inline void cps_api_key_set(cps_api_key_t *elem, uint32_t offset, uint32_
  * @param offset the offset to check at
  * @return the uint32_t element at the position requested
  */
-static inline uint32_t cps_api_key_element_at(cps_api_key_t *elem, uint32_t offset) {
-    return le32toh(cps_api_key_elem_start(elem)[offset]);
+static inline cps_api_key_element_t cps_api_key_element_at(cps_api_key_t *elem, uint32_t offset) {
+    return cps_api_key_elem_raw_get(elem,CPS_OBJ_KEY_ELEM_START+offset);
 }
+
+/**
+ * Insert a element into the key at the given spot
+ * @param key the pointer to the key to modify
+ * @param ix the index of the element
+ * @param elem the actial item to insert
+ * @return true if successful otherwise the buffer must have been too small
+ */
+bool cps_api_key_insert_element(cps_api_key_t *key, size_t ix, cps_api_key_element_t elem);
+
+/**
+ * Remove the item from the key at the specific index and compress the remaining key
+ * @param key the key in question
+ * @param ix the index of the element to remove
+ */
+void cps_api_key_remove_element(cps_api_key_t *key, size_t ix);
+
+/**
+ * Given a key return the hash that should be pretty unique
+ * @param elem the key to hash
+ * @return the hash value
+ */
+size_t cps_api_key_hash(cps_api_key_t *elem);
 
 /**
  * Copy the key from src to destination.
@@ -181,7 +198,6 @@ char * cps_api_key_print(cps_api_key_t *key, char *buff, size_t len);
  * @return true if parsing was successful
  */
 bool cps_api_key_from_string(cps_api_key_t *key,const char *buff);
-
 
 #ifdef __cplusplus
 }

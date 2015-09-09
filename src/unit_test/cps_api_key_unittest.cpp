@@ -108,6 +108,41 @@ TEST(cps_api_key,key_compare) {
             cps_api_key_print(&key2,buff2,sizeof(buff2)));
 }
 
+TEST(cps_api_key,key_insert) {
+    cps_api_key_t key;
+    memset(&key,0,sizeof(key));
+    cps_api_key_set(&key,0,0);
+    cps_api_key_set(&key,1,1);
+    cps_api_key_set(&key,2,2);
+    cps_api_key_set_len(&key,3);
+
+    cps_api_key_t new_key ;
+    cps_api_key_copy(&new_key,&key);
+
+
+    cps_api_key_remove_element(&new_key,0);
+    ASSERT_TRUE(cps_api_key_element_at(&new_key,0)== 1);
+    ASSERT_TRUE(cps_api_key_get_len(&new_key)==2);
+
+    cps_api_key_insert_element(&new_key,0,5);
+    ASSERT_TRUE(cps_api_key_element_at(&new_key,0)== 5);
+    ASSERT_TRUE(cps_api_key_get_len(&new_key)==3);
+
+    cps_api_key_insert_element(&new_key,3,5);
+    ASSERT_TRUE(cps_api_key_element_at(&new_key,3)== 5);
+    ASSERT_TRUE(cps_api_key_get_len(&new_key)==4);
+
+    cps_api_key_insert_element(&new_key,2,5);
+    ASSERT_TRUE(cps_api_key_element_at(&new_key,2)== 5);
+    ASSERT_TRUE(cps_api_key_get_len(&new_key)==5);
+
+    ASSERT_TRUE(cps_api_key_element_at(&new_key,0)== 5);
+    ASSERT_TRUE(cps_api_key_element_at(&new_key,2)== 5);
+    ASSERT_TRUE(cps_api_key_element_at(&new_key,4)== 5);
+
+}
+
+
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
