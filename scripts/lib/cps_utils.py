@@ -141,6 +141,8 @@ class CPSTypes:
     def print_object(self,obj):
         data = obj['data']
         print "Key: "+obj['key']
+        if len(data.keys()) == 0:
+            return
         module = "/".join(data.keys()[0].split("/")[0:-1])
         if module in print_methods:
             print_methods[module](data)
