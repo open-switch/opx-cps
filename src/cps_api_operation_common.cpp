@@ -162,11 +162,12 @@ cps_api_return_code_t cps_api_commit(cps_api_transaction_params_t * param) {
         }
     }
     if (rc!=cps_api_ret_code_OK) {
-        mx = ix;
-        for (ix = 0 ; ix < mx ; ++ix ) {
+        while (mx > 0) {
+            ix = mx-1;
             if (cps_api_process_rollback_request(param,ix)!=cps_api_ret_code_OK) {
                 EV_LOG(ERR,DSAPI,0,"ROLLBACK","Failed to rollback request at %d",ix);
             }
+            --mx;
         }
     }
 
