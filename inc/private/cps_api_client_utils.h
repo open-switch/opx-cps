@@ -23,7 +23,8 @@ enum cps_api_msg_operation_t {
     cps_api_msg_o_RETURN_CODE,
     cps_api_msg_o_REVERT,
     cps_api_msg_o_COMMIT_CHANGE,
-    cps_api_msg_o_COMMIT_PREV
+    cps_api_msg_o_COMMIT_PREV,
+    cps_api_msg_o_STATS,
 };
 
 

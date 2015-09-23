@@ -201,11 +201,26 @@ static PyObject * py_cps_enabled(PyObject *self, PyObject *args) {
 
     cps_api_key_from_string(&key,path);
     if (cps_api_is_registered(&key,NULL)) {
-    	Py_RETURN_TRUE;
+        Py_RETURN_TRUE;
     }
     Py_RETURN_FALSE;
 }
 
+
+static PyObject * py_cps_stats(PyObject *self, PyObject *args) {
+    const char * path=NULL;
+    if (! PyArg_ParseTuple( args, "s",&path)) return NULL;
+
+    cps_api_key_t key;
+    cps_api_key_from_string(&key,path);
+
+    cps_api_object_guard og(cps_api_object_create());
+    if (cps_api_object_stats(&key,og.get())==cps_api_ret_code_OK) {
+        return cps_obj_to_dict(og.get());
+    }
+
+    return PyDict_New();
+}
 
 static PyObject * py_cps_types(PyObject *self, PyObject *args) {
     const char * path=NULL;
@@ -333,6 +348,8 @@ PyDoc_STRVAR(CPS_FN_DOC(py_cps_info), "Given either a key string or a object ele
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_types), "Return extended details on a specific attribute.  The attribute can be a numeric string or a full attribute name.");
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_enabled), "Given a key, see if there is an object registration.");
 
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_stats), "Retrieve the stats object for the entity specified.");
+
 /* A list of all the methods defined by this module. */
 /* "METH_VARGS" tells Python how to call the handler */
 static PyMethodDef cps_methods[] = {
@@ -343,7 +360,8 @@ static PyMethodDef cps_methods[] = {
 
     {"info",  py_cps_info, METH_VARARGS, CPS_FN_DOC(py_cps_info)},
     {"type",  py_cps_types, METH_VARARGS, CPS_FN_DOC(py_cps_types)},
-	{"enabled", py_cps_enabled, METH_VARARGS, CPS_FN_DOC(py_cps_enabled)},
+    {"enabled", py_cps_enabled, METH_VARARGS, CPS_FN_DOC(py_cps_enabled)},
+
 
     {"config",py_cps_config, METH_VARARGS, cps_cps_generic_doc__ },
     {"key_from_name",py_cps_key_from_name, METH_VARARGS, cps_cps_generic_doc__ },
@@ -360,6 +378,7 @@ static PyMethodDef cps_methods[] = {
     {"obj_init",  py_cps_obj_init, METH_VARARGS, cps_cps_generic_doc__},
     {"obj_register",  py_cps_obj_reg, METH_VARARGS, cps_cps_generic_doc__},
     {"obj_close",  py_cps_obj_close, METH_VARARGS, cps_cps_generic_doc__},
+    {"obj_stats", py_cps_stats, METH_VARARGS, CPS_FN_DOC(py_cps_stats)},
 
     {"get",  py_cps_get, METH_VARARGS, cps_get__doc__},
     {"transaction",  py_cps_trans, METH_VARARGS, cps_trans__doc__},

@@ -8,6 +8,8 @@
 #include "private/cps_ns.h"
 #include "private/cps_api_client_utils.h"
 
+#include "cps_api_operation_stats.h"
+
 #include "cps_api_operation.h"
 #include "cps_api_object.h"
 #include "std_socket_service.h"
@@ -15,12 +17,12 @@
 #include "std_mutex_lock.h"
 #include "event_log.h"
 #include "std_file_utils.h"
+#include "std_time_tools.h"
 
 #include <unistd.h>
 #include <vector>
 
-
-typedef std::vector<cps_api_registration_functions_t> reg_functions_t;
+using reg_functions_t = std::vector<cps_api_registration_functions_t>;
 
 struct cps_api_operation_data_t {
     std_socket_server_handle_t handle;
@@ -29,24 +31,101 @@ struct cps_api_operation_data_t {
     std_mutex_type_t mutex;
     reg_functions_t db_functions;
     cps_api_channel_t ns_handle;
+    std::vector<uint64_t> stats;
 
     void insert_functions(cps_api_registration_functions_t*fun);
+
+    uint64_t get_stat(cps_api_obj_stats_type_t stat);
+    void set_stat(cps_api_obj_stats_type_t stat,uint64_t val);
+    void inc_stat(cps_api_obj_stats_type_t stat,int64_t how_much=1);
+    void make_ave(cps_api_obj_stats_type_t stat,cps_api_obj_stats_type_t count,uint64_t val);
+};
+
+uint64_t cps_api_operation_data_t::get_stat(cps_api_obj_stats_type_t stat) {
+    std_mutex_simple_lock_guard lg(&mutex);
+    return stats[stat];
+}
+
+void cps_api_operation_data_t::set_stat(cps_api_obj_stats_type_t stat,uint64_t val) {
+    std_mutex_simple_lock_guard lg(&mutex);
+    stats[stat] = val;
+}
+
+void cps_api_operation_data_t::inc_stat(cps_api_obj_stats_type_t stat,int64_t how_much) {
+    std_mutex_simple_lock_guard lg(&mutex);
+    set_stat(stat,get_stat(stat) + how_much);
+}
+
+void cps_api_operation_data_t::make_ave(cps_api_obj_stats_type_t stat,cps_api_obj_stats_type_t count,uint64_t val) {
+    std_mutex_simple_lock_guard lg(&mutex);
+    inc_stat(count);
+
+    uint64_t cnt = get_stat(count);
+    uint64_t tot = get_stat(stat) + val;
+
+    set_stat(stat,(uint64_t)(tot/((double)cnt)));
+}
+
+class Function_Timer {
+    cps_api_operation_data_t *_p;
+    cps_api_obj_stats_type_t _min;
+    cps_api_obj_stats_type_t _max;
+    cps_api_obj_stats_type_t _ave;
+    cps_api_obj_stats_type_t _count;
+    bool started=false;
+    uint64_t tm=0;
+public:
+    Function_Timer(cps_api_operation_data_t *p,
+            cps_api_obj_stats_type_t min, cps_api_obj_stats_type_t max,
+            cps_api_obj_stats_type_t ave, cps_api_obj_stats_type_t count) {
+        _p = p;
+        _min = min;
+        _max = max;
+        _ave = ave;
+        _count = count;
+    }
+    void start() {
+        tm = std_get_uptime(NULL);
+        started = true;
+    }
+    ~Function_Timer() {
+        if (started) {
+            uint64_t diff = std_get_uptime(NULL) - tm;
+            _p->make_ave(_ave,_count,diff);
+            uint64_t min = _p->get_stat(_min);
+            if (min==0 || diff < min) {
+                _p->set_stat(_min,diff);
+            }
+            if (diff > _p->get_stat(_max)) {
+                _p->set_stat(_max,diff);
+            }
+        } else {
+            _p->inc_stat(_count);
+        }
+    }
 };
 
 static bool  cps_api_handle_get(cps_api_operation_data_t *op, int fd,size_t len) {
+    Function_Timer tm(op,cps_api_obj_stat_GET_MIN_TIME,cps_api_obj_stat_GET_MAX_TIME,
+            cps_api_obj_stat_GET_AVE_TIME,cps_api_obj_stat_GET_COUNT);
 
     cps_api_get_params_t param;
-    if (cps_api_get_request_init(&param)!=cps_api_ret_code_OK) return false;
+    if (cps_api_get_request_init(&param)!=cps_api_ret_code_OK) {
+        op->inc_stat(cps_api_obj_stat_GET_INVALID);
+        return false;
+    }
     cps_api_get_request_guard grg(&param);
 
     cps_api_object_t filter = cps_api_receive_object(fd,len);
     if (filter==NULL) {
         EV_LOG(ERR,DSAPI,0,"CPS IPC","Get request missing filter object..");
+        op->inc_stat(cps_api_obj_stat_GET_INVALID);
         return false;
     }
 
     if (!cps_api_object_list_append(param.filters,filter)) {
         cps_api_object_delete(filter);
+        op->inc_stat(cps_api_obj_stat_GET_INVALID);
         return false;
     }
 
@@ -63,12 +142,16 @@ static bool  cps_api_handle_get(cps_api_operation_data_t *op, int fd,size_t len)
         cps_api_registration_functions_t *p = &(op->db_functions[func_ix]);
         if ((p->_read_function!=NULL) &&
                 (cps_api_key_matches(param.keys,&p->key,false)==0)) {
+
+            tm.start();
             rc = p->_read_function(p->context,&param,0);
+
             break;
         }
     }
 
     if (rc!=cps_api_ret_code_OK) {
+        op->inc_stat(cps_api_obj_stat_GET_FAILED);
         return cps_api_send_return_code(fd,cps_api_msg_o_RETURN_CODE,rc);
     } else {
         //send all objects in the list
@@ -87,16 +170,26 @@ static bool  cps_api_handle_get(cps_api_operation_data_t *op, int fd,size_t len)
 
 
 static bool cps_api_handle_commit(cps_api_operation_data_t *op, int fd, size_t len) {
+
+    Function_Timer tm(op,cps_api_obj_stat_GET_MIN_TIME,cps_api_obj_stat_GET_MAX_TIME,
+                cps_api_obj_stat_GET_AVE_TIME,cps_api_obj_stat_GET_COUNT);
+
     std_rw_lock_read_guard g(&op->db_lock);
     cps_api_return_code_t rc =cps_api_ret_code_OK;
 
     //receive changed object
     cps_api_object_guard o(cps_api_receive_object(fd,len));
-    if (!o.valid()) return false;
+    if (!o.valid()) {
+        op->inc_stat(cps_api_obj_stat_SET_INVALID);
+        return false;
+    }
 
     //initialize transaction
     cps_api_transaction_params_t param;
-    if (cps_api_transaction_init(&param)!=cps_api_ret_code_OK) return false;
+    if (cps_api_transaction_init(&param)!=cps_api_ret_code_OK) {
+        op->inc_stat(cps_api_obj_stat_SET_INVALID);
+        return false;
+    }
 
     cps_api_transaction_guard tr(&param);
 
@@ -108,16 +201,21 @@ static bool cps_api_handle_commit(cps_api_operation_data_t *op, int fd, size_t l
     //check the previous data sent by client
     uint32_t act;
     if (!cps_api_receive_header(fd,act,len)) {
+        op->inc_stat(cps_api_obj_stat_SET_INVALID);
         return false;
     }
     if(act!=cps_api_msg_o_COMMIT_PREV) {
+        op->inc_stat(cps_api_obj_stat_SET_INVALID);
         return false;
     }
 
     //read and add to list the previous object if passed
     if (len > 0) {
         cps_api_object_guard prev(cps_api_receive_object(fd,len));
-        if (!prev.valid()) return false;
+        if (!prev.valid()) {
+            op->inc_stat(cps_api_obj_stat_SET_INVALID);
+            return false;
+        }
         if (!cps_api_object_list_append(param.prev,prev.get())) return false;
         prev.release();
     }
@@ -128,12 +226,14 @@ static bool cps_api_handle_commit(cps_api_operation_data_t *op, int fd, size_t l
         cps_api_registration_functions_t *p = &(op->db_functions[func_ix]);
         if ((p->_write_function!=NULL) &&
                 (cps_api_key_matches(cps_api_object_key(l),&p->key,false)==0)) {
+            tm.start();
             rc = p->_write_function(p->context,&param,0);
             break;
         }
     }
 
     if (rc!=cps_api_ret_code_OK) {
+        op->inc_stat(cps_api_obj_stat_SET_FAILED);
         return cps_api_send_return_code(fd,cps_api_msg_o_RETURN_CODE,rc);
     } else {
         cps_api_object_t cur = cps_api_object_list_get(param.change_list,0);
@@ -145,12 +245,14 @@ static bool cps_api_handle_commit(cps_api_operation_data_t *op, int fd, size_t l
         if (cur==NULL || prev==NULL) {
             EV_LOG(ERR,DSAPI,0,"COMMIT-REQ","response to request was invalid - cur=%d,prev=%d.",
                     (cur!=NULL),(prev!=NULL));
+            op->inc_stat(cps_api_obj_stat_SET_INVALID);
             return false;
         }
 
         if (!cps_api_send_one_object(fd,cps_api_msg_o_COMMIT_OBJECT,cur) ||
                 !cps_api_send_one_object(fd,cps_api_msg_o_COMMIT_OBJECT,prev)) {
             EV_LOG(ERR,DSAPI,0,"COMMIT-REQ","Failed to send response to commit... ");
+            op->inc_stat(cps_api_obj_stat_SET_INVALID);
             return false;
         }
     }
@@ -188,17 +290,37 @@ static bool cps_api_handle_revert(cps_api_operation_data_t *op, int fd, size_t l
     return cps_api_send_return_code(fd,cps_api_msg_o_RETURN_CODE,rc);
 }
 
+static bool cps_api_handle_stats(cps_api_operation_data_t *op, int fd, size_t len) {
+    std_rw_lock_read_guard g(&op->db_lock);
+
+    cps_api_object_guard og(cps_api_object_create());
+    if (!og.valid()) return false;
+
+    cps_api_key_init(cps_api_object_key(og.get()),cps_api_qualifier_OBSERVED,
+            cps_api_obj_stat_e_OPERATIONS,0,0);
+
+    cps_api_obj_stats_type_t cur = cps_api_obj_stat_BEGIN;
+    for ( ; cur < cps_api_obj_stat_MAX ; cur= (cps_api_obj_stats_type_t)(cur+1) ) {
+        cps_api_object_attr_add_u64(og.get(),cur,op->get_stat(cur));
+    }
+
+    if (!cps_api_send_one_object(fd,cps_api_msg_o_STATS,og.get())) return false;
+
+    return true;
+}
 
 static bool  _some_data_( void *context, int fd ) {
     cps_api_operation_data_t *p = (cps_api_operation_data_t *)context;
 
     uint32_t op;
     size_t len;
+
     if(!cps_api_receive_header(fd,op,len)) return false;
+
     if (op==cps_api_msg_o_GET) return cps_api_handle_get(p,fd,len);
     if (op==cps_api_msg_o_COMMIT_CHANGE) return cps_api_handle_commit(p,fd,len);
     if (op==cps_api_msg_o_REVERT) return cps_api_handle_revert(p,fd,len);
-
+    if (op==cps_api_msg_o_STATS) return cps_api_handle_stats(p,fd,len);
     return true;
 }
 
@@ -229,6 +351,7 @@ static bool reconnect_with_ns(cps_api_operation_data_t *data) {
             return false;
         }
     }
+    data->inc_stat(cps_api_obj_stat_NS_CONNECTS);
     return true;
 }
 
@@ -289,6 +412,7 @@ static bool _del_client(void * context, int fd) {
     std_rw_lock_write_guard g(&p->db_lock);
 
     if (p->ns_handle==fd) {
+        p->inc_stat(cps_api_obj_stat_NS_DISCONNECTS);
         p->ns_handle = STD_INVALID_FD;
     }
     return true;
@@ -305,7 +429,10 @@ cps_api_return_code_t cps_api_operation_subsystem_init(
     std_mutex_lock_init_recursive(&p->mutex);
 
     std_rw_lock_create_default(&p->db_lock);
-
+    p->stats.resize(cps_api_obj_stat_MAX);
+    for ( size_t ix = 0, mx =cps_api_obj_stat_MAX ; ix < mx ; ++ix ) {
+        p->stats[ix] = 0;
+    }
     p->service_data.name = "CPS_API_instance";
     cps_api_create_process_address(&p->service_data.address);
     p->service_data.thread_pool_size = number_of_threads;

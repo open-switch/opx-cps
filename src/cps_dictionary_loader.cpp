@@ -8,6 +8,8 @@
 #include "cps_class_map.h"
 
 #include "private/cps_dictionary.h"
+#include "cps_api_operation_stats.h"
+
 #include "std_envvar.h"
 #include "std_directory.h"
 #include "std_mutex_lock.h"
@@ -81,15 +83,71 @@ void cps_api_class_map_init(void) {
        cps_class_objs_load(p,CPS_DEF_CLASS_FILE_NAME);
     }
     std_parse_string_free(handle);
+    struct {
+        cps_api_attr_id_t id;
+        std::vector<cps_api_attr_id_t> keys;
+        cps_class_map_node_details details;
+    } internal[] = {
+        { CPS_API_ATTR_RESERVE_RANGE_END,{(cps_api_attr_id_t)CPS_API_ATTR_RESERVE_RANGE_END},
+            { "cps/key_data", "CPS Internal Key info", true, CPS_CLASS_ATTR_T_CONTAINER, CPS_CLASS_DATA_TYPE_T_EMBEDDED }
+        },
+        { cps_api_obj_cat_CPS_OBJ,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ},
+            { "cps/object", "CPS Object Registration details", true, CPS_CLASS_ATTR_T_CONTAINER, CPS_CLASS_DATA_TYPE_T_EMBEDDED }
+        },
+        { cps_api_obj_stat_SET_MIN_TIME,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_SET_MIN_TIME},
+            { "cps/object/set_min_time", "The minimum amount of time for a trans function", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
+        },
+        { cps_api_obj_stat_SET_MAX_TIME,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_SET_MAX_TIME},
+            { "cps/object/set_max_time", "The max amount of time for a trans function", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
+        },
+        { cps_api_obj_stat_SET_AVE_TIME,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_SET_AVE_TIME},
+            { "cps/object/set_ave_time", "The ave amount of time for a trans function", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
+        },
+        { cps_api_obj_stat_SET_COUNT,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_SET_COUNT},
+            { "cps/object/set_requests", "The number of set/transaction functions", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
+        },
 
-    cps_api_attr_id_t key_id = CPS_API_ATTR_RESERVE_RANGE_END;
-    cps_class_map_node_details key_d;
-    key_d.desc = "CPS Internal Key info";
-    key_d.embedded = true;
-    key_d.name = "cps/key_data";
-    key_d.attr_type = CPS_CLASS_ATTR_T_CONTAINER;
-    key_d.data_type = CPS_CLASS_DATA_TYPE_T_EMBEDDED;
-    cps_class_map_init(key_id,&key_id,1,&key_d);
+        { cps_api_obj_stat_GET_MIN_TIME,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_GET_MIN_TIME},
+            { "cps/object/get_min_time", "The minimum amount of time for a get requests", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
+        },
+        { cps_api_obj_stat_GET_MAX_TIME,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_GET_MAX_TIME},
+            { "cps/object/get_max_time", "The max amount of time for a get requests", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
+        },
+        { cps_api_obj_stat_GET_AVE_TIME,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_GET_AVE_TIME},
+            { "cps/object/get_ave_time", "The ave amount of time for a get requests", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
+        },
+        { cps_api_obj_stat_GET_COUNT,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_GET_COUNT},
+            { "cps/object/get_requests", "The number of get requests", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
+        },
+
+        { cps_api_obj_stat_NS_CONNECTS,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_NS_CONNECTS},
+            { "cps/object/nameservice_reconnects", "Number of times re-connected to the NS", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
+        },
+        { cps_api_obj_stat_NS_DISCONNECTS,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_NS_DISCONNECTS},
+            { "cps/object/nameservice_lost_conn", "Number of times that the NS disconnected", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
+        },
+
+        { cps_api_obj_stat_SET_FAILED,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_SET_FAILED},
+            { "cps/object/set_failed", "Number of failed set requests", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
+        },
+        { cps_api_obj_stat_SET_INVALID,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_SET_INVALID},
+            { "cps/object/set_invalid_req", "Number of invalid set requests (communication error)", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
+        },
+
+        { cps_api_obj_stat_GET_FAILED,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_GET_FAILED},
+            { "cps/object/get_failed", "Number of failed get requests", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
+        },
+        { cps_api_obj_stat_GET_INVALID,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_GET_INVALID},
+            { "cps/object/get_invalid_req", "Number of invalid get requests (communication error)", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
+        },
+
+    };
+    ix = 0;
+    mx = sizeof(internal)/sizeof(*internal);
+    for ( ; ix < mx ; ++ix ) {
+        cps_class_map_init(internal[ix].id,&internal[ix].keys[0],internal[ix].keys.size(),&internal[ix].details);
+    }
+
 }
 
 
