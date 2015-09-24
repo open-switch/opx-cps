@@ -255,7 +255,8 @@ TEST(cps_api_object,test_set) {
 
     //transaction complete
     cps_api_transaction_close(&trans);
-
+    cps_api_object_guard og(cps_api_object_create());
+    cps_api_object_stats(&keys, og.get());
 }
 
 #include "cps_api_operation_tools.h"

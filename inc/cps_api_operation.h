@@ -370,6 +370,14 @@ typedef struct {
  */
 cps_api_return_code_t cps_api_register(cps_api_registration_functions_t * reg);
 
+/**
+ * An API that queries the object to get the latest stats based on the cps_api_operation_stats.h
+ * @param key is the object to query
+ * @param stats_obj is the object that will contain the stats
+ * @return cps_api_ret_code_OK on success otherwise a failure return code
+ */
+cps_api_return_code_t cps_api_object_stats(cps_api_key_t *key, cps_api_object_t stats_obj);
+
 
 /**
  * Determine if a an application has registered to receive requests for the given key.

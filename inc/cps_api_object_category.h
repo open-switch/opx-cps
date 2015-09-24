@@ -25,12 +25,14 @@
 
 typedef enum {
     cps_api_obj_cat_RESERVED    = 1,//! reserved for internal use
-    cps_api_obj_cat_KEY,      //!< cps_api_obj_cat_KEY
-    cps_api_obj_cat_INTERFACE,//!< cps_api_obj_cat_INTERFACE
-    cps_api_obj_cat_ROUTE,    //!< cps_api_obj_cat_ROUTE
-    cps_api_obj_cat_QOS,       //!< cps_api_obj_cat_QOS
-    cps_api_obj_cat_PHY,
-    cps_api_obj_cat_L2,        //!< cps_api_obj_cat_L2 @TODO this is only temporary use - do not use for any other component
+    cps_api_obj_cat_KEY=2,      //!< cps_api_obj_cat_KEY
+    cps_api_obj_cat_INTERFACE=3,//!< cps_api_obj_cat_INTERFACE
+    cps_api_obj_cat_ROUTE=4,    //!< cps_api_obj_cat_ROUTE
+    cps_api_obj_cat_QOS=5,       //!< cps_api_obj_cat_QOS
+    cps_api_obj_cat_PHY=6,
+    cps_api_obj_cat_L2=7,        //!< cps_api_obj_cat_L2 @TODO this is only temporary use - do not use for any other component
+    cps_api_obj_cat_CPS_OBJ=8,   //!< cps_api_obj_cat_CPS_OBJ this object handles CPS to object
+    cps_api_obj_cat_CPS_INFA=9,  //!< cps_api_obj_cat_CPS_INFA this object handles CPS infrastructure objs
     cps_api_obj_cat_MAX,
 }cps_api_object_category_type_internal_t;
 

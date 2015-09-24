@@ -357,3 +357,33 @@ cps_api_object_t cps_api_recv_one_object(cps_api_channel_t handle,
     valid = ptr!=NULL;
     return ptr;
 }
+
+extern "C" cps_api_return_code_t cps_api_object_stats(cps_api_key_t *key, cps_api_object_t stats_obj) {
+    cps_api_return_code_t rc = cps_api_ret_code_ERR;
+    char buff[CPS_API_KEY_STR_MAX];
+    cps_api_channel_t handle;
+    if (!cps_api_get_handle(*key,handle)) {
+        EV_LOG(ERR,DSAPI,0,"NS","Failed to find owner for %s",
+                cps_api_key_print(key,buff,sizeof(buff)-1));
+        return rc;
+    }
+    do {
+        if (!cps_api_send_header(handle,cps_api_msg_o_STATS,0)) {
+            break;
+        }
+        size_t len;
+        uint32_t op=0;
+        if (!cps_api_receive_header(handle,op,len)) break;
+        if (op!=cps_api_msg_o_STATS) break;
+
+        cps_api_object_guard og (cps_api_receive_object(handle,len));
+        if(!og.valid()) return false;
+
+        if (!cps_api_object_clone(stats_obj,og.get())) {
+            break;
+        }
+        rc = cps_api_ret_code_OK;
+    } while (0);
+    cps_api_disconnect_owner(handle);
+    return rc;
+}

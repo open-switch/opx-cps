@@ -175,9 +175,9 @@ bool full_reg() {
     if (cps_api_event_thread_reg(&reg, _cps_api_event_term,NULL)!=cps_api_ret_code_OK)
         return false;
 
-    if (cps_api_event_thread_reg(&reg,_cps_api_event_term,
-            NULL)!=cps_api_ret_code_OK)
+    if (cps_api_event_thread_reg(&reg,_cps_api_event_term,NULL)!=cps_api_ret_code_OK)
         return false;
+
     return true;
 }
 
