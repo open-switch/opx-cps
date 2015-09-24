@@ -5,15 +5,21 @@
  */
 
 #include "private/cps_api_client_utils.h"
+#include "private/cps_api_key_cache.h"
 #include "private/cps_ns.h"
 
 #include "cps_api_object.h"
+
+
 #include "event_log.h"
 #include "std_file_utils.h"
 #include "std_select_tools.h"
 #include "std_time_tools.h"
+#include "std_mutex_lock.h"
 
 #include <unistd.h>
+
+#define SCRATCH_LOG_BUFF (100)
 
 struct cps_msg_hdr_t {
     uint32_t version;
@@ -21,7 +27,63 @@ struct cps_msg_hdr_t {
     uint32_t operation;
 };
 
-#define SCRATCH_LOG_BUFF (100)
+using key_cache = cps_api_key_cache<cps_api_object_owner_reg_t>;
+static key_cache _cache;
+static std_mutex_lock_create_static_init_fast(cache_lock);
+
+
+static void fill_cache(cps_api_key_t *key,const cps_api_object_owner_reg_t &owner) {
+    std_mutex_simple_lock_guard lg(&cache_lock);
+    _cache.erase(key);
+    _cache.insert(key,owner);
+}
+
+void cps_api_disconnect_owner(cps_api_channel_t handle) {
+    close(handle);
+}
+
+cps_api_return_code_t cps_api_connect_owner(cps_api_object_owner_reg_t*o,cps_api_channel_t &handle) {
+    t_std_error rc = std_sock_connect(&o->addr,&handle);
+    if (rc!=STD_ERR_OK) {
+        EV_LOG(ERR,DSAPI,0,"CPS IPC","not able to connect to owner");
+    }
+    return (cps_api_return_code_t) rc;
+}
+
+bool cache_connect(cps_api_key_t &key, cps_api_channel_t &handle) {
+    std_mutex_simple_lock_guard lg(&cache_lock);
+    cps_api_object_owner_reg_t owner;
+
+    if (_cache.find(&key,owner,true)) {
+        if (cps_api_connect_owner(&owner, handle)==cps_api_ret_code_OK) {
+            return true;
+        } else {
+            _cache.erase(&key);
+        }
+    }
+    return false;
+}
+
+bool cps_api_get_handle(cps_api_key_t &key, cps_api_channel_t &handle) {
+    if (cache_connect(key,handle)) {
+        return true;
+    }
+
+    cps_api_object_owner_reg_t owner;
+    if (!cps_api_find_owners(&key,owner)) return false;
+    bool rc = (cps_api_connect_owner(&owner, handle))==cps_api_ret_code_OK;
+    if (!rc) {
+        char buff[SCRATCH_LOG_BUFF];
+        EV_LOG(ERR,DSAPI,0,"NS","Could not connect with owner for %s (%s)",
+                cps_api_key_print(&key,buff,sizeof(buff)-1),
+                owner.addr.addr_type== e_std_socket_a_t_STRING ?
+                        owner.addr.address.str: "unk");
+    }
+    if (rc) {
+        fill_cache(&key,owner);
+    }
+    return rc;
+}
 
 bool cps_api_send(cps_api_channel_t handle, cps_api_msg_operation_t op,
         const struct iovec *iov, size_t count) {
@@ -133,31 +195,28 @@ bool cps_api_send_data(cps_api_channel_t handle, void *data, size_t len) {
     return NULL;
 }
 
-void cps_api_disconnect_owner(cps_api_channel_t handle) {
-    close(handle);
-}
 
-cps_api_return_code_t cps_api_connect_owner(cps_api_object_owner_reg_t*o,cps_api_channel_t &handle) {
-    t_std_error rc = std_sock_connect(&o->addr,&handle);
-    if (rc!=STD_ERR_OK) {
-        EV_LOG(ERR,DSAPI,0,"CPS IPC","not able to connect to owner");
-    }
-    return (cps_api_return_code_t) rc;
-}
+ cps_api_object_t cps_api_recv_one_object(cps_api_channel_t handle,
+         cps_api_msg_operation_t expected, bool &valid) {
+     uint32_t act;
+     size_t len;
 
-bool cps_api_get_handle(cps_api_key_t &key, cps_api_channel_t &handle) {
-    cps_api_object_owner_reg_t owner;
-    if (!cps_api_find_owners(&key,owner)) return false;
-    bool rc = (cps_api_connect_owner(&owner, handle))==cps_api_ret_code_OK;
-    if (!rc) {
-        char buff[SCRATCH_LOG_BUFF];
-        EV_LOG(ERR,DSAPI,0,"NS","Could not connect with owner for %s (%s)",
-                cps_api_key_print(&key,buff,sizeof(buff)-1),
-                owner.addr.addr_type== e_std_socket_a_t_STRING ?
-                        owner.addr.address.str: "unk");
-    }
-    return rc;
-}
+     if (!cps_api_receive_header(handle,act,len)) {
+         valid = false;
+         return NULL;
+     }
+     if (act!=expected) return NULL;
+
+     if (len == 0) {
+         valid = true;
+         return NULL;
+     }
+
+     //receive an object and set valid true if the object was returned
+     cps_api_object_t ptr = cps_api_receive_object(handle,len);
+     valid = ptr!=NULL;
+     return ptr;
+ }
 
 cps_api_return_code_t cps_api_timeout_wait(int handle, fd_set *r_template, size_t timeout_ms,const char *op) {
     fd_set _rset = *r_template;
@@ -334,28 +393,6 @@ cps_api_return_code_t cps_api_process_rollback_request(cps_api_transaction_param
     cps_api_disconnect_owner(handle);
 
     return rc;
-}
-
-cps_api_object_t cps_api_recv_one_object(cps_api_channel_t handle,
-        cps_api_msg_operation_t expected, bool &valid) {
-    uint32_t act;
-    size_t len;
-
-    if (!cps_api_receive_header(handle,act,len)) {
-        valid = false;
-        return NULL;
-    }
-    if (act!=expected) return NULL;
-
-    if (len == 0) {
-        valid = true;
-        return NULL;
-    }
-
-    //receive an object and set valid true if the object was returned
-    cps_api_object_t ptr = cps_api_receive_object(handle,len);
-    valid = ptr!=NULL;
-    return ptr;
 }
 
 extern "C" cps_api_return_code_t cps_api_object_stats(cps_api_key_t *key, cps_api_object_t stats_obj) {
