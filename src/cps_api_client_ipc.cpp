@@ -180,9 +180,10 @@ cps_api_return_code_t cps_api_process_get_request(cps_api_get_params_t *param, s
     cps_api_return_code_t rc = cps_api_ret_code_ERR;
     char buff[SCRATCH_LOG_BUFF];
     cps_api_channel_t handle;
-    if (!cps_api_get_handle(param->keys[ix],handle)) {
+    cps_api_key_t *key = cps_api_object_key(cps_api_object_list_get(param->filters,ix));
+    if (!cps_api_get_handle(*key,handle)) {
         EV_LOG(ERR,DSAPI,0,"NS","Failed to find owner for %s",
-                cps_api_key_print(&param->keys[ix],buff,sizeof(buff)-1));
+                cps_api_key_print(key,buff,sizeof(buff)-1));
         return rc;
     }
 
@@ -190,22 +191,21 @@ cps_api_return_code_t cps_api_process_get_request(cps_api_get_params_t *param, s
         cps_api_object_t o = cps_api_object_list_get(param->filters,ix);
         if (o==NULL) {
             EV_LOG(ERR,DSAPI,0,"NS","Missing filters... %s",
-                                       cps_api_key_print(&param->keys[ix],buff,sizeof(buff)-1));
+                                       cps_api_key_print(key,buff,sizeof(buff)-1));
             break;
         }
         if (!cps_api_send_one_object(handle,cps_api_msg_o_GET,o)) {
                    EV_LOG(ERR,DSAPI,0,"NS","Failed to send request %s",
-                           cps_api_key_print(&param->keys[ix],buff,sizeof(buff)-1));
+                           cps_api_key_print(key,buff,sizeof(buff)-1));
                    break;
         }
 
         uint32_t op;
-        fd_set rset;
-        FD_ZERO(&rset);
-        FD_SET(handle,&rset);
-
         do {
             if (param->timeout > 0) {
+                fd_set rset;
+                FD_ZERO(&rset);
+                FD_SET(handle,&rset);
                 if ((rc=cps_api_timeout_wait(handle,&rset,param->timeout,"CPS-OP-GET"))!=cps_api_ret_code_OK) {
                     break;
                 }

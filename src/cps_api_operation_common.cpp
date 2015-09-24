@@ -124,19 +124,8 @@ cps_api_return_code_t cps_api_get(cps_api_get_params_t * param) {
 
     mx = cps_api_object_list_size(new_req.filters);
 
-    std::unique_ptr<cps_api_key_t[]> keys(new cps_api_key_t[mx]);
-    if (keys.get()==NULL) return cps_api_ret_code_ERR;
-
-    ix = 0;
-    for ( ; ix < mx ; ++ix ) {
-        cps_api_object_t obj = cps_api_object_list_get(new_req.filters,ix);
-        if (obj==NULL) continue;
-
-        cps_api_key_copy(&keys.get()[ix],cps_api_object_key(obj));
-    }
-
     new_req.key_count = mx;
-    new_req.keys = keys.get();
+    new_req.keys = nullptr;
 
     cps_api_object_list_swap(param->list,new_req.list);
 

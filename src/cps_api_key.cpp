@@ -98,12 +98,12 @@ extern "C" bool cps_api_set_key_data(cps_api_object_t obj,cps_api_attr_id_t id,
     return cps_api_object_e_add(obj,ids,sizeof(ids)/sizeof(*ids),type,data,len);
 }
 
-extern "C" size_t cps_api_key_hash(cps_api_key_t *key) {
+extern "C" uint64_t cps_api_key_hash(cps_api_key_t *key) {
     size_t ix = 0;
     size_t mx = (CPS_OBJ_KEY_HEADER_SIZE + cps_api_key_get_len_in_bytes(key)) / CPS_OBJ_KEY_ELEM_SIZE;
     uint32_t *ptr = (uint32_t *)(*key);
-    size_t hash = 0;
-    std::hash<uint32_t> h;
+    uint64_t hash = 0;
+    std::hash<uint64_t> h;
 
     for ( ; ix < mx ; ++ix ) {
         hash <<=1;

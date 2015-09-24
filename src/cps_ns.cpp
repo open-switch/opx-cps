@@ -8,19 +8,32 @@
 #include "private/cps_ns.h"
 #include "cps_api_operation.h"
 #include "cps_api_object.h"
+
+#include "private/cps_api_key_cache.h"
+#include "private/cps_api_client_utils.h"
+#include "cps_api_events.h"
+
 #include "std_socket_service.h"
 #include "std_rw_lock.h"
 #include "std_mutex_lock.h"
 #include "event_log.h"
 #include "std_file_utils.h"
 #include "std_thread_tools.h"
-#include "private/cps_api_client_utils.h"
-#include "cps_api_events.h"
 
+
+#include <sys/stat.h>
 #include <string.h>
 #include <stdio.h>
 #include <vector>
 #include <string>
+
+enum cps_api_ns_reg_t {
+    cps_api_ns_r_ADD,
+    cps_api_ns_r_DEL,
+    cps_api_ns_r_QUERY,
+    cps_api_ns_r_QUERY_RESULTS,
+    cps_api_ns_r_RETURN_CODE
+};
 
 #define CPS_API_NS_ID "/tmp/cps_api_ns"
 
@@ -33,16 +46,13 @@ struct client_reg_t {
     size_t count;
 };
 
-typedef std::vector<client_reg_t> registrations_t;
-static registrations_t active_registraitons;
+using key_cache = cps_api_key_cache<cps_api_object_owner_reg_t>;
 
-enum cps_api_ns_reg_t {
-    cps_api_ns_r_ADD,
-    cps_api_ns_r_DEL,
-    cps_api_ns_r_QUERY,
-    cps_api_ns_r_QUERY_RESULTS,
-    cps_api_ns_r_RETURN_CODE
-};
+typedef std::vector<client_reg_t> registrations_t;
+
+static std_mutex_lock_create_static_init_fast(cache_lock);
+static key_cache _cache;
+static registrations_t active_registraitons;
 
 void cps_api_create_process_address(std_socket_address_t *addr) {
     addr->type = e_std_sock_UNIX;
@@ -67,11 +77,41 @@ void cps_api_ns_get_address(std_socket_address_t *addr) {
             sizeof(addr->address.str)-1);
 }
 
+static bool test_cache_address(cps_api_object_owner_reg_t &owner) {
+    if (owner.addr.type == e_std_sock_UNIX) {
+        struct stat sb;
+        if (stat(owner.addr.address.str,&sb)==0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool fetch_from_cache(cps_api_key_t *key,cps_api_object_owner_reg_t &owner) {
+    std_mutex_simple_lock_guard lg(&cache_lock);
+
+    if (_cache.find(key,owner,true)) {
+        if (test_cache_address(owner)) return true;
+        else _cache.erase(key);
+    }
+    return false;
+}
+
+static void fill_cache(cps_api_key_t *key,const cps_api_object_owner_reg_t &owner) {
+    std_mutex_simple_lock_guard lg(&cache_lock);
+    _cache.insert(key,owner);
+}
+
 bool cps_api_find_owners(cps_api_key_t *key, cps_api_object_owner_reg_t &owner) {
     std_socket_address_t addr;
     cps_api_ns_get_address(&addr);
     char buff[DEF_KEY_PRINT_BUFF];
     int sock;
+
+    if (fetch_from_cache(key,owner)) {
+        return true;
+    }
+
     t_std_error rc = std_sock_connect(&addr,&sock);
     if (rc!=STD_ERR_OK) {
         EV_LOG(ERR,DSAPI,0,"NS","No connection to NS for %s",
@@ -107,6 +147,9 @@ bool cps_api_find_owners(cps_api_key_t *key, cps_api_object_owner_reg_t &owner) 
         result = true;
     } while (0);
     close(sock);
+    if (result) {
+        fill_cache(key,owner);
+    }
     return result;
 }
 
