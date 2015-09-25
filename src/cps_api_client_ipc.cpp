@@ -59,6 +59,7 @@ cps_api_return_code_t cps_api_connect_owner(cps_api_object_owner_reg_t*o,cps_api
 }
 
 static bool cache_connect(cps_api_key_t &key, cps_api_channel_t &handle) {
+    return false;
     std_mutex_simple_lock_guard lg(&cache_lock);
     cache_entry ce;
     if (_cache.find(&key,ce,true)) {

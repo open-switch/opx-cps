@@ -15,17 +15,33 @@
 
 template <typename data_type>
 class cps_api_key_cache {
+public:
     struct field_entry {
         cps_api_key_t key;
         data_type data;
     };
-    std::unordered_map<size_t,std::vector<field_entry>> _cache;
-
+    using cache_data = std::unordered_map<size_t,std::vector<field_entry>>;
+    using cache_data_iterator = typename cache_data::iterator;
+private:
+    cache_data _cache;
 public:
     bool insert(cps_api_key_t *key, const data_type &dt);
     void erase(cps_api_key_t *key);
     bool find(cps_api_key_t *key, data_type &dt, bool exact);
+    data_type * at(cps_api_key_t *key,bool exact);
 
+    class cache_walker {
+        bool operator()(cps_api_key_cache<data_type>::cache_data_iterator &it);
+    };
+
+    /**
+     * Walk the internal tree - if the length of the vector is zero at the iterator, it will be cleaned
+     * up once the callback is returned - the walk may restart if that happens
+     *
+     * @param cb the callback used to walk each node
+     */
+    template <typename walking_function>
+    void walk(walking_function cb);
 private:
     bool find_entry(cps_api_key_t *key, std::vector<field_entry> **ent, size_t &ix, bool exact=true);
     bool find_entry(cps_api_key_t *key, std::vector<field_entry> **ent, size_t &ix, size_t key_ken=0);
@@ -33,7 +49,7 @@ private:
 
 template <typename data_type>
 bool cps_api_key_cache<data_type>::find_entry(cps_api_key_t *key, std::vector<field_entry> **ent, size_t &ix, bool exact) {
-    if (exact) return find_entry(key,ent,ix,(size_t)0);
+    if (exact) return find_entry(key,ent,ix,(size_t)0);    //need to specify the arguments to avoid the wrong overload
     size_t key_len = cps_api_key_get_len(key);
     while (key_len>0) {
         if (find_entry(key,ent,ix,key_len--)) {
@@ -104,5 +120,28 @@ bool cps_api_key_cache<data_type>::find(cps_api_key_t *key, data_type &dt, bool 
     return false;
 }
 
+template <typename data_type>
+data_type * cps_api_key_cache<data_type>::at(cps_api_key_t *key,bool exact) {
+    std::vector<field_entry> *v;
+    size_t ix = 0;
+    if (find_entry(key,&v,ix,exact)) {
+        return &(*v)[ix].data;
+    }
+    return nullptr;
+}
+template <typename data_type>
+template <typename walking_function>
+void cps_api_key_cache<data_type>::walk(walking_function cb) {
+    auto it = _cache.begin();
+    auto end = _cache.end();
+    for ( ; it != end ; ++it ) {
+        bool res = cb(it);
+        if (!res || it->second.size()==0) {
+            _cache.erase(it);
+            it = _cache.begin();
+        }
+
+    }
+}
 
 #endif /* CPS_API_INC_PRIVATE_CPS_API_KEY_CACHE_H_ */

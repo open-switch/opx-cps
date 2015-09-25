@@ -9,6 +9,7 @@
 #include "cps_api_operation.h"
 #include "cps_api_object.h"
 
+#include "private/cps_api_key_cache.h"
 #include "private/cps_api_client_utils.h"
 #include "cps_api_events.h"
 
@@ -25,6 +26,7 @@
 #include <stdio.h>
 #include <vector>
 #include <string>
+#include <set>
 
 enum cps_api_ns_reg_t {
     cps_api_ns_r_ADD,
@@ -45,9 +47,11 @@ struct client_reg_t {
     size_t count;
 };
 
-typedef std::vector<client_reg_t> registrations_t;
+using reg_cache = cps_api_key_cache<client_reg_t>;
 
-static registrations_t active_registraitons;
+static reg_cache registration;
+static std::set<int> reg_created_cache;
+static std_mutex_lock_create_static_init_rec(cache_lock);
 
 void cps_api_create_process_address(std_socket_address_t *addr) {
     addr->type = e_std_sock_UNIX;
@@ -131,6 +135,7 @@ bool cps_api_ns_register(cps_api_channel_t handle, cps_api_object_owner_reg_t &r
     return cps_api_send_data(handle,&reg,sizeof(reg));
 }
 
+#if 0
 //@TODO switch to a map instead of a vector for efficiency sake
 static bool insert_entry(client_reg_t &r) {
     size_t ix = 0;
@@ -163,6 +168,7 @@ static bool insert_entry(client_reg_t &r) {
 
     return true;
 }
+#endif
 
 static void send_out_key_event(cps_api_key_t *key, bool how) {
     char buff[CPS_API_MIN_OBJ_LEN];
@@ -183,55 +189,53 @@ static bool process_registration(int fd,size_t len) {
     client_reg_t r;
     r.fd = fd;
     r.count = 0;
+
     if (len!=sizeof(r.details)) return false;
     if (!cps_api_receive_data(fd,&r.details,sizeof(r.details))) return false;
+    if (cps_api_key_get_len(&r.details.key)==0) return false;
 
+    {
+    std_mutex_simple_lock_guard lg(&cache_lock);
+    registration.insert(&r.details.key,r);
+    reg_created_cache.insert(fd);
+    }
     char buff[CPS_API_KEY_STR_MAX];
-
-    bool rc = insert_entry(r);
-
     EV_LOG(INFO,DSAPI,0,"NS","%s registration for %s at %s",
-            (rc==true ? "Added" : "Failed to add"),
+            "Added" ,
             cps_api_key_print(&r.details.key,buff,sizeof(buff)-1),
             r.details.addr.address.str);
 
-    if (rc) {
-        send_out_key_event(&r.details.key,true);
-    }
-    return rc;
-}
-
-static cps_api_object_owner_reg_t * find_owner(cps_api_key_t &key) {
-    size_t ix = 0;
-    size_t mx = active_registraitons.size();
-    for ( ; ix < mx ; ++ix ) {
-        if (cps_api_key_matches(&key,&active_registraitons[ix].details.key,false)==0) {
-            ++active_registraitons[ix].count;
-            return &active_registraitons[ix].details;
-        }
-    }
-    return NULL;
+    send_out_key_event(&r.details.key,true);
+    return true;
 }
 
 static bool process_query(int fd, size_t len) {
     cps_api_key_t key;
     if (!cps_api_receive_key(fd,key)) return false;
-    cps_api_object_owner_reg_t *p = find_owner(key);
 
+    cps_api_object_owner_reg_t cpy;
+    bool found = false;
     {
+        std_mutex_simple_lock_guard lg(&cache_lock);
+        client_reg_t * c = registration.at(&key,false);
+        if (c!=nullptr) {
+            ++c->count;
+            cpy = c->details;
+            found = true;
+        }
+    }
     char ink[DEF_KEY_PRINT_BUFF];//enough to handle key printing
     char matchk[DEF_KEY_PRINT_BUFF];//enough to handle key printing
     EV_LOG(TRACE,DSAPI,0,"NS","NS query for %s found %s",
-            cps_api_key_print(&key,ink,sizeof(ink)-1),
-            p!=NULL ? cps_api_key_print(&p->key,matchk,sizeof(matchk)-1) : "missing");
-    }
+                cps_api_key_print(&key,ink,sizeof(ink)-1),
+                found ? cps_api_key_print(&cpy.key,matchk,sizeof(matchk)-1) : "missing");
 
-    if (p==NULL) {
+    if (!found) {
         return cps_api_send_return_code(fd,cps_api_ns_r_RETURN_CODE,cps_api_ret_code_ERR);
     }
 
-    if (cps_api_send_header(fd,cps_api_ns_r_QUERY_RESULTS,sizeof(*p))) {
-        return cps_api_send_data(fd,p,sizeof(*p));
+    if (cps_api_send_header(fd,cps_api_ns_r_QUERY_RESULTS,sizeof(cpy))) {
+        return cps_api_send_data(fd,&cpy,sizeof(cpy));
     }
     return false;
 }
@@ -248,24 +252,28 @@ static bool  _some_data_( void *context, int fd ) {
 }
 
 static bool  _client_closed_( void *context, int fd ) {
-    size_t ix = 0;
-    size_t mx = active_registraitons.size();
-    char buff[DEF_KEY_PRINT_BUFF];//enough to handle key printing
-    while (ix < mx) {
-        if (active_registraitons[ix].fd!=fd) {
-            ++ix;
-            continue;
+    if (reg_created_cache.find(fd)==reg_created_cache.end()) return true;
+
+    auto fn = [fd](reg_cache::cache_data_iterator &it) {
+        char buff[DEF_KEY_PRINT_BUFF];
+        auto &v = it->second;
+        size_t mx = v.size();
+        for ( size_t ix = 0 ; ix < mx ; ++ix ) {
+            if (v[ix].data.fd == fd) {
+                send_out_key_event(&v[ix].key,false);
+                EV_LOG(INFO,DSAPI,0,"NS","Added registration removed %s",
+                            cps_api_key_print(&v[ix].key,buff,sizeof(buff)-1)
+                            );
+
+                v.erase(v.begin()+ix);
+
+                ix = 0;
+                mx = v.size();
+            }
         }
-
-        EV_LOG(INFO,DSAPI,0,"NS","Added registration removed %s",
-                    cps_api_key_print(&active_registraitons[ix].details.key,buff,sizeof(buff)-1)
-                    );
-
-        active_registraitons.erase(active_registraitons.begin()+ix);
-        send_out_key_event(&active_registraitons[ix].details.key,false);
-        ix = 0;
-        mx = active_registraitons.size();
-    }
+        return true;
+    };
+    registration.walk(fn);
     return true;
 }
 
