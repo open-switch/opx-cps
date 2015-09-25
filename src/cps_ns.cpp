@@ -135,41 +135,6 @@ bool cps_api_ns_register(cps_api_channel_t handle, cps_api_object_owner_reg_t &r
     return cps_api_send_data(handle,&reg,sizeof(reg));
 }
 
-#if 0
-//@TODO switch to a map instead of a vector for efficiency sake
-static bool insert_entry(client_reg_t &r) {
-    size_t ix = 0;
-    size_t mx = active_registraitons.size();
-    size_t key_size = cps_api_key_get_len(&r.details.key);
-    for ( ; ix < mx ; ++ix ) {
-        if (cps_api_key_matches(&r.details.key,&active_registraitons[ix].details.key,false)==0) {
-            size_t target_len = cps_api_key_get_len(&active_registraitons[ix].details.key);
-            if (key_size < target_len) continue;
-            char buffA[CPS_API_KEY_STR_MAX];
-            char buffB[CPS_API_KEY_STR_MAX];
-            EV_LOG(INFO,DSAPI,0,"NS","Inserting %s after %s",
-                    cps_api_key_print(&active_registraitons[ix].details.key,buffA,sizeof(buffA)-1),
-                    cps_api_key_print(&r.details.key,buffB,sizeof(buffB)-1)
-                    );
-
-            try {
-                active_registraitons.insert(active_registraitons.begin()+ix,r);
-            }catch (...) {
-                return false;
-            }
-            return true;
-        }
-    }
-    try {
-        active_registraitons.push_back(r);
-    }catch (...) {
-        return false;
-    }
-
-    return true;
-}
-#endif
-
 static void send_out_key_event(cps_api_key_t *key, bool how) {
     char buff[CPS_API_MIN_OBJ_LEN];
     memset(buff,0,sizeof(buff));
@@ -183,7 +148,6 @@ static void send_out_key_event(cps_api_key_t *key, bool how) {
 
     cps_api_event_thread_publish(obj);
 }
-
 
 static bool process_registration(int fd,size_t len) {
     client_reg_t r;
@@ -274,6 +238,7 @@ static bool  _client_closed_( void *context, int fd ) {
         return true;
     };
     registration.walk(fn);
+    reg_created_cache.erase(fd);
     return true;
 }
 
