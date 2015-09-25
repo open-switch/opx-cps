@@ -123,7 +123,7 @@ cps_api_return_code_t cps_api_get(cps_api_get_params_t * param) {
     }
 
     mx = cps_api_object_list_size(new_req.filters);
-
+    new_req.timeout = param->timeout;
     new_req.key_count = mx;
     new_req.keys = nullptr;
 

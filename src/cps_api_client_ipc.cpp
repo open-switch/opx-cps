@@ -27,7 +27,12 @@ struct cps_msg_hdr_t {
     uint32_t operation;
 };
 
-using key_cache = cps_api_key_cache<cps_api_object_owner_reg_t>;
+struct cache_entry {
+    cps_api_object_owner_reg_t owner;
+    uint64_t last_updated;
+};
+using key_cache = cps_api_key_cache<cache_entry>;
+
 static key_cache _cache;
 static std_mutex_lock_create_static_init_fast(cache_lock);
 
@@ -35,7 +40,10 @@ static std_mutex_lock_create_static_init_fast(cache_lock);
 static void fill_cache(cps_api_key_t *key,const cps_api_object_owner_reg_t &owner) {
     std_mutex_simple_lock_guard lg(&cache_lock);
     _cache.erase(key);
-    _cache.insert(key,owner);
+    cache_entry ce ;
+    ce.owner = owner;
+    ce.last_updated = std_get_uptime(nullptr);
+    _cache.insert(key,ce);
 }
 
 void cps_api_disconnect_owner(cps_api_channel_t handle) {
@@ -50,14 +58,18 @@ cps_api_return_code_t cps_api_connect_owner(cps_api_object_owner_reg_t*o,cps_api
     return (cps_api_return_code_t) rc;
 }
 
-bool cache_connect(cps_api_key_t &key, cps_api_channel_t &handle) {
+static bool cache_connect(cps_api_key_t &key, cps_api_channel_t &handle) {
     std_mutex_simple_lock_guard lg(&cache_lock);
-    cps_api_object_owner_reg_t owner;
-
-    if (_cache.find(&key,owner,true)) {
-        if (cps_api_connect_owner(&owner, handle)==cps_api_ret_code_OK) {
+    cache_entry ce;
+    if (_cache.find(&key,ce,true)) {
+        const static int TM = MILLI_TO_MICRO(1000) * 20; //20 seconds
+        bool expired = (std_get_uptime(nullptr) - ce.last_updated) > TM;
+        if (!expired && (cps_api_connect_owner(&ce.owner, handle)==cps_api_ret_code_OK)) {
             return true;
         } else {
+            char buff[SCRATCH_LOG_BUFF];
+            EV_LOG(TRACE,DSAPI,0,"CPS-NS-CACHE","cache expired for key:%s",
+                    cps_api_key_print(&key,buff,sizeof(buff)));
             _cache.erase(&key);
         }
     }
