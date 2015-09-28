@@ -2,7 +2,7 @@
 
 /* OPENSOURCELICENSE */
 /*
- * cps_api_operation_unittest.cpp
+ * cps_api_timings_unittest.cpp
  * (c) Copyright 2014 Dell Inc. All Rights Reserved.
  */
 
@@ -36,7 +36,7 @@ cps_api_attr_id_t ids[][6] = {
         {ID_START*10+1,ID_START*10+3 ,ID_START*10+4,ID_START*10,ID_START*10+5 },
 };
 
-TEST(cps_api_object,test_init) {
+TEST(cps_api_timer,test_init) {
     /**
      * Service startup... internal to API not needed for others
      */
@@ -100,7 +100,7 @@ static cps_api_return_code_t db_rollback_function(void * context, cps_api_transa
 }
 static cps_api_operation_handle_t _serv_handle;
 
-TEST(cps_api_object,test_reg) {
+TEST(cps_api_timer,test_reg) {
     /**
      * Create a operation object handle for use with future registrations.
      */
@@ -118,7 +118,7 @@ TEST(cps_api_object,test_reg) {
     ASSERT_TRUE(cps_api_register(&funcs)==cps_api_ret_code_OK);
 }
 
-TEST(cps_api_object,test_benchmark_getobj_10000x1_test) {
+TEST(cps_api_timer,test_benchmark_getobj_10000x1_test) {
     for ( size_t ix = 0 , mx = 10000; ix < mx ; ++ix ) {
         cps_api_object_guard og(cps_api_obj_tool_create(cps_api_qualifier_TARGET,ID_START,true));
         cps_api_object_list_guard olg(cps_api_object_list_create());
@@ -126,7 +126,7 @@ TEST(cps_api_object,test_benchmark_getobj_10000x1_test) {
     }
 }
 
-TEST(cps_api_object,test_benchmark_getobj_10000x10_test) {
+TEST(cps_api_timer,test_benchmark_getobj_10000x10_test) {
     for ( size_t ix = 0 , mx = 10000; ix < mx ; ++ix ) {
         cps_api_object_guard og(cps_api_obj_tool_create(cps_api_qualifier_TARGET,ID_START,true));
         cps_api_object_attr_add_u64(og.get(),0,(uint64_t)10);
@@ -135,7 +135,7 @@ TEST(cps_api_object,test_benchmark_getobj_10000x10_test) {
     }
 }
 
-TEST(cps_api_object,test_benchmark_getobj_1000x1000_test) {
+TEST(cps_api_timer,test_benchmark_getobj_1000x1000_test) {
     for ( size_t ix = 0 , mx = 1000; ix < mx ; ++ix ) {
         cps_api_object_guard og(cps_api_obj_tool_create(cps_api_qualifier_TARGET,ID_START,true));
         cps_api_object_attr_add_u64(og.get(),0,(uint64_t)1000);
@@ -144,7 +144,7 @@ TEST(cps_api_object,test_benchmark_getobj_1000x1000_test) {
     }
 }
 
-TEST(cps_api_object,test_benchmark_getobj_20x100000_test) {
+TEST(cps_api_timer,test_benchmark_getobj_20x100000_test) {
     for ( size_t ix = 0 , mx = 20; ix < mx ; ++ix ) {
         cps_api_object_guard og(cps_api_obj_tool_create(cps_api_qualifier_TARGET,ID_START,true));
         cps_api_object_attr_add_u64(og.get(),0,(uint64_t)100000);
@@ -153,7 +153,16 @@ TEST(cps_api_object,test_benchmark_getobj_20x100000_test) {
     }
 }
 
-TEST(cps_api_object,test_benchmark_set_10000x1) {
+TEST(cps_api_timer,test_benchmark_getobj_1x1000000_test) {
+    for ( size_t ix = 0 , mx = 1; ix < mx ; ++ix ) {
+        cps_api_object_guard og(cps_api_obj_tool_create(cps_api_qualifier_TARGET,ID_START,true));
+        cps_api_object_attr_add_u64(og.get(),0,(uint64_t)1000000);
+        cps_api_object_list_guard olg(cps_api_object_list_create());
+        ASSERT_TRUE(cps_api_get_objs(og.get(), olg.get(), 3,100)==cps_api_ret_code_OK);
+    }
+}
+
+TEST(cps_api_timer,test_benchmark_set_10000x1) {
     for ( size_t ix = 0, mx = 10000; ix < mx ; ++ix ){
         cps_api_object_guard og(cps_api_obj_tool_create(cps_api_qualifier_TARGET,ID_START,true));
         ASSERT_TRUE(cps_api_commit_one(cps_api_oper_CREATE,og.get(),4,100)==cps_api_ret_code_OK);

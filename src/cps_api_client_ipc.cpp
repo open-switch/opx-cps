@@ -300,6 +300,7 @@ cps_api_return_code_t cps_api_process_get_request(cps_api_get_params_t *param, s
     return rc;
 }
 
+
 cps_api_return_code_t cps_api_process_commit_request(cps_api_transaction_params_t *param, size_t ix) {
     cps_api_return_code_t rc = cps_api_ret_code_ERR;
 
@@ -409,9 +410,10 @@ cps_api_return_code_t cps_api_process_rollback_request(cps_api_transaction_param
 
 extern "C" cps_api_return_code_t cps_api_object_stats(cps_api_key_t *key, cps_api_object_t stats_obj) {
     cps_api_return_code_t rc = cps_api_ret_code_ERR;
-    char buff[CPS_API_KEY_STR_MAX];
+
     cps_api_channel_t handle;
     if (!cps_api_get_handle(*key,handle)) {
+        char buff[CPS_API_KEY_STR_MAX];
         EV_LOG(ERR,DSAPI,0,"NS","Failed to find owner for %s",
                 cps_api_key_print(key,buff,sizeof(buff)-1));
         return rc;

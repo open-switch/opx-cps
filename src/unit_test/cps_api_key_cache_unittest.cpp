@@ -6,16 +6,6 @@
  */
 
 
-/** OPENSOURCELICENSE */
-
-/* OPENSOURCELICENSE */
-/*
- * cps_api_operation_unittest.cpp
- * (c) Copyright 2014 Dell Inc. All Rights Reserved.
- */
-
-
-
 #include "gtest/gtest.h"
 
 #include "private/cps_api_key_cache.h"

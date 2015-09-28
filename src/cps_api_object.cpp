@@ -138,8 +138,7 @@ void db_list_tracker_add(cps_api_object_t obj, const char * label, unsigned int 
     if (obj==NULL) return ;
     try {
         if (file==nullptr) file = "";
-        tracker_detail d={label,line,file};
-        trackers[obj] = d;
+        trackers[obj] = {label,line,file};
     } catch (...) {}
 }
 
@@ -151,7 +150,6 @@ void db_list_tracker_rm(cps_api_object_t obj) {
     if (before <= after ) {
         EV_LOG(ERR,DSAPI,0,"SWERR","Invalid object delete found.");
     }
-    //todo log if not found
 }
 
 bool cps_api_list_debug() {
