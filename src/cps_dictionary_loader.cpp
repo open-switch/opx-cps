@@ -40,7 +40,7 @@ static bool _cps_class_data(const char *name, std_dir_file_TYPE_t type,void *con
         if (_loaded_libs[name].st_ino == _stats.st_ino) return true;
     }
     if (strstr(name,(const char*)context)!=NULL) {
-        void (*class_data_init)(void);
+        void (*class_data_init)(void)=nullptr;
          static std_shlib_func_map_t func_map[] = {
              { "module_init", (void **)&class_data_init }
          };

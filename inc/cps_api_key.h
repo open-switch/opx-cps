@@ -152,7 +152,7 @@ void cps_api_key_remove_element(cps_api_key_t *key, size_t ix);
  * @param elem the key to hash
  * @return the hash value
  */
-size_t cps_api_key_hash(cps_api_key_t *elem);
+uint64_t cps_api_key_hash(cps_api_key_t *elem);
 
 /**
  * Copy the key from src to destination.

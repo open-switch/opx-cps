@@ -55,6 +55,14 @@ UNIT_TEST+=cps_api_receiver
 cps_api_receiver_SRCS=unit_test/cps_api_receiver.cpp
 cps_api_receiver_LDFLAGS=-lcps-api-common -lcps-class-map-util
 
+UNIT_TEST+=cps_api_timing_unittest
+cps_api_timing_unittest_SRCS=unit_test/cps_api_timings.cpp
+cps_api_timing_unittest_LDFLAGS=-lcps-api-common -lcps-class-map-util
+
+UNIT_TEST+=cps_api_key_cache_unittest
+cps_api_key_cache_unittest_SRCS=unit_test/cps_api_key_cache_unittest.cpp
+cps_api_key_cache_unittest_LDFLAGS=-lcps-api-common -lcps-class-map-util
+
 
 include ${MAKE_INC}/workspace.mak
 
