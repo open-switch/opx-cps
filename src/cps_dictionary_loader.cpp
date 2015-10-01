@@ -120,7 +120,7 @@ void cps_api_class_map_init(void) {
             { "cps/object/operations/get_ave_time", "The ave amount of time for a get requests", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
         },
         { cps_api_obj_stat_GET_COUNT,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_e_OPERATIONS,cps_api_obj_stat_GET_COUNT},
-            { "cps/object/operations/get_requests", "The number of get requests", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
+            { "cps/object/operations/get_requests", "The number of get requests", false, CPS_CLASS_ATTR_T_LEAF_LIST, CPS_CLASS_DATA_TYPE_T_UINT64 }
         },
 
         { cps_api_obj_stat_NS_CONNECTS,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_e_OPERATIONS,cps_api_obj_stat_NS_CONNECTS},
@@ -143,6 +143,22 @@ void cps_api_class_map_init(void) {
         { cps_api_obj_stat_GET_INVALID,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_e_OPERATIONS,cps_api_obj_stat_GET_INVALID},
             { "cps/object/operations/get_invalid_req", "Number of invalid get requests (communication error)", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
         },
+
+        { cps_api_obj_stat_KEY,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_e_OPERATIONS,cps_api_obj_stat_KEY},
+            { "cps/object/operations/key_field", "The key related to the counts that will be following", false, CPS_CLASS_ATTR_T_LEAF_LIST, CPS_CLASS_DATA_TYPE_T_BIN }
+        },
+
+        { cps_api_obj_stat_CLOSE_COUNT,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_e_OPERATIONS,cps_api_obj_stat_CLOSE_COUNT},
+            { "cps/object/operations/close_count", "Number of close operations done with the nameservice", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
+        },
+        { cps_api_obj_stat_CLOSE_CLEANUP_RUNS,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_e_OPERATIONS,cps_api_obj_stat_CLOSE_CLEANUP_RUNS},
+            { "cps/object/operations/cleanup_runs", "Number of clean ups on cache done due to close connections", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
+        },
+
+        { cps_api_obj_stat_EVENT_SEND,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_e_OPERATIONS,cps_api_obj_stat_EVENT_SEND},
+            { "cps/object/operations/events_sent", "Number of events sent by the name service for registration changes", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
+        },
+
 
     };
     ix = 0;

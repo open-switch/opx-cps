@@ -99,15 +99,16 @@ PyObject * py_cps_event_wait(PyObject *self, PyObject *args) {
 PyObject * py_cps_event_send(PyObject *self, PyObject *args) {
     cps_api_event_service_handle_t *handle=NULL;
     PyObject *dict,*h;
-    const char *path;
-    if (! PyArg_ParseTuple( args, "O!sO!",  &PyByteArray_Type, &h,&path,&PyDict_Type, &dict)) return NULL;
+
+    if (! PyArg_ParseTuple( args, "O!O!",  &PyByteArray_Type, &h,&PyDict_Type, &dict)) return NULL;
 
     handle = (cps_api_event_service_handle_t*)PyByteArray_AsString(h);
     if (PyByteArray_Size(h)!=sizeof(*handle)) {
         return nullptr;
     }
 
-    cps_api_object_t obj = dict_to_cps_obj(path,dict);
+    cps_api_object_t obj = dict_to_cps_obj(dict);
+
     cps_api_object_guard og(obj);
     if (!og.valid()) {
         return nullptr;

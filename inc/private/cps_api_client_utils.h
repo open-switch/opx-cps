@@ -25,6 +25,12 @@ enum cps_api_msg_operation_t {
     cps_api_msg_o_COMMIT_CHANGE,
     cps_api_msg_o_COMMIT_PREV,
     cps_api_msg_o_STATS,
+
+    cps_api_ns_r_ADD,
+    cps_api_ns_r_DEL,
+    cps_api_ns_r_QUERY,
+    cps_api_ns_r_QUERY_RESULTS,
+    cps_api_ns_r_RETURN_CODE,
 };
 
 
