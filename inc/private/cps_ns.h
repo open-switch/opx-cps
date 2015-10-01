@@ -41,6 +41,7 @@ typedef struct cps_api_object_owner_reg_t {
 }cps_api_object_owner_reg_t;
 
 void cps_api_create_process_address(std_socket_address_t *addr) ;
+void cps_api_ns_get_address(std_socket_address_t *addr);
 
 cps_api_return_code_t cps_api_ns_startup();
 

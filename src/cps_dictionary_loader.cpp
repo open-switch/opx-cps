@@ -94,51 +94,54 @@ void cps_api_class_map_init(void) {
         { cps_api_obj_cat_CPS_OBJ,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ},
             { "cps/object", "CPS Object Registration details", true, CPS_CLASS_ATTR_T_CONTAINER, CPS_CLASS_DATA_TYPE_T_EMBEDDED }
         },
-        { cps_api_obj_stat_SET_MIN_TIME,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_SET_MIN_TIME},
-            { "cps/object/set_min_time", "The minimum amount of time for a trans function", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
+        { cps_api_obj_stat_e_OPERATIONS,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_e_OPERATIONS},
+            { "cps/object/operations", "Contain the operational stats", false, CPS_CLASS_ATTR_T_CONTAINER, CPS_CLASS_DATA_TYPE_T_EMBEDDED }
         },
-        { cps_api_obj_stat_SET_MAX_TIME,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_SET_MAX_TIME},
-            { "cps/object/set_max_time", "The max amount of time for a trans function", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
+        { cps_api_obj_stat_SET_MIN_TIME,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_e_OPERATIONS,cps_api_obj_stat_SET_MIN_TIME},
+            { "cps/object/operations/set_min_time", "The minimum amount of time for a trans function", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
         },
-        { cps_api_obj_stat_SET_AVE_TIME,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_SET_AVE_TIME},
-            { "cps/object/set_ave_time", "The ave amount of time for a trans function", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
+        { cps_api_obj_stat_SET_MAX_TIME,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_e_OPERATIONS,cps_api_obj_stat_SET_MAX_TIME},
+            { "cps/object/operations/set_max_time", "The max amount of time for a trans function", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
         },
-        { cps_api_obj_stat_SET_COUNT,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_SET_COUNT},
-            { "cps/object/set_requests", "The number of set/transaction functions", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
+        { cps_api_obj_stat_SET_AVE_TIME,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_e_OPERATIONS,cps_api_obj_stat_SET_AVE_TIME},
+            { "cps/object/operations/set_ave_time", "The ave amount of time for a trans function", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
         },
-
-        { cps_api_obj_stat_GET_MIN_TIME,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_GET_MIN_TIME},
-            { "cps/object/get_min_time", "The minimum amount of time for a get requests", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
-        },
-        { cps_api_obj_stat_GET_MAX_TIME,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_GET_MAX_TIME},
-            { "cps/object/get_max_time", "The max amount of time for a get requests", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
-        },
-        { cps_api_obj_stat_GET_AVE_TIME,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_GET_AVE_TIME},
-            { "cps/object/get_ave_time", "The ave amount of time for a get requests", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
-        },
-        { cps_api_obj_stat_GET_COUNT,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_GET_COUNT},
-            { "cps/object/get_requests", "The number of get requests", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
+        { cps_api_obj_stat_SET_COUNT,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_e_OPERATIONS,cps_api_obj_stat_SET_COUNT},
+            { "cps/object/operations/set_requests", "The number of set/transaction functions", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
         },
 
-        { cps_api_obj_stat_NS_CONNECTS,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_NS_CONNECTS},
-            { "cps/object/nameservice_reconnects", "Number of times re-connected to the NS", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
+        { cps_api_obj_stat_GET_MIN_TIME,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_e_OPERATIONS,cps_api_obj_stat_GET_MIN_TIME},
+            { "cps/object/operations/get_min_time", "The minimum amount of time for a get requests", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
         },
-        { cps_api_obj_stat_NS_DISCONNECTS,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_NS_DISCONNECTS},
-            { "cps/object/nameservice_lost_conn", "Number of times that the NS disconnected", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
+        { cps_api_obj_stat_GET_MAX_TIME,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_e_OPERATIONS,cps_api_obj_stat_GET_MAX_TIME},
+            { "cps/object/operations/get_max_time", "The max amount of time for a get requests", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
+        },
+        { cps_api_obj_stat_GET_AVE_TIME,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_e_OPERATIONS,cps_api_obj_stat_GET_AVE_TIME},
+            { "cps/object/operations/get_ave_time", "The ave amount of time for a get requests", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
+        },
+        { cps_api_obj_stat_GET_COUNT,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_e_OPERATIONS,cps_api_obj_stat_GET_COUNT},
+            { "cps/object/operations/get_requests", "The number of get requests", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
         },
 
-        { cps_api_obj_stat_SET_FAILED,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_SET_FAILED},
-            { "cps/object/set_failed", "Number of failed set requests", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
+        { cps_api_obj_stat_NS_CONNECTS,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_e_OPERATIONS,cps_api_obj_stat_NS_CONNECTS},
+            { "cps/object/operations/nameservice_reconnects", "Number of times re-connected to the NS", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
         },
-        { cps_api_obj_stat_SET_INVALID,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_SET_INVALID},
-            { "cps/object/set_invalid_req", "Number of invalid set requests (communication error)", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
+        { cps_api_obj_stat_NS_DISCONNECTS,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_e_OPERATIONS,cps_api_obj_stat_NS_DISCONNECTS},
+            { "cps/object/operations/nameservice_lost_conn", "Number of times that the NS disconnected", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
         },
 
-        { cps_api_obj_stat_GET_FAILED,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_GET_FAILED},
-            { "cps/object/get_failed", "Number of failed get requests", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
+        { cps_api_obj_stat_SET_FAILED,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_e_OPERATIONS,cps_api_obj_stat_SET_FAILED},
+            { "cps/object/operations/set_failed", "Number of failed set requests", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
         },
-        { cps_api_obj_stat_GET_INVALID,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_GET_INVALID},
-            { "cps/object/get_invalid_req", "Number of invalid get requests (communication error)", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
+        { cps_api_obj_stat_SET_INVALID,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_e_OPERATIONS,cps_api_obj_stat_SET_INVALID},
+            { "cps/object/operations/set_invalid_req", "Number of invalid set requests (communication error)", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
+        },
+
+        { cps_api_obj_stat_GET_FAILED,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_e_OPERATIONS,cps_api_obj_stat_GET_FAILED},
+            { "cps/object/operations/get_failed", "Number of failed get requests", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
+        },
+        { cps_api_obj_stat_GET_INVALID,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_e_OPERATIONS,cps_api_obj_stat_GET_INVALID},
+            { "cps/object/operations/get_invalid_req", "Number of invalid get requests (communication error)", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
         },
 
     };

@@ -20,6 +20,7 @@
 #include "std_time_tools.h"
 
 #include <unistd.h>
+#include <unordered_map>
 #include <vector>
 
 using reg_functions_t = std::vector<cps_api_registration_functions_t>;
@@ -31,7 +32,7 @@ struct cps_api_operation_data_t {
     std_mutex_type_t mutex;
     reg_functions_t db_functions;
     cps_api_channel_t ns_handle;
-    std::vector<uint64_t> stats;
+    std::unordered_map<uint64_t,uint64_t> stats;
 
     void insert_functions(cps_api_registration_functions_t*fun);
 
@@ -429,8 +430,8 @@ cps_api_return_code_t cps_api_operation_subsystem_init(
     std_mutex_lock_init_recursive(&p->mutex);
 
     std_rw_lock_create_default(&p->db_lock);
-    p->stats.resize(cps_api_obj_stat_MAX);
-    for ( size_t ix = 0, mx =cps_api_obj_stat_MAX ; ix < mx ; ++ix ) {
+
+    for ( size_t ix = cps_api_obj_stat_BEGIN, mx =cps_api_obj_stat_MAX ; ix < mx ; ++ix ) {
         p->stats[ix] = 0;
     }
     p->service_data.name = "CPS_API_instance";

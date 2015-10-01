@@ -80,7 +80,6 @@ bool cps_api_get_handle(cps_api_key_t &key, cps_api_channel_t &handle) {
     if (cache_connect(key,handle)) {
         return true;
     }
-
     cps_api_object_owner_reg_t owner;
     if (!cps_api_find_owners(&key,owner)) return false;
     bool rc = (cps_api_connect_owner(&owner, handle))==cps_api_ret_code_OK;
@@ -411,11 +410,28 @@ cps_api_return_code_t cps_api_process_rollback_request(cps_api_transaction_param
 extern "C" cps_api_return_code_t cps_api_object_stats(cps_api_key_t *key, cps_api_object_t stats_obj) {
     cps_api_return_code_t rc = cps_api_ret_code_ERR;
 
-    cps_api_channel_t handle;
-    if (!cps_api_get_handle(*key,handle)) {
-        char buff[CPS_API_KEY_STR_MAX];
-        EV_LOG(ERR,DSAPI,0,"NS","Failed to find owner for %s",
-                cps_api_key_print(key,buff,sizeof(buff)-1));
+    cps_api_channel_t handle = -1;
+
+    if (key==nullptr || cps_api_key_get_len(key)==0) {
+        std_socket_address_t addr;
+        cps_api_ns_get_address(&addr);
+
+        int sock;
+        t_std_error _rc = std_sock_connect(&addr,&sock);
+        if (_rc!=STD_ERR_OK) {
+            return rc;
+        }
+        handle = sock;
+    } else {
+        if (!cps_api_get_handle(*key,handle)) {
+            char buff[CPS_API_KEY_STR_MAX];
+            EV_LOG(ERR,DSAPI,0,"NS","Failed to find owner for %s",
+                    cps_api_key_print(key,buff,sizeof(buff)-1));
+            return rc;
+        }
+    }
+    if (handle==-1) {
+        EV_LOG(ERR,DSAPI,0,"NS-STATS","No connection to the NS for stats.");
         return rc;
     }
     do {
