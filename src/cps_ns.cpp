@@ -11,7 +11,9 @@
 
 #include "private/cps_api_key_cache.h"
 #include "private/cps_api_client_utils.h"
+#include "cps_api_operation_stats.h"
 #include "cps_api_events.h"
+#include "cps_api_object_tools.h"
 
 #include "std_socket_service.h"
 #include "std_rw_lock.h"
@@ -19,7 +21,6 @@
 #include "event_log.h"
 #include "std_file_utils.h"
 #include "std_thread_tools.h"
-
 
 #include <sys/stat.h>
 #include <string.h>
@@ -33,7 +34,8 @@ enum cps_api_ns_reg_t {
     cps_api_ns_r_DEL,
     cps_api_ns_r_QUERY,
     cps_api_ns_r_QUERY_RESULTS,
-    cps_api_ns_r_RETURN_CODE
+    cps_api_ns_r_RETURN_CODE,
+    cps_api_ns_r_STATS
 };
 
 #define CPS_API_NS_ID "/tmp/cps_api_ns"
@@ -48,8 +50,11 @@ struct client_reg_t {
 };
 
 using reg_cache = cps_api_key_cache<client_reg_t>;
+using ns_stats = std::unordered_map<uint64_t,uint64_t>;
 
 static reg_cache registration;
+static ns_stats _stats;
+
 static std::set<int> reg_created_cache;
 static std_mutex_lock_create_static_init_rec(cache_lock);
 
@@ -136,6 +141,11 @@ bool cps_api_ns_register(cps_api_channel_t handle, cps_api_object_owner_reg_t &r
 }
 
 static void send_out_key_event(cps_api_key_t *key, bool how) {
+    {
+        std_mutex_simple_lock_guard lg(&cache_lock);
+        ++_stats[cps_api_obj_stat_EVENT_SEND];
+    }
+
     char buff[CPS_API_MIN_OBJ_LEN];
     memset(buff,0,sizeof(buff));
     cps_api_object_t obj = cps_api_object_init(buff,sizeof(buff));
@@ -160,6 +170,8 @@ static bool process_registration(int fd,size_t len) {
 
     {
     std_mutex_simple_lock_guard lg(&cache_lock);
+    ++_stats[cps_api_obj_stat_SET_COUNT];
+
     registration.insert(&r.details.key,r);
     reg_created_cache.insert(fd);
     }
@@ -181,6 +193,7 @@ static bool process_query(int fd, size_t len) {
     bool found = false;
     {
         std_mutex_simple_lock_guard lg(&cache_lock);
+        ++_stats[cps_api_obj_stat_GET_COUNT];
         client_reg_t * c = registration.at(&key,false);
         if (c!=nullptr) {
             ++c->count;
@@ -204,6 +217,39 @@ static bool process_query(int fd, size_t len) {
     return false;
 }
 
+static bool process_stats(int fd, size_t len) {
+
+    std_mutex_simple_lock_guard lg(&cache_lock);
+
+    cps_api_object_guard og(cps_api_obj_tool_create(cps_api_qualifier_OBSERVED,cps_api_obj_stat_e_OPERATIONS,true));
+    cps_api_object_t o = og.get();
+    if (o==nullptr) return false;
+
+    auto it = _stats.begin();
+    auto end = _stats.end();
+    for ( ; it != end ; ++it ) {
+        cps_api_object_attr_add_u64(o,it->first,it->second);
+    }
+
+    auto fn = [fd,o](reg_cache::cache_data_iterator &it) {
+        auto &v = it->second;
+        size_t mx = v.size();
+        for ( size_t ix = 0 ; ix < mx ; ++ix ) {
+            cps_api_object_attr_add(o,cps_api_obj_stat_KEY,&v[ix].data.details.key,sizeof(v[ix].data.details.key));
+            cps_api_object_attr_add_u64(o,cps_api_obj_stat_GET_COUNT,v[ix].data.count);
+        }
+        return true;
+    };
+
+    registration.walk(fn);
+    len = o!=NULL ? cps_api_object_to_array_len(o) : 0;
+    if (cps_api_send_header(fd,cps_api_ns_r_STATS,len) &&
+            cps_api_send_object(fd,o)) {
+        return true;
+    }
+    return false;
+}
+
 static bool  _some_data_( void *context, int fd ) {
     uint32_t op;
     size_t len;
@@ -211,12 +257,18 @@ static bool  _some_data_( void *context, int fd ) {
 
     if (op == cps_api_ns_r_ADD) return process_registration(fd,len);
     if (op == cps_api_ns_r_QUERY) return process_query(fd,len);
-
+    if (op==cps_api_ns_r_STATS) return process_stats(fd,len);
     return false;
 }
 
 static bool  _client_closed_( void *context, int fd ) {
+
+    std_mutex_simple_lock_guard lg(&cache_lock);
+    ++_stats[cps_api_obj_stat_CLOSE_COUNT];
+
     if (reg_created_cache.find(fd)==reg_created_cache.end()) return true;
+
+    ++_stats[cps_api_obj_stat_CLOSE_CLEANUP_RUNS];
 
     auto fn = [fd](reg_cache::cache_data_iterator &it) {
         char buff[DEF_KEY_PRINT_BUFF];
@@ -237,6 +289,7 @@ static bool  _client_closed_( void *context, int fd ) {
         }
         return true;
     };
+
     registration.walk(fn);
     reg_created_cache.erase(fd);
     return true;
