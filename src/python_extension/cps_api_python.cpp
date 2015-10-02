@@ -102,6 +102,7 @@ static const std::map<std::string,CPS_CLASS_DATA_TYPE_t> _data_types = {
         {"bin",CPS_CLASS_DATA_TYPE_T_BIN},
         {"double",CPS_CLASS_DATA_TYPE_T_DOUBLE},
         {"embedded",CPS_CLASS_DATA_TYPE_T_EMBEDDED},
+        {"key",CPS_CLASS_DATA_TYPE_T_KEY},
 };
 
 struct _attr_type_match {

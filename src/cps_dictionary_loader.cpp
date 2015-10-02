@@ -145,7 +145,7 @@ void cps_api_class_map_init(void) {
         },
 
         { cps_api_obj_stat_KEY,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_e_OPERATIONS,cps_api_obj_stat_KEY},
-            { "cps/object/operations/key_field", "The key related to the counts that will be following", false, CPS_CLASS_ATTR_T_LEAF_LIST, CPS_CLASS_DATA_TYPE_T_BIN }
+            { "cps/object/operations/key_field", "The key related to the counts that will be following", false, CPS_CLASS_ATTR_T_LEAF_LIST, CPS_CLASS_DATA_TYPE_T_KEY }
         },
 
         { cps_api_obj_stat_CLOSE_COUNT,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_e_OPERATIONS,cps_api_obj_stat_CLOSE_COUNT},

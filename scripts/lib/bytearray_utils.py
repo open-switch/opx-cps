@@ -31,6 +31,7 @@ pack_len_map = {  'uint8_t':1,
 	       }
 
 
+
 def to_ba(val,datatype):
     """
     Converts a numeric value(uint8_t, uint16_t, uint32_t, uint64_t) to a byte array of
@@ -157,6 +158,22 @@ def ba_to_ipv6str(t, ba):
 def ba_to_str_wr(t,val):
     return ba_to_str(val,len(val))
 
+def ba_to_key(t,val):
+	_len = from_ba(val,'uint32_t')
+	val=val[4:]
+	type = from_ba(val,'uint32_t')
+	val=val[4:]
+	cnt = 0
+	_str=""
+	while cnt < _len:
+		v = from_ba(val,'uint32_t')
+		if not len(_str) == 0 :
+			_str+='.'
+		_str+=str(v)
+		val = val[4:]
+		cnt+=1
+	return _str
+
 def ba_to_int_type(t,val):
     return from_ba(val,t)
 
@@ -185,6 +202,7 @@ ba_to_type={
 	'ip' : hex_from_data,
     'hex' : hex_from_data,
     'mac'     : ba_to_macstr,
+    'key'     : ba_to_key
 }
 
 def ba_to_value(typ, val):
