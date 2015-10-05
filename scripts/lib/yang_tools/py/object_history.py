@@ -84,7 +84,7 @@ class IndexFile:
 
 class IndexTracker :
     def __init__(self,start):
-        self.last_index = 1
+        self.last_index = 0
         if start!=None:
             self.last_index = start
 
