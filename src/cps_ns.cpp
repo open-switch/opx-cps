@@ -29,15 +29,6 @@
 #include <string>
 #include <set>
 
-enum cps_api_ns_reg_t {
-    cps_api_ns_r_ADD,
-    cps_api_ns_r_DEL,
-    cps_api_ns_r_QUERY,
-    cps_api_ns_r_QUERY_RESULTS,
-    cps_api_ns_r_RETURN_CODE,
-    cps_api_ns_r_STATS
-};
-
 #define CPS_API_NS_ID "/tmp/cps_api_ns"
 
 #define DEF_KEY_PRINT_BUFF (100)
@@ -243,7 +234,7 @@ static bool process_stats(int fd, size_t len) {
 
     registration.walk(fn);
     len = o!=NULL ? cps_api_object_to_array_len(o) : 0;
-    if (cps_api_send_header(fd,cps_api_ns_r_STATS,len) &&
+    if (cps_api_send_header(fd,cps_api_msg_o_STATS,len) &&
             cps_api_send_object(fd,o)) {
         return true;
     }
@@ -257,7 +248,7 @@ static bool  _some_data_( void *context, int fd ) {
 
     if (op == cps_api_ns_r_ADD) return process_registration(fd,len);
     if (op == cps_api_ns_r_QUERY) return process_query(fd,len);
-    if (op==cps_api_ns_r_STATS) return process_stats(fd,len);
+    if (op==cps_api_msg_o_STATS) return process_stats(fd,len);
     return false;
 }
 

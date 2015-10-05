@@ -120,9 +120,9 @@ class CPSTypes:
     def print_list(self,attr_str,list):
         val_str = ""
         for item in list:
-            val_str = val_str + str(self.from_data(attr_str,item))
-            if item != list[-1]:
-                val_str = val_str + ", "
+            if len(val_str) > 0:
+                val_str+=","
+            val_str += str(self.from_data(attr_str,item))
         print attr_str," = " ,val_str
 
     def print_dict(self,data):
