@@ -169,15 +169,38 @@ class Language:
 
         ro_l = []
         rw_l = []
-
+        yin_node = self.model.all_node_map[full_name]  
+        is_rpc= False
+        if yin_node.tag==self.model.module.ns() + 'rpc':
+            is_rpc = True
+            if read_only:
+                full_name = full_name + '/output'
+                parent_ro=True
+            else:    
+                full_name = full_name + '/input'
+            if full_name not in self.model.container_map: 
+                return rw_l
         for leaf in self.model.container_map[full_name]:
             leaf = leaf.name
             yin_node = self.model.all_node_map[leaf]
             if yin_node.tag != self.model.module.ns()+'leaf' and yin_node.tag != self.model.module.ns()+'leaf-list':
-                continue
+                if is_rpc: 
+                     if yin_node.tag == self.model.module.ns()+'container' or yin_node.tag != self.model.module.ns()+'choice': 
+                         full_name = leaf
+                         print "full_name is" + full_name
+                         for leaf in self.model.container_map[full_name]:
+                             leaf = leaf.name
+                             yin_node = self.model.all_node_map[leaf]
+                             if yin_node.tag != self.model.module.ns()+'leaf' and yin_node.tag != self.model.module.ns()+'leaf-list':
+                                 continue;
+                             if read_only:
+                                 ro_l.append(leaf)
+                             else:
+                                 rw_l.append(leaf)
+                else:
+                    continue
             if parent_ro or self.rw_access(yin_node)==False: ro_l.append(leaf)
             else: rw_l.append(leaf)
-
         if read_only: return ro_l
         return rw_l
 
@@ -236,6 +259,25 @@ class Language:
 
         print "/* Instance vars end... */ "
 
+    def spit_rpc_node(self, cb_node):
+        print "cps_api_return_code_t _rpc__"+cb_node+"(void * context, cps_api_transaction_params_t * param, size_t key_ix) {"
+        print ""
+        print "  /*iterator for leaf-list*/"
+        print "  cps_api_object_it_t it;"
+        print "  (void)it;"
+
+        print ""
+        print "  /*object that contains the data to set*/ "
+        print "  cps_api_object_t obj = cps_api_object_list_get(param->change_list,key_ix);"
+        print ""
+        print ""
+        self.get_instance_vars(cb_node,False,"cma_get_data")
+	self.get_instance_vars(cb_node,True,"cma_set_data")
+        print ""
+        print " /*Return a cps_api_ret_code_OK when you implement and have a successful operation*/"
+        print "  return cps_api_ret_code_OK;"
+        print "}"
+        print ""
 
     def read_cb_node(self,cb_node):
         print "static cps_api_return_code_t _get_"+cb_node+" (void * context, cps_api_get_params_t * param, size_t key_ix) {"
@@ -289,7 +331,7 @@ class Language:
         print ""
 
 
-    def write_init(self, elem,read_res, write_res ):
+    def write_init(self, elem,read_res, write_res,rpc_res ):
         print "void cma_init_"+elem+"(void) {"
         print "  cps_api_registration_functions_t f;"
         keys_list = self.cb_node_keys[elem].split(',')
@@ -310,6 +352,7 @@ class Language:
         if read_res:  print "  f._read_function=_get_"+elem+";"
         else:         print "  f._read_function=NULL;"
         if write_res: print "  f._write_function=_set_"+elem+";"
+        elif rpc_res: print "  f.write_function = _rpc_"+elem+";"
         else:         print "  f._write_function=NULL;"
         print "  f._rollback_function=NULL;"
         print "  cma_api_init(&f,1);"
@@ -414,23 +457,34 @@ void init_"""+self.name_to_cms_name(self.module)+"""_xmltag(std::unordered_map<s
         for elem in self.cb_node_keys:
             with open(os.path.join(self.context['args']['cmssrc'],elem+".c"),"w") as sys.stdout:
                 self.write_headers(elem)
-                read_res = False
-                ro_node = self.node_rw_access(elem)==False
-                rw_elems = len(self.get_node_leaves_based_on_access(elem,False))!=0
-                ro_elems = len(self.get_node_leaves_based_on_access(elem,True))!=0
+                full_name = self.names[elem]
+                yin_node = self.model.all_node_map[full_name]
+                read_res= False
+                write_res= False
+                if yin_node.tag==self.model.module.ns() + 'rpc':
+                    rpc_res = True
+                    self.spit_rpc_node(elem)
+                    self.write_init(elem,read_res, write_res, rpc_res )
+                    print ""
+                else:
+                    rpc_res = False
+                    read_res = False
+                    ro_node = self.node_rw_access(elem)==False
+                    rw_elems = len(self.get_node_leaves_based_on_access(elem,False))!=0
+                    ro_elems = len(self.get_node_leaves_based_on_access(elem,True))!=0
 
-                if ro_node or ((not ro_node) and ro_elems):
-                    self.read_cb_node(elem)
-                    read_res = True
+                    if ro_node or ((not ro_node) and ro_elems):
+                        self.read_cb_node(elem)
+                        read_res = True
 
-                write_res = False
+                    write_res = False
 
-                if (not ro_node) and rw_elems:
-                    self.write_cb_node(elem)
-                    write_res = True
+                    if (not ro_node) and rw_elems:
+                        self.write_cb_node(elem)
+                        write_res = True
 
-                self.write_init(elem,read_res, write_res )
-                print ""
+                    self.write_init(elem,read_res, write_res, rpc_res )
+                    print ""
         sys.stdout = old_stdout
 
     def close(self):
