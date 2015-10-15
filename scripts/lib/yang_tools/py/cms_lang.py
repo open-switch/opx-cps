@@ -167,7 +167,6 @@ class Language:
         leaves = []
         for leaf in self.model.container_map[full_name]:
             leaf = leaf.name
-            print "leaf is " + leaf
             yin_node = self.model.all_node_map[leaf]
             if yin_node.tag != self.model.module.ns()+'leaf' and yin_node.tag != self.model.module.ns()+'leaf-list':
                 continue
@@ -200,7 +199,6 @@ class Language:
                          full_name = leaf
                          leaves = self.get_leaves(full_name)
                          for leaf in leaves:
-                             print "leaf is " + leaf
                              if read_only:
                                  ro_l.append(leaf)
                              else:
