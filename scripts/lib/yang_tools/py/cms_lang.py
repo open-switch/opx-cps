@@ -163,6 +163,17 @@ class Language:
             real_path = self.model.parent[real_path]
         return False
 
+    def get_leaves(self, full_name):
+        leaves = []
+        for leaf in self.model.container_map[full_name]:
+            leaf = leaf.name
+            print "leaf is " + leaf
+            yin_node = self.model.all_node_map[leaf]
+            if yin_node.tag != self.model.module.ns()+'leaf' and yin_node.tag != self.model.module.ns()+'leaf-list':
+                continue
+            leaves.append(leaf)
+        return leaves 
+
     def get_node_leaves_based_on_access(self,cb_node,read_only):
         full_name = self.names[cb_node]
         parent_ro = self.is_parent_tree_read_only(cb_node)
@@ -185,18 +196,27 @@ class Language:
             yin_node = self.model.all_node_map[leaf]
             if yin_node.tag != self.model.module.ns()+'leaf' and yin_node.tag != self.model.module.ns()+'leaf-list':
                 if is_rpc: 
-                     if yin_node.tag == self.model.module.ns()+'container' or yin_node.tag != self.model.module.ns()+'choice': 
+                     if yin_node.tag == self.model.module.ns()+'container': 
                          full_name = leaf
-                         print "full_name is" + full_name
-                         for leaf in self.model.container_map[full_name]:
-                             leaf = leaf.name
-                             yin_node = self.model.all_node_map[leaf]
-                             if yin_node.tag != self.model.module.ns()+'leaf' and yin_node.tag != self.model.module.ns()+'leaf-list':
-                                 continue;
+                         leaves = self.get_leaves(full_name)
+                         for leaf in leaves:
+                             print "leaf is " + leaf
                              if read_only:
                                  ro_l.append(leaf)
                              else:
                                  rw_l.append(leaf)
+                     if yin_node.tag == self.model.module.ns()+'choice': 
+                         full_name = leaf
+                         for leaf in self.model.container_map[full_name]:
+                             leaf = leaf.name
+                             full_name = leaf
+                             leaves = self.get_leaves(full_name)
+                             for leaf in leaves:
+                                 if read_only:
+                                     ro_l.append(leaf)
+                                 else:
+                                     rw_l.append(leaf)
+                     continue
                 else:
                     continue
             if parent_ro or self.rw_access(yin_node)==False: ro_l.append(leaf)
