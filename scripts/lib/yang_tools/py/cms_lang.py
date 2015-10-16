@@ -278,7 +278,7 @@ class Language:
         print "/* Instance vars end... */ "
 
     def spit_rpc_node(self, cb_node):
-        print "cps_api_return_code_t _rpc__"+cb_node+"(void * context, cps_api_transaction_params_t * param, size_t key_ix) {"
+        print "cps_api_return_code_t _rpc_"+cb_node+"(void * context, cps_api_transaction_params_t * param, size_t key_ix) {"
         print ""
         print "  /*iterator for leaf-list*/"
         print "  cps_api_object_it_t it;"
@@ -370,7 +370,7 @@ class Language:
         if read_res:  print "  f._read_function=_get_"+elem+";"
         else:         print "  f._read_function=NULL;"
         if write_res: print "  f._write_function=_set_"+elem+";"
-        elif rpc_res: print "  f.write_function = _rpc_"+elem+";"
+        elif rpc_res: print "  f._write_function = _rpc_"+elem+";"
         else:         print "  f._write_function=NULL;"
         print "  f._rollback_function=NULL;"
         print "  cma_api_init(&f,1);"
