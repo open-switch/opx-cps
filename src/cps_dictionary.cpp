@@ -14,13 +14,70 @@
 #include <unordered_map>
 #include <memory>
 
+
+struct enum_field_t {
+    std::string name;
+    int value;
+    std::string descr;
+};
+
+class CPSEnum {
+    std::string _desc;
+    std::string _name;
+    std::vector<std::unique_ptr<enum_field_t>> _fields;
+
+    std::unordered_map<std::string,int> _str_to_id;
+    std::unordered_map<int,const char*> _id_to_str;
+
+public:
+    CPSEnum(){}
+    CPSEnum(const char *name, const char *desc) {
+        _desc = desc;
+        _name = name;
+    }
+    const std::string & name() const { return _name; }
+    const std::string & desc() const { return _desc; }
+
+    void reg(const char *name, int id, const char *desc);
+    int value(const char *name) const ;
+    const char *name(int value) const;
+};
+
 using cps_class_map_type_t = std::unordered_map<cps_api_attr_id_t,std::unique_ptr<cps_class_map_node_details_int_t>>;
 using cps_class_map_string_t = std::unordered_map<std::string,cps_class_map_node_details_int_t*>;
+using cps_class_map_enums_t = std::unordered_map<std::string,CPSEnum>;
+using cps_class_map_id_to_enum_t = std::unordered_map<cps_api_attr_id_t,std::string>;
 
 static std_mutex_lock_create_static_init_rec(lock);
 static cps_class_map_type_t _class_def;
 static cps_class_map_string_t _str_map;
+static cps_class_map_enums_t _enum_map;
+static cps_class_map_id_to_enum_t _attr_id_to_enum;
 
+
+void CPSEnum::reg(const char *name, int id, const char *desc) {
+    auto p = std::unique_ptr<enum_field_t>(new enum_field_t);
+    p->descr = desc;
+    p->name = name;
+    p->value = id;
+
+    const char *_name = p->name.c_str();
+
+    _fields.push_back(std::move(p));
+    _str_to_id[_name] = id;
+    _id_to_str[id] = name;
+}
+
+int CPSEnum::value(const char *name) const {
+    auto it = _str_to_id.find(name);
+    if (it==_str_to_id.end()) return -1;
+    return it->second;
+}
+const char *CPSEnum::name(int value) const  {
+    auto it = _id_to_str.find(value);
+    if (it==_id_to_str.end()) return nullptr;
+    return it->second;
+}
 
 static void cps_class_data_has_been_loaded(void) {
     std_mutex_simple_lock_guard lg(&lock);
@@ -157,6 +214,43 @@ bool cps_class_string_to_key(const char *str, cps_api_attr_id_t *ids, size_t *ma
         ids[ix] = rec->ids[ix];
     }
     return true;
+}
+
+cps_api_return_code_t cps_class_map_enum_reg(const char *enum_name, const char *field, int value, const char * descr) {
+    auto it = _enum_map.find(enum_name);
+    if (it==_enum_map.end()) {
+        _enum_map[enum_name] = std::move(CPSEnum(enum_name, enum_name));
+        it = _enum_map.find(enum_name);
+    }
+    if (it==_enum_map.end()) {
+        return cps_api_ret_code_ERR;
+    }
+    it->second.reg(field,value,descr);
+    return cps_api_ret_code_OK;
+}
+
+cps_api_return_code_t cps_class_map_enum_associate(cps_api_attr_id_t id, const char *name) {
+    _attr_id_to_enum[id] = name;
+    return cps_api_ret_code_OK;
+}
+
+const char *cps_class_enum_id(cps_api_attr_id_t id, int val) {
+    auto it = _attr_id_to_enum.find(id);
+    if (it==_attr_id_to_enum.end()) return nullptr;
+
+    auto eit = _enum_map.find(it->second.c_str());
+    if (eit == _enum_map.end()) return nullptr;
+
+    return eit->second.name(val);
+}
+
+int    cps_api_enum_value(cps_api_attr_id_t id, const char *tag) {
+    auto it = _attr_id_to_enum.find(id);
+    if (it==_attr_id_to_enum.end()) return -1;
+
+    auto eit = _enum_map.find(it->second.c_str());
+    if (eit == _enum_map.end()) return -1;
+    return eit->second.value(tag);
 }
 
 }

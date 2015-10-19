@@ -167,7 +167,7 @@ class history:
                 if not d['name'] in self.the_dict:
                     self.the_dict[d['name']] = enum_tracker_int(IndexTracker(None),d['name'])
 
-                self.the_dict[d['name']].setup(d['list'])
+                self.the_dict[d['name']].setup(d['list'],must_be_unique=True)
 
             the_file.close()
 

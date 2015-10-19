@@ -128,7 +128,7 @@ bool cps_api_send_header(cps_api_channel_t handle, uint32_t op,
     t_std_error rc = STD_ERR_OK;
     int by = std_write(handle,&hdr,sizeof(hdr),true,&rc);
     if (by!=sizeof(hdr)) {
-        EV_LOG(ERR,DSAPI,0,"CPS IPC","Was not able to send the full message header.");
+        EV_LOG(TRACE,DSAPI,0,"CPS IPC","Was not able to send the full message header.");
     }
     return (by==sizeof(hdr)) ;
 }
@@ -176,7 +176,7 @@ bool cps_api_send_data(cps_api_channel_t handle, void *data, size_t len) {
     int by = std_read(handle,data,len,true,&msg_rc);
     bool rc = (by==(int)len) ;
     if (!rc) {
-        EV_LOG(ERR,DSAPI,0,"CPS IPC","Was not able to read the data. (%X)",msg_rc);
+        EV_LOG(TRACE,DSAPI,0,"CPS IPC","Was not able to read the data. (%X)",msg_rc);
     }
     return rc;
 }
