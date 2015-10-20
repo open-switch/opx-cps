@@ -89,7 +89,7 @@ typedef struct {
 cps_api_return_code_t cps_class_map_init(cps_api_attr_id_t id, const cps_api_attr_id_t *ids, size_t ids_len, cps_class_map_node_details *details);
 
 /**
- * Register a enum with the system - support look up/etc
+ * Register a enum with the system - support look up/etc.  This will replace the previous mapping if one exists.
  * @param enum_name the enumeration name
  * @param field the string enum ID
  * @param value the enum value
