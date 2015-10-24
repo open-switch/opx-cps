@@ -54,6 +54,7 @@ cps_api_return_code_t cps_api_connect_owner(cps_api_object_owner_reg_t*o,cps_api
     t_std_error rc = std_sock_connect(&o->addr,&handle);
     if (rc!=STD_ERR_OK) {
         EV_LOG(ERR,DSAPI,0,"CPS IPC","not able to connect to owner");
+        rc = cps_api_ret_code_SERVICE_CONNECT_FAIL;
     }
     return (cps_api_return_code_t) rc;
 }
@@ -127,7 +128,7 @@ bool cps_api_send_header(cps_api_channel_t handle, uint32_t op,
     t_std_error rc = STD_ERR_OK;
     int by = std_write(handle,&hdr,sizeof(hdr),true,&rc);
     if (by!=sizeof(hdr)) {
-        EV_LOG(ERR,DSAPI,0,"CPS IPC","Was not able to send the full message header.");
+        EV_LOG(TRACE,DSAPI,0,"CPS IPC","Was not able to send the full message header.");
     }
     return (by==sizeof(hdr)) ;
 }
@@ -175,7 +176,7 @@ bool cps_api_send_data(cps_api_channel_t handle, void *data, size_t len) {
     int by = std_read(handle,data,len,true,&msg_rc);
     bool rc = (by==(int)len) ;
     if (!rc) {
-        EV_LOG(ERR,DSAPI,0,"CPS IPC","Was not able to read the data. (%X)",msg_rc);
+        EV_LOG(TRACE,DSAPI,0,"CPS IPC","Was not able to read the data. (%X)",msg_rc);
     }
     return rc;
 }
@@ -254,7 +255,7 @@ cps_api_return_code_t cps_api_process_get_request(cps_api_get_params_t *param, s
     if (!cps_api_get_handle(*key,handle)) {
         EV_LOG(ERR,DSAPI,0,"NS","Failed to find owner for %s",
                 cps_api_key_print(key,buff,sizeof(buff)-1));
-        return rc;
+        return cps_api_ret_code_NO_SERVICE;
     }
 
     do {
@@ -309,7 +310,7 @@ cps_api_return_code_t cps_api_process_commit_request(cps_api_transaction_params_
 
     cps_api_channel_t handle;
     cps_api_key_t *key = cps_api_object_key(obj);
-    if (!cps_api_get_handle(*key,handle)) return rc;
+    if (!cps_api_get_handle(*key,handle)) return cps_api_ret_code_NO_SERVICE;
 
     rc = cps_api_ret_code_ERR;
 
@@ -384,7 +385,7 @@ cps_api_return_code_t cps_api_process_rollback_request(cps_api_transaction_param
     if (obj==NULL) return rc;
 
     cps_api_channel_t handle;
-    if (!cps_api_get_handle(*cps_api_object_key(obj),handle)) return rc;
+    if (!cps_api_get_handle(*cps_api_object_key(obj),handle)) return cps_api_ret_code_NO_SERVICE;
     cps_api_channel_handle_guard hg(handle);
 
     rc = cps_api_ret_code_ERR;
@@ -427,7 +428,7 @@ extern "C" cps_api_return_code_t cps_api_object_stats(cps_api_key_t *key, cps_ap
             char buff[CPS_API_KEY_STR_MAX];
             EV_LOG(ERR,DSAPI,0,"NS","Failed to find owner for %s",
                     cps_api_key_print(key,buff,sizeof(buff)-1));
-            return rc;
+            return cps_api_ret_code_NO_SERVICE;
         }
     }
     if (handle==-1) {

@@ -88,6 +88,39 @@ typedef struct {
  */
 cps_api_return_code_t cps_class_map_init(cps_api_attr_id_t id, const cps_api_attr_id_t *ids, size_t ids_len, cps_class_map_node_details *details);
 
+/**
+ * Register a enum with the system - support look up/etc.  This will replace the previous mapping if one exists.
+ * @param enum_name the enumeration name
+ * @param field the string enum ID
+ * @param value the enum value
+ * @param descr a description for the enumeration
+ * @return cps_api_ret_code_OK on success
+ */
+cps_api_return_code_t cps_class_map_enum_reg(const char *enum_name, const char *field, int value, const char * descr);
+
+/**
+ * Associated an enum with a an attribute ID.
+ * @param id the attribute ID to associate with the value
+ * @param name the name of the attribute to associate
+ * @return cps_api_ret_code_OK on success
+ */
+cps_api_return_code_t cps_class_map_enum_associate(cps_api_attr_id_t id, const char *name);
+
+/**
+ * Translate an attribute and value to a name
+ * @param id the attribute ID
+ * @param val the interger value to translate
+ * @return the string or NULL if not found
+ */
+const char *cps_class_enum_id(cps_api_attr_id_t id, int val);
+
+/**
+ * Translate the enum ID to the enum value given the attribute ID
+ * @param id the attribute ID that owns the enum
+ * @param tag the string enum ID
+ * @return the integer value or -1 if not found
+ */
+int    cps_api_enum_value(cps_api_attr_id_t id, const char *tag);
 
 /**
  * Determine if the node within a CPS object has embedded data

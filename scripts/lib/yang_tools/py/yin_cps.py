@@ -49,8 +49,22 @@ class CPSParser:
 
     def load(self,prefix=None):
 
-        et = ET.parse(self.filename)
-        self.root_node = et.getroot()
+        _file = ''
+        with open(self.filename,'r') as f:
+            _file = f.read()
+
+        if _file.find('<module ')!=-1 and _file.find('xmlns:ywx=')==-1:
+            pos = _file.find('<module ') + len('<module ')
+            lhs = _file[:pos] + 'xmlns:ywx="http://localhost/ignore/" '
+            rhs = _file[pos:]
+            _file = lhs + rhs
+
+        try:
+            self.root_node = ET.fromstring(_file)
+        except Exception as ex:
+            print "Failed to process ",self.filename
+            print ex
+            sys.exit(1)
         self.module = yin_ns.Module(self.filename,self.root_node)
         if prefix!=None:
                 self.module.module_name = prefix
@@ -74,6 +88,8 @@ class CPSParser:
 
 
     def __init__(self, context, filename):
+        ET.register_namespace("ywx", "http://localhost/dontcare")
+
         self.context = context
         self.filename = filename
 
