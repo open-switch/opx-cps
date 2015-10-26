@@ -63,6 +63,10 @@ UNIT_TEST+=cps_api_key_cache_unittest
 cps_api_key_cache_unittest_SRCS=unit_test/cps_api_key_cache_unittest.cpp
 cps_api_key_cache_unittest_LDFLAGS=-lcps-api-common -lcps-class-map-util
 
+UNIT_TEST+=cps_api_registration_unittest
+cps_api_registration_unittest_SRCS=unit_test/cps_registration_unittest.cpp
+cps_api_registration_unittest_LDFLAGS=-lcps-api-common -lcps-class-map-util -ldn_common
+
 
 include ${MAKE_INC}/workspace.mak
 

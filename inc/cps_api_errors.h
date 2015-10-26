@@ -26,11 +26,13 @@
 typedef int cps_api_return_code_t;
 
 typedef enum {
-    cps_api_ret_code_OK=0, //!< an OK return code
-    cps_api_ret_code_ERR=1,//!< a generic error return code
-    cps_api_ret_code_NO_SERVICE,
-    cps_api_ret_code_SERVICE_CONNECT_FAIL,
-    cps_api_ret_code_INTERNAL_FAILURE
+    cps_api_ret_code_OK=0x0, //!< an OK return code
+    cps_api_ret_code_ERR=0x1,//!< a generic error return code
+    cps_api_ret_code_NO_SERVICE=0x2,
+    cps_api_ret_code_SERVICE_CONNECT_FAIL0=0x3,
+    cps_api_ret_code_INTERNAL_FAILURE=0x4,
+    cps_api_ret_code_TIMEOUT=0x5,
+    cps_api_ret_code_SERVICE_CONNECT_FAIL=0x6,
 } cps_api_return_code_enum_val_t;
 
 /**

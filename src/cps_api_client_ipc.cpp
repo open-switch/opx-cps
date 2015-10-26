@@ -237,12 +237,12 @@ cps_api_return_code_t cps_api_timeout_wait(int handle, fd_set *r_template, size_
     tv.tv_usec = MILLI_TO_MICRO(timeout_ms % 1000);    //just the milliseconds portion
     int rc = std_select_ignore_intr(handle+1,&_rset,nullptr,nullptr,&tv,nullptr);
     if (rc==-1) {
-        EV_LOG(ERR,DSAPI,0,"CPS-OP-GET","CPS Operation failed - application close");
+        EV_LOG(ERR,DSAPI,0,op,"CPS Operation failed - application close");
         return cps_api_ret_code_ERR;
     }
     if (rc==0) {
-        EV_LOG(ERR,DSAPI,0,"CPS-OP-GET","CPS Operation failed - application time out");
-        return cps_api_ret_code_ERR;
+        EV_LOG(ERR,DSAPI,0,op,"CPS Operation failed - application time out");
+        return cps_api_ret_code_TIMEOUT;
     }
     return cps_api_ret_code_OK;
 }
