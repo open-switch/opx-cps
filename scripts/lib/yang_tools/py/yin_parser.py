@@ -12,10 +12,10 @@ if __name__ == '__main__':
     src = None
 
     for i in sys.argv:
-        if i.find('=')!=-1:
-            key,value = i.split('=')
+        if i.find('=') != -1:
+            key, value = i.split('=')
             d[key] = value
-    yf = yin_model.CPSYangModel(d);
+    yf = yin_model.CPSYangModel(d)
     yf.close()
 
     sys.exit(0)
