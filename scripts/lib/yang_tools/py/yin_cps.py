@@ -10,20 +10,23 @@ import xml.etree.ElementTree as ET
 import tempfile
 
 supported_ids_at_root = [
-    "list","container","rpc" ]
+    "list", "container", "rpc"]
 
 supported_list_containing_children = [
-    "container","grouping","choice", "list", "rpc" , "case", "module","type","typedef","input","output"]
+    "container", "grouping", "choice", "list", "rpc", "case", "module", "type", "typedef", "input", "output"]
 
 supported_list_of_leaves_have_attr_ids = [
-    "container","case", "list", "leaf","leaf-list", "rpc", "choice","input","output" ]
+    "container", "case", "list", "leaf", "leaf-list", "rpc", "choice", "input", "output"]
+
 
 class CPSContainerElement:
     name = None
     node = None
-    def __init__(self,name,node):
+
+    def __init__(self, name, node):
         self.name = name
         self.node = node
+
 
 class CPSParser:
     context = None
@@ -38,22 +41,22 @@ class CPSParser:
     container_map = None
     root_node = None
 
-    def has_children(self,node):
+    def has_children(self, node):
         return node.tag in self.has_children_nodes
 
-    def is_id_element(self,node):
+    def is_id_element(self, node):
         return node.tag in self.has_attr_ids
 
-    def load_module(self,filename):
+    def load_module(self, filename):
         f = search_path_for_file(filename)
 
-    def load(self,prefix=None):
+    def load(self, prefix=None):
 
         _file = ''
-        with open(self.filename,'r') as f:
+        with open(self.filename, 'r') as f:
             _file = f.read()
 
-        if _file.find('<module ')!=-1 and _file.find('xmlns:ywx=')==-1:
+        if _file.find('<module ') != -1 and _file.find('xmlns:ywx=') == -1:
             pos = _file.find('<module ') + len('<module ')
             lhs = _file[:pos] + 'xmlns:ywx="http://localhost/ignore/" '
             rhs = _file[pos:]
@@ -62,30 +65,33 @@ class CPSParser:
         try:
             self.root_node = ET.fromstring(_file)
         except Exception as ex:
-            print "Failed to process ",self.filename
+            print "Failed to process ", self.filename
             print ex
             sys.exit(1)
-        self.module = yin_ns.Module(self.filename,self.root_node)
-        if prefix!=None:
-                self.module.module_name = prefix
+        self.module = yin_ns.Module(self.filename, self.root_node)
+        if prefix is not None:
+            self.module.module_name = prefix
 
         self.imports = {}
         self.imports['module'] = list()
         self.imports['prefix'] = list()
 
-        for i in self.root_node.findall(self.module.ns()+"import"):
-            prefix = i.find(self.module.ns()+'prefix')
-            if prefix!=None:
+        for i in self.root_node.findall(self.module.ns() + "import"):
+            prefix = i.find(self.module.ns() + 'prefix')
+            if prefix is not None:
                 prefix = prefix.get('value')
-            if prefix!=None:
+            if prefix is not None:
                 self.imports['prefix'].append(prefix)
             print "Loading module with prefix %s" % prefix
-            self.context['loader'].load(i.get('module')+".yang",prefix=prefix)
+            self.context['loader'].load(
+                i.get('module') + ".yang",
+                prefix=prefix)
             self.imports['module'].append(i.get('module'))
 
-        self.has_children_nodes = self.module.prepend_ns_to_list(supported_list_containing_children)
-        self.has_attr_ids = self.module.prepend_ns_to_list(supported_list_of_leaves_have_attr_ids)
-
+        self.has_children_nodes = self.module.prepend_ns_to_list(
+            supported_list_containing_children)
+        self.has_attr_ids = self.module.prepend_ns_to_list(
+            supported_list_of_leaves_have_attr_ids)
 
     def __init__(self, context, filename):
         ET.register_namespace("ywx", "http://localhost/dontcare")
@@ -96,10 +102,10 @@ class CPSParser:
         self.key_elemts = list()
         self.containers = {}
         self.all_node_map = {}
-        self.container_map= {}
-        self.container_keys={}
-        self.name_to_id={}
-        self.parent={}
+        self.container_map = {}
+        self.container_keys = {}
+        self.name_to_id = {}
+        self.parent = {}
 
     def close(self):
         object_history.close(self.history)
@@ -109,9 +115,9 @@ class CPSParser:
             return
         self.container_map[self.module.name()] = list()
         self.all_node_map[self.module.name()] = self.root_node
-        self.container_keys[self.module.name()] = self.module.name()+ " "
+        self.container_keys[self.module.name()] = self.module.name() + " "
         print "Creating type mapping..."
-        self.parse_types(self.root_node,self.module.name()+':')
+        self.parse_types(self.root_node, self.module.name() + ':')
         print "Updating prefix (%s) related mapping" % self.module.name()
         self.fix_namespace(self.root_node)
         print "Scanning yang nodes"
@@ -120,19 +126,21 @@ class CPSParser:
         self.fix_enums()
         print "Yang processing complete"
 
-    def path_to_prefix(self,dict,key):
-        if key.find(self.module.name()+"/")==0:
-            node = key.replace(self.module.name()+"/",self.module.name()+":",1)
+    def path_to_prefix(self, dict, key):
+        if key.find(self.module.name() + "/") == 0:
+            node = key.replace(
+                self.module.name() + "/",
+                self.module.name() + ":",
+                1)
             dict[node] = dict[key]
 
     def fix_enums(self):
         for i in self.context['enum'].keys():
-            self.path_to_prefix(self.context['enum'],i)
+            self.path_to_prefix(self.context['enum'], i)
         for i in self.context['types'].keys():
-            self.path_to_prefix(self.context['types'],i)
+            self.path_to_prefix(self.context['types'], i)
 
-
-    def fix_namespace(self,node):
+    def fix_namespace(self, node):
         for i in node.iter():
             tag = self.module.filter_ns(i.tag)
             n = None
@@ -141,76 +149,77 @@ class CPSParser:
 
             if tag == 'type':
                 name = i.get('name')
-                if name!=None and self.module.name()+':'+name in self.context['types']:
+                if name is not None and self.module.name() + ':' + name in self.context['types']:
                     n = name
 
-            if n!=None:
-                if n.find(':')==-1:
-                    n = self.module.name()+':'+n
-                i.set('name',n)
+            if n is not None:
+                if n.find(':') == -1:
+                    n = self.module.name() + ':' + n
+                i.set('name', n)
 
-    def parse_types(self,parent, path):
+    def parse_types(self, parent, path):
         for i in parent:
 
             tag = self.module.filter_ns(i.tag)
             id = tag
-            if i.get('name')!=None:
+            if i.get('name') is not None:
                 id = i.get('name')
 
             full_name = path
-            if full_name[len(full_name)-1]!=':':
+            if full_name[len(full_name) - 1] != ':':
                 full_name += "/"
-            full_name +=id
-            type_name = self.module.name()+':'+id
+            full_name += id
+            type_name = self.module.name() + ':' + id
 
             if len(i) > 0:
-                self.parse_types(i,full_name)
+                self.parse_types(i, full_name)
 
             if tag == 'grouping':
                 tag = 'typedef'
 
             if tag == 'leaf' or tag == 'leaf-list':
-                type = i.find(self.module.ns()+'type')
-                if type.get('name')=='enumeration':
+                type = i.find(self.module.ns() + 'type')
+                if type.get('name') == 'enumeration':
                     tag = 'typedef'
 
             if tag == 'typedef':
                 if type_name in self.context['types']:
                     continue
-                    #raise Exception("Duplicate entry in type name database..."+id)
+                    # raise Exception("Duplicate entry in type name
+                    # database..."+id)
 
                 self.context['types'][type_name] = i
 
-                type = i.find(self.module.ns()+'type')
-                if type!=None:
-                    if type.get('name')=='enumeration':
+                type = i.find(self.module.ns() + 'type')
+                if type is not None:
+                    if type.get('name') == 'enumeration':
                         self.context['enum'][full_name] = i
-                    if type.get('name')=='union':
+                    if type.get('name') == 'union':
                         self.context['union'][full_name] = i
                 continue
 
     def walk_nodes(self, node, path):
         nodes = list(node)
-        parent = path   #container path to parent
+        parent = path  # container path to parent
 
         parent_tag = self.module.filter_ns(self.all_node_map[parent].tag)
 
         for i in nodes:
             tag = self.module.filter_ns(i.tag)
 
-            if i.get('name')!=None:
-                n_path=path+"/"+i.get('name');
+            if i.get('name') is not None:
+                n_path = path + "/" + i.get('name')
             else:
-                n_path=path+"/"+tag;
+                n_path = path + "/" + tag
 
-            id = self.module.name()+':'+tag
-            if i.get('name')!=None:
-                id = self.module.name()+':'+i.get('name')
+            id = self.module.name() + ':' + tag
+            if i.get('name') is not None:
+                id = self.module.name() + ':' + i.get('name')
 
-            if n_path in  self.all_node_map:
+            if n_path in self.all_node_map:
                 continue
 
-            self.parent[n_path]=path
+            self.parent[n_path] = path
 
             if tag == 'grouping':
                 tag = 'typedef'
@@ -218,19 +227,21 @@ class CPSParser:
             if tag == 'typedef':
                 continue
 
-            #in the case tht the parent tag is a choice and you parsing a non-case... then add a case for the standard
+            # in the case tht the parent tag is a choice and you parsing a non-case... then add a case for the standard
             # As a shorthand, the "case" statement can be omitted if the branch contains a single "anyxml", "container",
             # "leaf", "list", or "leaf-list" statement.  In this case, the identifier of the case node is the same as
             # the identifier in the branch statement.
-            if parent_tag == 'choice' and (tag == 'anyxml' or tag == 'container' or tag == 'leaf' or tag =='list' or tag == 'leaf-list'):
-                new_node = ET.Element(self.module.ns()+'case',attrib={'name':i.get('name')})
+            if parent_tag == 'choice' and (tag == 'anyxml' or tag == 'container' or tag == 'leaf' or tag == 'list' or tag == 'leaf-list'):
+                new_node = ET.Element(
+                    self.module.ns() + 'case',
+                    attrib={'name': i.get('name')})
                 new_node.append(i)
                 i = new_node
                 tag = 'case'
 
             self.all_node_map[n_path] = i
 
-            if tag == 'choice' or tag == 'input' or tag=='output' or tag=='rpc':
+            if tag == 'choice' or tag == 'input' or tag == 'output' or tag == 'rpc':
                 tag = 'container'
 
             if tag == 'case':
@@ -241,64 +252,66 @@ class CPSParser:
                 tag = 'container'
 
             if tag == 'container' or tag == 'list' or tag == 'rpc':
-               self.containers[n_path] = i
-               if n_path not in self.container_map:
-                   self.container_map[n_path] = list()
-               self.container_map[path].append(CPSContainerElement(n_path,i))
-               self.container_keys[n_path] = self.container_keys[path]
-               self.container_keys[n_path] += n_path +" "
-               key_entry = i.find(self.module.ns()+'key')
-               if key_entry != None:
+                self.containers[n_path] = i
+                if n_path not in self.container_map:
+                    self.container_map[n_path] = list()
+                self.container_map[path].append(CPSContainerElement(n_path, i))
+                self.container_keys[n_path] = self.container_keys[path]
+                self.container_keys[n_path] += n_path + " "
+                key_entry = i.find(self.module.ns() + 'key')
+                if key_entry is not None:
                     for key_node in key_entry.get('value').split():
-                        self.container_keys[n_path] += n_path+"/"+key_node+" "
+                        self.container_keys[
+                            n_path] += n_path + "/" + key_node + " "
 
-               self.walk_nodes(i,n_path)
+                self.walk_nodes(i, n_path)
 
-            if tag == 'leaf' or tag == 'leaf-list' or tag=='enum':
-                self.container_map[path].append(CPSContainerElement(n_path,i))
+            if tag == 'leaf' or tag == 'leaf-list' or tag == 'enum':
+                self.container_map[path].append(CPSContainerElement(n_path, i))
 
-                type = i.find(self.module.ns()+'type')
-                if type!=None:
-                    if type.get('name')=='enumeration':
+                type = i.find(self.module.ns() + 'type')
+                if type is not None:
+                    if type.get('name') == 'enumeration':
                         self.context['enum'][n_path] = i
-                        self.walk_nodes(i,n_path)
+                        self.walk_nodes(i, n_path)
 
             if tag == 'uses':
                 type_name = i.get('name')
-                if type_name.find(':')==-1:
-                    raise Exception("Missing type name... should already be specified")
+                if type_name.find(':') == -1:
+                    raise Exception(
+                        "Missing type name... should already be specified")
 
                 if not type_name in self.context['types']:
                     print self.context['types'].keys()
                     print type_name
-                    raise Exception ("Missing "+type_name)
+                    raise Exception("Missing " + type_name)
 
                 type = self.context['types'][type_name]
                 type_tag = self.module.filter_ns(type.tag)
                 if type_tag == 'grouping':
-                    self.walk_nodes(type,path)
+                    self.walk_nodes(type, path)
                     continue
                 print type
                 raise Exception("Invalid grouping specified ")
-
 
     def handle_keys(self):
         self.elem_with_keys = {}
         for i in self.container_keys.keys():
             node = self.all_node_map[i]
-            if node.find(self.module.ns()+'key')== None:
+            if node.find(self.module.ns() + 'key') is None:
                 continue
             self.elem_with_keys[i] = self.container_keys[i]
 
         self.keys = {}
         for k in self.all_node_map:
-            if not self.is_id_element(self.all_node_map[k]) : continue
+            if not self.is_id_element(self.all_node_map[k]):
+                continue
             self.fill_element_key(k)
 
-    def fill_element_key(self,key):
+    def fill_element_key(self, key):
         key_base = ""
 
-        if key.find('/')!=-1:
+        if key.find('/') != -1:
             if key in self.container_keys:
                 key_base = self.container_keys[key]
             else:
@@ -312,4 +325,3 @@ class CPSParser:
             keys_base = self.container_keys[key]
 
         self.keys[key] = key_base
-

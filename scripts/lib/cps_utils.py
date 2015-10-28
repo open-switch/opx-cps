@@ -12,16 +12,18 @@ module_path = "/opt/ngos/lib/python"
 print_methods = {}
 convert_methods = {}
 
+
 def is_ipv4_addr(ip_addr):
     """
     Check if string is valid ipv4 address
     @ip_addr - ipv4 address string
     """
     try:
-        socket.inet_pton(socket.AF_INET,ip_addr)
+        socket.inet_pton(socket.AF_INET, ip_addr)
     except socket.error:
         return False
     return True
+
 
 def is_ipv6_addr(ip_addr):
     """
@@ -29,10 +31,11 @@ def is_ipv6_addr(ip_addr):
     @ip_addr - ipv6 address string
     """
     try:
-        socket.inet_pton(socket.AF_INET6,ip_addr)
+        socket.inet_pton(socket.AF_INET6, ip_addr)
     except socket.error:
         return False
     return True
+
 
 def is_mac_addr(mac_addr):
     """
@@ -42,6 +45,7 @@ def is_mac_addr(mac_addr):
     if re.match("[0-9a-f]{2}([:])[0-9a-f]{2}(\\1[0-9a-f]{2}){4}$", mac_addr.lower()):
         return True
     return False
+
 
 def is_int(val):
     """
@@ -53,11 +57,12 @@ def is_int(val):
     return False
 
 str_types_map = {
-                  is_ipv4_addr : 'ipv4',
-                  is_ipv6_addr : 'ipv6',
-                  is_mac_addr  : 'mac',
-                  is_int       : 'uint32_t'
-                }
+    is_ipv4_addr: 'ipv4',
+                  is_ipv6_addr: 'ipv6',
+                  is_mac_addr: 'mac',
+                  is_int: 'uint32_t'
+}
+
 
 def get_string_type(val):
     for func in str_types_map:
@@ -67,31 +72,32 @@ def get_string_type(val):
 
 
 class CPSTypes:
+
     def __init__(self):
         self.types = {}
 
     def add_type(self, key, typ):
         self.types[key] = typ
 
-    def guess_type_for_len(self,val):
-        if type(val) == int:
+    def guess_type_for_len(self, val):
+        if isinstance(val, int):
             return 'uint32_t'
-        if type(val) == str:
+        if isinstance(val, str):
             return get_string_type(val)
-        if type(val) == bytearray:
-            if len(val)==4:
+        if isinstance(val, bytearray):
+            if len(val) == 4:
                 return 'uint32_t'
-            if len(val)==8:
+            if len(val) == 8:
                 return 'uint64_t'
-            if len(val)==2:
+            if len(val) == 2:
                 return 'uint16_t'
-            if len(val)==1:
+            if len(val) == 1:
                 return 'uint8_t'
-            if len(val)==6:
+            if len(val) == 6:
                 return 'mac'
         return None
 
-    def find_type(self,key,val):
+    def find_type(self, key, val):
         if key in self.types:
             t = self.types[key]
         else:
@@ -104,43 +110,43 @@ class CPSTypes:
                 t = data_type['data_type']
             else:
                 t = self.guess_type_for_len(val)
-            if t==None:
+            if t is None:
                 t = 'bytearray'
         return t
 
     def from_data(self, key, val):
-        t = self.find_type(key,val)
-        return bytearray_utils.ba_to_value(t,val)
+        t = self.find_type(key, val)
+        return bytearray_utils.ba_to_value(t, val)
 
-    def to_data(self,key,val):
-        t = self.find_type(key,val)
+    def to_data(self, key, val):
+        t = self.find_type(key, val)
         self.add_type(key, t)
-        return bytearray_utils.value_to_ba(t,val)
+        return bytearray_utils.value_to_ba(t, val)
 
-    def print_list(self,attr_str,list):
+    def print_list(self, attr_str, list):
         val_str = ""
         for item in list:
             if len(val_str) > 0:
-                val_str+=","
-            val_str += str(self.from_data(attr_str,item))
-        print attr_str," = " ,val_str
+                val_str += ","
+            val_str += str(self.from_data(attr_str, item))
+        print attr_str, " = ", val_str
 
-    def print_dict(self,data):
+    def print_dict(self, data):
         for k in data:
             if k in print_methods:
                 print_methods[k](data[k])
             elif type(data[k]) in print_methods:
                 print_methods[type(data[k])](data[k])
-            elif type(data[k]) == list:
-                self.print_list(k,data[k])
-            elif type(data[k]) == dict:
-               self.print_dict(data[k])
+            elif isinstance(data[k], list):
+                self.print_list(k, data[k])
+            elif isinstance(data[k], dict):
+                self.print_dict(data[k])
             else:
-                print k +" = "+str(self.from_data(k,data[k]))
+                print k + " = " + str(self.from_data(k, data[k]))
 
-    def print_object(self,obj):
+    def print_object(self, obj):
         data = obj['data']
-        print "Key: "+obj['key']
+        print "Key: " + obj['key']
         if len(data.keys()) == 0:
             return
         module = "/".join(data.keys()[0].split("/")[0:-1])
@@ -151,21 +157,23 @@ class CPSTypes:
 
 
 class CPSLibInit:
+
     def load_class_details(self):
-        libs=[]
-        path=os.getenv("LD_LIBRARY_PATH")
-        if path==None:
-            path='/opt/ngos/lib'
+        libs = []
+        path = os.getenv("LD_LIBRARY_PATH")
+        if path is None:
+            path = '/opt/ngos/lib'
         for i in path.split(':'):
-            print "Searching "+i
+            print "Searching " + i
             files = os.listdir(i)
             for f in files:
-                if f.find('cpsclass')==-1:continue
+                if f.find('cpsclass') == -1:
+                    continue
                 libs.append(i)
-                break;
+                break
         for i in libs:
-            print "Loading from "+i
-            res = cps.init(i,'cpsclass')
+            print "Loading from " + i
+            res = cps.init(i, 'cpsclass')
             print res
 
     def __init__(self):
@@ -175,13 +183,14 @@ class CPSLibInit:
 def init():
     CPSLibInit()
 
+
 def key_mapper():
     return CPSKeys()
 
 cps_attr_types_map = CPSTypes()
 
 
-def add_print_function(type,func):
+def add_print_function(type, func):
     """
     Register a custom print function for entire module, single attribute or
     a specific type to be called when the object is being printed via
@@ -193,7 +202,7 @@ def add_print_function(type,func):
     print_methods[type] = func
 
 
-def add_convert_function(attr,func):
+def add_convert_function(attr, func):
     """
     Register a function for pre processing the attribute value before
     adding it to a object. For ex. when adding a leaf-list value, value
@@ -206,7 +215,7 @@ def add_convert_function(attr,func):
     convert_methods[attr] = func
 
 
-def add_attr_type(attr_str,dtype):
+def add_attr_type(attr_str, dtype):
     """
     Add the type of the attribute id in the types map
     to convert attribute value to/from bytearray
@@ -231,12 +240,11 @@ def get_modules_list():
     """
     Get the list of base python utlity modules
     """
-    file_list= [ f.split(".")[0] for f in os.listdir(module_path) if isfile(join(module_path,f))]
+    file_list = [f.split(".")[0]
+                 for f in os.listdir(module_path) if isfile(join(module_path, f))]
     file_set = set(file_list)
     return list(file_set)
 
 
 from cps_object import *
 from cps_operations import *
-
-
