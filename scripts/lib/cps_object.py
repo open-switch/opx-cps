@@ -127,30 +127,29 @@ class CPSObject:
         @val - value of the embedded attribute id
         """
         # Convert Values in bytearray
-        attr_val = types.to_data(self.generate_path(attr_list[-1]), val)
+        attr_val = types.to_data(self.generate_path(attr_list), val)
 
-        # Check if a nested dictioanry for first element in attr_list exist
-        # if so then append to that dictioanry, otherwise create a new
-        embed_dict = {}
-        if self.generate_path(attr_list[0]) in self.obj['data']:
-            embed_dict = self.obj['data'][self.generate_path(attr_list[0])]
-        else:
-            self.obj['data'][self.generate_path(attr_list[0])] = embed_dict
+        # Find or create the parent container that holds the embedded final attr
+        # Start with the container holding the complete obj data
+        container = self.obj['data']
+        partial_attrs = []
 
-        for attr in reversed(attr_list[1:]):
-            obj = {}
-            # if a string is a digit treat is as a list index
-            # if index exist in dictionary append to it, or add first key
+        for attr in attr_list[:-1]:
+            attr_path = ''
+            # if attr str is just a digit then treat it as a list index
             if attr.isdigit():
-                if attr in embed_dict:
-                    exsisting_nested_dict = embed_dict[attr]
-                    exsisting_nested_dict[
-                        attr_val.keys()[0]] = attr_val.values()[0]
-                else:
-                    embed_dict[attr] = attr_val
+                attr_path = attr
             else:
-                obj[self.generate_path(attr_list)] = attr_val
-            attr_val = obj
+                partial_attrs.append(attr)
+                attr_path = self.generate_path(partial_attrs)
+
+            if attr_path in container:
+                container = container[attr_path]
+            else:
+                container[attr_path] = {}
+                container = container[attr_path]
+
+        container[self.generate_path(attr_list)] = attr_val
 
     def key_compare(self, key_dict):
         """
