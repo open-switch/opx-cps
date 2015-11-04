@@ -189,10 +189,11 @@ class COutputFormat:
     def header_file_open(self, model, stream):
         src_file = model.module.name()
         mod_name = model.module.name()
+        model_name = model.module.model_name()
 
         stream.write("\n")
         stream.write("/*\n")
-        stream.write("* source file : " + src_file + "\n")
+        stream.write( "* source file : "+ model_name +".h\n")
         stream.write(
             "* (c) Copyright 2015 Dell Inc. All Rights Reserved." +
             "\n")
@@ -227,6 +228,8 @@ class COutputFormat:
 
         print "#define " + self.lang.get_category() + " (" + str(id) + ") "
 
+        model_name = model.module.model_name()
+        print "\n#define "+self.lang.to_string(model_name)+"_MODEL_STR" + " \""+model_name+"\""
         self.print_types(model)
         self.print_enums(model)
         self.print_container(model)

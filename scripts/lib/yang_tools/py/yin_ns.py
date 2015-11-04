@@ -68,9 +68,15 @@ class Module:
     def name(self):
         return self.module_name
 
+    def model_name(self):
+        return self.module
+
     # Create a list that also has the NS prefix to the names
     def prepend_ns_to_list(self, types):
         l = list()
         for elem in types:
             l.append(self.ns() + elem)
         return l
+
+
+
