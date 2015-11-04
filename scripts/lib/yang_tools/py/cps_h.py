@@ -187,7 +187,6 @@ class COutputFormat:
         print ""
 
     def header_file_open(self, model, stream):
-        src_file = model.module.name()
         mod_name = model.module.name()
         model_name = model.module.model_name()
 
