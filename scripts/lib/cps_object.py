@@ -120,14 +120,18 @@ class CPSObject:
         for key, val in data_dict.items():
             self.add_attr(key, val)
 
-    def add_embed_attr(self, attr_list, val):
+    def add_embed_attr(self, attr_list, val, num_type_attrs=1):
         """
         Add Embedded attribute and its value to the object
         @attr_list - list of embedded attribute ids
         @val - value of the embedded attribute id
+        @num_type_attrs - number of attributes from the end of attr_list that
+                          are required to uniquely identify attr type
         """
         # Convert Values in bytearray
-        attr_val = types.to_data(self.generate_path(attr_list), val)
+        attr_val = types.to_data(
+                            self.generate_path(attr_list[-num_type_attrs:]),
+                            val)
 
         # Find or create the parent container that holds the embedded final attr
         # Start with the container holding the complete obj data
