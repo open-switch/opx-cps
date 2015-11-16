@@ -1,8 +1,6 @@
 /** OPENSOURCELICENSE */
 /*
- * cps_class_map.h
- *
- *  Created on: Apr 19, 2015
+ * (c) Copyright 2015 Dell Inc. All Rights Reserved.
  */
 
 #ifndef BASE_MODEL_INC_CPS_CLASS_MAP_H_

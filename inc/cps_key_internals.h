@@ -1,7 +1,6 @@
 /* OPENSOURCELICENSE */
 /*
- * cps_key_internals.h
- * (c) Copyright 2014 Dell Inc. All Rights Reserved.
+ * (c) Copyright 2015 Dell Inc. All Rights Reserved.
  */
 
 #ifndef CPS_KEY_INTERNALS_H_

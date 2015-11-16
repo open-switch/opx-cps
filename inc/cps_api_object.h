@@ -1,12 +1,7 @@
 /*
- * filename: cps_api_object.h
- * (c) Copyright 2014 Dell Inc. All Rights Reserved.
+ * (c) Copyright 2015 Dell Inc. All Rights Reserved.
  */
-
 /* OPENSOURCELICENSE */
-/*
- * cps_api_object.h
- */
 
 #ifndef CPS_API_COMMON_LIST_H_
 #define CPS_API_COMMON_LIST_H_
