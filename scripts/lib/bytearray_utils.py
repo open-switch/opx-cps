@@ -1,6 +1,8 @@
 #!/usr/bin/python
-'''
-* Copyright (c) 2015 Dell Inc.
+
+
+__copyright__ = ''' Copyright (c) 2015 Dell Inc. '''
+__license__ = '''
 *
 * Licensed under the Apache License, Version 2.0 (the "License"); you may
 * not use this file except in compliance with the License. You may obtain
@@ -14,6 +16,7 @@
 * See the Apache Version 2.0 License for specific language governing
 * permissions and limitations under the License.
 '''
+
 import struct
 import sys
 import binascii
