@@ -6,9 +6,13 @@ import binascii
 import socket
 
 pack_type_map = {
+    'int8_t': '<b',
     'uint8_t': '<B',
+    'int16_t': '<h',
     'uint16_t': '<H',
+    'int32_t': '<i',
     'uint32_t': '<I',
+    'int64_t': '<q',
     'uint64_t': '<Q',
     'enum': '<I',
     'bool': '<I',
@@ -16,20 +20,28 @@ pack_type_map = {
 
 pack_type_map_from_len = {
     1: '<B',
+    1: '<b',
     2: '<H',
+    2: '<h',
+    4: '<i',
     4: '<I',
+    8: '<q',
     8: '<Q',
 }
 
 
-pack_len_map = {'uint8_t': 1,
-                'uint16_t': 2,
-                'uint32_t': 4,
-                'int32_t': 4,
-                'uint64_t': 8,
-                'enum': 4,
-                'bool': 4,
-                }
+pack_len_map = {
+        'uint8_t': 1,
+        'uint16_t': 2,
+        'uint32_t': 4,
+        'uint64_t': 8,
+        'int8_t': 1,
+        'int16_t': 2,
+        'int32_t': 4,
+        'int64_t': 8,
+        'enum': 4,
+        'bool': 4,
+    }
 
 
 def to_ba(val, datatype):
