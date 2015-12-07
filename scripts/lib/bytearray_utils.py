@@ -25,6 +25,7 @@ pack_type_map_from_len = {
 pack_len_map = {'uint8_t': 1,
                 'uint16_t': 2,
                 'uint32_t': 4,
+                'int32_t': 4,
                 'uint64_t': 8,
                 'enum': 4,
                 'bool': 4,

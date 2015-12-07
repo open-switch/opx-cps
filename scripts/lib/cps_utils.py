@@ -126,6 +126,8 @@ class CPSTypes:
     def print_list(self, attr_str, list):
         val_str = ""
         for item in list:
+            if len(item) == 0:
+                continue
             if len(val_str) > 0:
                 val_str += ","
             val_str += str(self.from_data(attr_str, item))

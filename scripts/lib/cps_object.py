@@ -91,10 +91,32 @@ class CPSObject:
         @val_list - list of values for given attribute string
         """
         ba_val_list = []
-        for val in val_list:
-            ba_val_list.append(
-                types.to_data(self.generate_path(attr_str), val))
+        if len(val_list) == 0:
+            ba_val_list.append(bytearray(0))
+        else:
+            for val in val_list:
+                ba_val_list.append(
+                    types.to_data(self.generate_path(attr_str), val))
         self.obj['data'][self.generate_path(attr_str)] = ba_val_list
+
+    def add_dict(self, attr_str, val_map):
+        """
+        Add values in dictionary for a given attribute id string in the object
+        @attr_str - attribute string
+        @val_map - values with key for given attribute string
+        """
+        ba_val_map = {}
+        root_path = self.generate_path(attr_str)
+        for key in val_map:
+            if isinstance(val_map[key], dict):
+                sub_map = {}
+                for sub_key in val_map[key]:
+                    sub_path = root_path + '/' + sub_key
+                    sub_map[sub_path] = types.to_data(sub_path, val_map[key][sub_key])
+                ba_val_map[key] = sub_map
+            else:
+                ba_val_map[key] = types.to_data(key, val_map[key])
+        self.obj['data'][self.generate_path(attr_str)] = ba_val_map
 
     def add_attr(self, attr_str, val):
         """
@@ -107,6 +129,8 @@ class CPSObject:
 
         if isinstance(val, list):
             self.add_list(attr_str, val)
+        elif isinstance(val, dict):
+            self.add_dict(attr_str, val)
         else:
             self.obj['data'][self.generate_path(attr_str)] = \
                 types.to_data(self.generate_path(attr_str), val)
@@ -204,11 +228,29 @@ class CPSObject:
         """
         attr_path = self.generate_path(attr)
         l = []
+        d = {}
         if attr_path in self.obj['data']:
             if isinstance(self.obj['data'][attr_path], list):
                 for i in self.obj['data'][attr_path]:
-                    l.append(types.from_data(attr_path, i))
+                    if len(i) > 0:
+                        l.append(types.from_data(attr_path, i))
                 return l
+            elif isinstance(self.obj['data'][attr_path], dict):
+                for key,val in self.obj['data'][attr_path].items():
+                    if isinstance(val, dict):
+                        path_prefix = attr_path + '/'
+                        prefix_len = len(path_prefix)
+                        sub_map = {}
+                        for sub_key,sub_val in val.items():
+                            if len(sub_key) > prefix_len and sub_key[0:prefix_len] == path_prefix:
+                                sub_path = sub_key[prefix_len:]
+                            else:
+                                sub_path = sub_key
+                            sub_map[sub_path] = types.from_data(sub_key, sub_val)
+                        d[key] = sub_map
+                    else:
+                        d[key] = types.from_data(key, val)
+                return d
             return types.from_data(self.generate_path(attr),
                                    self.obj['data'][self.generate_path(attr)])
 
