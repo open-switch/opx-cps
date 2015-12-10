@@ -157,6 +157,30 @@ class CPSTypes:
         else:
             self.print_dict(data)
 
+    def printable_list(self, attr_str, data):
+        val_str = ""
+        for item in data[attr_str]:
+            if len(val_str) > 0:
+                val_str += ","
+            val_str += str(self.from_data(attr_str, item))
+        data[attr_str] = val_str
+
+    def printable_dict(self, data):
+        for k in data:
+            if isinstance(data[k], list):
+                self.printable_list(k, data)
+            elif isinstance(data[k], dict):
+                self.printable_dict(data[k])
+            else:
+                data[k] = str(self.from_data(k, data[k]))
+
+    def printable(self,obj):
+        data = obj['data']
+        if len(data.keys()) == 0:
+            return
+        self.printable_dict(data)
+
+
 
 class CPSLibInit:
 
@@ -237,6 +261,15 @@ def print_obj(obj):
     else:
         cps_attr_types_map.print_object(obj)
 
+
+def printable(obj):
+    """
+        Make the object printable
+    """
+    if 'change' in obj:
+        cps_attr_types_map.printable(obj['change'])
+    else:
+        cps_attr_types_map.printable(obj)
 
 def get_modules_list():
     """

@@ -298,6 +298,7 @@ cps_api_return_code_t cps_api_commit(cps_api_transaction_params_t * param);
  * of the CPS
  */
 typedef enum {
+    cps_api_oper_NULL=0,//!< no specific operation
     cps_api_oper_DELETE=1,//!< delete operation
     cps_api_oper_CREATE=2,//!< create operation
     cps_api_oper_SET=3,    //!< set operation
