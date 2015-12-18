@@ -69,7 +69,7 @@ include ${MAKE_INC}/workspace.mak
 
 sos: ${BUILD_DN_SYSROOT}/lib/cps.so
 
-${BUILD_CURDIR_sos}/libcps-class-map-util.so : ${SW_SYSROOT_LIB}/libcps-api-common.so
+${BUILD_CURDIR_sos}/libcps-class-map-util.so : ${BUILD_CURDIR_sos}/libcps-api-common.so
 
 PY_OBJ_PATH=${BUILD_CURDIR}/pybuild
 
