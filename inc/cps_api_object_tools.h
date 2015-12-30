@@ -1,8 +1,6 @@
 /** OPENSOURCELICENSE */
 /*
- * cps_api_object_tools.h
- *
- *  Created on: Sep 2, 2015
+ * (c) Copyright 2015 Dell Inc. All Rights Reserved.
  */
 
 #ifndef CPS_API_INC_CPS_API_OBJECT_TOOLS_H_
