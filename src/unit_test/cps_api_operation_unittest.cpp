@@ -22,6 +22,7 @@
 #include <sstream>
 #include <cstdio>
 #include <memory>
+#include <pthread.h>
 
 #define OBJECTS_IN_GET (10000)
 
@@ -62,14 +63,20 @@ TEST(cps_api_object,test_init) {
     }
 }
 
+#include <unistd.h>
 
 static cps_api_return_code_t db_read_function (void * context, cps_api_get_params_t * param, size_t key_ix) {
     STD_ASSERT(key_ix < param->key_count);
     cps_api_key_t * the_key = &param->keys[key_ix];
-
+    static int count = 0;
+    int cur = count++;
+    int sl = rand()%10;
+    printf("Received request... %d (sleep %d) (%d)\n",cur,sl,(int)pthread_self());
+    sleep(sl);
     uint32_t inst = cps_api_key_element_at(the_key,CPS_OBJ_KEY_APP_INST_POS);
     size_t ix = 0;
     size_t mx = OBJECTS_IN_GET;
+
     for ( ; ix < mx ; ++ix ) {
         cps_api_object_t obj = cps_api_object_create();
         cps_api_object_set_key(obj,the_key);
@@ -82,6 +89,7 @@ static cps_api_return_code_t db_read_function (void * context, cps_api_get_param
         }
     }
 
+    printf("Finished... %d (%d)\n",cur,(int)pthread_self());
     return cps_api_ret_code_OK;
 }
 
@@ -117,7 +125,7 @@ TEST(cps_api_object,test_reg) {
     /**
      * Create a operation object handle for use with future registrations.
      */
-    ASSERT_TRUE(cps_api_operation_subsystem_init(&_serv_handle,1)==cps_api_ret_code_OK);
+    ASSERT_TRUE(cps_api_operation_subsystem_init(&_serv_handle,6)==cps_api_ret_code_OK);
 
     cps_api_registration_functions_t funcs;
     funcs.handle = _serv_handle;
@@ -131,7 +139,33 @@ TEST(cps_api_object,test_reg) {
     ASSERT_TRUE(cps_api_register(&funcs)==cps_api_ret_code_OK);
 }
 
+void * test_get(void *) {
+    cps_api_get_params_t get_req;
+    STD_ASSERT(cps_api_get_request_init(&get_req)==cps_api_ret_code_OK);
+    cps_api_key_t keys;
+    cps_api_key_from_attr_with_qual(&keys,ID_START,cps_api_qualifier_TARGET);
+
+    get_req.key_count = 1;
+    get_req.keys = &keys;
+    printf("Started ++++++++++++++++++++++++\n");
+    STD_ASSERT(cps_api_get(&get_req)==cps_api_ret_code_OK);
+    printf("Finished++++++++++++++++++++++++\n");
+
+    cps_api_get_request_close(&get_req);
+    return NULL;
+}
+
+
 TEST(cps_api_object,test_get) {
+    {
+    size_t ix = 0;
+    size_t mx = 20;
+    for ( ; ix < mx ; ++ix ) {
+        pthread_t t;
+        pthread_create(&t,NULL,test_get,NULL);
+    }
+    }
+
     cps_api_get_params_t get_req;
 
     ASSERT_TRUE(cps_api_get_request_init(&get_req)==cps_api_ret_code_OK);
