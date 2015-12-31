@@ -21,15 +21,9 @@
 
 /** @defgroup CPSAPI The CPS API
  *
-      This file consists of the utilities to create, and manage keys.
-      In the CPS, a key is designed to identify a instance or a type of instances.
-      The key can also be used to refer to a subtree of objects/instances.
-
-      Important APIs are:
-            cps_api_key_set
-            cps_api_key_element_at
-            cps_api_key_get_len
-            cps_api_key_set_len
+ *     This file consists of the utilities to create, and manage keys.
+ *     In the CPS, a key is designed to identify a instance or a type of instances.
+ *     The key can also be used to refer to a subtree of objects/instances.
 
 @{
 */

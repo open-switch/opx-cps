@@ -10,7 +10,7 @@
 #include "cps_api_key.h"
 
 /** @defgroup CPSAPI_Internal The CPS API Internal API
- * The internal portion of the key API
+ * The internal portion of the NS resolution API
 @warning this is an internal API.  Do not use directly
 @{
 */

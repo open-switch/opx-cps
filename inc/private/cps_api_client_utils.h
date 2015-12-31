@@ -7,6 +7,12 @@
 #ifndef CPS_API_CLIENT_UTILS_H_
 #define CPS_API_CLIENT_UTILS_H_
 
+/** @defgroup CPSAPI_Internal The CPS API Internal API
+ * The internal portion of the NS resolution API
+@warning this is an internal API.  Do not use directly
+@{
+*/
+
 #include "cps_api_errors.h"
 #include "cps_api_operation.h"
 #include "private/cps_ns.h"
@@ -95,5 +101,9 @@ public:
     }
     cps_api_channel_t get() { return handle; }
 };
+
+/**
+ * @}
+ */
 
 #endif /* CPS_API_CLIENT_UTILS_H_ */

@@ -7,6 +7,12 @@
 #ifndef CPS_API_EVENT_API_H
 #define CPS_API_EVENT_API_H
 
+/** @defgroup CPSAPI The CPS API
+ *  This file consists of the APIs to publish and subscribe to events.
+ *
+@{
+*/
+
 #include "cps_api_errors.h"
 
 #include "cps_api_object.h"
@@ -15,11 +21,6 @@
 extern "C" {
 #endif
 
-/** @defgroup CPSAPI The CPS API
- *
-      This file consists of the APIs to publish and subscribe to events.
-@{
-*/
 
 /**
  * handle for the DS event subsystem
@@ -95,9 +96,29 @@ cps_api_return_code_t cps_api_event_publish(cps_api_event_service_handle_t handl
 cps_api_return_code_t cps_api_wait_for_event(cps_api_event_service_handle_t handle,
         cps_api_object_t object);
 
+/**
+ * @}
+ */
+
+/** @defgroup CPSAPI_EventThread The CPS API Event Helper API
+ *  This file consists of the APIs to publish and subscribe to events.
+ *
+ * The following APIs provides a wrapper over the event functionality and will create a
+ * thread to receive events from the event service.  There can only be a single one of
+ * these in a process.
+ *
+ * The Event Thread will wait for events (with a maximum size) and call the registered
+ * callbacks.  There is only one thread so the events will be processed in order.
+ *
+ * Also remember since it is single threaded the time of the callback will delay the
+ * processing of other events that are waiting to be received.
+ *
+ * @{
+ * */
+
 
 /**
- * Maximum size of message that can be received by the event thread helper
+ * Maximum size of event that can be received by the event thread helper
  * utilitiy
  */
 #define CPS_API_EVENT_THREAD_MAX_OBJ (50000)

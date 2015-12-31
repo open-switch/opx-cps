@@ -20,8 +20,8 @@
 extern "C" {
 #endif
 
-/** @defgroup CPSAPI The CPS API
- * This API handles the initialization of the event portion of the CPS API
+/** @defgroup CPSAPI_EventOverride The CPS API
+ * This API provides a way to wrap the event service with a different event transmission mechanism
 @{
 */
 
@@ -74,7 +74,6 @@ typedef cps_api_return_code_t (*cps_api_event_service_client_disconnect_t)(cps_a
 typedef cps_api_return_code_t (*cps_api_wait_for_event_t)(cps_api_event_service_handle_t handle,
         cps_api_object_t msg);
 
-
 /**
  * The registration method to handle the sending and receiving of events.
  */
@@ -108,6 +107,7 @@ cps_api_return_code_t cps_api_event_method_register( cps_api_event_methods_reg_t
 #ifdef __cplusplus
 }
 #endif
+
 /**
  * @}
  */

@@ -8,6 +8,12 @@
 #ifndef CPS_API_INC_PRIVATE_CPS_DICTIONARY_H_
 #define CPS_API_INC_PRIVATE_CPS_DICTIONARY_H_
 
+/** @defgroup CPSAPI_Internal The CPS API Internal API
+ * The internal portion of the NS resolution API
+@warning this is an internal API.  Do not use directly
+@{
+*/
+
 #include "cps_api_object_attr.h"
 #include "cps_class_map.h"
 
@@ -32,5 +38,9 @@ const cps_class_map_node_details_int_t * cps_dict_find_by_id(cps_api_attr_id_t i
 typedef bool (*cps_dict_walk_fun)(void * context, const cps_class_map_node_details_int_t *ptr);
 
 void cps_dict_walk(void * context, cps_dict_walk_fun fun);
+
+/**
+ * @}
+ */
 
 #endif /* CPS_API_INC_PRIVATE_CPS_DICTIONARY_H_ */

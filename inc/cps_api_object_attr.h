@@ -7,6 +7,11 @@
 #ifndef CPS_API_OBJECT_ATTR_H_
 #define CPS_API_OBJECT_ATTR_H_
 
+/** @defgroup CPSAPI The CPS API
+ *
+@{
+*/
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -16,11 +21,6 @@ extern "C" {
 
 #include <stdint.h>
 #include <stddef.h>
-
-/** @defgroup CPSAPI The CPS API
- *
-@{
-*/
 
 
 /**
