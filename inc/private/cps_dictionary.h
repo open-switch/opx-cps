@@ -8,10 +8,12 @@
 #ifndef CPS_API_INC_PRIVATE_CPS_DICTIONARY_H_
 #define CPS_API_INC_PRIVATE_CPS_DICTIONARY_H_
 
-/** @defgroup CPSAPI_Internal The CPS API Internal API
- * The internal portion of the NS resolution API
-@warning this is an internal API.  Do not use directly
-@{
+/** @addtogroup CPSAPI
+ *  @{
+ *
+ *  @addtogroup Internal Internal Headers
+ *  @warning this is an internal API.  Do not use directly
+ *  @{
 */
 
 #include "cps_api_object_attr.h"
@@ -40,6 +42,7 @@ typedef bool (*cps_dict_walk_fun)(void * context, const cps_class_map_node_detai
 void cps_dict_walk(void * context, cps_dict_walk_fun fun);
 
 /**
+ * @}
  * @}
  */
 

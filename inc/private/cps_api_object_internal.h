@@ -7,13 +7,15 @@
 #ifndef CPS_API_OBJECT_INTERNAL_H_
 #define CPS_API_OBJECT_INTERNAL_H_
 
-#include "cps_api_key.h"
-
-/** @defgroup CPSAPI_Internal The CPS API Internal API
- * The internal portion of the NS resolution API
-@warning this is an internal API.  Do not use directly
-@{
+/** @addtogroup CPSAPI
+ *  @{
+ *
+ *  @addtogroup Internal Internal Headers
+ *  @warning this is an internal API.  Do not use directly
+ *  @{
 */
+
+#include "cps_api_key.h"
 
 /**
  * The internal format of the CPS API's object array.  the main part is the key followed
@@ -38,6 +40,7 @@ typedef struct {
         sizeof(cps_api_object_data_t))
 
 /**
+ * @}
  * @}
  */
 #endif /* CPS_API_OBJECT_INTERNAL_H_ */

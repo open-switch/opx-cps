@@ -7,8 +7,14 @@
 #ifndef CPS_API_INC_CPS_API_OPERATION_STATS_H_
 #define CPS_API_INC_CPS_API_OPERATION_STATS_H_
 
-/** @defgroup CPSAPI The CPS API
-@{
+/**
+ * @addtogroup CPSAPI The CPS API
+ * @{
+ * @addtogroup Misc
+ * This file is used to provide statistics on running objects.  Each CPS object
+ * has a number of stats provided by the infrastructure.  These stats can be queried
+ * at runtime for diagnostic purposes
+ * @{
 */
 
 
@@ -50,6 +56,7 @@ typedef enum {
 
 
 /**
-@}
+ * @}
+ * @}
 */
 #endif /* CPS_API_INC_CPS_API_OPERATION_STATS_H_ */

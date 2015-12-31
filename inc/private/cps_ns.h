@@ -7,10 +7,12 @@
 #ifndef CPS_NS_H_
 #define CPS_NS_H_
 
-/** @defgroup CPSAPI_Internal The CPS API Internal API
- * The internal portion of the NS resolution API
-@warning this is an internal API.  Do not use directly
-@{
+/** @addtogroup CPSAPI
+ *  @{
+ */ /*
+ *  @addtogroup Internal Internal Headers
+ *  @warning this is an internal API.  Do not use directly
+ *  @{
 */
 
 #include "cps_api_errors.h"
@@ -57,6 +59,7 @@ cps_api_return_code_t cps_api_ns_startup();
 #endif
 
 /**
+ * @}
  * @}
  */
 

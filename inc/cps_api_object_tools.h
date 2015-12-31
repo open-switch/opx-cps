@@ -6,6 +6,13 @@
 #ifndef CPS_API_INC_CPS_API_OBJECT_TOOLS_H_
 #define CPS_API_INC_CPS_API_OBJECT_TOOLS_H_
 
+/** @addtogroup CPSAPI The CPS API
+ *  @{
+ *  @addtogroup ObjectAndAttributes Object and Object Attribute Handling
+ *  These APIs are for manipulating and retrieving object attribute details
+ *  @{
+*/
+
 #include "cps_api_object_attr.h"
 #include "cps_api_object.h"
 #include "cps_api_operation.h"
@@ -15,6 +22,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 /**
  * Create an object and set the key of the object to the key of the specified attribute ID
  * @param qual the qualifier of the key (target, observed, etc..
@@ -42,5 +50,9 @@ bool cps_api_obj_tool_matches_filter(cps_api_object_t filter, cps_api_object_t o
 #ifdef __cplusplus
 }
 #endif
+/**
+ * @}
+ * @}
+ */
 
 #endif /* CPS_API_INC_CPS_API_OBJECT_TOOLS_H_ */

@@ -7,9 +7,11 @@
 #ifndef CPS_API_OBJECT_ATTR_H_
 #define CPS_API_OBJECT_ATTR_H_
 
-/** @defgroup CPSAPI The CPS API
- *
-@{
+/** @addtogroup CPSAPI The CPS API
+ *  @{
+ *  @addtogroup ObjectAndAttributes Object and Object Attribute Handling
+ *  These APIs are for manipulating and retrieving object attribute details
+ *  @{
 */
 
 #ifdef __cplusplus
@@ -22,6 +24,10 @@ extern "C" {
 #include <stdint.h>
 #include <stddef.h>
 
+/**
+ * @addtogroup typesandconsts
+ * @{
+ */
 
 /**
  * The type of each attribute in an object
@@ -33,7 +39,11 @@ typedef uint64_t cps_api_attr_id_t;
  */
 typedef void * cps_api_object_attr_t;
 
-
+/**
+ * This stuct is a helper for walking through a list of attributes.
+ * The iterator can be initialized and then keeps the total size of the scope in
+ * the len field
+ */
 typedef struct cps_api_object_it_t {
     size_t len;
     cps_api_object_attr_t attr;
@@ -43,6 +53,7 @@ typedef struct cps_api_object_it_t {
  * The value that matches a NULL (invalid) attribute
  */
 #define CPS_API_ATTR_NULL NULL
+/**@}*/
 
 /**
  * Check to see if the current iterator is valid

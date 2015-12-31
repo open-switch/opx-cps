@@ -8,9 +8,11 @@
 #define CPS_API_EVENT_API_H
 
 /** @defgroup CPSAPI The CPS API
- *  This file consists of the APIs to publish and subscribe to events.
+ *  @{
  *
-@{
+ *  @addtogroup Events Events
+ *  This file consists of the APIs to publish and subscribe to events.
+ * @{
 */
 
 #include "cps_api_errors.h"
@@ -21,6 +23,11 @@
 extern "C" {
 #endif
 
+
+/**
+ * @addtogroup typesandconsts
+ * @{
+ */
 
 /**
  * handle for the DS event subsystem
@@ -44,6 +51,10 @@ typedef struct {
     cps_api_key_t *objects;    //! the objects
     size_t number_of_objects;
 } cps_api_event_reg_t;
+
+/**
+ * @}
+ */
 
 /**
  * Initialize the internal cps api event library.  This must be called by any process
@@ -96,11 +107,7 @@ cps_api_return_code_t cps_api_event_publish(cps_api_event_service_handle_t handl
 cps_api_return_code_t cps_api_wait_for_event(cps_api_event_service_handle_t handle,
         cps_api_object_t object);
 
-/**
- * @}
- */
-
-/** @defgroup CPSAPI_EventThread The CPS API Event Helper API
+/** @addtogroup EventThread Event Thread Helper
  *  This file consists of the APIs to publish and subscribe to events.
  *
  * The following APIs provides a wrapper over the event functionality and will create a
@@ -160,7 +167,7 @@ cps_api_return_code_t cps_api_event_thread_reg(cps_api_event_reg_t * reg,
 cps_api_return_code_t cps_api_event_thread_publish(cps_api_object_t object);
 
 /**
- * Shutdown the CPS API event thread utilitiy.
+ * Shutdown the CPS API event thread utility.
  * @return cps_api_ret_code_OK if successful
  */
 cps_api_return_code_t cps_api_event_thread_shutdown(void);
@@ -170,6 +177,8 @@ cps_api_return_code_t cps_api_event_thread_shutdown(void);
 #endif
 
 /**
+ * @}
+ * @}
  * @}
  */
 
