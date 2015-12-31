@@ -1,11 +1,6 @@
-/*
- * filename: cps_api_operation.h
- * (c) Copyright 2014 Dell Inc. All Rights Reserved.
- */
-
 /** OPENSOURCELICENSE */
 /*
- * cps_api_operation.h
+ * (c) Copyright 2015 Dell Inc. All Rights Reserved.
  */
 
 #ifndef CPS_API_OPERATION_H_

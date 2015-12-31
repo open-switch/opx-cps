@@ -1,9 +1,8 @@
 /** OPENSOURCELICENSE */
 /*
- * cps_api_operation_stats.h
- *
- *  Created on: Sep 22, 2015
+ * (c) Copyright 2015 Dell Inc. All Rights Reserved.
  */
+
 
 #ifndef CPS_API_INC_CPS_API_OPERATION_STATS_H_
 #define CPS_API_INC_CPS_API_OPERATION_STATS_H_
