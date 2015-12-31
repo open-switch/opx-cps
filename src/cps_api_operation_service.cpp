@@ -409,7 +409,6 @@ static void _timedout(void * context) {
     }
 }
 
-
 static bool _del_client(void * context, int fd) {
     cps_api_operation_data_t *p = (cps_api_operation_data_t *)context;
     STD_ASSERT(p!=nullptr);
