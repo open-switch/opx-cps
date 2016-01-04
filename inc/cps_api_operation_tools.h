@@ -3,9 +3,19 @@
  * (c) Copyright 2015 Dell Inc. All Rights Reserved.
  */
 
-
 #ifndef CPS_API_INC_CPS_API_OPERATION_TOOLS_H_
 #define CPS_API_INC_CPS_API_OPERATION_TOOLS_H_
+
+/**
+ * @addtogroup CPSAPI The CPS API
+ * @{
+ * @addtogroup Operation Operation (Get/Set) and Operation wrappers
+ *
+ *     This file consists of the utilities to create, and manage keys.
+ *     In the CPS, a key is designed to identify a instance or a type of instances.
+ *     The key can also be used to refer to a subtree of objects/instances.
+ * @{
+*/
 
 #include "cps_api_operation.h"
 #include "cps_api_object.h"
@@ -43,5 +53,9 @@ cps_api_return_code_t cps_api_get_objs(cps_api_object_t filt, cps_api_object_lis
 }
 #endif
 
+/**
+ * @}
+ * @}
+ */
 
 #endif /* CPS_API_INC_CPS_API_OPERATION_TOOLS_H_ */

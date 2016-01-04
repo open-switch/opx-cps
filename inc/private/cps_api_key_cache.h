@@ -8,6 +8,14 @@
 #ifndef CPS_API_INC_PRIVATE_CPS_API_KEY_CACHE_H_
 #define CPS_API_INC_PRIVATE_CPS_API_KEY_CACHE_H_
 
+/** @addtogroup CPSAPI
+ *  @{
+ *
+ *  @addtogroup Internal Internal Headers
+ *  @warning this is an internal API.  Do not use directly
+ *  @{
+*/
+
 #include "cps_api_key.h"
 
 #include <vector>
@@ -143,5 +151,10 @@ void cps_api_key_cache<data_type>::walk(walking_function cb) {
 
     }
 }
+
+/**
+ * @}
+ * @}
+ */
 
 #endif /* CPS_API_INC_PRIVATE_CPS_API_KEY_CACHE_H_ */

@@ -7,11 +7,16 @@
 #ifndef CPS_API_ERRORS_H_
 #define CPS_API_ERRORS_H_
 
-/** @defgroup CPSAPI The CPS API
+/** @addtogroup CPSAPI
+ * @{
+ */
+
+/** @addtogroup ReturnCodes Return Codes
  * These are the standard cps API return codes.  These are different then the standard return codes for a reason -
  * these APIs are isolated from the standard code base error codes
-@{
-*/
+
+ * @{
+ */
 
 /**
  * The CPS allows a return code to be application defined for any given CPS requests like cps_api_get or cps_api_commit.
@@ -22,19 +27,25 @@
  * When an application return a non-zero return code from a CPS callback, the CPS will expect that an error occurs
  * and will return that result to the client.  If the error occurs during a transaction, the CPS will begin requesting
  * the rolling back of the transaction.
+ *
+ * We have reserved the range of 0-20 for CPS specific errors.
  */
 typedef int cps_api_return_code_t;
 
+/**
+ * The enum list of return codes supported by the CPS.
+ */
 typedef enum {
-    cps_api_ret_code_OK=0x0, //!< an OK return code
-    cps_api_ret_code_ERR=0x1,//!< a generic error return code
-    cps_api_ret_code_NO_SERVICE=0x2,
-    cps_api_ret_code_SERVICE_CONNECT_FAIL=0x3,
-    cps_api_ret_code_INTERNAL_FAILURE=0x4,
-    cps_api_ret_code_TIMEOUT=0x5,
+    cps_api_ret_code_OK=0, //!< an OK return code
+    cps_api_ret_code_ERR=1,//!< a generic error return code
+    cps_api_ret_code_NO_SERVICE=2,          //!< returned when there is no CPS service matching the object in the request
+    cps_api_ret_code_SERVICE_CONNECT_FAIL=3,//!< returned when there is a service but it is not responding
+    cps_api_ret_code_INTERNAL_FAILURE=4,    //!< returned if there is an error but it is memory allocation or other internal reasons
+    cps_api_ret_code_TIMEOUT=5,             //!< returned when the client specified a timeout and the timeout is expired
 } cps_api_return_code_enum_val_t;
 
 /**
+ * @}
  * @}
  */
 

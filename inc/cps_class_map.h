@@ -6,6 +6,12 @@
 #ifndef BASE_MODEL_INC_CPS_CLASS_MAP_H_
 #define BASE_MODEL_INC_CPS_CLASS_MAP_H_
 
+/** @addtogroup CPSAPI
+ * @{
+ * @addtogroup Dictionary Attribute and Object Dictionary Utilities
+ * @{
+*/
+
 #include "std_error_codes.h"
 #include "cps_api_object_category.h"
 #include "cps_api_key.h"
@@ -21,9 +27,10 @@
 extern "C" {
 #endif
 
-/** @defgroup CPSAPI The CPS API
-@{
-*/
+/**
+ * @addtogroup typesandconsts
+ * @{
+ */
 
 #define CPS_CLASS_MAP_VER (2)
 
@@ -72,6 +79,8 @@ typedef struct {
     CPS_CLASS_ATTR_TYPES_t attr_type;
     CPS_CLASS_DATA_TYPE_t data_type;
 } cps_class_map_node_details;
+
+/**@}*/
 
 /**
  * This API creates a description for the specific model element.  The model element is defined as a
@@ -200,13 +209,13 @@ bool cps_api_key_from_attr_with_qual(cps_api_key_t *key,cps_api_attr_id_t id,
  */
 void cps_api_class_map_init(void);
 
-/**
-@}
-*/
-
 #ifdef __cplusplus
 }
 #endif
 
+/**
+ * @}
+ * @}
+ */
 
 #endif /* BASE_MODEL_INC_CPS_CLASS_MAP_H_ */

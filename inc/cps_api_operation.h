@@ -6,6 +6,14 @@
 #ifndef CPS_API_OPERATION_H_
 #define CPS_API_OPERATION_H_
 
+/**
+ * @addtogroup CPSAPI The CPS API
+ * @{
+ * @addtogroup Operation Operation (Get/Set) and Operation wrappers
+ * This file handles all public create, delete, get and update operations of the CPS API.
+ * @{
+ */
+
 #include "cps_api_object_category.h"
 #include "cps_api_object.h"
 
@@ -15,10 +23,10 @@ extern "C" {
 
 #include "cps_api_errors.h"
 
-/** @defgroup CPSAPI The CPS API
- * This file handles all public CRUD operations of the CPS API.
-@{
-*/
+/**
+ * @addtogroup typesandconsts
+ * @{
+ */
 
 /**
  * These are the qualifiers for the CPS objects.
@@ -60,6 +68,7 @@ typedef enum {
 #define CPS_OBJ_KEY_CAT_POS (1)
 #define CPS_OBJ_KEY_SUBCAT_POS (2)
 #define CPS_OBJ_KEY_APP_INST_POS (3)
+/**@}*/
 
 /**
  * Setup the key for use with the CPS API.  Initialize the length of the key
@@ -102,6 +111,7 @@ static inline cps_api_qualifier_t cps_api_key_get_qual(cps_api_key_t *key) {
  * Get the key's object category
  * @param key the key to query
  * @return the key's cps_api_object_category_types_t
+ * @deprecated
  */
 static inline cps_api_object_category_types_t cps_api_key_get_cat(cps_api_key_t *key) {
     return (cps_api_object_category_types_t)cps_api_key_element_at(key,CPS_OBJ_KEY_CAT_POS);
@@ -111,13 +121,14 @@ static inline cps_api_object_category_types_t cps_api_key_get_cat(cps_api_key_t 
  * Get the key's object sub category
  * @param key the key to query
  * @return the key's sub category
+ * @deprecated
  */
 static inline uint32_t cps_api_key_get_subcat(cps_api_key_t *key) {
     return cps_api_key_element_at(key,CPS_OBJ_KEY_SUBCAT_POS);
 }
 
 /**
- * Given a filter object (used in a get request) set a count attribute that can be used to specify the maximum
+ * Given a filter object (used in a get request) set a attribute used to specify the maximum
  * number of objects of that time returned at one time.
  *
  * @param obj the filter in question
@@ -127,13 +138,18 @@ static inline uint32_t cps_api_key_get_subcat(cps_api_key_t *key) {
 bool cps_api_filter_set_count(cps_api_object_t obj, size_t obj_count);
 
 /**
- * Given a filter object, determine if it has a count (max number of objects to be retrieved at any one time)
+ * Given a filter object, determine if it has a max number of objects to be retrieved at any one time
  *
  * @param obj the filter in question
  * @param obj_count the count of objects
  * @return true if found the count otherwise there is no limit to the get request
  */
 bool cps_api_filter_get_count(cps_api_object_t obj, size_t *obj_count);
+
+/**
+ * @addtogroup typesandconsts
+ * @{
+ */
 
 /*
  * The structure for a get request.  Each get request can have one or more keys
@@ -174,6 +190,7 @@ typedef struct {
     size_t timeout;                          //!<a timeout in ms - set this to 0 to ignore the timeout
 }cps_api_transaction_params_t;
 
+/**@}*/
 
 /**
  * Initialize a get request.  Must call cps_api_get_request_close on any initialized
@@ -288,6 +305,11 @@ cps_api_return_code_t cps_api_action(cps_api_transaction_params_t * trans,
 cps_api_return_code_t cps_api_commit(cps_api_transaction_params_t * param);
 
 /**
+ * @addtogroup typesandconsts
+ * @{
+ */
+
+/**
  * Attributes of the key in the CPS that will indicate the specific operation.
  * These attributes will be available to handers that implement the read/write/rollback APIs
  * of the CPS
@@ -299,6 +321,7 @@ typedef enum {
     cps_api_oper_SET=3,    //!< set operation
     cps_api_oper_ACTION=4
 }cps_api_operation_types_t;
+/**@}*/
 
 /**
  * Return the db object type operation for a given object type.  This will be valid for components
@@ -346,6 +369,10 @@ cps_api_return_code_t cps_api_operation_subsystem_init(
 
 
 /**
+ * @addtogroup typesandconsts
+ * @{
+ */
+/**
  * A registration function for the database
  * Implementers of the write API need to handle the db operation types and as part of the type field
  * in the db_list_entry structure.  This can be done by calling
@@ -358,6 +385,7 @@ typedef struct {
     cps_api_return_code_t (*_write_function)(void * context, cps_api_transaction_params_t * param, size_t index_of_element_being_updated); //! the set db function
     cps_api_return_code_t (*_rollback_function)(void * context, cps_api_transaction_params_t * param, size_t index_of_element_being_updated); //! the set db function
 }cps_api_registration_functions_t;
+/**@}*/
 
 /**
  * API used to register a db handler
@@ -422,6 +450,7 @@ public:
 
 #endif
 /**
+ * @}
  * @}
  */
 #endif /* DB_OPERATION_H_ */

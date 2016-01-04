@@ -7,19 +7,21 @@
 #ifndef CPS_API_INC_CPS_API_OBJECT_KEY_H_
 #define CPS_API_INC_CPS_API_OBJECT_KEY_H_
 
+/** @addtogroup CPSAPI The CPS API
+ *  @{
+ *  @addtogroup ObjectAndAttributes Object and Object Attribute Handling
+ *
+ *  This file consists of the utilities to create, and manage and update data associated with an object's
+    key.  This file provides mechanisms to get key data and set key data
+ *  @{
+*/
+
+
 #include "cps_api_object.h"
 #include "cps_api_object_attr.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/** @defgroup CPSAPI The CPS API
- *
-    This file consists of the utilities to create, and manage and update data associated with an object's
-    key.  This file provides mechanisms to get key data and set key data
-
-@{
-*/
 
 /**
  * Query the object to get the key instance data.
@@ -28,7 +30,6 @@ extern "C" {
  * @return the pointer to the attribute or NULL if not found
  */
 cps_api_object_attr_t cps_api_get_key_data(cps_api_object_t obj,cps_api_attr_id_t id);
-
 
 /**
  * Set the object's key instance data with the specified value.
@@ -56,11 +57,13 @@ static inline bool cps_api_set_key_data_uint(cps_api_object_t obj,cps_api_attr_i
     return cps_api_set_key_data(obj,id,cps_api_object_int_type_for_len(len),data,len);
 }
 
-/**
- * @}
- */
-
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ * @}
+ */
+
 #endif /* CPS_API_INC_CPS_API_OBJECT_KEY_H_ */
