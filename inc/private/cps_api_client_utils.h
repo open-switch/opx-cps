@@ -7,6 +7,14 @@
 #ifndef CPS_API_CLIENT_UTILS_H_
 #define CPS_API_CLIENT_UTILS_H_
 
+/** @addtogroup CPSAPI
+ *  @{
+ *
+ *  @addtogroup Internal Internal Headers
+ *  @warning this is an internal API.  Do not use directly
+ *  @{
+*/
+
 #include "cps_api_errors.h"
 #include "cps_api_operation.h"
 #include "private/cps_ns.h"
@@ -86,6 +94,9 @@ static inline bool cps_api_send_one_object(cps_api_channel_t handle, cps_api_msg
     return false;
 }
 
+/**
+ * Helper functions for the CPS event channel.
+ */
 class cps_api_channel_handle_guard {
     cps_api_channel_t handle;
 public:
@@ -95,5 +106,10 @@ public:
     }
     cps_api_channel_t get() { return handle; }
 };
+
+/**
+ * @}
+ * @}
+ */
 
 #endif /* CPS_API_CLIENT_UTILS_H_ */

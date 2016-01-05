@@ -7,37 +7,34 @@
 #ifndef CPS_API_KEY_H_
 #define CPS_API_KEY_H_
 
+
+/** @addtogroup CPSAPI The CPS API
+ *  @{
+ *  @addtogroup Key Key Management
+ *     This file consists of the utilities to create, and manage keys.
+ *     In the CPS, a key is designed to identify a instance or a type of instances.
+ *     The key can also be used to refer to a subtree of objects/instances.
+ *  @{
+*/
+
+
 #include "cps_key_internals.h"
-
-
 #include "std_assert.h"
-
 
 #include <stdbool.h>
 #include <string.h>
 #include <stddef.h>
-
 #include <endian.h>
 
-/** @defgroup CPSAPI The CPS API
- *
-      This file consists of the utilities to create, and manage keys.
-      In the CPS, a key is designed to identify a instance or a type of instances.
-      The key can also be used to refer to a subtree of objects/instances.
-
-      Important APIs are:
-            cps_api_key_set
-            cps_api_key_element_at
-            cps_api_key_get_len
-            cps_api_key_set_len
-
-@{
-*/
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+/**
+ * @addtogroup typesandconsts
+ * @{
+ */
 
 /**
  * Each element in the key will be a single uint32_t
@@ -45,6 +42,7 @@ extern "C" {
  * element
  */
 #define CPS_OBJ_MAX_KEY_LEN ((sizeof(cps_api_key_t)/CPS_OBJ_KEY_ELEM_SIZE)-CPS_OBJ_KEY_ELEM_START)
+/**@}*/
 
 /**
  * Get the length of elements in the key
@@ -181,7 +179,13 @@ static inline void cps_api_key_copy(cps_api_key_t *dest, cps_api_key_t *src) {
 
 int cps_api_key_matches(cps_api_key_t * key, cps_api_key_t * prefix, bool exact) ;
 
+/**
+ * @addtogroup typesandconsts
+ * @{
+ */
 #define CPS_API_KEY_STR_MAX (1024)
+/**@}*/
+
 /**
  * A debug API to print the key into a passed in buffer.
  * @param key to convert to string
@@ -204,7 +208,8 @@ bool cps_api_key_from_string(cps_api_key_t *key,const char *buff);
 #endif
 
 /**
-@}
+ * @}
+ * @}
 */
 
 #endif /* CPS_API_KEY_H_ */

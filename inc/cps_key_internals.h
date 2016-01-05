@@ -10,11 +10,15 @@
 #include <endian.h>
 #include <stddef.h>
 
-/** @defgroup CPSAPI_Internal The CPS API Internal API
- *@warning this is an internal file.  Don't use the APIs directly.
+
+/** @addtogroup CPSAPI
+ *  @{
+ *
+ *  @addtogroup Internal Internal Headers
  * this file is for internal manipulation of the key and the definition of the key
  * itself.
-@{
+ *  @warning this is an internal API.  Do not use directly
+ *  @{
 */
 
 /**
@@ -79,6 +83,7 @@ static inline size_t cps_api_key_get_len_in_bytes(cps_api_key_t * elem) {
 }
 
 /**
+ * @}
  * @}
  */
 #endif /* CPS_KEY_INTERNALS_H_ */

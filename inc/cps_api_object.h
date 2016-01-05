@@ -6,6 +6,23 @@
 #ifndef CPS_API_COMMON_LIST_H_
 #define CPS_API_COMMON_LIST_H_
 
+/** @addtogroup CPSAPI The CPS API
+ *  @{
+ *  @addtogroup ObjectAndAttributes Object and Object Attribute Handling
+ *  This file consists of the utilities to create, and manage an object or list of
+    objects.
+
+    An object list contains a 0 or more objects
+
+    An object contains a key and attributes.
+       Each attribute contains an attribute id and a value.  The data can be either u16, u32, u64 or binary.
+
+    An object currently can only be part of one object list. There is no reference count within the object.
+    The object itself is not locking, so multi-threading issues must be handled by the
+    calling applications.
+ *  @{
+*/
+
 #include "cps_api_key.h"
 
 #include <stddef.h>
@@ -18,22 +35,10 @@
 extern "C" {
 #endif
 
-/** @defgroup CPSAPI The CPS API
- *
-      This file consists of the utilities to create, and manage an object or list of
-    objects.
-
-    An object list contains a 0 or more objects
-
-    An object contains a key and attributes.
-       Each attribute contains an attribute id and a value.  The data can be either u16, u32, u64 or binary.
-
-    An object currently can only be part of one object list. There is no reference count within the object.
-    The object itself is not locking, so multi-threading issues must be handled by the
-    calling applications.
-
-@{
-*/
+/**
+ * @addtogroup typesandconsts
+ * @{
+ */
 
 /**
  * These are internally reserved attribute IDs for internal CPS usage.
@@ -47,18 +52,11 @@ extern "C" {
 #define CPS_API_OBJ_KEY_ATTRS (CPS_API_ATTR_RESERVE_RANGE_END)
 
 typedef enum cps_api_object_ATTR_TYPE_t {
-    cps_api_object_ATTR_T_U16,
-    cps_api_object_ATTR_T_U32,
-    cps_api_object_ATTR_T_U64,
-    cps_api_object_ATTR_T_BIN,
+    cps_api_object_ATTR_T_U16,//!< cps_api_object_ATTR_T_U16
+    cps_api_object_ATTR_T_U32,//!< cps_api_object_ATTR_T_U32
+    cps_api_object_ATTR_T_U64,//!< cps_api_object_ATTR_T_U64
+    cps_api_object_ATTR_T_BIN,//!< cps_api_object_ATTR_T_BIN
 } cps_api_object_ATTR_TYPE_t;
-
-/**
- * Return the cps_api_object_ATTR_TYPE for the given int size
- * @param len the length if the integer quantity (2,4,8)
- * @return the corresponding attribute type or BIN if not a valid size
- */
-cps_api_object_ATTR_TYPE_t cps_api_object_int_type_for_len(size_t len);
 
 /**
  * Each CPS Object has a object key along with a number of attributes.
@@ -74,6 +72,17 @@ typedef void * cps_api_object_list_t;
 
 #define CPS_API_OBJ_OVERHEAD (100)
 #define CPS_API_MIN_OBJ_LEN (sizeof(cps_api_key_t) + CPS_API_OBJ_OVERHEAD + 256)
+
+/**
+ * @}
+ */
+
+/**
+ * Return the cps_api_object_ATTR_TYPE for the given int size
+ * @param len the length if the integer quantity (2,4,8)
+ * @return the corresponding attribute type or BIN if not a valid size
+ */
+cps_api_object_ATTR_TYPE_t cps_api_object_int_type_for_len(size_t len);
 
 /**
  * Create a object from a piece of a array.  The memory for the object will be
@@ -173,7 +182,7 @@ bool cps_api_object_attr_get_list(cps_api_object_t obj, cps_api_attr_id_t *attr,
  *
  * @endverbatim
  *
- * @param object containing the item
+ * @param obj object containing the item
  * @param base_attr_id is the first attribute in the array
  *         (eg.. all attributes >= base_attr_id and < base_attr_id+len will be
  *         put into the base_attr_id list.
@@ -187,7 +196,7 @@ void cps_api_object_attr_fill_list(cps_api_object_t obj, size_t base_attr_id, cp
 /**
  * Remove an attribute from the object.  Pass in an attribute id of the attribute to remove.
  * If the attribute is invalid the request is ignored otherwise the attr is removed.
- * @param the object that contains the attribute to be deleted
+ * @param obj the object that contains the attribute to be deleted
  * @param attr the attribute of the item to delete
  */
 void cps_api_object_attr_delete(cps_api_object_t obj, cps_api_attr_id_t attr);
@@ -251,8 +260,9 @@ static inline bool cps_api_object_e_add_int(cps_api_object_t obj, cps_api_attr_i
 
 /**
  * Add an attribute to the object.  The attribute will be copied into the object.
- * @param object in which to add the attribute
- * @param id of the attribute to add
+ *
+ * @param obj object that will contain the attribute
+ * @param id id of the attribute to add
  * @param data the data to add
  * @param len the length of attribute
  * @return true of the item is added otherwise false
@@ -263,8 +273,8 @@ static inline bool cps_api_object_attr_add(cps_api_object_t obj, cps_api_attr_id
 
 /**
  * Add an attribute to the object.  The attribute will be copied into the object.
- * @param object in which to add the attribute
- * @param id of the attribute to add
+ * @param obj object in which to add the attribute
+ * @param id id of the attribute to add
  * @param data the data to add
  * @return true of the item is added otherwise false
  */
@@ -285,8 +295,8 @@ static inline bool cps_api_object_attr_add_u32(cps_api_object_t obj, cps_api_att
 
 /**
  * Add an attribute to the object.  The attribute will be copied into the object.
- * @param object in which to add the attribute
- * @param id of the attribute to add
+ * @param obj object in which to add the attribute
+ * @param id id of the attribute to add
  * @param data the data to add
  * @return true of the item is added otherwise false
  */
@@ -555,6 +565,11 @@ public:
 };
 
 #endif
+/**
+ * @}
+ * @}
+ */
+
 
 #endif /* CPS_API_COMMON_LIST_H_ */
 

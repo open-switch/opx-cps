@@ -11,6 +11,18 @@
 #ifndef _DS_EVENT_CHANNEL_H_
 #define _DS_EVENT_CHANNEL_H_
 
+/** @addtogroup CPSAPI
+ * @{
+ * @addtogroup Events Events
+ * @{
+ * @addtogroup EventExtension Event Transport Extensions
+ *
+ * This header file provides the interfaces for allowing a different event
+ * transmission mechanism CPS.
+ * @{
+*/
+
+
 #include "cps_api_errors.h"
 #include "cps_api_object.h"
 
@@ -20,10 +32,6 @@
 extern "C" {
 #endif
 
-/** @defgroup CPSAPI The CPS API
- * This API handles the initialization of the event portion of the CPS API
-@{
-*/
 
 /**
  * This API handles client registration requests.  In this case, all event services will need to handle this call.
@@ -74,7 +82,6 @@ typedef cps_api_return_code_t (*cps_api_event_service_client_disconnect_t)(cps_a
 typedef cps_api_return_code_t (*cps_api_wait_for_event_t)(cps_api_event_service_handle_t handle,
         cps_api_object_t msg);
 
-
 /**
  * The registration method to handle the sending and receiving of events.
  */
@@ -94,13 +101,12 @@ typedef struct {
  *
  * @return will return cps_api_ret_code_OK on successful execution or a specific return code
  *        based on the failure.
- *
  */
 cps_api_return_code_t cps_api_event_channel_init(void);
 
 /**
  * Register the methods to be used with the CPS API
- * @param the pointer to the registration functions
+ * @param methods the pointer to the registration functions
  * @return cps_api_ret_code_OK on successful otherwise an error code
  */
 cps_api_return_code_t cps_api_event_method_register( cps_api_event_methods_reg_t * methods ) ;
@@ -108,7 +114,10 @@ cps_api_return_code_t cps_api_event_method_register( cps_api_event_methods_reg_t
 #ifdef __cplusplus
 }
 #endif
+
 /**
+ * @}
+ * @}
  * @}
  */
 
