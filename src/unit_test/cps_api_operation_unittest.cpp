@@ -22,10 +22,12 @@
 #include <sstream>
 #include <cstdio>
 #include <memory>
+#include <pthread.h>
 
 #define OBJECTS_IN_GET (10000)
 
 static cps_api_attr_id_t ID_START=10;
+static cps_api_attr_id_t ID_SLEEP_TIME=9;
 
 cps_api_attr_id_t ids[][6] = {
         {ID_START+1,ID_START+3 ,ID_START+4,ID_START,ID_START+5 },
@@ -38,7 +40,6 @@ TEST(cps_api_object,test_init) {
      */
     cps_api_services_start();
     cps_api_ns_startup();
-
 
     cps_class_map_node_details details;
     details.attr_type = CPS_CLASS_ATTR_T_LEAF;
@@ -62,14 +63,31 @@ TEST(cps_api_object,test_init) {
     }
 }
 
+#include <unistd.h>
 
 static cps_api_return_code_t db_read_function (void * context, cps_api_get_params_t * param, size_t key_ix) {
     STD_ASSERT(key_ix < param->key_count);
-    cps_api_key_t * the_key = &param->keys[key_ix];
+
+    cps_api_object_t obj = cps_api_object_list_get(param->filters,key_ix);
+    STD_ASSERT(obj!=nullptr);
+
+    cps_api_key_t * the_key = cps_api_object_key(obj);
+
+    static int count = 0;
+    int cur = count++;
+
+    cps_api_object_attr_t attr = cps_api_object_attr_get(obj,ID_SLEEP_TIME);
+    if (attr!=nullptr) {
+        int sl;
+        sl = cps_api_object_attr_data_u32(attr);
+        printf("Received request... %d (sleep %d) (%d)\n",cur,sl,(int)pthread_self());
+        sleep(sl);
+    }
 
     uint32_t inst = cps_api_key_element_at(the_key,CPS_OBJ_KEY_APP_INST_POS);
     size_t ix = 0;
     size_t mx = OBJECTS_IN_GET;
+
     for ( ; ix < mx ; ++ix ) {
         cps_api_object_t obj = cps_api_object_create();
         cps_api_object_set_key(obj,the_key);
@@ -82,12 +100,23 @@ static cps_api_return_code_t db_read_function (void * context, cps_api_get_param
         }
     }
 
+    printf("Finished... %d (%d)\n",cur,(int)pthread_self());
     return cps_api_ret_code_OK;
 }
 
-static cps_api_return_code_t db_write_function(void * context, cps_api_transaction_params_t * param, size_t index_of_element_being_updated) {
+static cps_api_return_code_t db_write_function(void * context,
+        cps_api_transaction_params_t * param, size_t index_of_element_being_updated) {
+
     cps_api_object_t obj = cps_api_object_list_get(param->change_list,index_of_element_being_updated);
     STD_ASSERT(obj!=NULL);
+
+    cps_api_object_attr_t attr = cps_api_object_attr_get(obj,ID_SLEEP_TIME);
+    if (attr!=nullptr) {
+        int sl;
+        sl = cps_api_object_attr_data_u32(attr);
+        printf("Received request... (sleep %d) (%d)\n",sl,(int)pthread_self());
+        sleep(sl);
+    }
 
     cps_api_object_it_t it;
     cps_api_object_it_begin(obj,&it);
@@ -97,12 +126,10 @@ static cps_api_return_code_t db_write_function(void * context, cps_api_transacti
         printf("Set... Found attr %s \n",cps_api_object_attr_to_string(it.attr,buff,sizeof(buff)));
     }
 
-    cps_api_object_attr_t attr = cps_api_object_attr_get(obj,4);
+    attr = cps_api_object_attr_get(obj,4);
     if (attr!=NULL) {
         return cps_api_ret_code_ERR;
     }
-
-    if (index_of_element_being_updated > 0) return cps_api_ret_code_ERR;
 
     return cps_api_ret_code_OK;
 }
@@ -111,13 +138,14 @@ static cps_api_return_code_t db_rollback_function(void * context, cps_api_transa
 
     return cps_api_ret_code_OK;
 }
+
 static cps_api_operation_handle_t _serv_handle;
 
 TEST(cps_api_object,test_reg) {
     /**
      * Create a operation object handle for use with future registrations.
      */
-    ASSERT_TRUE(cps_api_operation_subsystem_init(&_serv_handle,1)==cps_api_ret_code_OK);
+    ASSERT_TRUE(cps_api_operation_subsystem_init(&_serv_handle,6)==cps_api_ret_code_OK);
 
     cps_api_registration_functions_t funcs;
     funcs.handle = _serv_handle;
@@ -131,7 +159,39 @@ TEST(cps_api_object,test_reg) {
     ASSERT_TRUE(cps_api_register(&funcs)==cps_api_ret_code_OK);
 }
 
+void * test_get(void *) {
+
+    cps_api_get_params_t get_req;
+
+    STD_ASSERT(cps_api_get_request_init(&get_req)==cps_api_ret_code_OK);
+
+    cps_api_object_t obj = cps_api_object_list_create_obj_and_append(get_req.filters);
+    STD_ASSERT(obj!=nullptr);
+
+    cps_api_key_from_attr_with_qual(cps_api_object_key(obj),ID_START,
+            cps_api_qualifier_TARGET);
+
+    cps_api_object_attr_add_u32(obj,ID_SLEEP_TIME,rand()%10);
+
+    printf("Started ++++++++++++++++++++++++\n");
+    STD_ASSERT(cps_api_get(&get_req)==cps_api_ret_code_OK);
+    printf("Finished++++++++++++++++++++++++\n");
+
+    cps_api_get_request_close(&get_req);
+    return NULL;
+}
+
+
 TEST(cps_api_object,test_get) {
+    {
+    size_t ix = 0;
+    size_t mx = 20;
+    for ( ; ix < mx ; ++ix ) {
+        pthread_t t;
+        pthread_create(&t,NULL,test_get,NULL);
+    }
+    }
+
     cps_api_get_params_t get_req;
 
     ASSERT_TRUE(cps_api_get_request_init(&get_req)==cps_api_ret_code_OK);
@@ -202,9 +262,7 @@ TEST(cps_api_object,test_set) {
     cps_api_transaction_params_t trans;
     ASSERT_TRUE (cps_api_transaction_init(&trans)==cps_api_ret_code_OK);
 
-
     ASSERT_TRUE(cps_api_object_attr_add(obj,6,"Cliff",6));
-
 
     cps_api_object_t cloned = cps_api_object_create();
     cps_api_object_clone(cloned,obj);
