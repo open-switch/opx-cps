@@ -90,9 +90,21 @@ class Language:
     def setup_names(self):
         self.names = {}
         for k in self.model.all_node_map:
+
             name = self.name_to_cms_name(self.change_prefix(k))
             self.names[k] = name
             self.names[name] = k
+        for k in self.model.key_elements:
+            for i in self.model.key_elements[k].split():
+                if i in self.names: continue
+
+                name = ''
+                if i in self.context['output']['language']['cps'].names:
+                    name = self.context['output']['language']['cps'].names[i]
+
+                self.names[i] = name
+                self.names[name] = i
+
         self.names_short = {}
         seen = {}
         for k in self.model.all_node_map:
