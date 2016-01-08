@@ -221,8 +221,8 @@ class COutputFormat:
 '''
                      )
 
-        stream.write("#ifndef " + self.lang.to_string(mod_name + "_H") + "\n")
-        stream.write("#define " + self.lang.to_string(mod_name + "_H") + "\n")
+        stream.write("#ifndef " + self.lang.to_string(model_name + "_H") + "\n")
+        stream.write("#define " + self.lang.to_string(model_name + "_H") + "\n")
         stream.write("" + "\n")
         stream.write("#include \"cps_api_operation.h\"\n")
 
