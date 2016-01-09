@@ -7,13 +7,10 @@
 #define CPS_API_INC_CPS_API_OPERATION_TOOLS_H_
 
 /**
- * @addtogroup CPSAPI The CPS API
+ * @addtogroup CPSAPI
  * @{
- * @addtogroup Operation Operation (Get/Set) and Operation wrappers
+ * @addtogroup Operation Operation (Get/Set) and Operation Wrapper Functions
  *
- *     This file consists of the utilities to create, and manage keys.
- *     In the CPS, a key is designed to identify a instance or a type of instances.
- *     The key can also be used to refer to a subtree of objects/instances.
  * @{
 */
 
@@ -28,7 +25,7 @@ extern "C" {
  * Update, Delete, Create a single object.  This API hides all of the transaction details and also allows
  * the user to specify a retry count.
  *
- * @param type the type of operation - see cps_api_operation.h
+ * @param type type of operation - see cps_api_operation.h
  * @param obj the object to update/create/delete/rpc call - it is up to the caller to free the object after use
  * @param retry_count the number of attempts to try before giving up - 0 means try for ever
  * @param ms_delay_between the amount of time in ms to wait before retrying - a value of 0 will use the default retry timeout

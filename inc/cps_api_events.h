@@ -7,11 +7,17 @@
 #ifndef CPS_API_EVENT_API_H
 #define CPS_API_EVENT_API_H
 
-/** @defgroup CPSAPI The CPS API
+/** @addtogroup CPSAPI
  *  @{
  *
- *  @addtogroup Events Events
- *  This file consists of the APIs to publish and subscribe to events.
+ *  @addtogroup Events Event Handling
+ *  APIs Used to publish and subscribe to events.
+ *  <p>Applications need to add the following instruction:</p>
+
+ @verbatim
+ #include <cps_api_event.h>
+ @endverbatim
+
  * @{
 */
 
@@ -25,17 +31,17 @@ extern "C" {
 
 
 /**
- * @addtogroup typesandconsts
+ * @addtogroup typesandconstsEvents Types and Constants
  * @{
  */
 
 /**
- * handle for the DS event subsystem
+ * Handle for the event subsystem.
  */
 typedef void * cps_api_event_service_handle_t;
 
 /**
- * The priority for an cps api event handler callback
+ * The priority for the event handler callback.
  */
 typedef unsigned int cps_api_event_reg_prio_t;
 
@@ -47,9 +53,9 @@ typedef unsigned int cps_api_event_reg_prio_t;
  * to receive messages on or some other type of implementation.
  */
 typedef struct {
-    cps_api_event_reg_prio_t priority; //! priority of the registration optional for the implementation
-    cps_api_key_t *objects;    //! the objects
-    size_t number_of_objects;
+    cps_api_event_reg_prio_t priority; //!< priority of the registration, optional for the implementation
+    cps_api_key_t *objects;    //!< list of objects
+    size_t number_of_objects;  //!< number of objects in the list
 } cps_api_event_reg_t;
 
 /**
@@ -107,7 +113,7 @@ cps_api_return_code_t cps_api_event_publish(cps_api_event_service_handle_t handl
 cps_api_return_code_t cps_api_wait_for_event(cps_api_event_service_handle_t handle,
         cps_api_object_t object);
 
-/** @addtogroup EventThread Event Thread Helper
+/** @addtogroup EventThread Event Thread Utilities
  *  This file consists of the APIs to publish and subscribe to events.
  *
  * The following APIs provides a wrapper over the event functionality and will create a
