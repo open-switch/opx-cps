@@ -93,6 +93,20 @@ class Language:
             name = self.name_to_cms_name(self.change_prefix(k))
             self.names[k] = name
             self.names[name] = k
+
+        for k in self.model.key_elements:
+            for key_element in self.model.key_elements[k].split():
+                if key_element in self.names: continue
+                name = ''
+                #get the name from the CPS model since we don't have a mapping here
+                if key_element not in self.context['output']['language']['cps'].names:
+                    continue
+
+                name = self.context['output']['language']['cps'].names[key_element]
+
+                self.names[key_element] = name
+                self.names[name] = key_element
+
         self.names_short = {}
         seen = {}
         for k in self.model.all_node_map:
