@@ -7,10 +7,17 @@
 #define CPS_API_OPERATION_H_
 
 /**
- * @addtogroup CPSAPI The CPS API
+ * @addtogroup CPSAPI
  * @{
- * @addtogroup Operation Operation (Get/Set) and Operation wrappers
- * This file handles all public create, delete, get and update operations of the CPS API.
+ * @addtogroup Operation Operation (Get/Set) and Operation Wrapper Functions
+ * Create, delete, get and update operations provided by the CPS API.
+ *     <p>In order to access the functionality provided by this module, applications need to add the following instruction:</p>
+
+ @verbatim
+ #include <cps_api_operation.h>
+ #include <cps_api_operation_tools.h>
+ @endverbatim
+
  * @{
  */
 
@@ -24,26 +31,30 @@ extern "C" {
 #include "cps_api_errors.h"
 
 /**
- * @addtogroup typesandconsts
+ * @addtogroup typesandconstsOperation Types and Constants
  * @{
  */
 
 /**
  * These are the qualifiers for the CPS objects.
- * There are four qualifiers at this time.  Proposed, Target, Observed and Realtime.
+ * <p>There are four qualifiers at this time:<p>
+ *  - Proposed
+ *  - Target
+ *  - Observed
+ *  - Realtime.
  *
- * An application will propose a change and therefore the qualifier will be proposed when they
- * attempt an operation on a object.
+ * <p>An application can 'propose' a change and therefore the qualifier should be set to <i>Proposed</i> when applications
+ * attempt an operation on a object.</p>
  *
- * If the owner of the object approves of the request, the request is converted to a target
- * state.  It is expected that the owner of the object will send out a target change notification
+ * <p>If the owner of the object approves of the request, the request is converted to a <i>Target</i>
+ * state.  It is expected that the owner of the object will send out a target change notification (event).</p>
  *
- * The observed state what is being used at runtime.  For a situation where the object owner
+ * <p>The <i>Observed</i> state what is used at runtime.  For a situation where the object owner
  * has to perform some complicated operation on hardware/software before the target state
- * is reached, there may be a time where the target and observed contain different objects.
+ * is reached, for a duration of time the target and observed may contain different values.</p>
  *
- * The realtime qualifier is a request to go directly to hardware for an instantaneous reading
- * This is only used for statistics at this time.
+ * <p>The <i>Realtime</i> qualifier is a request to go directly to hardware for an instantaneous reading
+ * This is only used for statistics at this time.</p>
  */
 typedef enum {
     cps_api_qualifier_NULL=0,
@@ -55,25 +66,31 @@ typedef enum {
     cps_api_qualifier_MAX,
 } cps_api_qualifier_t;
 
+/**@{*/
 /**
  * CPS API Key related indexes.
  *
- * All objects have a key consisting of the following pieces.
+ * All objects have a key consisting of the following components:
  *  - Qualifier (described above)
  *  - Object category
  *  - Object sub-category
  *  - one or more uint32_t which contains instance IDs for the object
  */
+/** Instance element position in key */
 #define CPS_OBJ_KEY_INST_POS (0)
+/** Category element position in key */
 #define CPS_OBJ_KEY_CAT_POS (1)
+/** Sub-category element position in key */
 #define CPS_OBJ_KEY_SUBCAT_POS (2)
+/** Application instance element position in key. */
 #define CPS_OBJ_KEY_APP_INST_POS (3)
+/**@}*/
 /**@}*/
 
 /**
  * Setup the key for use with the CPS API.  Initialize the length of the key
  *     to contain all of the default fields + the extra instance components that
- *     are specified by the user in the len_of_inst_comps
+ *     are specified by the user in the len_of_inst_comps.
  *
  * @param key the key to initialize
  * @param qual the CPS qualifier (prop, targ, obs)
@@ -147,22 +164,22 @@ bool cps_api_filter_set_count(cps_api_object_t obj, size_t obj_count);
 bool cps_api_filter_get_count(cps_api_object_t obj, size_t *obj_count);
 
 /**
- * @addtogroup typesandconsts
+ * @addtogroup typesandconstsOperation Types and Constants
  * @{
  */
 
-/*
- * The structure for a get request.  Each get request can have one or more keys
+/**
+ * Data structure for 'get' requests.  Each get request can have one or more keys
  * and will receive a list of objects in response.
  *
- * A request will be made for each object listed in filters followed by a query for each key
- * in the keys list.
+ * <p>A request will be made for each object listed in filters followed by a query for each key
+ * in the keys list.</p>
  *
- * In the response "list", each object will contain its own key.
+ * <p>In the response "list", each object will contain its own key.</p>
  */
 typedef struct {
     cps_api_key_t   *keys;                //!< A list of keys to be queried
-    size_t           key_count;
+    size_t           key_count;           //!< Number of keys
     cps_api_object_list_t list;
     cps_api_object_list_t filters;        //!< a list of objects to be queried.
 
@@ -173,12 +190,12 @@ typedef struct {
 
 
 /**
- * The API for a set request.
- * The change_list is the list of objects that will be updated/changed
+ * Data structure for 'set' requests.
+ * <p>The change_list is the list of objects that will be updated/changed.</p>
  *
- * The prev is a list of objects that will be used internally by the API for the rollback functions
+ *<p> The prev is a list of objects that will be used internally by the API for the rollback functions
  * The prev will contain a list of previous values before the object has changed.  Not
- * guaranteed to be valid for callers of the cps_api_commit function.
+ * guaranteed to be valid for callers of the cps_api_commit function.</p>
  *
  */
 typedef struct {
@@ -198,12 +215,13 @@ typedef struct {
  *
  * @param req request to initialize
  * @return return code cps_api_ret_code_OK if successful otherwise an error
+ * @sa  cps_api_get_request_close
  */
 cps_api_return_code_t cps_api_get_request_init(cps_api_get_params_t *req);
 
 /**
  * Create an object that will be added to the get response and automatically add the object to the
- * req's list of returned objects
+ * req's list of returned objects.
  * @param req the get request to add the object
  * @return the cps_api_object_t created and added to the get request or NULL if the request fails
  */
@@ -221,9 +239,10 @@ static inline cps_api_object_t cps_api_get_result_create(cps_api_get_params_t *r
 cps_api_return_code_t cps_api_get_request_close(cps_api_get_params_t *req);
 
 /**
- * Get a database element or list of elements.  If the is a specific
- * element being queried, then the list must contain an array of keys
- * that are specific to the object queried otherwise all objects of the type will be queried
+ * Get a database element or list of elements.
+ * <p>If a specific
+ * element is queried, then the list must contain an array of keys
+ * that are specific to the object queried otherwise all objects of the type will be queried.</p>
  *
  * @param param the structure containing the object request
  *
@@ -232,15 +251,16 @@ cps_api_return_code_t cps_api_get_request_close(cps_api_get_params_t *req);
 cps_api_return_code_t cps_api_get(cps_api_get_params_t * param);
 
 /**
- * Initialize the transaction for use with the set and commit API
- * The idea is that you init a transaction request, add objects with
- * "set/delete/create/action" then finally commit the transaction to perform the operation
+ * Initialize the transaction for use with the set and commit API.
+ * <p>The sequence of operations is to initialize a transaction request, add objects with
+ * "set/delete/create/action" then finally commit the transaction to perform the operation.</p>
  *
- * You must call cps_api_transaction_close on any initialized transaction to cleanup
+ * <p>Applications must call cps_api_transaction_close on any initialized transaction to cleanup.</p>
  *
- * @param req is the request to initialize
+ * @param req the request to initialize
  *
  * @return return code cps_api_ret_code_OK if successful otherwise an error
+ * @sa cps_api_transaction_close
  */
 cps_api_return_code_t cps_api_transaction_init(cps_api_transaction_params_t *req);
 
@@ -249,7 +269,7 @@ cps_api_return_code_t cps_api_transaction_init(cps_api_transaction_params_t *req
  * this will cancel a uncommitted transaction.  This will remove any objects in the req
  * including cleaning up.
  *
- * @param req is the transaction to cancel or clean up
+ * @param req the transaction to cancel or clean up
  *
  * @return cps_api_ret_code_OK if successful
  */
@@ -284,7 +304,7 @@ cps_api_return_code_t cps_api_delete(cps_api_transaction_params_t * trans,
         cps_api_object_t object);
 
 /**
- * Add a action to the existing transaction.  Does not run the action at this time.
+ * Add an action to the existing transaction.  Does not run the action at this time.
  * @param trans the transaction struct
  * @param object the object to delete - only the key required
  * @return cps_api_ret_code_OK if successful
@@ -293,25 +313,25 @@ cps_api_return_code_t cps_api_action(cps_api_transaction_params_t * trans,
         cps_api_object_t object);
 
 /**
- * Set a database element or list of elements.  the list must
- * contain an array of objects.  Each object has it's own key.
- * The request is committed atomically... or rolled back atomically
+ * Set a database element or list of elements.  <p>The list must
+ * contain an array of objects.  Each object has its own key.
+ * The request is committed atomically or rolled back atomically.</p>
  *
  * @param param the structure containing the object request.
- * @return cps_api_ret_code_OK if successful otherwise.. if the transaction fails
+ * @return cps_api_ret_code_OK if successful otherwise an error code. If the transaction fails
  *         the cps_api infrastructure will attempt to rollback an unsuccessful commit operation
  *         on the supported objects
  */
 cps_api_return_code_t cps_api_commit(cps_api_transaction_params_t * param);
 
 /**
- * @addtogroup typesandconsts
+ * @addtogroup typesandconstsOperation Types and Constants
  * @{
  */
 
 /**
  * Attributes of the key in the CPS that will indicate the specific operation.
- * These attributes will be available to handers that implement the read/write/rollback APIs
+ * These attributes will be available to handlers that implement the read/write/rollback APIs
  * of the CPS
  */
 typedef enum {
@@ -319,15 +339,15 @@ typedef enum {
     cps_api_oper_DELETE=1,//!< delete operation
     cps_api_oper_CREATE=2,//!< create operation
     cps_api_oper_SET=3,    //!< set operation
-    cps_api_oper_ACTION=4
+    cps_api_oper_ACTION=4  //!< action operation
 }cps_api_operation_types_t;
 /**@}*/
 
 /**
  * Return the db object type operation for a given object type.  This will be valid for components
  * implementing the write db API.  A write function call will be executed and the type field
- * will indicate if the write is due to a Create/Delete or Set
- * @param obj the object type to check.
+ * will indicate if the write is due to Create/Delete or Set operations.
+ * @param key the object type to check.
  * @return cps_api_ret_code_OK if successful
  */
 cps_api_operation_types_t cps_api_object_type_operation(cps_api_key_t *key) ;
@@ -346,6 +366,7 @@ void cps_api_object_set_type_operation(cps_api_key_t *key,cps_api_operation_type
  * This function will initialize the event service and also provide a way to support
  * CPS API operations in a unit testing environment.
  *
+ * @warning Regular applications must not use this function.
  * @return true if unit testing environment is ready for users.
  */
 bool cps_api_unittest_init(void);
@@ -369,35 +390,40 @@ cps_api_return_code_t cps_api_operation_subsystem_init(
 
 
 /**
- * @addtogroup typesandconsts
+ * @addtogroup typesandconstsOperation Types and Constants
  * @{
  */
 /**
  * A registration function for the database
  * Implementers of the write API need to handle the db operation types and as part of the type field
- * in the db_list_entry structure.  This can be done by calling
+ * in the db_list_entry structure.
  */
 typedef struct {
-    cps_api_operation_handle_t handle;
-    void * context; //! some application specific context to pass to the read/write function
-    cps_api_key_t key;
-    cps_api_return_code_t (*_read_function) (void * context, cps_api_get_params_t * param, size_t key_ix); //! the read db function
-    cps_api_return_code_t (*_write_function)(void * context, cps_api_transaction_params_t * param, size_t index_of_element_being_updated); //! the set db function
-    cps_api_return_code_t (*_rollback_function)(void * context, cps_api_transaction_params_t * param, size_t index_of_element_being_updated); //! the set db function
+    cps_api_operation_handle_t handle; //!< handle obtained by calling cps_api_operation_subsystem_init
+    void * context; //!< some application specific context to pass to the read/write function
+    cps_api_key_t key; //!< key to register
+    cps_api_return_code_t (*_read_function) (void * context, cps_api_get_params_t * param, size_t key_ix); //!< the read db function
+    cps_api_return_code_t (*_write_function)(void * context, cps_api_transaction_params_t * param, size_t index_of_element_being_updated); //!< the set db function
+    cps_api_return_code_t (*_rollback_function)(void * context, cps_api_transaction_params_t * param, size_t index_of_element_being_updated); //!< the set db function
 }cps_api_registration_functions_t;
 /**@}*/
 
 /**
  * API used to register a db handler
- * @param reg is the registration structure
+ * @param reg the registration structure
  * @return standard db return code
  */
 cps_api_return_code_t cps_api_register(cps_api_registration_functions_t * reg);
 
 /**
- * An API that queries the object to get the latest stats based on the cps_api_operation_stats.h
- * @param key is the object to query
- * @param stats_obj is the object that will contain the stats
+ * An API that queries the object to get the latest stats based on the cps_api_operation_stats.h.
+ * Applications that use this function must use the instruction:
+ @verbatim
+ #include <cps_api_operation_stats.h>
+ @endverbatim
+
+ * @param key  the object to query
+ * @param stats_obj the object that will contain the stats
  * @return cps_api_ret_code_OK on success otherwise a failure return code
  */
 cps_api_return_code_t cps_api_object_stats(cps_api_key_t *key, cps_api_object_t stats_obj);

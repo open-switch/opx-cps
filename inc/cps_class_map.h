@@ -9,6 +9,12 @@
 /** @addtogroup CPSAPI
  * @{
  * @addtogroup Dictionary Attribute and Object Dictionary Utilities
+ *  <p>Applications need to add the following instruction:</p>
+
+ @verbatim
+ #include <cps_class_map.h>
+ @endverbatim
+
  * @{
 */
 
@@ -28,15 +34,18 @@ extern "C" {
 #endif
 
 /**
- * @addtogroup typesandconsts
+ * @addtogroup typesandconstsDictionary Types and Constants
  * @{
  */
-
+/** Class map version number */
 #define CPS_CLASS_MAP_VER (2)
 
+/** @cond HIDDEN_SYMBOLS */
 #define CPS_DEF_SEARCH_PATH "/opt/ngos/lib"        //the location of the generated class
 #define CPS_DEF_CLASS_FILE_NAME "cpsclass"      //must match with the generated lib name
+/** @endcond */
 
+/** Class attribute types */
 typedef enum  {
     CPS_CLASS_ATTR_T_LEAF=1,
     CPS_CLASS_ATTR_T_LEAF_LIST=2,
@@ -45,6 +54,7 @@ typedef enum  {
     CPS_CLASS_ATTR_T_LIST=5,
 }CPS_CLASS_ATTR_TYPES_t;
 
+/** Class data types */
 typedef enum {
     CPS_CLASS_DATA_TYPE_T_UINT8,
     CPS_CLASS_DATA_TYPE_T_UINT16,
@@ -73,11 +83,11 @@ typedef enum {
  * about a CPS object.
  */
 typedef struct {
-    const char *name;   //!name of the class element
-    const char *desc;   //!Description of the element
-    bool embedded;      //!true if the element is embedded
-    CPS_CLASS_ATTR_TYPES_t attr_type;
-    CPS_CLASS_DATA_TYPE_t data_type;
+    const char *name;   //!< name of the class element
+    const char *desc;   //!< Description of the element
+    bool embedded;      //!< true if the element is embedded
+    CPS_CLASS_ATTR_TYPES_t attr_type; //<! class attribute type
+    CPS_CLASS_DATA_TYPE_t data_type;  //<! class data type
 } cps_class_map_node_details;
 
 /**@}*/
