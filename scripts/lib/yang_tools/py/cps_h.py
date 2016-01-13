@@ -65,23 +65,27 @@ class COutputFormat:
         print ""
         print "/*Enumeration " + name + " */"
         print "typedef enum { "
-	min_value = None
-	max_value = None
+
+        min_value = None
+        max_value = None
+
         for i in node.iter():
             if model.module.filter_ns(i.tag) == 'enum':
                 en_name = self.lang.to_string(name + "_" + i.get('name'))
                 value = self.get_value(model, i)
                 value = str(history.get_enum(en_name, value, parent=name))
-		if min_value == None or min_value > value:
-			min_value = value
-		if max_value == None or max_value < value:
-			max_value = value
+
+                if min_value == None or int(min_value) > int(value):
+                    min_value = value
+                if max_value == None or int(max_value) < int(value):
+                    max_value = value
+
                 comment = self.get_comment(model, i)
                 print "  " + en_name + " = " + value + ", " + comment
-	    
-	    print ("%s_%s=%s,"%(name,'MIN',min_value))
-	    print ("%s_%s=%s,"%(name,'MAX',max_value))
-	    print "} " + self.lang.to_string(name) + "_t;"  
+
+        print ("  %s_%s=%s,"%(self.lang.to_string(name),'MIN',min_value))
+        print ("  %s_%s=%s,"%(self.lang.to_string(name),'MAX',max_value))
+        print "} " + self.lang.to_string(name) + "_t;"
 
     def print_enums(self, model):
         name = model.module.name()
