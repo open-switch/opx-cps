@@ -72,9 +72,9 @@ class COutputFormat:
                 en_name = self.lang.to_string(name + "_" + i.get('name'))
                 value = self.get_value(model, i)
                 value = str(history.get_enum(en_name, value, parent=name))
-		if min_value == None or min_value > value
+		if min_value == None or min_value > value:
 			min_value = value
-		if max_value == None or max_value < value
+		if max_value == None or max_value < value:
 			max_value = value
                 comment = self.get_comment(model, i)
                 print "  " + en_name + " = " + value + ", " + comment
