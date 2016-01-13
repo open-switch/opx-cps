@@ -65,23 +65,27 @@ class COutputFormat:
         print ""
         print "/*Enumeration " + name + " */"
         print "typedef enum { "
-	min_value = None
-	max_value = None
+
+        min_value = None
+        max_value = None
+
         for i in node.iter():
             if model.module.filter_ns(i.tag) == 'enum':
                 en_name = self.lang.to_string(name + "_" + i.get('name'))
                 value = self.get_value(model, i)
                 value = str(history.get_enum(en_name, value, parent=name))
-		if min_value == None or min_value > value:
-			min_value = value
-		if max_value == None or max_value < value:
-			max_value = value
+
+                if min_value == None or int(min_value) > int(value):
+                    min_value = value
+                if max_value == None or int(max_value) < int(value):
+                    max_value = value
+
                 comment = self.get_comment(model, i)
                 print "  " + en_name + " = " + value + ", " + comment
-	    
-	    print ("%s_%s=%s,"%(name,'MIN',min_value))
-	    print ("%s_%s=%s,"%(name,'MAX',max_value))
-	    print "} " + self.lang.to_string(name) + "_t;"  
+
+        print ("  %s_%s=%s,"%(self.lang.to_string(name),'MIN',min_value))
+        print ("  %s_%s=%s,"%(self.lang.to_string(name),'MAX',max_value))
+        print "} " + self.lang.to_string(name) + "_t;"
 
     def print_enums(self, model):
         name = model.module.name()
@@ -137,45 +141,35 @@ class COutputFormat:
         print "typedef enum{"
         for c in model.container_map[model.module.name()]:
             comment = ""
-            en_name = self.lang.names[c.name]
-            value = str(history.get_enum(en_name, None))
+
+            __en_value = ''
+            __en_name = ''
+            __en_alias = ''
+
+            if c.name+'_##alias' in self.lang.names:
+                __en_alias = self.lang.names[c.name+'_##alias']
+
+            __en_name = self.lang.names[c.name]
+
+            if not __en_alias == '':
+                __en_value = str(history.get_enum(__en_alias, None))
+            else:
+                __en_value = str(history.get_enum(__en_name, None))
+
             if c.name in model.container_map:
                 node = model.container_map[c.name]
                 comment = self.get_comment(model, c.node)
             if len(comment) > 0:
                 print comment
-            print "  " + en_name + " = " + value + ","
+            print "  " + __en_name + " = " + __en_value + ","
+            if __en_alias!='':
+                print "  " + __en_alias + " = " + __en_value + ","
+
             print ""
 
         print "} " + self.lang.to_string(subcat_name) + "_t;"
         print ""
         print ""
-
-    def dump_keys(self, model):
-
-        print ""
-        print "/*"
-        print "All nodes that contains keys follow:"
-        for i in model.container_keys.keys():
-            print i
-        print "*/"
-        print ""
-        for i in self.lang.keys.keys():
-            key_args = self.lang.keys[i].split(',')
-            model_keys = key_args[:2]
-            remaining_keys = key_args[2:]
-
-            line = "static inline void " + self.lang.to_string(
-                i) + "_key(cps_api_key_t *key, "
-            line += "cps_api_qualifier_t qual) {"
-            print line
-            line = "  cps_api_key_init(key,qual," + ",".join(model_keys) + ","
-            line += str(len(remaining_keys)) + ","
-            line += ",".join(remaining_keys)
-            line += ");"
-            print line
-            print "}"
-            print ""
 
     def print_types(self, model):
         print ""
@@ -238,8 +232,8 @@ class COutputFormat:
 '''
                      )
 
-        stream.write("#ifndef " + self.lang.to_string(mod_name + "_H") + "\n")
-        stream.write("#define " + self.lang.to_string(mod_name + "_H") + "\n")
+        stream.write("#ifndef " + self.lang.to_string(model_name + "_H") + "\n")
+        stream.write("#define " + self.lang.to_string(model_name + "_H") + "\n")
         stream.write("" + "\n")
         stream.write("#include \"cps_api_operation.h\"\n")
 
@@ -247,7 +241,8 @@ class COutputFormat:
 
         for i in module:
             if i.find('dell') == -1:
-                continue
+                if i.find('ietf-ip')==-1 and i.find('ietf-interfaces')==-1:
+                    continue
             stream.write("#include \"" + i + ".h\"\n")
 
         stream.write("#include <stdint.h>\n")
