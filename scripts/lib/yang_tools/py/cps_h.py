@@ -19,7 +19,6 @@ import os
 import sys
 import yin_utils
 
-
 def to_c_type(context, elem):
     return "cps_api_object_ATTR_T_BIN"
 
@@ -58,7 +57,7 @@ class COutputFormat:
         self.context = context
         self.lang = self.context['output']['language']['cps']
 
-    def show_enum(self, model, name):
+    def show_enum(self,model, name):
         history = self.lang.history
 
         node = model.context['enum'][name]
@@ -66,15 +65,23 @@ class COutputFormat:
         print ""
         print "/*Enumeration " + name + " */"
         print "typedef enum { "
+	min_value = None
+	max_value = None
         for i in node.iter():
             if model.module.filter_ns(i.tag) == 'enum':
                 en_name = self.lang.to_string(name + "_" + i.get('name'))
                 value = self.get_value(model, i)
                 value = str(history.get_enum(en_name, value, parent=name))
+		if min_value == None or min_value > value
+			min_value = value
+		if max_value == None or max_value < value
+			max_value = value
                 comment = self.get_comment(model, i)
                 print "  " + en_name + " = " + value + ", " + comment
-
-        print "} " + self.lang.to_string(name) + "_t;"
+	    
+	    print ("%s_%s=%s,"%(name,'MIN',min_value))
+	    print ("%s_%s=%s,"%(name,'MAX',max_value))
+	    print "} " + self.lang.to_string(name) + "_t;"  
 
     def print_enums(self, model):
         name = model.module.name()
@@ -90,7 +97,7 @@ class COutputFormat:
                 print "Skipping %s due to non enum" % type_name
                 continue
 
-            self.show_enum(model, i)
+            self.show_enum(model,i)
 
     def print_container(self, model):
         history = self.lang.history
