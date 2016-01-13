@@ -7,15 +7,34 @@
 #ifndef CPS_API_INC_CPS_API_OBJECT_KEY_H_
 #define CPS_API_INC_CPS_API_OBJECT_KEY_H_
 
-/** @addtogroup CPSAPI The CPS API
+/** @addtogroup CPSAPI
  *  @{
  *  @addtogroup ObjectAndAttributes Object and Object Attribute Handling
  *
- *  This file consists of the utilities to create, and manage and update data associated with an object's
-    key.  This file provides mechanisms to get key data and set key data
+ *  Utilities to create, and manage and update data associated with an object's
+    key. Provide mechanisms to get key data and set key data.
+    <p>Applications need to add the following instruction:</p>
+
+ @verbatim
+ #include <cps_api_object_key.h>
+ @endverbatim
+
  *  @{
 */
 
+/**
+ *  @addtogroup ObjectKey Object Key Handling
+ *
+ *  Utilities to create, and manage and update data associated with an object's
+    key. Provide mechanisms to get key data and set key data.
+    <p>Applications need to add the following instruction:</p>
+
+ @verbatim
+ #include <cps_api_object_key.h>
+ @endverbatim
+
+ *  @{
+*/
 
 #include "cps_api_object.h"
 #include "cps_api_object_attr.h"
@@ -62,6 +81,7 @@ static inline bool cps_api_set_key_data_uint(cps_api_object_t obj,cps_api_attr_i
 #endif
 
 /**
+ * @}
  * @}
  * @}
  */

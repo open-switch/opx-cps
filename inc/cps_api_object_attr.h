@@ -7,10 +7,9 @@
 #ifndef CPS_API_OBJECT_ATTR_H_
 #define CPS_API_OBJECT_ATTR_H_
 
-/** @addtogroup CPSAPI The CPS API
+/** @addtogroup CPSAPI
  *  @{
  *  @addtogroup ObjectAndAttributes Object and Object Attribute Handling
- *  These APIs are for manipulating and retrieving object attribute details
  *  @{
 */
 
@@ -23,9 +22,20 @@ extern "C" {
 
 #include <stdint.h>
 #include <stddef.h>
+/**
+ *  @addtogroup ObjectAttributes Object Attribute Handling
+ *  <p>APIs for manipulating and retrieving object attribute details.</p>
+    <p>Applications need to add the following instruction:</p>
+
+ @verbatim
+ #include <cps_api_object_attr.h>
+ @endverbatim
+
+ *  @{
+*/
 
 /**
- * @addtogroup typesandconsts
+ * @addtogroup typesandconstsObjectAttributes Types and Constants
  * @{
  */
 
@@ -53,7 +63,8 @@ typedef struct cps_api_object_it_t {
  * The value that matches a NULL (invalid) attribute
  */
 #define CPS_API_ATTR_NULL NULL
-/**@}*/
+/** @} */
+
 
 /**
  * Check to see if the current iterator is valid
@@ -133,11 +144,10 @@ cps_api_attr_id_t cps_api_object_attr_id(cps_api_object_attr_t attr);
 
 /**
  * Get the attribute id and return it into a specific enum value.
- * NOTE: limited to uint32.
+ * @note limited to uint32.
  *
  * @param attr is the TLV containing the attribute to query
  * @param enumptr is a pointer to the enum value (cast to a void*) - the size must be an int len
- * @return none
  */
 void cps_api_object_attr_id_as_enum(cps_api_object_attr_t attr, void *enumptr);
 
@@ -210,6 +220,11 @@ int cps_api_object_attrs_compare(cps_api_object_attr_t lhs, cps_api_object_attr_
  */
 bool cps_api_object_it_attr_walk(cps_api_object_it_t *it, cps_api_attr_id_t attr);
 
+
+/**
+ * @}
+ * @}
+ */
 
 /**
  * @}

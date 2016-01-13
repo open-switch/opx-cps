@@ -13,12 +13,17 @@
 
 /** @addtogroup CPSAPI
  * @{
- * @addtogroup Events Events
+ * @addtogroup Events Event Handling
  * @{
  * @addtogroup EventExtension Event Transport Extensions
  *
- * This header file provides the interfaces for allowing a different event
- * transmission mechanism CPS.
+ * Programmatic interfaces for allowing a different event transmission mechanism CPS.
+    <p>Applications need to add the following instruction:</p>
+
+ @verbatim
+ #include <cps_api_event_init.h>
+ @endverbatim
+
  * @{
 */
 

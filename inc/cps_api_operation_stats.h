@@ -8,23 +8,21 @@
 #define CPS_API_INC_CPS_API_OPERATION_STATS_H_
 
 /**
- * @addtogroup CPSAPI The CPS API
- * @{
- * @addtogroup Misc
+ * @addtogroup typesandconstsOperation Types and Constants
  * This file is used to provide statistics on running objects.  Each CPS object
- * has a number of stats provided by the infrastructure.  These stats can be queried
- * at runtime for diagnostic purposes
+ * has a number of stats provided by the infrastructure. These statistics can be queried
+ * at runtime for diagnostic purposes.
  * @{
 */
 
 
 #include "cps_api_object_category.h"
-
+/** Stats operation category */
 typedef enum {
     cps_api_obj_stat_e_OPERATIONS = ((uint64_t)cps_api_obj_cat_CPS_OBJ<<16)
 }cps_api_obj_stat_elements_t;
 
-
+/** Statistics operations (statistics counter types) */
 typedef enum {
     cps_api_obj_stat_BEGIN= cps_api_obj_stat_e_OPERATIONS + 1,
     cps_api_obj_stat_SET_MIN_TIME=cps_api_obj_stat_BEGIN, //!<cps_api_obj_stat_SET_MIN_TIME the minimum amount of time for a set request (us)
@@ -56,7 +54,6 @@ typedef enum {
 
 
 /**
- * @}
  * @}
 */
 #endif /* CPS_API_INC_CPS_API_OPERATION_STATS_H_ */

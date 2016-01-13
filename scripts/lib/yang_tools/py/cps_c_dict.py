@@ -70,7 +70,6 @@ class COutputFormat:
             line = "{ { %s }, %s, " % (key_str, self.lang.names[i])
 
             # Create the structure contianing type and etc details
-
             _n_name = i
             _n_desc = yin_utils.node_get_desc(self.model.module, ele)
             _n_desc = _n_desc.translate(None, '\n#![]$\"')

@@ -18,6 +18,7 @@
 #include "event_log.h"
 #include "std_file_utils.h"
 #include "std_time_tools.h"
+#include "std_assert.h"
 
 #include <unistd.h>
 #include <unordered_map>
@@ -401,18 +402,18 @@ cps_api_return_code_t cps_api_register(cps_api_registration_functions_t * reg) {
 
 static void _timedout(void * context) {
     cps_api_operation_data_t *p = (cps_api_operation_data_t *)context;
-    std_rw_lock_write_guard g(&p->db_lock);
+    STD_ASSERT(p!=nullptr);
     if (p->ns_handle==STD_INVALID_FD) {
+        std_rw_lock_write_guard g(&p->db_lock);
         reconnect_with_ns(p);
     }
 }
 
-
 static bool _del_client(void * context, int fd) {
     cps_api_operation_data_t *p = (cps_api_operation_data_t *)context;
-    std_rw_lock_write_guard g(&p->db_lock);
-
+    STD_ASSERT(p!=nullptr);
     if (p->ns_handle==fd) {
+        std_rw_lock_write_guard g(&p->db_lock);
         p->inc_stat(cps_api_obj_stat_NS_DISCONNECTS);
         p->ns_handle = STD_INVALID_FD;
     }

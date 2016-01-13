@@ -1,3 +1,4 @@
+from bzrlib.chk_map import Node
 
 __copyright__ = ''' Copyright (c) 2015 Dell Inc. '''
 __license__ = '''
@@ -26,13 +27,14 @@ import xml.etree.ElementTree as ET
 import tempfile
 
 supported_ids_at_root = [
-    "list", "container", "rpc"]
+    "list", "container", "rpc", 'augment']
 
 supported_list_containing_children = [
-    "container", "grouping", "choice", "list", "rpc", "case", "module", "type", "typedef", "input", "output"]
+    'augment',"container", "grouping", "choice", "list", "rpc", "case", "module", "type", "typedef", "input", "output"]
 
 supported_list_of_leaves_have_attr_ids = [
-    "container", "case", "list", "leaf", "leaf-list", "rpc", "choice", "input", "output"]
+    'augment',"container", "case", "list", "leaf", "leaf-list", "rpc", "choice", "input", "output"]
+
 
 
 class CPSContainerElement:
@@ -50,12 +52,47 @@ class CPSParser:
     history = None
 
     all_node_map = None
-
     containers = None
 
     all_node_map = None
     container_map = None
     root_node = None
+
+    __supports_duplicate_entries= ['augment']
+
+    def get_key_elements(self,key,node):
+
+        if key.find('/') == -1:    #if not root node
+            return key
+
+        if key in self.key_elements:
+            return self.key_elements[key]
+
+        if key in self.container_keys:
+            self.key_elements[key] = self.container_keys[key]
+            return self.key_elements[key]
+
+        __key = ""
+
+        if key in self.parent:
+             __par_name = self.parent[key]
+             if __par_name not in self.key_elements:
+                self.key_elements[__par_name] = \
+                    self.get_key_elements(__par_name,self.all_node_map[__par_name])
+             __key = self.key_elements[__par_name].rstrip()
+             if len(__key) > 0: __key+=' '
+
+        __key += key + ' '
+
+        key_entry = node.find(self.module.ns() + 'key')
+
+        if key_entry is not None:
+            for key_node in key_entry.get('value').split():
+                _key_name = key + "/" + key_node
+                __key += _key_name + ' '
+
+        self.key_elements[key] = __key
+        return __key
 
     def has_children(self, node):
         return node.tag in self.has_children_nodes
@@ -115,12 +152,15 @@ class CPSParser:
         self.context = context
         self.filename = filename
 
-        self.key_elemts = list()
+        self.key_elements = {}
+
         self.containers = {}
         self.all_node_map = {}
         self.container_map = {}
         self.container_keys = {}
+
         self.name_to_id = {}
+
         self.parent = {}
 
     def close(self):
@@ -132,6 +172,8 @@ class CPSParser:
         self.container_map[self.module.name()] = list()
         self.all_node_map[self.module.name()] = self.root_node
         self.container_keys[self.module.name()] = self.module.name() + " "
+
+        self.handle_augments(self.root_node, self.module.name() + ':')
         print "Creating type mapping..."
         self.parse_types(self.root_node, self.module.name() + ':')
         print "Updating prefix (%s) related mapping" % self.module.name()
@@ -173,11 +215,42 @@ class CPSParser:
                     n = self.module.name() + ':' + n
                 i.set('name', n)
 
+    def handle_augments(self,parent,path):
+        for i in parent:
+            tag = self.module.filter_ns(i.tag)
+
+            #if type is augment.. then set the items 'name' to the augmented class
+            if tag == 'augment':
+                _tgt_node = i.get('target-node')
+
+                if _tgt_node[:1] == '/':
+                    _tgt_node = _tgt_node[1:]
+
+                if _tgt_node.find(':')==-1:
+                    print("Failed to find prefix in augment for %s." % _tgt_node )
+                    __ns = self.module.ns
+                else:
+                    __ns = _tgt_node[:_tgt_node.find(':')]
+
+                _tgt_node = _tgt_node.replace(__ns+':','')
+                _tgt_node = __ns +"/" +_tgt_node
+                _key_model = self.context['loader'].yin_map[self.context['model-names'][__ns]]
+                __key_path =  _key_model.get_key_elements(_tgt_node,i.get('augment'))
+                __key_path =  self.module.name()+ ' ' +__key_path
+                __augmented_node = _key_model.all_node_map[_tgt_node]
+
+                i.set('target-namespace',__ns)
+                i.set('name',_tgt_node)
+                i.set('model',_key_model)
+                i.set('augment',__augmented_node)
+                i.set('key-path',__key_path)
+
     def parse_types(self, parent, path):
         for i in parent:
-
             tag = self.module.filter_ns(i.tag)
+
             id = tag
+
             if i.get('name') is not None:
                 id = i.get('name')
 
@@ -229,12 +302,16 @@ class CPSParser:
                 n_path = path + "/" + tag
 
             id = self.module.name() + ':' + tag
+
             if i.get('name') is not None:
                 id = self.module.name() + ':' + i.get('name')
 
-            if n_path in self.all_node_map:
-                continue
+            #can have repeated nodes for some classes (augment)
+            if tag not in self.__supports_duplicate_entries:
+                if n_path in self.all_node_map:
+                    continue
 
+            #fill in parent
             self.parent[n_path] = path
 
             if tag == 'grouping':
@@ -267,18 +344,36 @@ class CPSParser:
                 n_path = self.all_node_map[path]
                 tag = 'container'
 
-            if tag == 'container' or tag == 'list' or tag == 'rpc':
-                self.containers[n_path] = i
-                if n_path not in self.container_map:
+            if tag == 'container' or tag == 'list' or tag == 'rpc' or tag=='augment':
+
+                __add_ = True
+
+                #in the case of dup entries possible don't add if already a node exists
+                if tag in self.__supports_duplicate_entries:
+                    if n_path in self.containers:
+                        __add_ = False
+
+                if __add_==True:
+                    self.containers[n_path] = i
                     self.container_map[n_path] = list()
-                self.container_map[path].append(CPSContainerElement(n_path, i))
-                self.container_keys[n_path] = self.container_keys[path]
-                self.container_keys[n_path] += n_path + " "
-                key_entry = i.find(self.module.ns() + 'key')
-                if key_entry is not None:
-                    for key_node in key_entry.get('value').split():
-                        self.container_keys[
-                            n_path] += n_path + "/" + key_node + " "
+                else:
+                    #add the children of this node the previous node
+                    self.containers[n_path].extend(list(i))
+
+                #if the augment is there, then append and add a key path if necessary
+                if __add_==True:
+                    self.container_map[path].append(CPSContainerElement(n_path, i))
+
+                    _key_node = i
+                    _key_prefix = n_path
+                    _key_model = self
+
+                    _key_path = i.get('key-path')
+
+                    if _key_path==None:
+                        _key_path = _key_model.get_key_elements(_key_prefix,_key_node)
+
+                    self.container_keys[n_path] = _key_path
 
                 self.walk_nodes(i, n_path)
 
@@ -320,24 +415,9 @@ class CPSParser:
 
         self.keys = {}
         for k in self.all_node_map:
-            if not self.is_id_element(self.all_node_map[k]):
-                continue
-            self.fill_element_key(k)
+            if self.all_node_map[k].tag not in self.has_attr_ids: continue
+            if k not in self.key_elements:
+                self.key_elements[k] = self.get_key_elements(k,self.all_node_map[k])
 
-    def fill_element_key(self, key):
-        key_base = ""
+        self.keys = self.key_elements
 
-        if key.find('/') != -1:
-            if key in self.container_keys:
-                key_base = self.container_keys[key]
-            else:
-                parent = self.parent[key]
-                if not parent in self.keys:
-                    self.fill_element_key(parent)
-                key_base += self.keys[parent]
-                key_base += " "
-                key_base += key
-        else:
-            keys_base = self.container_keys[key]
-
-        self.keys[key] = key_base

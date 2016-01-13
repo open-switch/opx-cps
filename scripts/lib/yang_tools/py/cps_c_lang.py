@@ -86,6 +86,7 @@ map_types = {
     'bits': 'CPS_CLASS_DATA_TYPE_T_BIN',
     'empty': 'CPS_CLASS_DATA_TYPE_T_BOOL',
     'leafref': 'CPS_CLASS_DATA_TYPE_T_STRING',
+    'identityref':'CPS_CLASS_DATA_TYPE_T_STRING',
 }
 
 
@@ -154,12 +155,31 @@ class Language:
         for i in self.model.all_node_map:
             self.names[i] = self.to_string(i)
             self.names[self.names[i]] = i
+
+        #parse all possible keys
+        for i in self.model.key_elements:
+            for n in self.model.key_elements[i].split():
+                if n in self.names: continue
+
+                __conv = ''
+                if n.find('/')!=-1:
+                    __conv= self.to_string(n)
+                else :
+                    __conv = 'cps_api_obj_CAT_'+self.to_string(n)
+
+                self.names[n] = __conv
+                self.names[__conv] = n
+
+
         self.names[self.model.module.name()] = self.category
 
         for c in self.model.container_map[self.model.module.name()]:
             if c.name == self.model.module.name():
                 continue
             en_name = self.to_string(c.name + "_obj")
+            self.names[c.name+'_##alias'] = en_name
+
+            en_name = self.to_string(c.name)
             self.names[c.name] = en_name
 
     def setup(self, model):

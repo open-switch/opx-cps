@@ -6,9 +6,18 @@
 #ifndef CPS_API_SERVICE_H_
 #define CPS_API_SERVICE_H_
 
+/** @defgroup CPSAPI CPS API - C/C++ Language Functions
+ */
+
 /** @addtogroup CPSAPI
  * @{
- * @addtogroup Initialization
+ * @addtogroup Initialization Initialization of CPS Service
+ *  <p>Applications need to add the following instruction:</p>
+
+ @verbatim
+ #include <cps_api_service.h>
+ @endverbatim
+
  * @{
 */
 
@@ -19,17 +28,16 @@
 extern "C" {
 #endif
 
+/** @cond HIDDEN_SYMBOLS */
 /**
- * @addtogroup typesandconsts
+ * @addtogroup typesandconstsInitialization Types and Constants
  * @warning the following attributes are all internal and should not be used by applications
  * @deprecated
- * @{
  */
-/**@}*/
 #define CPS_API_EVENT_CHANNEL_NAME "/tmp/cps_event_service"
 #define CPS_API_CHANNEL_NAME "/tmp/cps_service"
 #define CPS_API_EVENT_THREADS (1)
-/**@}*/
+/** @endcond */
 
 /**
  * Initialize the CPS and start the cps services in the context of the calling process.  The CPS services like
