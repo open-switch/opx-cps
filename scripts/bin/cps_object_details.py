@@ -20,14 +20,22 @@ import cps
 import sys
 
 if __name__ == '__main__':
-    cps.init('/opt/ngos/lib', 'cpsclass')
-    f = cps.info('')
-    r = {}
-    for i in f.keys():
-        r[f[i]] = i
-    del sys.argv[0]
-    for i in sys.argv:
-        if i in f:
-            print f[i]
-        if i in r:
-            print r[i]
+
+    del sys.argv[0]  #delete this program's name from the args
+
+    for __arg in sys.argv:
+        __obj_def = cps.info(__arg)
+        if not 'names' in __obj_def:
+            print('Failed to translate %s to a object.' % __arg)
+            continue
+        __names = __obj_def['names'].keys()
+
+        for __name in __names:
+            __elem = cps.type(__name)
+
+            if 'data_type' not in __elem:
+                print('Failed to get object details for %s' % __name)
+                continue
+            print('Name: %s\nData Type: %s\nID: %s\nAtrribute Type: %s\n\n' \
+                  % (__elem['name'],__elem['data_type'],__elem['id'],__elem['attribute_type']) )
+
