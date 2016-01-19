@@ -6,6 +6,7 @@
 /** OPENSOURCELICENSE */
 
 #include "cps_api_event_init.h"
+#include "private/cps_api_client_utils.h"
 
 #include "std_event_service.h"
 #include "cps_api_operation.h"
@@ -17,6 +18,7 @@
 #include "event_log.h"
 
 #include "std_time_tools.h"
+
 
 #include <stdlib.h>
 #include <vector>
@@ -311,6 +313,8 @@ cps_api_return_code_t cps_api_services_start() {
     if (std_event_server_init(&_handle,ns.c_str(),CPS_API_EVENT_THREADS )!=STD_ERR_OK) {
         return cps_api_ret_code_ERR;
     }
+
+    cps_api_set_cps_file_perms(ns.c_str());
     return cps_api_ret_code_OK;
 }
 

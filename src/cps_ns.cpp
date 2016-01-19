@@ -23,6 +23,7 @@
 #include "std_thread_tools.h"
 
 #include <sys/stat.h>
+#include <unordered_map>
 #include <string.h>
 #include <stdio.h>
 #include <vector>
@@ -312,6 +313,12 @@ cps_api_return_code_t cps_api_ns_startup() {
 
     if (std_socket_service_init(&handle,&service_data)!=STD_ERR_OK) {
         return cps_api_ret_code_ERR;
+    }
+
+    cps_api_ns_get_address(&service_data.address);
+
+    if (service_data.address.type==e_std_sock_UNIX) {
+        cps_api_set_cps_file_perms(service_data.address.address.str);
     }
 
     if (std_socket_service_run(handle)!=STD_ERR_OK) {

@@ -449,6 +449,12 @@ cps_api_return_code_t cps_api_operation_subsystem_init(
         return cps_api_ret_code_ERR;
     }
 
+    //move this when cleaning up sockets/connections
+    //should be handled by the connections init function (eg.. unix, zmq, )
+    if (p->service_data.address.type==e_std_sock_UNIX) {
+        cps_api_set_cps_file_perms(p->service_data.address.address.str);
+    }
+
     if (std_socket_service_run(p->handle)!=STD_ERR_OK) {
         std_socket_service_destroy(p->handle);
         delete p;
