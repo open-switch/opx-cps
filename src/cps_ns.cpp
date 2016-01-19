@@ -103,6 +103,12 @@ bool cps_api_find_owners(cps_api_key_t *key, cps_api_object_owner_reg_t &owner) 
         if (len!=sizeof(owner)) {
             EV_LOG(INFO,DSAPI,0,"NS","No owner found for %s",
                     cps_api_key_print(key,buff,sizeof(buff)-1));
+            if (op == cps_api_ns_r_RETURN_CODE) {
+                cps_api_return_code_t rc;
+                if (cps_api_receive_data(sock, &rc, sizeof(rc))) {
+                    EV_LOG(INFO, DSAPI, 0, "NS", "Return code: %d", rc);
+                }
+            }
             break;
         }
         if (!cps_api_receive_data(sock,&owner,sizeof(owner))) {

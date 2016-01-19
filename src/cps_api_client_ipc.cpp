@@ -162,6 +162,9 @@ bool cps_api_send_data(cps_api_channel_t handle, void *data, size_t len) {
 
     t_std_error rc = STD_ERR_OK;
     int by = std_read(handle,&hdr,sizeof(hdr),true,&rc);
+    if (by == 0) {
+        return false;
+    }
     if (by!=sizeof(hdr)) {
         EV_LOG(TRACE,DSAPI,0,"CPS IPC","Was not able to read the header.");
         return false;
