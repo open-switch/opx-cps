@@ -14,7 +14,7 @@
 #define CPS_USER_GRPUP "cpsusers"
 
 void cps_api_set_cps_file_perms(const char *path) {
-    if (std_user_chmod(path,"o-rwxg+wr)!=STD_ERR_OK) {
+    if (std_user_chmod(path,"o-rwxg+wr")!=STD_ERR_OK) {
         EV_LOG(ERR,DSAPI,0,"CPSAPI-FILE-PERM","Failed to set %s to to o-rwxg+ew",path);
     }
     if (std_user_chown(path,CPS_USER_ID,CPS_USER_GRPUP)!=STD_ERR_OK) {
