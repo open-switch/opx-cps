@@ -315,8 +315,6 @@ cps_api_return_code_t cps_api_ns_startup() {
         return cps_api_ret_code_ERR;
     }
 
-    cps_api_ns_get_address(&service_data.address);
-
     if (service_data.address.type==e_std_sock_UNIX) {
         cps_api_set_cps_file_perms(service_data.address.address.str);
     }
