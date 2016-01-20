@@ -315,6 +315,7 @@ cps_api_return_code_t cps_api_ns_startup() {
         return cps_api_ret_code_ERR;
     }
 
+    //@TODO restructure when adding the communication layer in the CPS
     if (service_data.address.type==e_std_sock_UNIX) {
         cps_api_set_cps_file_perms(service_data.address.address.str);
     }
