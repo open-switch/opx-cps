@@ -41,6 +41,7 @@ enum cps_api_msg_operation_t {
     cps_api_ns_r_RETURN_CODE,
 };
 
+void cps_api_set_cps_file_perms(const char *path);
 
 cps_api_return_code_t cps_api_process_get_request(cps_api_get_params_t *param, size_t ix);
 cps_api_return_code_t cps_api_process_commit_request(cps_api_transaction_params_t *param, size_t ix);
