@@ -27,7 +27,6 @@ void print_attr(cps_api_object_attr_t it) {
 
 }
 
-
 void walk_object(cps_api_object_it_t *it, int level, std::string path) {
     while (cps_api_object_it_valid(it)) {
         char buff[1024];
@@ -332,6 +331,64 @@ TEST(cps_api_object,cps_obj_attr) {
         ASSERT_TRUE(ix==4);
     }
     cps_api_object_delete(obj);
+
+}
+
+TEST(cps_api_object,cps_object_attr_merge) {
+    //test out object merges
+
+    cps_api_object_guard o1(cps_api_object_create());
+    cps_api_object_guard o2(cps_api_object_create());
+    ASSERT_TRUE(o1.get()!=nullptr && o2.get()!=nullptr);
+
+    cps_api_object_attr_add_u32(o1.get(),0,1);
+    cps_api_object_attr_add_u32(o1.get(),1,1);
+
+    cps_api_object_attr_add_u32(o2.get(),2,1);
+    cps_api_object_attr_add_u32(o2.get(),3,1);
+    cps_api_object_attr_add_u32(o2.get(),4,1);
+
+    ASSERT_TRUE(cps_api_object_attr_merge(o1.get(),o2.get(),false));
+
+    {
+        cps_api_object_it_t it;
+        size_t ix  = 0;
+        for ( cps_api_object_it_begin(o1.get(),&it) ;
+                cps_api_object_it_valid(&it) ;
+                cps_api_object_it_next(&it) ) {
+            printf("Expected %d found %d\n",(int)ix,(int)cps_api_object_attr_id(it.attr));
+            ASSERT_TRUE(cps_api_object_attr_id(it.attr)==ix);
+            ++ix;
+        }
+        ASSERT_TRUE(ix==5); //0123 and 4 since the increment at end
+    }
+
+    ASSERT_TRUE(cps_api_object_attr_merge(o2.get(),o1.get(),true));
+    {
+        cps_api_object_it_t it;
+        size_t ix  = 0;
+        for ( cps_api_object_it_begin(o1.get(),&it) ;
+                cps_api_object_it_valid(&it) ;
+                cps_api_object_it_next(&it) ) {
+            printf("Expected %d found %d\n",(int)ix,(int)cps_api_object_attr_id(it.attr));
+            ASSERT_TRUE(cps_api_object_attr_id(it.attr)==ix);
+            ++ix;
+        }
+        ASSERT_TRUE(ix==5); //0123 and 4 since the increment at end
+    }
+
+    ASSERT_TRUE(cps_api_object_attr_merge(o1.get(),o2.get(),false));
+    {
+        cps_api_object_it_t it;
+        size_t ix  = 0;
+        for ( cps_api_object_it_begin(o1.get(),&it) ;
+                cps_api_object_it_valid(&it) ;
+                cps_api_object_it_next(&it) ) {
+            printf("Expected %d found %d\n",(int)ix,(int)cps_api_object_attr_id(it.attr));
+            ++ix;
+        }
+        ASSERT_TRUE(ix==10); //0123 and 4 since the increment at end
+    }
 
 }
 

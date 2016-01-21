@@ -26,8 +26,29 @@
 #define DEF_OBJECT_REALLOC_STEP_SIZE (128)
 
 
+//Basic Object Data Functions
+
+
+//Return the amount of space used by attributes within this object
 static inline size_t obj_used_len(cps_api_object_internal_t *cur) {
     return cur->len - cur->remain;
+}
+
+//return the location of the first TLV
+static inline void * obj_data(cps_api_object_internal_t *p) {
+    return ((uint8_t*)p->data) + sizeof(*p->data);
+}
+
+static inline void * obj_data_end(cps_api_object_internal_t *p) {
+    return std_tlv_offset(obj_data(p), obj_used_len(p));
+}
+
+//given a pointer to data within the object, return the offset within the object
+static inline size_t obj_data_offset(cps_api_object_internal_t *p, void * tlv) {
+    uint8_t* loc = (uint8_t*)tlv;
+    uint8_t* data = (uint8_t*)obj_data(p);
+
+    return loc - data;
 }
 
 static cps_api_object_internal_t * obj_realloc(cps_api_object_internal_t *cur, size_t  len) {
@@ -64,18 +85,6 @@ static void obj_delloc(cps_api_object_internal_t *p) {
     free(p);
 }
 
-static void * obj_data(cps_api_object_internal_t *p) {
-    return ((uint8_t*)p->data) + sizeof(*p->data);
-}
-
-static size_t obj_data_offset(cps_api_object_internal_t *p, void * tlv) {
-    uint8_t* loc = (uint8_t*)tlv;
-    uint8_t* data = (uint8_t*)obj_data(p);
-
-    return loc - data;
-}
-
-
 static bool reserve_spacespace(cps_api_object_internal_t * p, uint64_t len) {
     if (p->remain < len ) {
         p = obj_realloc(p, (size_t)(len + obj_used_len(p) + DEF_OBJECT_REALLOC_STEP_SIZE));
@@ -84,9 +93,10 @@ static bool reserve_spacespace(cps_api_object_internal_t * p, uint64_t len) {
     return true;
 }
 
+//Reserve space and return a pointer to the end of the current set of attributes
 static void * add_get_tlv_pos_with_enough_space(cps_api_object_internal_t * p, uint64_t attr, uint64_t len) {
     if (!reserve_spacespace(p,len+STD_TLV_HDR_LEN)) return NULL;
-    return std_tlv_offset(obj_data(p), obj_used_len(p));
+    return obj_data_end(p);
 }
 
 struct tracker_detail {
@@ -180,6 +190,44 @@ bool cps_api_object_clone(cps_api_object_t d, cps_api_object_t s) {
     memcpy(dest->data,src->data,amt+sizeof(cps_api_object_data_t));
     dest->remain = dest->len - amt;
     return true;
+}
+
+void __delete_repeated_attributes(cps_api_object_t d, cps_api_object_t s) {
+    cps_api_object_it_t it;
+    cps_api_object_it_begin(s,&it);
+
+    while (cps_api_object_it_valid(&it)) {
+        cps_api_attr_id_t id = cps_api_object_attr_id(it.attr);
+        cps_api_object_attr_delete(d,id);
+        cps_api_object_it_next(&it);
+    }
+}
+
+bool cps_api_object_attr_merge(cps_api_object_t d, cps_api_object_t s, bool remove_dup) {
+    cps_api_object_internal_t *dest = (cps_api_object_internal_t*)d;
+    cps_api_object_internal_t *src = (cps_api_object_internal_t*)s;
+
+    size_t _cur = obj_used_len(dest);
+    size_t _amt = obj_used_len(src);
+
+    if (_amt==0) return true;
+
+    if (remove_dup && (_cur>0)) {
+        //@TODO optimize in the case of zero attributes
+        __delete_repeated_attributes(d,s);
+        _cur = obj_used_len(dest);
+    }
+
+    size_t _tot = _amt + _cur;
+
+    if (dest->len < (_tot)) {
+        if (obj_realloc(dest,_tot)==NULL) return false;
+    }
+
+    memcpy(obj_data_end(dest),obj_data(src),_amt);
+    dest->remain -= _amt;
+    return true;
+
 }
 
 bool cps_api_object_reserve(cps_api_object_t obj, size_t amount_of_space_to_reserve) {
