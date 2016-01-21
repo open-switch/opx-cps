@@ -128,7 +128,8 @@ bool cps_api_object_clone(cps_api_object_t dest, cps_api_object_t src);
 
 /**
  * Merge the attributes of the src object into the dest object.  At the end the dest object
- * will contain all of the attributes of both objects
+ * will contain all of the attributes of both objects.  The duplicate removal will only support
+ * top level attributes - not embedded attributes.
  *
  * @param dest - the destination object
  * @param src - the source object
