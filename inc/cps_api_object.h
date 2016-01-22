@@ -142,6 +142,18 @@ cps_api_object_t cps_api_object_create_int(const char *desc,unsigned int line, c
  */
 bool cps_api_object_clone(cps_api_object_t dest, cps_api_object_t src);
 
+/**
+ * Merge the attributes of the src object into the dest object.  At the end the dest object
+ * will contain all of the attributes of both objects.  The duplicate removal will only support
+ * top level attributes - not embedded attributes.
+ *
+ * @param dest - the destination object
+ * @param src - the source object
+ * @param remove_dup - remove the attributes that would be duplicated after the merge
+ * @return true if successful otherwise false.  If failing due to a memory allocation failure and remote_dup is true,
+ *                 the the destination object may have attributes that are in the source object removed
+ */
+bool cps_api_object_attr_merge(cps_api_object_t dest, cps_api_object_t src, bool remove_dup);
 
 /**
  * This API will delete the object and remove any corresponding attributes
