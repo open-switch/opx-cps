@@ -79,7 +79,7 @@ PY_OBJ_PATH=${BUILD_CURDIR}/pybuild
 ADDED_FOLDERS+=${PY_OBJ_PATH}
 include ${MAKE_INC}/additional_directories.mak
 
-cps_python_CFLAGS=-DMAJOR_VERSION=1 -DMINOR_VERSION=0 -Ipython2.7 -std=c++11 -I.
+cps_python_CFLAGS=-DMAJOR_VERSION=1 -DMINOR_VERSION=0 -I${TOP_SRCDIR}/inc -Ipython2.7 -std=c++11 -I.
 
 ${BUILD_DN_SYSROOT}/lib/cps.so: $(wildcard python_extension/*) ${BUILD_CURDIR_sos}/libcps-class-map-util.so ${BUILD_CURDIR_sos}/libcps-api-common.so | ${PY_OBJ_PATH} ${BUILD_DN_SYSROOT}/lib
 	cp -f $(wildcard python_extension/*) ${PY_OBJ_PATH}
