@@ -68,16 +68,14 @@ UNIT_TEST+=cps_api_registration_unittest
 cps_api_registration_unittest_SRCS=unit_test/cps_registration_unittest.cpp
 cps_api_registration_unittest_LDFLAGS=-lcps-api-common -lcps-class-map-util -ldn_common
 
-
-include ${MAKE_INC}/workspace.mak
-
-
-${BUILD_CURDIR_sos}/libcps-class-map-util.so : ${BUILD_CURDIR_sos}/libcps-api-common.so
-
 PY_OBJ_PATH=${BUILD_CURDIR}/pybuild
 
 ADDED_FOLDERS+=${PY_OBJ_PATH}
+
+include ${MAKE_INC}/workspace.mak
 include ${MAKE_INC}/additional_directories.mak
+
+${BUILD_CURDIR_sos}/libcps-class-map-util.so : ${BUILD_CURDIR_sos}/libcps-api-common.so
 
 cps_python_CFLAGS=-DMAJOR_VERSION=1 -DMINOR_VERSION=0 -I${TOP_SRCDIR}/inc -Ipython2.7 -std=c++11 -I.
 
