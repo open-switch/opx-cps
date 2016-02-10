@@ -1,4 +1,4 @@
-#
+
 # Copyright (c) 2015 Dell Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -26,7 +26,7 @@ import object_history
 if __name__ == '__main__':
     if len(sys.argv) < 4:
         print(
-            "Missing arguements... " +
+            "Missing arguments... " +
             sys.argv[
                 0] +
             " [cfg file] [tmp path] [out path]")

@@ -20,7 +20,7 @@ import sys
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print "Missing arguements need yin formatted file"
+        print "Missing arguments need yin formatted file"
 
     d = {}
 
