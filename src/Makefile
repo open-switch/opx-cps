@@ -73,7 +73,6 @@ PY_OBJ_PATH=${BUILD_CURDIR}/pybuild
 ADDED_FOLDERS+=${PY_OBJ_PATH}
 
 include ${MAKE_INC}/workspace.mak
-include ${MAKE_INC}/additional_directories.mak
 
 ${BUILD_CURDIR_sos}/libcps-class-map-util.so : ${BUILD_CURDIR_sos}/libcps-api-common.so
 
