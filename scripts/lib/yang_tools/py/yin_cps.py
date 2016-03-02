@@ -215,6 +215,14 @@ class CPSParser:
                     n = self.module.name() + ':' + n
                 i.set('name', n)
 
+    def stamp_augmented_children(self, parent, ns):
+        lst = list()
+        for i in list(parent):
+            self.stamp_augmented_children(i, ns)
+            i.set('augmented', True)
+            i.set('target-namespace',ns)
+
+
     def handle_augments(self,parent,path):
         for i in parent:
             tag = self.module.filter_ns(i.tag)
@@ -244,6 +252,9 @@ class CPSParser:
                 i.set('model',_key_model)
                 i.set('augment',__augmented_node)
                 i.set('key-path',__key_path)
+                i.set('augmented', True)
+                self. stamp_augmented_children(i, __ns)
+
 
     def parse_types(self, parent, path):
         for i in parent:

@@ -66,11 +66,23 @@ write_statement_switch = """
 class Language:
 
     supported_list_containing_cb = [
-        "container", "grouping", "case", "list", "rpc", "choice"
+        "container", "grouping", "case", "list", "rpc", "choice", "augment"
     ]
 
     def __init__(self, context):
         self.context = context
+
+    def change_name_for_augment(self, name):
+        if self.model.all_node_map[name].get('augmented') ==True:
+             ns = self.model.all_node_map[name].get('target-namespace')
+             ns_index = str.find(name, ns)
+             if ns_index:
+                  name1 = name[:ns_index]
+                  name2= name[ns_index+len(ns)+1:]
+                  name = name1+name2
+                  print "new cms name is"+ name
+                  return name
+
 
     def change_prefix(self, name):
         loc = name.find(self.prefix)
@@ -88,10 +100,18 @@ class Language:
 
     def setup_names(self):
         self.names = {}
+        self.aug_names = {}
         for k in self.model.all_node_map:
             name = self.name_to_cms_name(self.change_prefix(k))
+
             self.names[k] = name
             self.names[name] = k
+            aug_name = self.change_name_for_augment(k)
+            if aug_name != None:
+                aug_name = self.name_to_cms_name(self.change_prefix(aug_name))
+            else:
+                aug_name = name
+            self.aug_names[k]=aug_name
 
         for k in self.model.key_elements:
             for key_element in self.model.key_elements[k].split():
@@ -273,12 +293,14 @@ class Language:
         print "/* Keys start... */ "
         for i in keys.split():
             full_name = self.names[i]
-            yin_node = self.model.all_node_map[full_name]
-            if yin_node.tag == self.model.module.ns() + 'leaf' or yin_node.tag == self.model.module.ns() + 'leaf-list':
-                print "  cma_value_t " + self.names_short[i] + "_kval;"
-                print "  const bool " + self.names_short[i] + "_kval_valid = cma_get_key_data(" + object + "," + i + ",&" + self.names_short[i] + "_kval);"
-                print "  (void)" + self.names_short[i] + "_kval_valid;"
-                print ""
+            print "full name is" + full_name
+            if full_name in self.model.all_node_map.keys():
+                yin_node = self.model.all_node_map[full_name]
+                if yin_node.tag == self.model.module.ns() + 'leaf' or yin_node.tag == self.model.module.ns() + 'leaf-list':
+                    print "  cma_value_t " + self.names_short[i] + "_kval;"
+                    print "  const bool " + self.names_short[i] + "_kval_valid = cma_get_key_data(" + object + "," + i + ",&" + self.names_short[i] + "_kval);"
+                    print "  (void)" + self.names_short[i] + "_kval_valid;"
+                    print ""
 
         print "/* Keys end... */ "
 
@@ -295,7 +317,7 @@ class Language:
 
             if self.model.all_node_map[leaf].tag == self.model.module.ns() + 'leaf-list' and function.find('get') != -1:
                 print "  /* Iterate inside for the leaf-list */"
-                print "  for(cma_get_tag_it_inside(obj," + self.names[leaf] + ",&it);"
+                print "  for(cma_get_tag_it_inside(obj," + self.aug_names[leaf] + ",&it);"
                 print "      cps_api_object_it_valid(&it);"
                 print "      cps_api_object_it_next(&it)) {"
                 print "    if(cma_get_data_fr_it(&it,&" + self.names_short[self.names[leaf]] + "_val)){;"
@@ -304,7 +326,7 @@ class Language:
                 print "    }"
                 print "  }"
             else:
-                print "  const bool " + self.names_short[self.names[leaf]] + "_val_valid = " + function + "(obj," + self.names[leaf] + ",&" + self.names_short[self.names[leaf]] + "_val);"
+                print "  const bool " + self.names_short[self.names[leaf]] + "_val_valid = " + function + "(obj," + self.aug_names[leaf] + ",&" + self.names_short[self.names[leaf]] + "_val);"
                 if function.find('get') != -1:
                     print "  /* Check to see if the attribute exists in the object and set it into your internal data structure */"
                 print "  (void)" + self.names_short[self.names[leaf]] + "_val_valid;"
@@ -431,7 +453,7 @@ class Language:
         print ""
         for i in self.names:
             if i in self.model.all_node_map and self.model.is_id_element(self.model.all_node_map[i]):
-                print "#define " + self.names[i] + " " + self.cps_names[i] + " "
+                print "#define " + self.aug_names[i] + " " + self.cps_names[i] + " "
 
         print "#endif"
 
@@ -469,7 +491,7 @@ static un_name_to_id _map = {
         print str
         for i in self.names:
             if i in self.model.all_node_map and self.model.is_id_element(self.model.all_node_map[i]):
-                print "{\"" + self.names[i] + "\"," + self.cps_names[i] + "},"
+                print "{\"" + self.aug_names[i] + "\"," + self.cps_names[i] + "},"
 
         print "};"
         print ""
