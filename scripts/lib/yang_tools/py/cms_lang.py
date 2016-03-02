@@ -80,7 +80,6 @@ class Language:
                   name1 = name[:ns_index]
                   name2= name[ns_index+len(ns)+1:]
                   name = name1+name2
-                  print "new cms name is"+ name
                   return name
 
 
@@ -293,7 +292,6 @@ class Language:
         print "/* Keys start... */ "
         for i in keys.split():
             full_name = self.names[i]
-            print "full name is" + full_name
             if full_name in self.model.all_node_map.keys():
                 yin_node = self.model.all_node_map[full_name]
                 if yin_node.tag == self.model.module.ns() + 'leaf' or yin_node.tag == self.model.module.ns() + 'leaf-list':
