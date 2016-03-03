@@ -55,7 +55,7 @@ extern "C" {
 #define CPS_CLASS_MAP_VER (2)
 
 /** @cond HIDDEN_SYMBOLS */
-#define CPS_DEF_SEARCH_PATH "/opt/ngos/lib"        //the location of the generated class
+#define CPS_DEF_SEARCH_PATH "/opt/dell/os10/lib"        //the location of the generated class
 #define CPS_DEF_CLASS_FILE_NAME "cpsclass"      //must match with the generated lib name
 /** @endcond */
 
@@ -229,7 +229,7 @@ bool cps_api_key_from_attr_with_qual(cps_api_key_t *key,cps_api_attr_id_t id,
 /**
  * Search through all of the available class maps on the system and load them.
  * The class map will by default also search through all of the LD_LIBRARY_PATHS along with the
- * /opt/ngos/lib folder if it exists
+ * /opt/dell/os10/lib folder if it exists
  */
 void cps_api_class_map_init(void);
 
