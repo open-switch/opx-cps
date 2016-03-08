@@ -138,7 +138,7 @@ static PyObject * py_cps_config(PyObject *self, PyObject *args) {
     //embedded
     //attr_type
     //data_type
-    if (! PyArg_ParseTuple( args, "ssssO!s", &_id,&path,&name,&desc,&PyBool_Type,&has_emb, &attr_type,&data_type )) return NULL;
+    if (! PyArg_ParseTuple( args, "ssssO!ss", &_id,&path,&name,&desc,&PyBool_Type,&has_emb, &attr_type,&data_type )) return NULL;
 
     long long id = strtoll(_id,NULL,0);
 
@@ -354,25 +354,35 @@ PyDoc_STRVAR(cps_trans__doc__, "Perform a CPS transaction operation the dictiona
 PyDoc_STRVAR(cps_doc__, "A python interface to the CPS API");
 
 PyDoc_STRVAR(cps_cps_generic_doc__, "A CPS mapping function.");
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_byte_array_key), "Return the CPS key from bytearray");
 
-PyDoc_STRVAR(CPS_FN_DOC(py_cps_map_init), "Initialize the CPS API.  This API is optional and will be initialized on first use.");
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_map_init), "Initialize the CPS class map API. This API is deprecated.");
 
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_byte_array_to_obj), "Convert a bytearray to a python dictionary containing both 'key' and 'data' elements.");
-PyDoc_STRVAR(CPS_FN_DOC(py_cps_obj_to_array), "Convert a python dictionary containing both 'key' and 'data' elements to a bytearray.");
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_obj_to_array), "Convert a CPS key and python dictionary containing both valid 'data' elements to a bytearray.");
 
 
-PyDoc_STRVAR(CPS_FN_DOC(py_cps_info), "Given either a key string or a object element name, return the list of attributes that it contains.  Optionally pass True to the API to get all attributes and contained attributes.");
-PyDoc_STRVAR(CPS_FN_DOC(py_cps_types), "Return extended details on a specific attribute.  The attribute can be a numeric string or a full attribute name.");
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_info), "Given either a key string or a object element name, return the list of attributes and ids that it contains. Optionally pass False to get contained attributes and its id of object's children as well.");
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_types), "Return extended details on a specific attribute including type,id,description,key,name and whether attribute is embedded.  The attribute can be a numeric string or a full attribute name.");
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_enabled), "Given a key, see if there is an object registration.");
 
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_stats), "Retrieve the stats object for the entity specified.");
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_config), "Configure a custom attribute to class mapping."
+    "@id - nueric id of the attribute"
+    "@key - key of the attribute in the 'x.x.x.x....' format"
+    "@name - name of the attribute"
+    "@description - description of the attribute"
+    "@is_embedded - whether attribute is embedded"
+    "@yang_type - yang type of the attribute (leaf,leaf-list,container,list..)"
+    "@data_type  - data type of the attribute (bool,bin,unt8_t,...)"
+    "@return - True if added to class mapping otherwise False"
 
 /* A list of all the methods defined by this module. */
 /* "METH_VARGS" tells Python how to call the handler */
 static PyMethodDef cps_methods[] = {
     {"init",  py_cps_map_init, METH_VARARGS, CPS_FN_DOC(py_cps_map_init)},
     {"convarray",  py_cps_byte_array_to_obj, METH_VARARGS, CPS_FN_DOC(py_cps_byte_array_to_obj)},
-    {"arraykey",  py_cps_byte_array_key, METH_VARARGS, cps_cps_generic_doc__},
+    {"arraykey",  py_cps_byte_array_key, METH_VARARGS, CPS_FN_DOC(py_cps_byte_array_key)},
     {"convdict",  py_cps_obj_to_array, METH_VARARGS, CPS_FN_DOC(py_cps_obj_to_array)},
 
     {"info",  py_cps_info, METH_VARARGS, CPS_FN_DOC(py_cps_info)},
@@ -380,7 +390,7 @@ static PyMethodDef cps_methods[] = {
     {"enabled", py_cps_enabled, METH_VARARGS, CPS_FN_DOC(py_cps_enabled)},
 
 
-    {"config",py_cps_config, METH_VARARGS, cps_cps_generic_doc__ },
+    {"config",py_cps_config, METH_VARARGS, CPS_FN_DOC(py_cps_config) },
     {"key_from_name",py_cps_key_from_name, METH_VARARGS, cps_cps_generic_doc__ },
     {"get_keys",py_cps_get_keys, METH_VARARGS, cps_cps_generic_doc__ },
 
