@@ -38,6 +38,7 @@ class Module:
     mod_ns = ""
     module_name = ""
     filename = ""
+    augments = False
 
     def get_prefix(self, node):
         n = node.find(self.mod_ns + 'prefix')
@@ -57,6 +58,12 @@ class Module:
         if node is not None:
             return node.get('name')
         return ""
+
+    def set_if_augments(self):
+        self.augments = True
+
+    def get_if_augments(self):
+        return self.augments
 
     def __init__(self, filename, node):
         self.filename = filename

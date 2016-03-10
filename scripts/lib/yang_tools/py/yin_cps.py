@@ -246,7 +246,8 @@ class CPSParser:
                 __key_path =  _key_model.get_key_elements(_tgt_node,i.get('augment'))
                 __key_path =  self.module.name()+ ' ' +__key_path
                 __augmented_node = _key_model.all_node_map[_tgt_node]
-
+                
+                self.module.set_if_augments()
                 i.set('target-namespace',__ns)
                 i.set('name',_tgt_node)
                 i.set('model',_key_model)
