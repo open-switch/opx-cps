@@ -17,7 +17,7 @@
 
 USERNAME=cpsuser
 GROUPNAME=cpsusers
-GROUPMEMBERS="admin amazon"
+GROUPMEMBERS="admin linuxadmin"
 
 HAS_GROUP=$(/bin/cat /etc/group | grep  $GROUPNAME  &> /dev/null; echo $?)
 
