@@ -364,8 +364,10 @@ class Language:
         print "  /* Instance vars end... */ "
 
     def spit_rpc_node(self, cb_node):
-        print "cps_api_return_code_t _rpc_" + cb_node + "(void * context, cps_api_transaction_params_t * param, size_t key_ix) {"
+        print "cps_api_return_code_t _rpc_" + self.get_aug_key_for_key(cb_node) + "(void * context, cps_api_transaction_params_t * param, size_t key_ix) {"
         print ""
+        print "  EV_LOG_INFO(MGMT_LOG_SUBSYSTEM,0,\"CMA\","
+        print "     \"_rpc_" + self.get_aug_key_for_key(cb_node) + " called.\\n\"); "
         print "  /*iterator for leaf-list*/"
         print "  cps_api_object_it_t it;"
         print "  (void)it;"
@@ -383,8 +385,10 @@ class Language:
         print ""
 
     def read_cb_node(self, cb_node):
-        print "static cps_api_return_code_t _get_" + cb_node + " (void * context, cps_api_get_params_t * param, size_t key_ix) {"
+        print "static cps_api_return_code_t _get_" + self.get_aug_key_for_key(cb_node) + " (void * context, cps_api_get_params_t * param, size_t key_ix) {"
         print ""
+        print "  EV_LOG_INFO(MGMT_LOG_SUBSYSTEM,0,\"CMA\","
+        print "     \"_get_" + self.get_aug_key_for_key(cb_node) + " called.\\n\"); "
         print "  cps_api_object_t filter = cps_api_object_list_get(param->filters,key_ix);"
         print "  cps_api_key_t *key    = cps_api_object_key(filter);"
         print "  cps_api_object_t obj = cps_api_object_create();"
@@ -406,7 +410,7 @@ class Language:
         print ""
 
     def write_cb_node(self, cb_node):
-        print "cps_api_return_code_t _set_" + cb_node + "(void * context, cps_api_transaction_params_t * param, size_t key_ix) {"
+        print "cps_api_return_code_t _set_" + self.get_aug_key_for_key(cb_node) + "(void * context, cps_api_transaction_params_t * param, size_t key_ix) {"
         print ""
         print "  /*iterator for leaf-list*/"
         print "  cps_api_object_it_t it;"
@@ -420,7 +424,7 @@ class Language:
         print "  cma_edit_mode(obj,&edit_mode);"
 
         print "  EV_LOG_INFO(MGMT_LOG_SUBSYSTEM,0,\"CMA\","
-        print "     \"_set_" + cb_node + " called. phase is %d and op is %d.\\n\", "
+        print "     \"_set_" + self.get_aug_key_for_key(cb_node) + " called. phase is %d and op is %d.\\n\", "
         print "     edit_mode.phase, edit_mode.op);"
 
         print ""
@@ -530,7 +534,7 @@ class Language:
         print"}"
 
     def write_headers(self, elem):
-        print "/*Generated for " + elem + "*/"
+        print "/*Generated for " + self.get_aug_key_for_key(elem) + "*/"
         print cma_gen_file_c_includes
         print "#include \"" + self.module + "_xmltag.h\""
 
