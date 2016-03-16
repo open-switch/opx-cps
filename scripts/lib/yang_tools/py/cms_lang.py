@@ -449,7 +449,7 @@ class Language:
     def write_main_c(self):
         module_us = self.name_to_cms_name(self.module)
         for elem in self.cb_node_keys:
-            if self.model.all_node_map[self.names[elem]].get('augmented') != True:
+            if "augment" not in self.model.all_node_map[self.names[elem]].tag:
                 print "#include  \""+ elem + ".h\""  
         print "#include  \"" + self.module + ".h\""
         print "#include  \"" + module_us + "_init.h\""
@@ -469,7 +469,7 @@ class Language:
         print "{"
         print ""
         for elem in self.cb_node_keys:
-            if self.model.all_node_map[self.names[elem]].get('augmented') != True:
+            if "augment" not in self.model.all_node_map[self.names[elem]].tag:
                 print "    " +  "cma_init_" + elem +"();"
         #  If the model only augments, there is no need to register
         if self.module_obj.get_if_augments() != True:
@@ -615,7 +615,7 @@ void init_""" + self.name_to_cms_name(self.module) + """_xmltag(std::unordered_m
             elem_name = self.names[elem]
             if elem_name in self.model.all_node_map.keys():
                 # No need to register the augment node itself.
-                if self.model.all_node_map[elem_name].get('augmented') != True:
+                if "augment" not in self.model.all_node_map[self.names[elem]].tag:
                     with open(os.path.join(self.context['args']['cmssrc'], self.get_aug_key_for_key(elem) + ".h"), "w") as sys.stdout:
                         print "/* OPENSOURCELICENSE */"
                         print "#ifndef __" + self.get_aug_key_for_key(elem) + "_cma_h"
@@ -642,7 +642,7 @@ void init_""" + self.name_to_cms_name(self.module) + """_xmltag(std::unordered_m
                 if yin_node.tag == self.model.module.ns() + 'rpc':
                     rpc_res = True
                     self.spit_rpc_node(elem)
-                    if self.model.all_node_map[full_name].get('augmented') != True:
+                    if "augment" not in self.model.all_node_map[self.names[elem]].tag:
                         self.write_init(elem, read_res, write_res, rpc_res)
                     print ""
                 else:
@@ -665,7 +665,7 @@ void init_""" + self.name_to_cms_name(self.module) + """_xmltag(std::unordered_m
                         write_res = True
 
                    
-                    if self.model.all_node_map[full_name].get('augmented') != True:
+                    if "augment" not in self.model.all_node_map[self.names[elem]].tag:
                         self.write_init(elem, read_res, write_res, rpc_res)
                     print ""
         sys.stdout = old_stdout
