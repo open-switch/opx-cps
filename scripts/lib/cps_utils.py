@@ -25,7 +25,7 @@ import re
 from copy import deepcopy
 
 
-module_path = "/opt/ngos/lib/python"
+module_path = "/opt/dell/os10/lib/python"
 
 print_methods = {}
 convert_methods = {}
@@ -206,7 +206,7 @@ class CPSLibInit:
         libs = []
         path = os.getenv("LD_LIBRARY_PATH")
         if path is None:
-            path = '/opt/ngos/lib'
+            path = '/opt/dell/os10/lib'
         for i in path.split(':'):
             print "Searching " + i
             files = os.listdir(i)

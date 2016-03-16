@@ -21,7 +21,7 @@ import os
 if __name__ == '__main__':
     # load the mapping file
     cps.init(
-        '/localdisk/cwichmann/cps-api/workspace/debian/jessie/x86_64/sysroot/opt/ngos/lib/',
+        '/localdisk/cwichmann/cps-api/workspace/debian/jessie/x86_64/sysroot/opt/dell/os10/lib/',
         'libcpsclass-')
 
     data = cps.info('19')
