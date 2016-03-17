@@ -33,6 +33,9 @@ write_statement_switch = """
   case CMA_PH_APPLY:
      /* Check whether ready for commit */
      break;
+  case CMA_PH_ROLLBACK:
+     /* Code for undoing commit here */
+     break;
   case CMA_PH_COMMIT:
      /* Commit phase code here */
      switch (edit_mode.op) {
@@ -49,9 +52,6 @@ write_statement_switch = """
      default:
          retval = CMA_ERR_OPERATION_NOT_SUPPORTED;
      }
-     break;
-  case CMA_PH_ROLLBACK:
-     /* Code for undoing commit here */
      break;
   default:
      retval = CMA_ERR_OPERATION_FAILED;
@@ -344,7 +344,7 @@ class Language:
                     print "          case " + self.aug_names[leaf] + ":"
                     print "              if(cma_get_data_fr_it(&it,&val)){"
                     print "                  val_is_null(val)? "
-                    print "                     EV_LOG_INFO(MGMT_LOG_SUBSYSTEM,0,\"CMA\",\", value of " + self.names_short[self.names[leaf]] + " is null\"):"
+                    print "                     EV_LOG_INFO(MGMT_LOG_SUBSYSTEM,0,\"CMA\",\", value of " + self.names_short[self.names[leaf]] + " is to be deleted.\"):"
                     print "                     cma_dump_value_with_name(&val,\"" + self.names_short[self.names[leaf]] + "\");"
                     print "              }"
                     print "              break;"
