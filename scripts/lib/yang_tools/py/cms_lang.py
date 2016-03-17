@@ -30,19 +30,17 @@ cma_gen_file_c_includes = """
 write_statement_switch = """
   t_std_error retval = STD_ERR_OK;
   switch (edit_mode.phase) {
-  case CMA_PH_VALIDATE:
-     /* Validation phase code here */
-     break;
   case CMA_PH_APPLY:
      /* Check whether ready for commit */
+     break;
+  case CMA_PH_ROLLBACK:
+     /* Code for undoing commit here */
      break;
   case CMA_PH_COMMIT:
      /* Commit phase code here */
      switch (edit_mode.op) {
      case CMA_OP_LOAD:
          /*This is called at module startup to reload all data that module owns*/
-         break;
-     case CMA_OP_REPLACE:
          break;
      case CMA_OP_CREATE:
          /*Called when module is created*/
@@ -55,9 +53,6 @@ write_statement_switch = """
          retval = CMA_ERR_OPERATION_NOT_SUPPORTED;
      }
      break;
-  case CMA_PH_ROLLBACK:
-     /* Code for undoing commit here */
-     break;
   default:
      retval = CMA_ERR_OPERATION_FAILED;
  }
@@ -69,46 +64,6 @@ class Language:
     supported_list_containing_cb = [
         "container", "grouping", "case", "list", "rpc", "choice", "augment"
     ]
-    type_extractor_map = {
-      'int8':'CMA_GET_INT8', 
-      'int16':'CMA_GET_INT16', 
-      'int32':'CMA_GET_INT32', 
-      'int64':'CMA_GET_INT64', 
-      'uint8':'CMA_GET_INT8', 
-      'uint16':'CMA_GET_INT16', 
-      'uint32':'CMA_GET_INT32', 
-      'uint64':'CMA_GET_INT64', 
-      'boolean':'CMA_GET_BOOL', 
-      'enumeration':'CMA_GET_ENUM', 
-      'string':'CMA_GET_STR' 
-    }
-    type_formatter_map = {
-      'int8':'%d', 
-      'int16':'%d', 
-      'int32':'%d', 
-      'int64':'%ll', 
-      'uint8':'%u', 
-      'uint16':'%u', 
-      'uint32':'%u', 
-      'uint64':'%ul', 
-      'boolean':'%d', 
-      'enumeration':'%d', 
-      'string':'%s' 
-    }       
-    type_null_map = {
-      'int8':'-1',
-      'int16':'-1',
-      'int32':'-1', 
-      'int64':'-1', 
-      'uint8':'-1', 
-      'uint16':'-1', 
-      'uint32':'-1', 
-      'uint64':'-1', 
-      'boolean':'-1', 
-      'enumeration':'-1', 
-      'string':'\"null\"'
-    }
-
 
     def __init__(self, context):
         self.context = context
@@ -123,6 +78,7 @@ class Language:
                   name2= name[ns_index+len(ns)+1:]
                   name = name1+name2
                   return name
+
 
     def change_prefix(self, name):
 
@@ -351,6 +307,7 @@ class Language:
         if function.find('get') != -1:
             print "  cps_api_object_it_begin(obj,&it);"
             print "  while (cps_api_object_it_valid(&it)) {"
+            print "      cma_value_t val;"
             print "      cps_api_attr_id_t id = cps_api_object_attr_id(it.attr);"
             print "      cps_api_object_attr_t attr = cps_api_object_attr_get(obj,id);"
             print "      if (attr==NULL) {"
@@ -366,16 +323,13 @@ class Language:
                 if function.find('get') != -1:
                     leaf_present = True 
                     print "          case " + self.aug_names[leaf] + ":"
-                    print "              {"
-                    print "                  cma_value_t " + self.names_short[self.names[leaf]] + "_val;"
-                    print "                  /* Iterate inside for the leaf-list */"
-                    print "                  for(cma_get_tag_it_inside(obj," + self.aug_names[leaf] + ",&it);"
-                    print "                      cps_api_object_it_valid(&it);"
-                    print "                      cps_api_object_it_next(&it)) {"
-                    print "                      if(cma_get_data_fr_it(&it,&" + self.names_short[self.names[leaf]] + "_val)){;"
-                    print "                          /* process data here - i.e. val_valid */ "
-                    print "                          ;"
-                    print "                      }"
+                    print "              /* Iterate inside for the leaf-list */"
+                    print "              for(cma_get_tag_it_inside(obj," + self.aug_names[leaf] + ",&it);"
+                    print "                  cps_api_object_it_valid(&it);"
+                    print "                  cps_api_object_it_next(&it)) {"
+                    print "                  if(cma_get_data_fr_it(&it,&val)){;"
+                    print "                      /* process data here - i.e. val_valid */ "
+                    print "                      ;"
                     print "                  }"
                     print "              }"
                     print "              break;"
@@ -388,13 +342,10 @@ class Language:
                 if function.find('get') != -1:
                     leaf_present = True 
                     print "          case " + self.aug_names[leaf] + ":"
-                    print "              {"
-                    print "                  cma_value_t " + self.names_short[self.names[leaf]] + "_val;"
-                    print "                  if(cma_get_data_fr_it(&it,&" + self.names_short[self.names[leaf]] + "_val)){;"
-                    typ = yin_utils.node_get_type(self.module_obj, self.model.all_node_map[leaf])
-                    if typ in self.type_extractor_map.keys():
-                        print "                  EV_LOG_INFO(MGMT_LOG_SUBSYSTEM,0,\"CMA\",\"" + self.names_short[self.names[leaf]] + "_val is " + self.type_formatter_map[typ] +  "\",val_is_null(" + self.names_short[self.names[leaf]] + "_val) ?" + self.type_null_map[typ] + ":" +  self.type_extractor_map[typ] +  "(" + self.names_short[self.names[leaf]] + "_val));"
-                    print "                  }"
+                    print "              if(cma_get_data_fr_it(&it,&val)){"
+                    print "                  val_is_null(val)? "
+                    print "                     EV_LOG_INFO(MGMT_LOG_SUBSYSTEM,0,\"CMA\",\", value of " + self.names_short[self.names[leaf]] + " is to be deleted.\"):"
+                    print "                     cma_dump_value_with_name(&val,\"" + self.names_short[self.names[leaf]] + "\");"
                     print "              }"
                     print "              break;"
                 else:
@@ -413,8 +364,10 @@ class Language:
         print "  /* Instance vars end... */ "
 
     def spit_rpc_node(self, cb_node):
-        print "cps_api_return_code_t _rpc_" + cb_node + "(void * context, cps_api_transaction_params_t * param, size_t key_ix) {"
+        print "cps_api_return_code_t _rpc_" + self.get_aug_key_for_key(cb_node) + "(void * context, cps_api_transaction_params_t * param, size_t key_ix) {"
         print ""
+        print "  EV_LOG_INFO(MGMT_LOG_SUBSYSTEM,0,\"CMA\","
+        print "     \"_rpc_" + self.get_aug_key_for_key(cb_node) + " called.\\n\"); "
         print "  /*iterator for leaf-list*/"
         print "  cps_api_object_it_t it;"
         print "  (void)it;"
@@ -432,8 +385,10 @@ class Language:
         print ""
 
     def read_cb_node(self, cb_node):
-        print "static cps_api_return_code_t _get_" + cb_node + " (void * context, cps_api_get_params_t * param, size_t key_ix) {"
+        print "static cps_api_return_code_t _get_" + self.get_aug_key_for_key(cb_node) + " (void * context, cps_api_get_params_t * param, size_t key_ix) {"
         print ""
+        print "  EV_LOG_INFO(MGMT_LOG_SUBSYSTEM,0,\"CMA\","
+        print "     \"_get_" + self.get_aug_key_for_key(cb_node) + " called.\\n\"); "
         print "  cps_api_object_t filter = cps_api_object_list_get(param->filters,key_ix);"
         print "  cps_api_key_t *key    = cps_api_object_key(filter);"
         print "  cps_api_object_t obj = cps_api_object_create();"
@@ -455,7 +410,7 @@ class Language:
         print ""
 
     def write_cb_node(self, cb_node):
-        print "cps_api_return_code_t _set_" + cb_node + "(void * context, cps_api_transaction_params_t * param, size_t key_ix) {"
+        print "cps_api_return_code_t _set_" + self.get_aug_key_for_key(cb_node) + "(void * context, cps_api_transaction_params_t * param, size_t key_ix) {"
         print ""
         print "  /*iterator for leaf-list*/"
         print "  cps_api_object_it_t it;"
@@ -468,7 +423,9 @@ class Language:
         print "  cma_edit_mode_t edit_mode;"
         print "  cma_edit_mode(obj,&edit_mode);"
 
-        print "  EV_LOG_INFO(MGMT_LOG_SUBSYSTEM,0,\"CMA\",\"_set_" + cb_node + " called. phase is %d and op is %d.\\n\", edit_mode.phase, edit_mode.op);"
+        print "  EV_LOG_INFO(MGMT_LOG_SUBSYSTEM,0,\"CMA\","
+        print "     \"_set_" + self.get_aug_key_for_key(cb_node) + " called. phase is %d and op is %d.\\n\", "
+        print "     edit_mode.phase, edit_mode.op);"
 
         print ""
         self.get_keys(cb_node, "obj")
@@ -496,12 +453,8 @@ class Language:
     def write_main_c(self):
         module_us = self.name_to_cms_name(self.module)
         for elem in self.cb_node_keys:
-            ro_node = self.node_rw_access(elem)
-            if ro_node == True:
-               prefix = "_get_"
-            else:
-               prefix = "_set_"
-            print "#include  \""+ elem + ".h\""  
+            if "augment" not in self.model.all_node_map[self.names[elem]].tag:
+                print "#include  \""+ elem + ".h\""  
         print "#include  \"" + self.module + ".h\""
         print "#include  \"" + module_us + "_init.h\""
         print "#include  \"cma_init.h\""
@@ -520,7 +473,9 @@ class Language:
         print "{"
         print ""
         for elem in self.cb_node_keys:
-            print "    " +  "cma_init_" + elem +"();"
+            if "augment" not in self.model.all_node_map[self.names[elem]].tag:
+                print "    " +  "cma_init_" + elem +"();"
+        #  If the model only augments, there is no need to register
         if self.module_obj.get_if_augments() != True:
             print "    /* Register with CMS to get the startup config replayed */"
             print "    if (cma_module_register(1, modreg) !=true) {"
@@ -532,26 +487,26 @@ class Language:
         print "" 
         print "}"
         
-    def get_aug_name_for_key(self, key):
+    def get_aug_key_for_key(self, key):
         name = self.names[key]
         if name in self.aug_names.keys():
-            aug_name = self.aug_names[name]
-            return aug_name
+            aug_key = self.aug_names[name]
+            return aug_key
         else:
-           return name
+           return key
 
     def write_init(self, elem, read_res, write_res, rpc_res):
-        print "void cma_init_"  + elem + "(void) {"
+        print "void cma_init_"  + self.get_aug_key_for_key(elem) + "(void) {"
         print "  cps_api_registration_functions_t f;"
         keys_list = self.cb_node_keys[elem].split(',')
         two_keys = keys_list[:2]
         two_keys_aug = []
         #print "0 is " + two_keys[0] + " 1 is " + two_keys[1]
-        two_keys_aug.append(self.get_aug_name_for_key(two_keys[0]))
+        two_keys_aug.append(self.get_aug_key_for_key(two_keys[0]))
         if len(two_keys) < 2:
             two_keys_aug.append("0")
         else:
-            two_keys_aug.append(self.get_aug_name_for_key(two_keys[1]))
+            two_keys_aug.append(self.get_aug_key_for_key(two_keys[1]))
         rest_keys = keys_list[2:]
         
         print "  memset(&f,0,sizeof(f));"
@@ -561,7 +516,7 @@ class Language:
             two_keys_aug) + ","
         line += str(len(rest_keys))
         for rk in rest_keys:
-            line += "," + self.get_aug_name_for_key(rk)
+            line += "," + self.get_aug_key_for_key(rk)
         line += ");"
         print "  " + line
         if read_res:
@@ -579,7 +534,7 @@ class Language:
         print"}"
 
     def write_headers(self, elem):
-        print "/*Generated for " + elem + "*/"
+        print "/*Generated for " + self.get_aug_key_for_key(elem) + "*/"
         print cma_gen_file_c_includes
         print "#include \"" + self.module + "_xmltag.h\""
 
@@ -660,24 +615,29 @@ void init_""" + self.name_to_cms_name(self.module) + """_xmltag(std::unordered_m
             self.xmltag_mapping_src()
 
         for elem in self.cb_node_keys:
-            with open(os.path.join(self.context['args']['cmssrc'], elem + ".h"), "w") as sys.stdout:
-                print "/* OPENSOURCELICENSE */"
-                print "#ifndef __" + elem + "_cma_h"
-                print "#define __" + elem + "_cma_h"
-                print "#ifdef __cplusplus"
-                print "extern \"C\" {"
-                print "#endif"
-                print "/*Autogenerated file from " + self.module + "*/"
-                print "void cma_init_" + elem + "(void) ;"
-                print ""
-                print "#ifdef __cplusplus"
-                print "}"
-                print "#endif"
-                print ""
-                print "#endif"
+            
+            elem_name = self.names[elem]
+            if elem_name in self.model.all_node_map.keys():
+                # No need to register the augment node itself.
+                if "augment" not in self.model.all_node_map[self.names[elem]].tag:
+                    with open(os.path.join(self.context['args']['cmssrc'], self.get_aug_key_for_key(elem) + ".h"), "w") as sys.stdout:
+                        print "/* OPENSOURCELICENSE */"
+                        print "#ifndef __" + self.get_aug_key_for_key(elem) + "_cma_h"
+                        print "#define __" + self.get_aug_key_for_key(elem) + "_cma_h"
+                        print "#ifdef __cplusplus"
+                        print "extern \"C\" {"
+                        print "#endif"
+                        print "/*Autogenerated file from " + self.module + "*/"
+                        print "void cma_init_" + self.get_aug_key_for_key(elem) + "(void) ;"
+                        print ""
+                        print "#ifdef __cplusplus"
+                        print "}"
+                        print "#endif"
+                        print ""
+                        print "#endif"
 
         for elem in self.cb_node_keys:
-            with open(os.path.join(self.context['args']['cmssrc'], elem + ".c"), "w") as sys.stdout:
+            with open(os.path.join(self.context['args']['cmssrc'], self.get_aug_key_for_key(elem) + ".c"), "w") as sys.stdout:
                 self.write_headers(elem)
                 full_name = self.names[elem]
                 yin_node = self.model.all_node_map[full_name]
@@ -686,7 +646,8 @@ void init_""" + self.name_to_cms_name(self.module) + """_xmltag(std::unordered_m
                 if yin_node.tag == self.model.module.ns() + 'rpc':
                     rpc_res = True
                     self.spit_rpc_node(elem)
-                    self.write_init(elem, read_res, write_res, rpc_res)
+                    if "augment" not in self.model.all_node_map[self.names[elem]].tag:
+                        self.write_init(elem, read_res, write_res, rpc_res)
                     print ""
                 else:
                     rpc_res = False
@@ -707,7 +668,9 @@ void init_""" + self.name_to_cms_name(self.module) + """_xmltag(std::unordered_m
                         self.write_cb_node(elem)
                         write_res = True
 
-                    self.write_init(elem, read_res, write_res, rpc_res)
+                   
+                    if "augment" not in self.model.all_node_map[self.names[elem]].tag:
+                        self.write_init(elem, read_res, write_res, rpc_res)
                     print ""
         sys.stdout = old_stdout
 
