@@ -520,13 +520,13 @@ class Language:
         line += ");"
         print "  " + line
         if read_res:
-            print "  f._read_function=_get_" + elem + ";"
+            print "  f._read_function=_get_" + self.get_aug_key_for_key(elem) + ";"
         else:
             print "  f._read_function=NULL;"
         if write_res:
-            print "  f._write_function=_set_" + elem + ";"
+            print "  f._write_function=_set_" + self.get_aug_key_for_key(elem) + ";"
         elif rpc_res:
-            print "  f._write_function = _rpc_" + elem + ";"
+            print "  f._write_function = _rpc_" + self.get_aug_key_for_key(elem) + ";"
         else:
             print "  f._write_function=NULL;"
         print "  f._rollback_function=NULL;"
