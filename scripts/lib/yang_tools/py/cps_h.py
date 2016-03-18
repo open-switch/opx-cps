@@ -163,18 +163,23 @@ class COutputFormat:
                     continue
                 
                 _names = self.resolve_node_names(model,c.node,c.name)
-                
-                if c.name not in _names:
-                    _names.append((c.name,'binary'))
-                
+                                                                                   
                 comment = self.get_comment(model, c.node)
                 print (comment)
-                    
+                _set = set()    
                 for _name in _names:
                     en_name = self.lang.to_string(_name[0])
+                    _set.add(en_name)
                     value = str(history.get_enum(en_name, None))
                     print "/*type=" + _name[1] + "*/ "
                     print "  " + en_name + " = " + value + ","
+                    
+                if self.lang.to_string(c.name) not in _set:
+                    en_name = self.lang.to_string(c.name)
+                    value = str(history.get_enum(en_name, None))
+                    print "  " + en_name + " = " + value + ","
+                    
+                
             print "} " + self.lang.to_string(name) + "_t;"
 
         print ""
