@@ -41,21 +41,6 @@ def search_path_for_file(filename):
         " please set path in YANG_PATH.  eg YANG_PATH=DIR1:DIR2")
 
 
-def get_yang_history_file_name(filename):
-    filename = os.path.splitext(os.path.basename(filename))[0] + ".yhist"
-    yang_vlan_file = search_path_for_file(
-        os.path.splitext(filename)[0] + ".yang")
-
-    yang_hist_name = os.path.splitext(yang_vlan_file)[0] + ".yhist"
-
-    try:
-        return search_path_for_file(filename)
-    except:
-        name = ""
-
-    return yang_hist_name
-
-
 def create_yin_file(yang_file, yin_file):
     yang_file = search_path_for_file(yang_file)
     # print "converting "+yang_file+" to "+ yin_file

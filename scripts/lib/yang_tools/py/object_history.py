@@ -174,8 +174,10 @@ class history:
     staticmethod(load_all_globals)
 
     def __init__(self, context, filename, category):
+        """This will initialize the module history file. """        
         self.context = context
         self.the_name = filename
+        self.output_file = os.path.join(self.context['history']['output'],os.path.basename(filename))
         self.the_dict = dict()
         self.module = IndexTracker(1)
 
@@ -222,9 +224,7 @@ class history:
         return res
 
     def write(self):
-        self.the_name = os.path.join(
-            self.context['history']['output'],
-            os.path.basename(self.the_name))
+        self.the_name = self.output_file 
         print "Writing history to " + self.the_name
         with open(self.the_name, "w") as f:
             f.write("# writing " + self.the_name + "\n")

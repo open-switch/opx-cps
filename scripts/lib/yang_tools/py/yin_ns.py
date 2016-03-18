@@ -86,6 +86,20 @@ class Module:
     def model_name(self):
         return self.module
 
+    def add_prefix(self,node_name):
+        if node_name.find(':')==-1:
+            return self.prefix + ':' + node_name
+        return node_name
+    
+    def strip_prefix(self,node_name):
+        loc = node_name.find(':')
+        if loc!=-1:
+            node_name = node_name[loc:]
+        return node_name
+
+    def replace_prefix(self,node_name):
+        return self.add_prefix(self.strip_prefix(node_name))
+
     # Create a list that also has the NS prefix to the names
     def prepend_ns_to_list(self, types):
         l = list()
