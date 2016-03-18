@@ -17,7 +17,6 @@
 import os
 import sys
 import yin_utils
-from anydbm import _names
 
 def to_c_type(context, elem):
     return "cps_api_object_ATTR_T_BIN"
@@ -25,7 +24,7 @@ def to_c_type(context, elem):
 
 class COutputFormat:
     """Responsible for generating header files with enums, etc.."""
-    
+
     def print_comment(self,comment):
         print("/* %s */\n" % (comment))
 
@@ -66,9 +65,9 @@ class COutputFormat:
 
         node = model.context['enum'][name]
         enum = node.find('enumeration')
-        
+
         self.print_comment('Enumeration '+name)
-        
+
         print "typedef enum { "
 
         min_value = None
@@ -113,23 +112,23 @@ class COutputFormat:
         for i in node.findall(model.module.ns() + 'type'):
             l.append(i.get('name'))
         return l
-        
+
     def resolve_node_names(self,model,node,name):
         _found_names = []
-        
+
         _node_type_inst = node.find(model.module.ns() + 'type')
-        
+
         if _node_type_inst == None:
             return [(name,'binary')]
-                        
+
         _node_type = _node_type_inst.get('name')
 
         if _node_type == 'union':
             for _types in _node_type_inst.findall(model.module.ns() + 'type'):
-                _new_name = name                
+                _new_name = name
                 if _types.get('name') != None:
                     _new_name = _new_name + '/' +_types.get('name')
-                    if _types.get('name') in self.context['types']:                                             
+                    if _types.get('name') in self.context['types']:
                         _found_names = _found_names + \
                             self.resolve_node_names(model,self.context['types'][_types.get('name')],_new_name)
                     else:
@@ -138,12 +137,12 @@ class COutputFormat:
 
         if _node_type!=None and _node_type in self.context['types']:
            return _found_names + self.resolve_node_names(model,self.context['types'][_node_type],name)
-        
+
         if _node_type!=None:
             return _found_names + [(name,_node_type)]
-        
-        return _found_names        
-        
+
+        return _found_names
+
     def print_container(self, model):
         history = self.lang.history
 
@@ -154,19 +153,19 @@ class COutputFormat:
             node = model.container_map[name]
             if len(node) == 0:
                 continue
-            
+
             self.print_comment('Object '+name)
             print "typedef enum { "
             for c in node:
-                                
+
                 if c.name == model.module.name():
                     continue
-                
+
                 _names = self.resolve_node_names(model,c.node,c.name)
-                                                                                   
+
                 comment = self.get_comment(model, c.node)
                 print (comment)
-                _set = set()    
+                _set = set()
                 _count = 0
                 for _name in _names:
                     _count+=1
@@ -177,13 +176,13 @@ class COutputFormat:
                     value = str(history.get_enum(en_name, None))
                     print "/*type=" + _name[1] + "*/ "
                     print "  " + en_name + " = " + value + ","
-                    
+
                 if self.lang.to_string(c.name) not in _set:
                     en_name = self.lang.to_string(c.name)
                     value = str(history.get_enum(en_name, None))
                     print "  " + en_name + " = " + value + ","
-                    
-                
+
+
             print "} " + self.lang.to_string(name) + "_t;"
 
         print ""
@@ -193,7 +192,7 @@ class COutputFormat:
             return
 
         self.print_comment('Object\'s continued')
-        
+
         subcat_name = model.module.name() + "_objects"
         print "typedef enum{"
         for c in model.container_map[model.module.name()]:
@@ -237,29 +236,29 @@ class COutputFormat:
             #find local model only
             if i.find(name + ':') != 0:
                 continue
-            
+
             if i in model.context['enum']:
                 continue  # already printed
 
             node = model.context['types'][i]
             if node.tag == model.module.ns() + 'grouping':
                 continue  # not printable
-                        
-            if node.tag == model.module.ns() + 'identity':                
+
+            if node.tag == model.module.ns() + 'identity':
                 en_name = self.lang.to_string(node.get('__identity__'))
-                
+
                 en_value = str(history.get_enum(en_name, None))
                 comment = self.get_comment(model, node)
-                
+
                 if len(comment) > 0:
                     print(comment)
-                    
+
                 print('#define ' + en_name + '  \"' + model.module.name()+':'+node.get('name')+'\"')
                 continue
-             
+
             type = self.lang.get_type(node)
-            
-            
+
+
             if self.lang.valid_lang_type(type):
                 comments = self.get_comment(model, node, enclose=False)
                 if len(comments) > 0:
