@@ -163,7 +163,10 @@ class COutputFormat:
                     continue
                 
                 _names = self.resolve_node_names(model,c.node,c.name)
-                                
+                
+                if c.name not in _names:
+                    _names.append((c.name,'binary'))
+                
                 comment = self.get_comment(model, c.node)
                 print (comment)
                     
