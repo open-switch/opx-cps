@@ -307,6 +307,11 @@ class CPSParser:
                     _base_node = self.context['types'][_base]
                     
                     _identity_ = _base_node.get('__identity__')
+                    if  _base_node.get('__children__')!=None:
+                        _base_node.set('__children__',_base_node.get('__children__')+' '+type_name)
+                    else:
+                        _base_node.set('__children__',type_name)
+                        
                     if _identity_ == None: _identity_ = ''                  
                     
                     if len(_identity_)>0:

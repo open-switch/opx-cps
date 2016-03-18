@@ -114,6 +114,36 @@ class COutputFormat:
             l.append(i.get('name'))
         return l
         
+    def resolve_node_names(self,model,node,name):
+        _found_names = []
+        
+        _node_type_inst = node.find(model.module.ns() + 'type')
+        
+        if _node_type_inst == None:
+            return [(name,'binary')]
+                        
+        _node_type = _node_type_inst.get('name')
+
+        if _node_type == 'union':
+            for _types in _node_type_inst.findall(model.module.ns() + 'type'):
+                _new_name = name                
+                if _types.get('name') != None:
+                    _new_name = _new_name + '/' +_types.get('name')
+                    if _types.get('name') in self.context['types']:                                             
+                        _found_names = _found_names + \
+                            self.resolve_node_names(model,self.context['types'][_types.get('name')],_new_name)
+                    else:
+                        _found_names = _found_names+[(_new_name,_new_name)]
+            return _found_names
+
+        if _node_type!=None and _node_type in self.context['types']:
+           return _found_names + self.resolve_node_names(model,self.context['types'][_node_type],name)
+        
+        if _node_type!=None:
+            return _found_names + [(name,_node_type)]
+        
+        return _found_names        
+        
     def print_container(self, model):
         history = self.lang.history
 
@@ -132,28 +162,15 @@ class COutputFormat:
                 if c.name == model.module.name():
                     continue
                 
-                _node_type = self.lang.get_type(c.node)                                
-                
-                _node_type_inst = None
-                
-                while True:
-                    if _node_type not in self.context['types']:
-                        break;                    
-                    _node_type_inst = self.context['types'][_node_type]
-                    _node_type = self.lang.get_type(self.context['types'][_node_type])                    
-                    
-                _names = [c.name]
-                
-                if _node_type == 'union':
-                    _names = self.get_attr_name(model,c.node)
+                _names = self.resolve_node_names(model,c.node,c.name)
                                 
                 comment = self.get_comment(model, c.node)
                 print (comment)
                     
                 for _name in _names:
-                    en_name = self.lang.to_string(_name)
+                    en_name = self.lang.to_string(_name[0])
                     value = str(history.get_enum(en_name, None))
-                    print "/*type=" + _node_type + "*/ "
+                    print "/*type=" + _name[1] + "*/ "
                     print "  " + en_name + " = " + value + ","
             print "} " + self.lang.to_string(name) + "_t;"
 
@@ -218,13 +235,14 @@ class COutputFormat:
                         
             if node.tag == model.module.ns() + 'identity':                
                 en_name = self.lang.to_string(node.get('__identity__'))
+                
                 en_value = str(history.get_enum(en_name, None))
                 comment = self.get_comment(model, node)
                 
                 if len(comment) > 0:
                     print(comment)
                     
-                print('#define ' + en_name + '  (' + str(en_value)+') \n')
+                print('#define ' + en_name + '  \"' + model.module.name()+':'+node.get('name')+'\"')
                 continue
              
             type = self.lang.get_type(node)
