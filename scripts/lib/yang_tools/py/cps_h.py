@@ -167,8 +167,12 @@ class COutputFormat:
                 comment = self.get_comment(model, c.node)
                 print (comment)
                 _set = set()    
+                _count = 0
                 for _name in _names:
+                    _count+=1
                     en_name = self.lang.to_string(_name[0])
+                    if en_name in _set:
+                        en_name = en_name +'_'+str(_count)
                     _set.add(en_name)
                     value = str(history.get_enum(en_name, None))
                     print "/*type=" + _name[1] + "*/ "
