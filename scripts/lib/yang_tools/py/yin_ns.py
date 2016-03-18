@@ -35,9 +35,6 @@ def set_mod_name(ns, node):
 
 
 class Module:
-    mod_ns = ""
-    module_name = ""
-    filename = ""
 
     def get_prefix(self, node):
         n = node.find(self.mod_ns + 'prefix')
@@ -61,15 +58,9 @@ class Module:
     def __init__(self, filename, node):
         self.filename = filename
         self.mod_ns = get_namespace(node)
-        self.module = self.get_module(node)
-        self.prefix = self.get_prefix(node)
-        if len(self.prefix) > 0:
-            self.module_name = self.prefix
-        else:
-            self.module_name = self.module
-
-        if len(self.module_name) == 0:
-            sys.exit(1)
+        self.module = self.get_module(node)        
+        self.update_prefix(self.get_prefix(node))
+            
 
     def filter_ns(self, name):
         return name[len(self.mod_ns):]
@@ -77,9 +68,21 @@ class Module:
     def get_file(self):
         return os.path.basename(self.filename)
 
+    def update_prefix(self,__prefix):
+        self.prefix = __prefix
+        if len(self.prefix) > 0:
+            self.module_name = self.prefix
+        else:
+            self.module_name = self.module        
+        if len(self.module_name) == 0:
+            raise Exception('Invalid module name/prefix')
+        
     def ns(self):
         return self.mod_ns
 
+    def prefix(self):
+        return self.prefix
+    
     def name(self):
         return self.module_name
 

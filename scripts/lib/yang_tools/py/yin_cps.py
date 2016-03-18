@@ -126,7 +126,7 @@ class CPSParser:
         self.module = yin_ns.Module(self.filename, self.root_node)
         
         if prefix is not None:
-            self.module.module_name = prefix
+            self.module.update_prefix(prefix)
 
         self.imports = {}
         self.imports['module'] = list()
@@ -168,7 +168,7 @@ class CPSParser:
         print "Updating prefix (%s) related mapping" % self.module.name()
         self.update_node_prefixes(self.root_node)
         
-        print "Parsing Yang Model"
+        print "Parsing Yang Model %s" % (self.module.name())
         self.walk_nodes(self.root_node, self.module.name())
         self.handle_keys()
         self.fix_enums()
@@ -259,6 +259,7 @@ class CPSParser:
                 id = i.get('name')
 
             full_name = path
+            #if "entry:" then skip the / eg.. entry:/ = bad
             if full_name[len(full_name) - 1] != ':':
                 full_name += "/"
             full_name += id
