@@ -55,12 +55,19 @@ class Module:
             return node.get('name')
         return ""
 
+    def set_if_augments(self):
+        self.augments = True
+
+    def get_if_augments(self):
+        return self.augments
+
     def __init__(self, filename, node):
         self.filename = filename
-        self.mod_ns = get_namespace(node)
-        self.module = self.get_module(node)        
+		self.augments = False
+        self.mod_ns = get_namespace(node)	
+        self.module = self.get_module(node)
         self.update_prefix(self.get_prefix(node))
-            
+
 
     def filter_ns(self, name):
         return name[len(self.mod_ns):]
@@ -73,16 +80,16 @@ class Module:
         if len(self.prefix) > 0:
             self.module_name = self.prefix
         else:
-            self.module_name = self.module        
+            self.module_name = self.module
         if len(self.module_name) == 0:
             raise Exception('Invalid module name/prefix')
-        
+
     def ns(self):
         return self.mod_ns
 
     def prefix(self):
         return self.prefix
-    
+
     def name(self):
         return self.module_name
 
@@ -93,7 +100,7 @@ class Module:
         if node_name.find(':')==-1:
             return self.prefix + ':' + node_name
         return node_name
-    
+
     def strip_prefix(self,node_name):
         loc = node_name.find(':')
         if loc!=-1:

@@ -35,13 +35,13 @@ class CPSContainerElement:
 class CPSParser:
     supported_ids_at_root = [
         "list", "container", "rpc", 'augment']
-    
+
     supported_list_containing_children = [
         'augment',"container", "grouping", "choice", "list", "rpc", "case", "module", "type", "typedef", "input", "output"]
-    
+
     supported_list_of_leaves_have_attr_ids = [
         'augment',"container", "case", "list", "leaf", "leaf-list", "rpc", "choice", "input", "output"]
-    
+
     __supports_duplicate_entries= ['augment']
 
     def __init__(self, context, filename):
@@ -122,9 +122,9 @@ class CPSParser:
             print "Failed to process ", self.filename
             print ex
             sys.exit(1)
-        
+
         self.module = yin_ns.Module(self.filename, self.root_node)
-        
+
         if prefix is not None:
             self.module.update_prefix(prefix)
 
@@ -156,18 +156,18 @@ class CPSParser:
     def walk(self):
         if self.module.name() in self.container_map:
             return
-        
+
         self.container_map[self.module.name()] = list()
         self.all_node_map[self.module.name()] = self.root_node
         self.container_keys[self.module.name()] = self.module.name() + " "
         self.handle_augments(self.root_node, self.module.name() + ':')
-        
+
         print "Creating type mapping..."
         self.parse_types(self.root_node, self.module.name() + ':')
-        
+
         print "Updating prefix (%s) related mapping" % self.module.name()
         self.update_node_prefixes(self.root_node)
-        
+
         print "Parsing Yang Model %s" % (self.module.name())
         self.walk_nodes(self.root_node, self.module.name())
         self.handle_keys()
@@ -175,12 +175,12 @@ class CPSParser:
         print "Yang parsing complete"
 
     def add_module_fb_mapping(self, dict, key):
-        """ add the entry in the dict to both prefix/ and prefix: based  """        
+        """ add the entry in the dict to both prefix/ and prefix: based  """
         _prefix_a = self.module.name() + "/"
         _prefix_b = self.module.name() + ":"
         if key.find(_prefix_a) != 0:
-            return 
-        
+            return
+
         _alias =  _prefix_b+key[len(_prefix_a):]
         dict[_alias] = dict[key]
 
@@ -197,19 +197,27 @@ class CPSParser:
         for i in node.iter():
             tag = self.module.filter_ns(i.tag)
             n = None
-            
+
             if tag == 'uses':
                 n = i.get('name')
 
-            if tag == 'type': 
+            if tag == 'type':
                 name = i.get('name')
                 #make sure it is a type we want
                 if name is not None and self.module.name() + ':' + name in self.context['types']:
                     n = name
 
             if n is not None: # any yypes refer to local types by default
-                n = self.module.add_prefix(n)                
+                n = self.module.add_prefix(n)
                 i.set('name', n)
+
+    def stamp_augmented_children(self, parent, ns):
+        lst = list()
+        for i in list(parent):
+            self.stamp_augmented_children(i, ns)
+            i.set('augmented', True)
+            i.set('target-namespace',ns)
+
 
     def handle_augments(self,parent,path):
         for i in parent:
@@ -235,21 +243,25 @@ class CPSParser:
                 __key_path =  self.module.name()+ ' ' +__key_path
                 __augmented_node = _key_model.all_node_map[_tgt_node]
 
+                self.module.set_if_augments()
                 i.set('target-namespace',__ns)
                 i.set('name',_tgt_node)
                 i.set('model',_key_model)
                 i.set('augment',__augmented_node)
                 i.set('key-path',__key_path)
+                i.set('augmented', True)
+                self. stamp_augmented_children(i, __ns)
+
 
     def parse_types(self, parent, path):
         """
             Search through all children starting at parent (recursively) for types.
             The "path" variable denotes the path to the parent node in text.
-            
+
             eg.. self.parse_types(root_node,'/somewhere')
         """
         valid_types = ['typedef','identity' ] #two nodes that can be part of types
-        
+
         for i in parent:
             tag = self.module.filter_ns(i.tag)
 
@@ -284,7 +296,7 @@ class CPSParser:
                     # database..."+id)
 
                 self.context['types'][type_name] = i
-                
+
             if tag == 'typedef':
                 type = i.find(self.module.ns() + 'type')
                 if type is not None:
@@ -293,35 +305,35 @@ class CPSParser:
                     if type.get('name') == 'union':
                         self.context['union'][full_name] = i
                 continue
-            
-            if tag == 'identity':                                            
+
+            if tag == 'identity':
                 _base = i.find(self.module.ns()+'base')
                 _identity_ = ""
-                
+
                 #resolve the base to an attribute called _identity_ including base idents
                 if _base != None:
                     _base = self.module.add_prefix(_base.get('name'))
-                    
+
                     if not _base in self.context['types']:
                         raise Exception('Failed to locate type required.')
-                    
+
                     _base_node = self.context['types'][_base]
-                    
+
                     _identity_ = _base_node.get('__identity__')
                     if  _base_node.get('__children__')!=None:
                         _base_node.set('__children__',_base_node.get('__children__')+' '+type_name)
                     else:
                         _base_node.set('__children__',type_name)
-                        
-                    if _identity_ == None: _identity_ = ''                  
-                    
+
+                    if _identity_ == None: _identity_ = ''
+
                     if len(_identity_)>0:
-                        _identity_+='/'                    
-                
+                        _identity_+='/'
+
                 _identity_+=type_name
-                    
-                i.set('__identity__',_identity_)                                                       
-            
+
+                i.set('__identity__',_identity_)
+
 
     def walk_nodes(self, node, path):
         nodes = list(node)
