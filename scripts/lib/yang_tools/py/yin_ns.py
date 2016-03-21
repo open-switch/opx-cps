@@ -63,7 +63,7 @@ class Module:
 
     def __init__(self, filename, node):
         self.filename = filename
-		self.augments = False
+        self.augments = False
         self.mod_ns = get_namespace(node)	
         self.module = self.get_module(node)
         self.update_prefix(self.get_prefix(node))
