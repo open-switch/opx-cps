@@ -69,10 +69,10 @@ class Language:
         self.context = context
 
     def change_name_for_augment(self, name):
-        
+
         if self.model.all_node_map[name].get('augmented') ==True:
              ns = self.model.all_node_map[name].get('target-namespace')
-             ns_index = str.find(name, ns) 
+             ns_index = str.find(name, ns)
              if ns_index:
                   name1 = name[:ns_index]
                   name2= name[ns_index+len(ns)+1:]
@@ -317,11 +317,11 @@ class Language:
             print ""
             print "      /* Extract data from CPS obj and add it to your structure */"
             print "      switch(id) {"
-        leaf_present=False 
+        leaf_present=False
         for leaf in self.get_node_leaves_based_on_access(cb_node, read_only):
-            if self.model.all_node_map[leaf].tag == self.model.module.ns() + 'leaf-list': 
+            if self.model.all_node_map[leaf].tag == self.model.module.ns() + 'leaf-list':
                 if function.find('get') != -1:
-                    leaf_present = True 
+                    leaf_present = True
                     print "          case " + self.aug_names[leaf] + ":"
                     print "              /* Iterate inside for the leaf-list */"
                     print "              for(cma_get_tag_it_inside(obj," + self.aug_names[leaf] + ",&it);"
@@ -340,7 +340,7 @@ class Language:
                     print ""
             else:
                 if function.find('get') != -1:
-                    leaf_present = True 
+                    leaf_present = True
                     print "          case " + self.aug_names[leaf] + ":"
                     print "              if(cma_get_data_fr_it(&it,&val)){"
                     print "                  val_is_null(val)? "
@@ -353,11 +353,11 @@ class Language:
                     print "  const bool " + self.names_short[self.names[leaf]] + "_val_valid = " + function + "(obj," + self.aug_names[leaf] + ",&" + self.names_short[self.names[leaf]] + "_val);"
                     print "  (void)" + self.names_short[self.names[leaf]] + "_val_valid;"
                     print ""
-        if function.find('get') != -1  and leaf_present==True:      
+        if function.find('get') != -1  and leaf_present==True:
             print "          default:"
             print "             break;"
             print "      }"
-            print "      cps_api_object_it_next(&it);" 
+            print "      cps_api_object_it_next(&it);"
             print "  }"
         print ""
 
@@ -454,7 +454,7 @@ class Language:
         module_us = self.name_to_cms_name(self.module)
         for elem in self.cb_node_keys:
             if "augment" not in self.model.all_node_map[self.names[elem]].tag:
-                print "#include  \""+ elem + ".h\""  
+                print "#include  \""+ elem + ".h\""
         print "#include  \"" + self.module + ".h\""
         print "#include  \"" + module_us + "_init.h\""
         print "#include  \"cma_init.h\""
@@ -484,9 +484,9 @@ class Language:
             print "    }"
             print ""
             print "    EV_LOG_INFO(MGMT_LOG_SUBSYSTEM,0,\"CMA\",\"Interface cma registered to CMS SUCCESS.\\n\");"
-        print "" 
+        print ""
         print "}"
-        
+
     def get_aug_key_for_key(self, key):
         name = self.names[key]
         if name in self.aug_names.keys():
@@ -508,7 +508,7 @@ class Language:
         else:
             two_keys_aug.append(self.get_aug_key_for_key(two_keys[1]))
         rest_keys = keys_list[2:]
-        
+
         print "  memset(&f,0,sizeof(f));"
         print "  "
         line = ""
@@ -600,10 +600,10 @@ void init_""" + self.name_to_cms_name(self.module) + """_xmltag(std::unordered_m
         old_stdout = sys.stdout
 
         with open(os.path.join(self.context['args']['cmssrc'], self.name_to_cms_name(self.module) + "_init.h"), "w") as sys.stdout:
-            self.write_main_h() 
+            self.write_main_h()
 
         with open(os.path.join(self.context['args']['cmssrc'], self.name_to_cms_name(self.module) + "_init.c"), "w") as sys.stdout:
-            self.write_main_c() 
+            self.write_main_c()
 
         with open(os.path.join(self.context['args']['cmsheader'], self.module + "_xmltag.h"), "w") as sys.stdout:
             self.xmltag_mapping()
@@ -615,7 +615,7 @@ void init_""" + self.name_to_cms_name(self.module) + """_xmltag(std::unordered_m
             self.xmltag_mapping_src()
 
         for elem in self.cb_node_keys:
-            
+
             elem_name = self.names[elem]
             if elem_name in self.model.all_node_map.keys():
                 # No need to register the augment node itself.
@@ -668,7 +668,7 @@ void init_""" + self.name_to_cms_name(self.module) + """_xmltag(std::unordered_m
                         self.write_cb_node(elem)
                         write_res = True
 
-                   
+
                     if "augment" not in self.model.all_node_map[self.names[elem]].tag:
                         self.write_init(elem, read_res, write_res, rpc_res)
                     print ""

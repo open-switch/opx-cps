@@ -22,6 +22,7 @@ import cps_c_lang
 import cms_lang
 import sys
 import shutil
+import argparse
 
 
 class CPSYinFiles:
@@ -51,11 +52,13 @@ class CPSYinFiles:
         if yin_key not in self.yin_map:
             f = self.get_yin_file(filename)
             self.yin_map[yin_key] = yin_cps.CPSParser(self.context, f)
-            self.yin_map[yin_key].load(prefix=prefix)
-            self.yin_map[yin_key].walk()
+            _cps_parser = self.yin_map[yin_key]            
+            _cps_parser.load(prefix=prefix)
+            _cps_parser.walk()
 
-            self.context['model-names'][
-                self.yin_map[yin_key].module.name()] = yin_key
+            self.context['model-names'][_cps_parser.module.name()] = yin_key
+            self.context['model-names'][_cps_parser.module.name()+'_model_'] = _cps_parser
+            
         return self.yin_map[yin_key]
 
     def check_deps_loaded(self, module, context):
@@ -84,6 +87,7 @@ class CPSYinFiles:
         context['current_depends'].append(module)
 
     def load(self, yang_file, prefix=None):
+        """Convert the yang file to a yin file and load the model"""
         return self.get_parsed_yin(yang_file, prefix)
 
     def seed(self, filename):
@@ -111,39 +115,51 @@ class CPSYinFiles:
         shutil.rmtree(self.tmpdir)
 
 
+
 class CPSYangModel:
     model = None
     coutput = None
+                
+    def _default_ctx(self):
+                        
+        context = dict()
+        context['output'] = {}
+        context['output']['header'] = {}
+        context['output']['src'] = {}        
+        context['history'] = {}
+        context['identity'] = {}
+        context['types'] = {}
+        context['enum'] = {}
+        context['union'] = {}
+        context['model-names'] = {}
+        return context
+               
+    def __init__(self, args):                
+        self.filename = args['file']
+        self.context = self._default_ctx()
+        
+        ctx = self.context
+        ctx['args'] = args
+        
+        _modules_ = { 'cps' : cps_c_lang.Language(ctx), 'cms' : cms_lang.Language(ctx) }
+        
+        ctx['output']['language'] = _modules_ #not really a language.. more of output plugins
+        ctx['history']['output'] = ctx['args']['history']
+        ctx['file-finder'] = CPSYinFiles(ctx)
+        
+        #delete next cleanup  
+        ctx['loader'] = self.context['file-finder']
 
-    def __init__(self, args):
-        self.args = args
-        self.filename = self.args['file']
-        self.context = dict()
-        self.context['args'] = args
-        self.context['output'] = {}
-        self.context['output']['header'] = {}
-        self.context['output']['src'] = {}
-        self.context['output']['language'] = {}
-        self.context['output']['language'][
-            'cps'] = cps_c_lang.Language(self.context)
-        self.context['output']['language'][
-            'cms'] = cms_lang.Language(self.context)
-        self.context['history'] = {}
-        self.context['history']['output'] = self.args['history']
+        self.model = ctx['file-finder'].load(self.filename)
+        
+        #assume order independent modules
+        for i in _modules_.values():
+            i.setup(self.model)
 
-        self.context['types'] = {}
-        self.context['enum'] = {}
-        self.context['union'] = {}
-        self.context['model-names'] = {}
-
-        self.context['loader'] = CPSYinFiles(self.context)
-
-        self.model = self.context['loader'].load(self.filename)
-        for i in self.context['output']['language']:
-            self.context['output']['language'][i].setup(self.model)
-
-        for i in self.context['args']['output'].split(','):
-            self.context['output']['language'][i].write()
+        for plugin in ctx['args']['output'].split(','):
+            if plugin in _modules_:
+                _modules_[plugin].write()
+            
 
     def write_details(self, key):
         class_type = self.context['output'][key]
