@@ -57,6 +57,7 @@ class CPSParser:
     all_node_map = None
     container_map = None
     root_node = None
+    augment_list = []
 
     __supports_duplicate_entries= ['augment']
 
@@ -248,6 +249,8 @@ class CPSParser:
                 __augmented_node = _key_model.all_node_map[_tgt_node]
                 
                 self.module.set_if_augments()
+                if _key_model not in self.augment_list:
+                    self.augment_list.append(_key_model)
                 i.set('target-namespace',__ns)
                 i.set('name',_tgt_node)
                 i.set('model',_key_model)
