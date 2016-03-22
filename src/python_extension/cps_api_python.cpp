@@ -138,7 +138,7 @@ static PyObject * py_cps_config(PyObject *self, PyObject *args) {
     //embedded
     //attr_type
     //data_type
-    if (! PyArg_ParseTuple( args, "ssssO!s", &_id,&path,&name,&desc,&PyBool_Type,&has_emb, &attr_type,&data_type )) return NULL;
+    if (! PyArg_ParseTuple( args, "ssssO!ss", &_id,&path,&name,&desc,&PyBool_Type,&has_emb, &attr_type,&data_type )) return NULL;
 
     long long id = strtoll(_id,NULL,0);
 
@@ -348,31 +348,120 @@ static PyObject * py_cps_key_from_name(PyObject *self, PyObject *args) {
 
 #define CPS_FN_DOC(x) x##_doc
 
-PyDoc_STRVAR(cps_get__doc__, "Perform a CPS get using an list of keys. Currently the keys should be in x.y.z format.");
-PyDoc_STRVAR(cps_trans__doc__, "Perform a CPS transaction operation the dictionary provided. "
-        " The dictionary needs to contain a dictionary of settings.");
+PyDoc_STRVAR(cps_get__doc__, "get(fl_list,resp_list)\n\n"
+    "Perform a get using an list of objects which contains keys and filters\n"
+    "@fl_list - list which contains the CPS objects along with CPS keys\n"
+    "           and filter data\n"
+    "@resp_list - list which is will contain returned the CPS objects\n"
+    "             when get operation was successful\n"
+    "@return - True if successful otherwise False");
+
+PyDoc_STRVAR(cps_trans__doc__, "transaction(op_list)\n\n"
+    "Perform CPS transactions with operations and objects specified\n"
+    "in the op_list\n"
+    "@tr_list - list of transactions in form of python dictionary\n"
+    "           which contains the operation to be performed and\n"
+    "           the object which has the relevant data for that\n"
+    "           operation\n"
+    "@return - True if successful otherwise False");
+
 PyDoc_STRVAR(cps_doc__, "A python interface to the CPS API");
 
 PyDoc_STRVAR(cps_cps_generic_doc__, "A CPS mapping function.");
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_byte_array_key), "arraykey(ba)\n\n"
+    "Return the CPS key from bytearray.\n"
+    "Return empty string if bytearray does not have a valid cps key");
 
-PyDoc_STRVAR(CPS_FN_DOC(py_cps_map_init), "Initialize the CPS API.  This API is optional and will be initialized on first use.");
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_map_init), "init()\n\n"
+    "Initialize the CPS class map API. This API is deprecated.");
 
-PyDoc_STRVAR(CPS_FN_DOC(py_cps_byte_array_to_obj), "Convert a bytearray to a python dictionary containing both 'key' and 'data' elements.");
-PyDoc_STRVAR(CPS_FN_DOC(py_cps_obj_to_array), "Convert a python dictionary containing both 'key' and 'data' elements to a bytearray.");
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_byte_array_to_obj), "convarray(ba)\n\n"
+    "Return a python dictionary containing both 'key' and 'data' elements\n"
+    "from bytearray ba.Return an empty python dictionary If byte array\n"
+    "does not have a valid key or data ");
 
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_obj_to_array), "convdict(key,data)\n\n"
+    "Returns a bytearray with a CPS key and python dictionary containing\n"
+    "valid 'data' elements");
 
-PyDoc_STRVAR(CPS_FN_DOC(py_cps_info), "Given either a key string or a object element name, return the list of attributes that it contains.  Optionally pass True to the API to get all attributes and contained attributes.");
-PyDoc_STRVAR(CPS_FN_DOC(py_cps_types), "Return extended details on a specific attribute.  The attribute can be a numeric string or a full attribute name.");
-PyDoc_STRVAR(CPS_FN_DOC(py_cps_enabled), "Given a key, see if there is an object registration.");
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_info), "info(key,no_child_info=True)\n\n"
+    "Given either a key string or a object element name, return the list\n"
+    "of attributes and ids that it contains. Optionally pass False to\n"
+    "get contained attributes and its id of object's children as well.");
 
-PyDoc_STRVAR(CPS_FN_DOC(py_cps_stats), "Retrieve the stats object for the entity specified.");
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_types), "type(key)\n\n"
+    "Return extended details on a specific attribute including type,id,\n"
+    "description,key,name and whether attribute is embedded.The key can\n"
+    "be a numeric string or a full attribute name.");
+
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_enabled), "enabled(key)\n\n"
+    "Given a key, see if there is an object registration.\n"
+    "Returns True if key is registered else False");
+
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_stats), "stats(key)\n\n"
+    "Retrieve the CPS statistic object(number of set/get request,\n"
+    "connection failure invalid request...) for the given key.");
+
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_config), "config(id,key,name,description,is_embedded,yang_type,data_type)\n\n"
+    "Configure a custom attribute to class mapping\n"
+    "@id - numeric id of the attribute\n"
+    "@key - key of the attribute in the 'x.x.x.x....' format\n"
+    "@name - name of the attribute\n"
+    "@description - description of the attribute\n"
+    "@is_embedded - whether attribute is embedded\n"
+    "@yang_type - yang type of the attribute (leaf,leaf-list,container..)\n"
+    "@data_type  - data type of the attribute (bool,bin,unt8_t,...)\n"
+    "@return - True if added to class mapping otherwise False");
+
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_key_from_name), "key_from_name(qualifier,object_path)\n\n"
+    "Returns a CPS key for a given qualifier and object path\n"
+    "@qualifier - qualifier for the key(target,observed..) \n"
+    "@object_path - Complete object path\n"
+    "@return - CPS key if successful otherwise returns empty string\n");
+
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_event_connect), "event_connect()\n\n"
+    "Returns a CPS handle to register send/receive events");
+
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_event_wait), "event_wait(handle)\n\n"
+    "Wait for the registered event to be published\n"
+    "@handle - CPS event handle\n"
+    "@return - published CPS object");
+
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_event_close), "event_close(handle)\n\n"
+    "Close the CPS event handle\n"
+    "@handle - CPS event handle\n"
+    "@return - True if event handle was closed successfully otherwise False");
+
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_event_reg), "event_reg(handle,key)\n\n"
+    "Register to be notified when an event for given key gets published\n"
+    "@handle - CPS event handle\n"
+    "@key - CPS key of object\n"
+    "@return - True if event handle was closed successfully otherwise False");
+
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_event_send), "event_send(handle,obj)\n\n"
+    "Send an event object using the CPS event handle\n"
+    "@handle - CPS event handle\n"
+    "@obj - object to be send with valid CPS key\n"
+    "@return - True if event handle was closed successfully otherwise False");
+
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_obj_init), "obj_init()\n\n"
+    "Return a CPS object registration handle to register callback\n"
+    "functions related to CPS operations");
+
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_obj_reg), "obj_register(handle,key,callbacks)\n\n"
+    "Register a get/set callback for the CPS key\n"
+    "@handle - CPS object registration handle\n"
+    "@key - CPS key for the object\n"
+    "@callbacks - python dictionary with 'get' and 'transaction' as key\n"
+    "             and its callback function as its value\n"
+    "@return - True if successful otherwise False");
 
 /* A list of all the methods defined by this module. */
 /* "METH_VARGS" tells Python how to call the handler */
 static PyMethodDef cps_methods[] = {
     {"init",  py_cps_map_init, METH_VARARGS, CPS_FN_DOC(py_cps_map_init)},
     {"convarray",  py_cps_byte_array_to_obj, METH_VARARGS, CPS_FN_DOC(py_cps_byte_array_to_obj)},
-    {"arraykey",  py_cps_byte_array_key, METH_VARARGS, cps_cps_generic_doc__},
+    {"arraykey",  py_cps_byte_array_key, METH_VARARGS, CPS_FN_DOC(py_cps_byte_array_key)},
     {"convdict",  py_cps_obj_to_array, METH_VARARGS, CPS_FN_DOC(py_cps_obj_to_array)},
 
     {"info",  py_cps_info, METH_VARARGS, CPS_FN_DOC(py_cps_info)},
@@ -380,20 +469,20 @@ static PyMethodDef cps_methods[] = {
     {"enabled", py_cps_enabled, METH_VARARGS, CPS_FN_DOC(py_cps_enabled)},
 
 
-    {"config",py_cps_config, METH_VARARGS, cps_cps_generic_doc__ },
-    {"key_from_name",py_cps_key_from_name, METH_VARARGS, cps_cps_generic_doc__ },
+    {"config",py_cps_config, METH_VARARGS, CPS_FN_DOC(py_cps_config) },
+    {"key_from_name",py_cps_key_from_name, METH_VARARGS, CPS_FN_DOC(py_cps_key_from_name) },
     {"get_keys",py_cps_get_keys, METH_VARARGS, cps_cps_generic_doc__ },
 
     //Event processing
-    {"event_register",  py_cps_event_reg, METH_VARARGS, cps_cps_generic_doc__},
-    {"event_close",  py_cps_event_close, METH_VARARGS, cps_cps_generic_doc__},
-    {"event_connect",  py_cps_event_connect, METH_VARARGS, cps_cps_generic_doc__},
-    {"event_wait",  py_cps_event_wait, METH_VARARGS, cps_cps_generic_doc__},
-    {"event_send",  py_cps_event_send, METH_VARARGS, cps_cps_generic_doc__},
+    {"event_register",  py_cps_event_reg, METH_VARARGS, CPS_FN_DOC(py_cps_event_reg)},
+    {"event_close",  py_cps_event_close, METH_VARARGS, CPS_FN_DOC(py_cps_event_close)},
+    {"event_connect",  py_cps_event_connect, METH_VARARGS, CPS_FN_DOC(py_cps_event_connect)},
+    {"event_wait",  py_cps_event_wait, METH_VARARGS, CPS_FN_DOC(py_cps_event_wait)},
+    {"event_send",  py_cps_event_send, METH_VARARGS, CPS_FN_DOC(py_cps_event_send)},
 
     //object registration..
-    {"obj_init",  py_cps_obj_init, METH_VARARGS, cps_cps_generic_doc__},
-    {"obj_register",  py_cps_obj_reg, METH_VARARGS, cps_cps_generic_doc__},
+    {"obj_init",  py_cps_obj_init, METH_VARARGS, CPS_FN_DOC(py_cps_obj_init)},
+    {"obj_register",  py_cps_obj_reg, METH_VARARGS, CPS_FN_DOC(py_cps_obj_reg)},
     {"obj_close",  py_cps_obj_close, METH_VARARGS, cps_cps_generic_doc__},
     {"obj_stats", py_cps_stats, METH_VARARGS, CPS_FN_DOC(py_cps_stats)},
 

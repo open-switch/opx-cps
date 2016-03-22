@@ -35,10 +35,6 @@ def set_mod_name(ns, node):
 
 
 class Module:
-    mod_ns = ""
-    module_name = ""
-    filename = ""
-    augments = False
 
     def get_prefix(self, node):
         n = node.find(self.mod_ns + 'prefix')
@@ -67,16 +63,11 @@ class Module:
 
     def __init__(self, filename, node):
         self.filename = filename
-        self.mod_ns = get_namespace(node)
+        self.augments = False
+        self.mod_ns = get_namespace(node)	
         self.module = self.get_module(node)
-        self.prefix = self.get_prefix(node)
-        if len(self.prefix) > 0:
-            self.module_name = self.prefix
-        else:
-            self.module_name = self.module
+        self.update_prefix(self.get_prefix(node))
 
-        if len(self.module_name) == 0:
-            sys.exit(1)
 
     def filter_ns(self, name):
         return name[len(self.mod_ns):]
@@ -84,14 +75,40 @@ class Module:
     def get_file(self):
         return os.path.basename(self.filename)
 
+    def update_prefix(self,__prefix):
+        self.prefix = __prefix
+        if len(self.prefix) > 0:
+            self.module_name = self.prefix
+        else:
+            self.module_name = self.module
+        if len(self.module_name) == 0:
+            raise Exception('Invalid module name/prefix')
+
     def ns(self):
         return self.mod_ns
+
+    def prefix(self):
+        return self.prefix
 
     def name(self):
         return self.module_name
 
     def model_name(self):
         return self.module
+
+    def add_prefix(self,node_name):
+        if node_name.find(':')==-1:
+            return self.prefix + ':' + node_name
+        return node_name
+
+    def strip_prefix(self,node_name):
+        loc = node_name.find(':')
+        if loc!=-1:
+            node_name = node_name[loc:]
+        return node_name
+
+    def replace_prefix(self,node_name):
+        return self.add_prefix(self.strip_prefix(node_name))
 
     # Create a list that also has the NS prefix to the names
     def prepend_ns_to_list(self, types):
