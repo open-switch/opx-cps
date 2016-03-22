@@ -21,6 +21,8 @@ BEGIN { indoc = 0 }
             str = $0;
             pattern = "\"";
             gsub(pattern, "", str);
+            pattern = ");";
+            gsub(pattern, "", str);
             print str;
             if (0 != index($0, ");")) {
                 indoc = 0;
