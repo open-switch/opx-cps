@@ -39,6 +39,7 @@ class CPSParser:
     supported_list_containing_children = [
         'augment',"container", "grouping", "choice", "list", "rpc", "case", "module", "type", "typedef", "input", "output"]
 
+    augment_list = []
     supported_list_of_leaves_have_attr_ids = [
         'augment',"container", "case", "list", "leaf", "leaf-list", "rpc", "choice", "input", "output"]
 
@@ -244,6 +245,8 @@ class CPSParser:
                 __augmented_node = _key_model.all_node_map[_tgt_node]
 
                 self.module.set_if_augments()
+                if _key_model not in self.augment_list:
+                    self.augment_list.append(_key_model)
                 i.set('target-namespace',__ns)
                 i.set('name',_tgt_node)
                 i.set('model',_key_model)
