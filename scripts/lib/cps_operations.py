@@ -15,6 +15,12 @@
 # permissions and limitations under the License.
 #
 
+"""@package cps_operations
+
+CPS Transaction Operations. Can be accessed by importing module 'cps_utils'.
+
+"""
+
 ''' CPS Operation utilities'''
 
 import cps
@@ -24,11 +30,11 @@ class CPSTransaction:
 
     def __init__(self, list_of_op_obj_pairs=[]):
         """
-        Constructor for transaction object
+        Constructor for a transaction object.
         @list_of_op_obj_pairs - list of tupples which contains the type of
                                 operation("create","set","delete","rpc")
-                                and the object. Based on type of operation
-                                it will add the object to trascation list
+                                and the object. Based on the type of operation
+                                it will add the object to transaction list.
         """
         self.tr_list = []
         if not isinstance(list_of_op_obj_pairs, list):
@@ -50,7 +56,7 @@ class CPSTransaction:
 
     def create(self, obj):
         """
-        Add an object to transaction list with "create" operation
+        Add an object to transaction list with "create" operation.
         @obj - object to be added to the transaction
         """
         tr_obj = {}
@@ -60,7 +66,7 @@ class CPSTransaction:
 
     def delete(self, obj):
         """
-        Add an object to transaction list with "delete" operation
+        Add an object to transaction list with "delete" operation.
         @obj - object to be added to the transaction
         """
         tr_obj = {}
@@ -70,7 +76,7 @@ class CPSTransaction:
 
     def set(self, obj):
         """
-        Add an object to transaction list with "set" operation
+        Add an object to transaction list with "set" operation.
         @obj - object to be added to the transaction
         """
         tr_obj = {}
@@ -80,7 +86,7 @@ class CPSTransaction:
 
     def rpc(self, obj):
         """
-        Add an object to transaction list with "rpc" operation
+        Add an object to transaction list with "rpc" operation.
         @obj - object to be added to the transaction
         """
         tr_obj = {}
@@ -90,7 +96,7 @@ class CPSTransaction:
 
     def commit(self):
         """
-        Commit the transaction list and return the response
+        Commit the transaction list and return the response.
         """
         if cps.transaction(self.tr_list):
             return self.tr_list

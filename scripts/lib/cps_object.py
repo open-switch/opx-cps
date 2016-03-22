@@ -15,6 +15,14 @@
 # permissions and limitations under the License.
 #
 
+"""@package cps_object
+
+CPS Object Utilities
+
+Defines the CPS Object class. Can be accessed by importing module 'cps_utils'.
+
+"""
+
 ''' CPS Object utilities'''
 
 import cps
@@ -28,14 +36,14 @@ class CPSObject:
 
     def __init__(self, module="", qual="target", data={}, obj={}):
         """
-        Constructor to create CPS object
+        Constructor to create a CPS object.
         @module - module key string, can be empty in case of
-                  passing get object as parameter
-        @qual - qulifier by default is target
+                  providing get object as parameter
+        @qual - CPS qualifier (by default set to 'target')
         @data - data is a dictionary which can contain attr_str and
-                values which would be added to objectimpor
-        @obj  - object received from cps.get function call, CPSobject
-                would be created from that object
+                values which will be added to object
+        @obj  - object received from 'cps.get' function call, CPS object
+                will be created from that object
         """
 
         self.obj = {'key': '', 'data': {}}
@@ -66,16 +74,16 @@ class CPSObject:
 
     def set_key(self, key):
         """
-        Change the key of the object
-        @key - cps key string
+        Change the key of the object.
+        @key - CPS key string
         """
         self.obj['key'] = key
 
     def generate_path(self, attr_str):
         """
-        Generates the full attribute path given just the attribute string
-        In case of embedded attribute where attr_str could be list, will keep
-        appending the list string and return the full path
+        Generates the full attribute path given an attribute string.
+        In case of embedded attribute where attr_str could be a list, will keep
+        appending the list string and return the full path.
         @attr_str - attribute string  or attribute string list
         """
         if "/" in attr_str:
@@ -92,9 +100,10 @@ class CPSObject:
     def add_attr_type(self, attr_str, type):
         """
         Add a attribute type to accurately convert attribute value to and from
-        bytearray. Only use this API for special data types like ipv4, ipv6, hex.
-        Supported data type - string, hex, mac, ipv4, ipv6, uint8_t, unit16_t,
-        uint32_t, uint64_t
+        bytearray. Only use this API for special data types such as 'ipv4', 'ipv6', 'hex'.
+        Supported data types:
+            string, hex, mac, ipv4, ipv6,
+            uint8_t, unit16_t, uint32_t, uint64_t
         @attr_str - attribute string
         @type - type of the attribute
         """
@@ -103,7 +112,7 @@ class CPSObject:
 
     def add_list(self, attr_str, val_list):
         """
-        Add a list of values for a given attribute id string in the object
+        Add a list of values for a given attribute id string in the object.
         @attr_str - attribute string
         @val_list - list of values for given attribute string
         """
@@ -118,7 +127,7 @@ class CPSObject:
 
     def add_dict(self, attr_str, val_map):
         """
-        Add values in dictionary for a given attribute id string in the object
+        Add values in dictionary for a given attribute id string in the object.
         @attr_str - attribute string
         @val_map - values with key for given attribute string
         """
@@ -137,7 +146,7 @@ class CPSObject:
 
     def add_attr(self, attr_str, val):
         """
-        Add a attribute and its value to object
+        Add a attribute and its value to the object.
         @attr_str - attribute string
         @val - value of the attribute
         """
@@ -154,7 +163,7 @@ class CPSObject:
 
     def fill_data(self, data_dict):
         """
-        Add attribute strings and its values from dictionary
+        Add attribute strings and its values from dictionary.
         @data_dict - dictionary which contains attribute string ids
                      and its values
         """
@@ -201,7 +210,7 @@ class CPSObject:
         Compare the attribute ids and its values given the key_dict to see if they
         match in the object. If attribute ids don't exist return true, if they exist and
         have the same value as in the key_dict return true otherwise return false
-        @key_dict - dictioanry which contains attribute ids and its values to be compared.
+        @key_dict - dictionary which contains attribute ids and its values to be compared.
         """
         for key in key_dict:
             full_key = self.generate_path(key)
@@ -212,13 +221,13 @@ class CPSObject:
 
     def get(self):
         """
-        Get the internal object which can be used with the cps get and transaction apis
+        Get the internal object which can be used with the CPS 'get' and transaction APIs.
         """
         return self.obj
 
     def get_key(self):
         """
-        Get the key from the object
+        Get the key of the object.
         """
         return self.obj['key']
 
@@ -240,7 +249,7 @@ class CPSObject:
     def get_attr_data(self, attr):
         """
         Get the user readable attribute value for the given attribute id. If the attribute
-        value exist in the obejct, return the value otherwise raise an value exceprtion
+        value exists in the obejct, return the value otherwise raise an value exception.
         @attr - attribute id whose value is to be returned
         """
         attr_path = self.generate_path(attr)
@@ -280,9 +289,9 @@ class CPSObject:
 
     def convert_to_ba_dict(self, data_dict):
         """
-        Convert the dictionary of atribute-ids and its normal values to a dictioanry
-        which has full attribute-ids and its byte array values
-        @data_dict - dictaionry which contains the attribute ids and its normal values
+        Convert the dictionary of atribute-ids and its normal values to a dictionary
+        which has full attribute-ids and its byte array values.
+        @data_dict - dictionary which contains the attribute ids and its normal values.
         """
         converted_dict = {}
         for key, val in data_dict.items():
@@ -294,6 +303,7 @@ class CPSObject:
 
 def clone(self, obj):
     """
-    Clone a new object from given object
+    Clones a new object from a given object.
+    @obj - object to clone
     """
     return deepcopy(obj)
