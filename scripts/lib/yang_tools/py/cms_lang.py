@@ -70,9 +70,9 @@ class Language:
 
     def change_name_for_augment(self, name):
 
-        if self.model.all_node_map[name].get('augmented') ==True:
-             ns = self.model.all_node_map[name].get('target-namespace')
-             ns_index = str.find(name, "/" + ns + "/") 
+        if self.all_node_map[name].get('augmented') ==True:
+             ns = self.all_node_map[name].get('target-namespace')
+             ns_index = str.find(name, "/" + ns + "/")
              if ns_index:
                   name1 = name[:ns_index]
                   name2= name[ns_index+len(ns)+1:]
@@ -98,7 +98,7 @@ class Language:
     def setup_names(self):
         self.names = {}
         self.aug_names = {}
-        for k in self.model.all_node_map:
+        for k in self.all_node_map:
             name = self.name_to_cms_name(self.change_prefix(k,self.model))
             self.names[k] = name
             self.names[name]=k
@@ -112,14 +112,14 @@ class Language:
         #go through the list of modules augmented and setup names for nodes
         if self.module_obj.get_if_augments() is True:
             for model in self.model.augment_list:
-               for k in model.all_node_map:
+               for k in self.all_node_map:
                    if k is model.module.prefix:
                        continue
                    name = self.name_to_cms_name(self.change_prefix(k,model))
                    self.names[k] = name
                    self.names[name] = k
-                
-                  
+
+
         for k in self.model.key_elements:
             for key_element in self.model.key_elements[k].split():
                 if key_element in self.names: continue
@@ -139,19 +139,23 @@ class Language:
         model_list.append(self.model)
         for j in self.model.augment_list:
             model_list.append(j)
-        for model in model_list:
-            for k in model.all_node_map:
-                if k.rfind('/') != -1:
-                    name = k[k.rfind('/') + 1:]
-                else:
-                    name = k
-                to_add = self.name_to_cms_name(name)
-                index = 0
-                while to_add in seen:
-                    to_add = name + str(index)
-                    index += 1
-                name = to_add
-                self.names_short[self.names[k]] = name
+
+        for k in self.all_node_map:
+            if k.rfind('/') != -1:
+                name = k[k.rfind('/') + 1:]
+            else:
+                name = k
+            to_add = self.name_to_cms_name(name)
+
+            index = 0
+            while to_add in seen:
+                to_add = name + str(index)
+                index += 1
+            seen[to_add] = to_add
+
+            name = to_add
+
+            self.names_short[self.names[k]] = name
 
         self.cps_names = self.context['output']['language']['cps'].names
 
@@ -173,7 +177,7 @@ class Language:
 
             keys = ""
             keys_raw = keys_raw.split()
-            if self.model.all_node_map[k].get('augmented') is True:
+            if self.all_node_map[k].get('augmented') is True:
                 keys_raw = keys_raw[2:]
             else:
                 keys_raw = keys_raw[1:]
@@ -193,7 +197,7 @@ class Language:
 
             keys = ""
             keys_raw = keys_raw.split()
-            if self.model.all_node_map[k].get('augmented') is True:
+            if self.all_node_map[k].get('augmented') is True:
                 keys_raw = keys_raw[2:]
             else:
                 keys_raw = keys_raw[1:]
@@ -208,11 +212,18 @@ class Language:
         self.module = self.model.module.module
         self.module_obj = self.model.module
 
+        __combined_map = {}
+        for mod in self.model.context['loader'].yin_map.keys():
+            __all_node_map = self.model.context['loader'].yin_map[mod].all_node_map
+            __combined_map.update(__all_node_map)
+        self.all_node_map = __combined_map
+
         self.supported_list_containing_cb = self.model.module.prepend_ns_to_list(
             self.supported_list_containing_cb)
 
         self.setup_names()
         self.find_cb_nodes()
+
 
     def rw_access(self, yin_node):
         config_access = yin_node.find(self.model.module.ns() + 'config')
@@ -225,13 +236,13 @@ class Language:
         real_path = self.names[cb_node]
         model = self.model
         while real_path.find('/') != -1:
-            node = model.all_node_map[real_path]
+            node = self.all_node_map[real_path]
             if "augment" in node.tag:
                  model = node.get('model')
                  #splice augmenting prefix from real_path
                  slash_index = real_path.find('/')
                  real_path = real_path[slash_index+1:]
-                 node = model.all_node_map[real_path]
+                 node = self.all_node_map[real_path]
             if self.rw_access(node) == False:
                 return True
             real_path = model.parent[real_path]
@@ -241,7 +252,7 @@ class Language:
         leaves = []
         for leaf in self.model.container_map[full_name]:
             leaf = leaf.name
-            yin_node = self.model.all_node_map[leaf]
+            yin_node = self.all_node_map[leaf]
             if yin_node.tag != self.model.module.ns() + 'leaf' and yin_node.tag != self.model.module.ns() + 'leaf-list':
                 continue
             leaves.append(leaf)
@@ -253,7 +264,7 @@ class Language:
 
         ro_l = []
         rw_l = []
-        yin_node = self.model.all_node_map[full_name]
+        yin_node = self.all_node_map[full_name]
         is_rpc = False
         if yin_node.tag == self.model.module.ns() + 'rpc':
             is_rpc = True
@@ -266,7 +277,7 @@ class Language:
                 return rw_l
         for leaf in self.model.container_map[full_name]:
             leaf = leaf.name
-            yin_node = self.model.all_node_map[leaf]
+            yin_node = self.all_node_map[leaf]
             if yin_node.tag != self.model.module.ns() + 'leaf' and yin_node.tag != self.model.module.ns() + 'leaf-list':
                 if is_rpc:
                     if yin_node.tag == self.model.module.ns() + 'container':
@@ -301,7 +312,7 @@ class Language:
 
     def node_rw_access(self, cb_node):
         full_name = self.names[cb_node]
-        yin_node = self.model.all_node_map[full_name]
+        yin_node = self.all_node_map[full_name]
         if self.rw_access(yin_node) == False:
             return False
         l = self.get_node_leaves_based_on_access(cb_node, False)
@@ -315,20 +326,20 @@ class Language:
         print "  /* Keys start... */ "
         for i in keys.split():
             full_name = self.names[i]
-            if full_name in self.model.all_node_map.keys():
+            if full_name in self.all_node_map.keys():
                 model = self.model
-                yin_node = self.model.all_node_map[full_name]
+                yin_node = self.all_node_map[full_name]
             else:
                 for model in self.model.augment_list:
-                    if full_name in model.all_node_map.keys():
-                        yin_node = model.all_node_map[full_name]
+                    if full_name in self.all_node_map.keys():
+                        yin_node = self.all_node_map[full_name]
             if yin_node is not None:
                 if yin_node.tag == model.module.ns() + 'leaf' or yin_node.tag == model.module.ns() + 'leaf-list':
                     print "  cma_value_t " + self.names_short[i] + "_kval;"
                     if self.names[i] not in self.aug_names:
                         key_name = i
-                    else: 
-                        key_name = self.aug_names[self.names[i]] 
+                    else:
+                        key_name = self.aug_names[self.names[i]]
                     print "  const bool " + self.names_short[i] + "_kval_valid = cma_get_key_data(" + object + "," + key_name + ",&" + self.names_short[i] + "_kval);"
                     print "  (void)" + self.names_short[i] + "_kval_valid;"
                     print ""
@@ -354,7 +365,7 @@ class Language:
             print "      switch(id) {"
         leaf_present=False
         for leaf in self.get_node_leaves_based_on_access(cb_node, read_only):
-            if self.model.all_node_map[leaf].tag == self.model.module.ns() + 'leaf-list':
+            if self.all_node_map[leaf].tag == self.model.module.ns() + 'leaf-list':
                 if function.find('get') != -1:
                     leaf_present = True
                     print "          case " + self.aug_names[leaf] + ":"
@@ -488,8 +499,8 @@ class Language:
     def write_main_c(self):
         module_us = self.name_to_cms_name(self.module)
         for elem in self.cb_node_keys:
-            if "augment" not in self.model.all_node_map[self.names[elem]].tag:
-                print "#include  \""+ self.get_aug_key_for_key(elem) + ".h\""  
+            if "augment" not in self.all_node_map[self.names[elem]].tag:
+                print "#include  \""+ self.get_aug_key_for_key(elem) + ".h\""
         print "#include  \"" + self.module + ".h\""
         print "#include  \"" + module_us + "_init.h\""
         print "#include  \"cma_init.h\""
@@ -508,7 +519,7 @@ class Language:
         print "{"
         print ""
         for elem in self.cb_node_keys:
-            if "augment" not in self.model.all_node_map[self.names[elem]].tag:
+            if "augment" not in self.all_node_map[self.names[elem]].tag:
                 print "    " +  "cma_init_" + self.get_aug_key_for_key(elem) +"();"
         #  If the model only augments, there is no need to register
         if self.module_obj.get_if_augments() != True:
