@@ -84,7 +84,6 @@ class Language:
         prefix = model.module.prefix
         loc = name.find(prefix)
         if loc != 0:
-            print "Not found " + name
             return name
         name = model.module.module + name[len(prefix):]
         return name
