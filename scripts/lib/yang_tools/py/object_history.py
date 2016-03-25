@@ -187,18 +187,20 @@ class history:
         self.the_dict[self.GLOBAL_SECTION] = enum_tracker_int(
             self.GLOBAL_enums.indexer, self.GLOBAL_SECTION)
 
-        with open(self.the_name, "r") as the_file:
-            ix_reader = IndexFile(the_file)
-            while True:
-                d = ix_reader.get()
-                if not 'name' in d:
-                    break
-                if not d['name'] in self.the_dict:
-                    self.the_dict[d['name']] = enum_tracker_int(
-                        IndexTracker(None), d['name'])
-
-                self.the_dict[d['name']].setup(d['list'], must_be_unique=True)
-
+        try:
+            with open(self.the_name, "r") as the_file:
+                ix_reader = IndexFile(the_file)
+                while True:
+                    d = ix_reader.get()
+                    if not 'name' in d:
+                        break
+                    if not d['name'] in self.the_dict:
+                        self.the_dict[d['name']] = enum_tracker_int(
+                            IndexTracker(None), d['name'])
+    
+                    self.the_dict[d['name']].setup(d['list'], must_be_unique=True)
+        except:
+            pass
 
 
     def get_global(self, name):
