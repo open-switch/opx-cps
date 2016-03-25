@@ -87,7 +87,7 @@ typedef enum cps_api_object_ATTR_TYPE_t {
 } cps_api_object_ATTR_TYPE_t;
 
 /**
- * CPS Object. Each CPS Object has a object key along with a number of attributes.
+ * CPS Object. Each CPS Object has an object key along with a number of attributes.
  */
 typedef void * cps_api_object_t;
 
@@ -114,7 +114,7 @@ typedef void * cps_api_object_list_t;
 cps_api_object_ATTR_TYPE_t cps_api_object_int_type_for_len(size_t len);
 
 /**
- * Create a object from a piece of a array.  The memory for the object will be
+ * Create an object from a section of an array.  The memory for the object will be
  * managed outside of the cps_api_object API but allows the object to be
  * stack based.
  * <p>The minimum size of the array must be CPS_API_MIN_OBJ_LEN.</p>
@@ -194,8 +194,8 @@ cps_api_object_attr_t cps_api_object_attr_get(cps_api_object_t obj, cps_api_attr
 /**
  * Search for all of the attributes listed in attr.  If any of them are missing the call fails
  * with a false.
- * @param obj the object in question
- * @param attr the list of attributes desired
+ * @param obj CPS object
+ * @param attr the list of desired attributes
  * @param pointers the list of attribute pointers
  * @param count the count of both the list of attr ids and the list of pointers
  * @return true if all of the attributes are found, false otherwise

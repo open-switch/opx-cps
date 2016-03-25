@@ -365,24 +365,29 @@ PyDoc_STRVAR(cps_trans__doc__, "transaction(op_list)\n\n"
     "           operation\n"
     "@return - True if successful otherwise False");
 
-PyDoc_STRVAR(cps_doc__, "A python interface to the CPS API");
+PyDoc_STRVAR(cps_doc__, "A Python interface to the CPS API");
 
 PyDoc_STRVAR(cps_cps_generic_doc__, "A CPS mapping function.");
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_byte_array_key), "arraykey(ba)\n\n"
-    "Return the CPS key from bytearray.\n"
-    "Return empty string if bytearray does not have a valid cps key");
+    "Return the CPS key from bytearray 'ba'.\n"
+    "Return empty string if the bytearray does not have a valid CPS key.\n"
+    "@ba - byte array");
 
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_map_init), "init()\n\n"
     "Initialize the CPS class map API. This API is deprecated.");
 
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_byte_array_to_obj), "convarray(ba)\n\n"
     "Return a python dictionary containing both 'key' and 'data' elements\n"
-    "from bytearray ba.Return an empty python dictionary If byte array\n"
-    "does not have a valid key or data ");
+    "from bytearray 'ba'.\n"
+    "Return an empty python dictionary if bytearray\n"
+    "does not have a valid key or data.\n"
+    "@ba - byte array");
 
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_obj_to_array), "convdict(key,data)\n\n"
-    "Returns a bytearray with a CPS key and python dictionary containing\n"
-    "valid 'data' elements");
+    "Returns a bytearray with a CPS key and Python dictionary containing\n"
+    "valid 'data' elements\n"
+    "@key - CPS key\n"
+    "@data - data");
 
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_info), "info(key,no_child_info=True)\n\n"
     "Given either a key string or a object element name, return the list\n"
@@ -391,25 +396,27 @@ PyDoc_STRVAR(CPS_FN_DOC(py_cps_info), "info(key,no_child_info=True)\n\n"
 
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_types), "type(key)\n\n"
     "Return extended details on a specific attribute including type,id,\n"
-    "description,key,name and whether attribute is embedded.The key can\n"
-    "be a numeric string or a full attribute name.");
+    "description,key,name and whether attribute is embedded.\n"
+    "The key can be a numeric string or a full attribute name.\n"
+    "@key - CPS key");
 
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_enabled), "enabled(key)\n\n"
-    "Given a key, see if there is an object registration.\n"
+    "Given a key, determine whether there is an object registration.\n"
     "Returns True if key is registered else False");
 
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_stats), "stats(key)\n\n"
-    "Retrieve the CPS statistic object(number of set/get request,\n"
-    "connection failure invalid request...) for the given key.");
+    "Retrieve the CPS statistics object(number of set/get requests,\n"
+    "connection failure invalid requests...) for the given key.\n"
+    "@key - CPS key");
 
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_config), "config(id,key,name,description,is_embedded,yang_type,data_type)\n\n"
     "Configure a custom attribute to class mapping\n"
     "@id - numeric id of the attribute\n"
-    "@key - key of the attribute in the 'x.x.x.x....' format\n"
+    "@key - key of the attribute in 'x.x.x.x....' format\n"
     "@name - name of the attribute\n"
     "@description - description of the attribute\n"
-    "@is_embedded - whether attribute is embedded\n"
-    "@yang_type - yang type of the attribute (leaf,leaf-list,container..)\n"
+    "@is_embedded - whether attribute is embedded (True) or not (False)\n"
+    "@yang_type - YANG type of the attribute (leaf,leaf-list,container..)\n"
     "@data_type  - data type of the attribute (bool,bin,unt8_t,...)\n"
     "@return - True if added to class mapping otherwise False");
 
@@ -433,26 +440,26 @@ PyDoc_STRVAR(CPS_FN_DOC(py_cps_event_close), "event_close(handle)\n\n"
     "@return - True if event handle was closed successfully otherwise False");
 
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_event_reg), "event_reg(handle,key)\n\n"
-    "Register to be notified when an event for given key gets published\n"
+    "Register to be notified when an event for the given CPS key is published.\n"
     "@handle - CPS event handle\n"
     "@key - CPS key of object\n"
     "@return - True if event handle was closed successfully otherwise False");
 
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_event_send), "event_send(handle,obj)\n\n"
-    "Send an event object using the CPS event handle\n"
+    "Send an event object using the CPS event handle.\n"
     "@handle - CPS event handle\n"
     "@obj - object to be send with valid CPS key\n"
     "@return - True if event handle was closed successfully otherwise False");
 
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_obj_init), "obj_init()\n\n"
-    "Return a CPS object registration handle to register callback\n"
+    "Return a CPS object registration handle to register callback.\n"
     "functions related to CPS operations");
 
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_obj_reg), "obj_register(handle,key,callbacks)\n\n"
-    "Register a get/set callback for the CPS key\n"
+    "Register a get/set callback for the CPS key.\n"
     "@handle - CPS object registration handle\n"
     "@key - CPS key for the object\n"
-    "@callbacks - python dictionary with 'get' and 'transaction' as key\n"
+    "@callbacks - Python dictionary with 'get' and 'transaction' as key\n"
     "             and its callback function as its value\n"
     "@return - True if successful otherwise False");
 
