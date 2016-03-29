@@ -65,6 +65,34 @@ class Language:
         "container", "grouping", "case", "list", "rpc", "choice", "augment"
     ]
 
+    type_extractor_map = {
+      'int8':'CMA_GET_INT8',
+      'int16':'CMA_GET_INT16',
+      'int32':'CMA_GET_INT32',
+      'int64':'CMA_GET_INT64',
+      'uint8':'CMA_GET_INT8',
+      'uint16':'CMA_GET_INT16',
+      'uint32':'CMA_GET_INT32',
+      'uint64':'CMA_GET_INT64',
+      'boolean':'CMA_GET_BOOL',
+      'enumeration':'CMA_GET_ENUM',
+      'string':'CMA_GET_STR'
+    }
+    type_formatter_map = {
+      'int8':'%d',
+      'int16':'%d',
+      'int32':'%d',
+      'int64':'%ll',
+      'uint8':'%u',
+      'uint16':'%u',
+      'uint32':'%u',
+      'uint64':'%ul',
+      'boolean':'%d',
+      'enumeration':'%d',
+      'string':'%s'
+    }
+
+
     def __init__(self, context):
         self.context = context
 
@@ -360,7 +388,9 @@ class Language:
             print "          continue;"
             print "      }"
             print ""
-            print "      /* Extract data from CPS obj and add it to your structure */"
+            print "      /* Extract data from CPS obj and add it to your structure "
+            print "       * Imp: If an attribute with no default value is deleted  "
+            print "       * value will be null. Check for null before using it */"
             print "      switch(id) {"
         leaf_present=False
         for leaf in self.get_node_leaves_based_on_access(cb_node, read_only):
@@ -387,10 +417,10 @@ class Language:
                 if function.find('get') != -1:
                     leaf_present = True
                     print "          case " + self.aug_names[leaf] + ":"
-                    print "              if(cma_get_data_fr_it(&it,&val)){"
-                    print "                  val_is_null(val)? "
-                    print "                     EV_LOG_INFO(MGMT_LOG_SUBSYSTEM,0,\"CMA\",\", value of " + self.names_short[self.names[leaf]] + " is to be deleted.\"):"
-                    print "                     cma_dump_value_with_name(&val,\"" + self.names_short[self.names[leaf]] + "\");"
+                    print "              if(cma_get_data_fr_it(&it,&val) && !val_is_null(val)){"
+                    typ = yin_utils.node_get_type(self.module_obj, self.model.all_node_map[leaf])
+                    if typ in self.type_extractor_map.keys():
+                        print "                  EV_LOG_INFO(MGMT_LOG_SUBSYSTEM,0,\"CMA\",\", value of " + self.names_short[self.names[leaf]] + " is " + self.type_formatter_map[typ] + "\\n\"," + self.type_extractor_map[typ] + "(val));"
                     print "              }"
                     print "              break;"
                 else:
