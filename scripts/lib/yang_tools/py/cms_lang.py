@@ -129,12 +129,13 @@ class Language:
             name = self.name_to_cms_name(self.change_prefix(k,self.model))
             self.names[k] = name
             self.names[name]=k
-            aug_name = self.change_name_for_augment(k)
-            if aug_name != None:
-                aug_name = self.name_to_cms_name(self.change_prefix(aug_name,self.model))
-            else:
-                aug_name = name
-            self.aug_names[k]=aug_name
+            if k.startswith(self.model.module.prefix):
+                aug_name = self.change_name_for_augment(k)
+                if aug_name != None:
+                    aug_name = self.name_to_cms_name(self.change_prefix(aug_name,self.model))
+                else:
+                    aug_name = name
+                self.aug_names[k]=aug_name
 
         #go through the list of modules augmented and setup names for nodes
         if self.module_obj.get_if_augments() is True:
