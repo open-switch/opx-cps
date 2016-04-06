@@ -404,7 +404,7 @@ class Language:
                     print "              for(cma_get_tag_it_inside(obj," + self.aug_names[leaf] + ",&it);"
                     print "                  cps_api_object_it_valid(&it);"
                     print "                  cps_api_object_it_next(&it)) {"
-                    print "                  if(cma_get_data_from_it(&it,&val)){;"
+                    print "                  if(cma_get_data_fr_it(&it,&val)){;"
                     print "                      /* process data here - i.e. val_valid */ "
                     print "                      ;"
                     print "                  }"
