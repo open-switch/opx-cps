@@ -76,7 +76,8 @@ class Language:
       'uint64':'CMA_GET_INT64',
       'boolean':'CMA_GET_BOOL',
       'enumeration':'CMA_GET_ENUM',
-      'string':'CMA_GET_STR'
+      'string':'CMA_GET_STR',
+      'idref':'CMA_GET_STR'
     }
     type_formatter_map = {
       'int8':'%d',
@@ -89,7 +90,8 @@ class Language:
       'uint64':'%ul',
       'boolean':'%d',
       'enumeration':'%d',
-      'string':'%s'
+      'string':'%s',
+      'idref':'%s'
     }
 
 
@@ -585,6 +587,10 @@ class Language:
         print "void cma_init_"  + self.get_aug_key_for_key(elem) + "(void) {"
         print "  cps_api_registration_functions_t f;"
         keys_list = self.cb_node_keys[elem].split(',')
+        # Don't need the children as keys. Only object level registration required
+        for leaf in self.get_node_leaves_based_on_access( elem, True):
+           if self.aug_names[leaf] in keys_list:
+              keys_list.remove(self.aug_names[leaf]) 
         two_keys = keys_list[:2]
         two_keys_aug = []
         #print "0 is " + two_keys[0] + " 1 is " + two_keys[1]
