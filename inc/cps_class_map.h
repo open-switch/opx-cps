@@ -233,6 +233,17 @@ bool cps_api_key_from_attr_with_qual(cps_api_key_t *key,cps_api_attr_id_t id,
  */
 void cps_api_class_map_init(void);
 
+/**
+ * For a given attribute, get the data type
+ *
+ * @param id the attribute ID requested
+ * @param[out] t  the location to put the type
+ *
+ * @return true if the attribute type is found otherwise false
+ */
+bool cps_class_map_attr_type(cps_api_attr_id_t id, CPS_CLASS_DATA_TYPE_t *t);
+
+
 #ifdef __cplusplus
 }
 #endif
