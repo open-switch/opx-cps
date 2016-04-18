@@ -68,6 +68,11 @@ def get_cps_components(input_proc_name):
                 line_offset.append(offset)
             offset += len(line)
 
+    # Return in case of log rotation
+    if len(line_offset) == 0:
+        print "Possible log rotation"
+        return
+
     #ps_list = {pid: process name}
     ps_list = {}
     found = False
