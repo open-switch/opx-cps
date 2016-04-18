@@ -36,7 +36,11 @@ typedef enum {
     cps_api_obj_stat_e_OPERATIONS = ((uint64_t)cps_api_obj_cat_CPS_OBJ<<16)
 }cps_api_obj_stat_elements_t;
 
-/** Statistics operations (statistics counter types) */
+/**
+ * Statistics operations (statistics counter types)
+ * The meta data for these attributes are defined with the dictionary loader - not compiled as part of the build.
+ * */
+
 typedef enum {
     cps_api_obj_stat_BEGIN= cps_api_obj_stat_e_OPERATIONS + 1,
     cps_api_obj_stat_SET_MIN_TIME=cps_api_obj_stat_BEGIN, //!<cps_api_obj_stat_SET_MIN_TIME the minimum amount of time for a set request (us)
@@ -63,6 +67,7 @@ typedef enum {
     cps_api_obj_stat_CLOSE_COUNT, //!<number of closed connections over the stats lifetime
     cps_api_obj_stat_CLOSE_CLEANUP_RUNS,//!<number of times that the cleanup has run on registrations
     cps_api_obj_stat_EVENT_SEND,//!<number of events sent
+    cps_api_obj_stat_PROCESSID, //!< the process ID of the component that handles the request
     cps_api_obj_stat_MAX
 } cps_api_obj_stats_type_t;
 

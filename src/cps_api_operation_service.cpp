@@ -26,13 +26,17 @@
 
 #include "cps_api_operation.h"
 #include "cps_api_object.h"
+
+#include "std_thread_tools.h"
 #include "std_socket_service.h"
 #include "std_rw_lock.h"
 #include "std_mutex_lock.h"
-#include "event_log.h"
+
 #include "std_file_utils.h"
 #include "std_time_tools.h"
 #include "std_assert.h"
+
+#include "event_log.h"
 
 #include <unistd.h>
 #include <unordered_map>
@@ -52,10 +56,18 @@ struct cps_api_operation_data_t {
     void insert_functions(cps_api_registration_functions_t*fun);
 
     uint64_t get_stat(cps_api_obj_stats_type_t stat);
+
     void set_stat(cps_api_obj_stats_type_t stat,uint64_t val);
     void inc_stat(cps_api_obj_stats_type_t stat,int64_t how_much=1);
     void make_ave(cps_api_obj_stats_type_t stat,cps_api_obj_stats_type_t count,uint64_t val);
+    bool exists(cps_api_obj_stats_type_t stat) ;
 };
+
+bool cps_api_operation_data_t::exists(cps_api_obj_stats_type_t s) {
+    std_mutex_simple_lock_guard lg(&mutex);
+    auto it = stats.find(s);
+    return it!=stats.end();
+}
 
 uint64_t cps_api_operation_data_t::get_stat(cps_api_obj_stats_type_t stat) {
     std_mutex_simple_lock_guard lg(&mutex);
@@ -317,8 +329,9 @@ static bool cps_api_handle_stats(cps_api_operation_data_t *op, int fd, size_t le
 
     cps_api_obj_stats_type_t cur = cps_api_obj_stat_BEGIN;
     for ( ; cur < cps_api_obj_stat_MAX ; cur= (cps_api_obj_stats_type_t)(cur+1) ) {
-        cps_api_object_attr_add_u64(og.get(),cur,op->get_stat(cur));
+        if (op->exists(cur)) cps_api_object_attr_add_u64(og.get(),cur,op->get_stat(cur));
     }
+    cps_api_object_attr_add_u64(og.get(),cps_api_obj_stat_PROCESSID,std_process_id_get());
 
     if (!cps_api_send_one_object(fd,cps_api_msg_o_STATS,og.get())) return false;
 
