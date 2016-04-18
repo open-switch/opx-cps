@@ -117,8 +117,11 @@ def get_cps_components(input_proc_name):
     comp_qualifier = {'1': 'target', '2': 'observed', '3': 'proposed', '4': 'realtime', '5': 'registration'}
     cps_process = cps_obj_info.keys()
 
+    if len(cps_process) == 0:
+        print "Not registered to CPS"
+        return
+
     #Print Process names that have registered with CPS with their objects
-    cps_comp = False
     for elem in cps_process:
         print "\n", elem, "is registered with CPS\nObjects"
         ob = cps_obj_info[elem]
@@ -129,12 +132,7 @@ def get_cps_components(input_proc_name):
                 obj = cps.info("", False)['ids'][k]
 
                 # key_list[0]: The first field of the CPS key is the Component Qualifier
-                cps_comp = True
                 print "%15s" %comp_qualifier[key_list[0]], obj
-
-    if cps_comp == False:
-        print "Not registered to CPS"
-
 
 
 if __name__ == "__main__":
