@@ -14,6 +14,7 @@
 # See the Apache Version 2.0 License for specific language governing
 # permissions and limitations under the License.
 #
+import argparse
 import sys
 import os
 import subprocess
@@ -113,44 +114,38 @@ def get_cps_components(input_proc_name):
                         cps_obj_info[ps_list[pid]] = [obj]
 
 
-
-    #Check if a specific component is registered to CPS and if registered print the CPS objects it owns
     comp_qualifier = {'1': 'target', '2': 'observed', '3': 'proposed', '4': 'realtime', '5': 'registration'}
     cps_process = cps_obj_info.keys()
-    if input_proc_name != '':
-        for elem in cps_process:
-            print "Registered to CPS\nCPS Objects"
-            ob = cps_obj_info[elem]
-            for obj_key in ob:
-                key_list = obj_key.split('.')
-                k = key_list[-2]  # key_list[-2] is the innermost key
-                if k in cps.info("", False)['ids']:
-                    obj = cps.info("", False)['ids'][k]
 
-                    # key_list[0]: The first field of the CPS key is the Component Qualifier
-                    print "%15s" %comp_qualifier[key_list[0]], obj
-            return
+    #Print Process names that have registered with CPS with their objects
+    cps_comp = False
+    for elem in cps_process:
+        print "\n", elem, "is registered with CPS\nObjects"
+        ob = cps_obj_info[elem]
+        for obj_key in ob:
+            key_list = obj_key.split('.')
+            k = key_list[-2]  # key_list[-2] is the innermost key
+            if k in cps.info("", False)['ids']:
+                obj = cps.info("", False)['ids'][k]
 
+                # key_list[0]: The first field of the CPS key is the Component Qualifier
+                cps_comp = True
+                print "%15s" %comp_qualifier[key_list[0]], obj
+
+    if cps_comp == False:
         print "Not registered to CPS"
-    else:
-        #Print all Process names that have registered with CPS
-        for proc in cps_process:
-            print proc
-
 
 
 
 if __name__ == "__main__":
 
-    # Usage: python cps_obj_ownership.py [process name]
-    if len(sys.argv) >= 2:
-        proc_name = sys.argv[1]
-    else:
-        proc_name = ''
+    parser = argparse.ArgumentParser(description='This tool gives the process names that has registered with CPS and the objects it owns')
+    parser.add_argument('-ps', '--process_name', default='', help='List CPS objects the process owns')
+    args=parser.parse_args()
 
-    get_cps_components(proc_name)
+
+    get_cps_components(args.process_name)
+
     sys.exit(0)
-
-
 
 
