@@ -27,6 +27,8 @@
 #include "cps_api_operation.h"
 #include "cps_api_object.h"
 
+#include "cps_api_operation_debug.h"
+
 #include "std_thread_tools.h"
 #include "std_socket_service.h"
 #include "std_rw_lock.h"
@@ -35,7 +37,7 @@
 #include "std_file_utils.h"
 #include "std_time_tools.h"
 #include "std_assert.h"
-
+#include "std_envvar.h"
 #include "event_log.h"
 
 #include <unistd.h>
@@ -52,6 +54,7 @@ struct cps_api_operation_data_t {
     reg_functions_t db_functions;
     cps_api_channel_t ns_handle;
     std::unordered_map<uint64_t,uint64_t> stats;
+    bool enable_logging=false;
 
     void insert_functions(cps_api_registration_functions_t*fun);
 
@@ -172,8 +175,9 @@ static bool  cps_api_handle_get(cps_api_operation_data_t *op, int fd,size_t len)
                 (cps_api_key_matches(param.keys,&p->key,false)==0)) {
 
             tm.start();
+            if (op->enable_logging) EV_LOG(TRACE,DSAPI,0,"CPS-SERV-FUN","Calling...");
             rc = p->_read_function(p->context,&param,0);
-
+            if (op->enable_logging) cps_api_get_request_log(&param);
             break;
         }
     }
@@ -254,8 +258,12 @@ static bool cps_api_handle_commit(cps_api_operation_data_t *op, int fd, size_t l
         cps_api_registration_functions_t *p = &(op->db_functions[func_ix]);
         if ((p->_write_function!=NULL) &&
                 (cps_api_key_matches(cps_api_object_key(l),&p->key,false)==0)) {
-            tm.start();
-            rc = p->_write_function(p->context,&param,0);
+
+        	tm.start();
+
+        	rc = p->_write_function(p->context,&param,0);
+        	if (op->enable_logging) cps_api_commit_request_log(&param);
+
             break;
         }
     }
@@ -452,6 +460,11 @@ cps_api_return_code_t cps_api_operation_subsystem_init(
 
     cps_api_operation_data_t *p = new cps_api_operation_data_t;
     if (p==NULL) return cps_api_ret_code_ERR;
+
+    const char * enable_log = std_getenv("CPS_TRACE_ENABLE");
+    if (enable_log!=nullptr && strcasecmp("true",enable_log)==0) {
+    	p->enable_logging = true;
+    }
 
     p->handle = NULL;
     memset(&p->service_data,0,sizeof(p->service_data));
