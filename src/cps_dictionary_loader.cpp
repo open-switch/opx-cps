@@ -174,6 +174,9 @@ void cps_api_class_map_init(void) {
             { "cps/object/operations/events_sent", "Number of events sent by the name service for registration changes", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
         },
 
+        { cps_api_obj_stat_PROCESSID,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_e_OPERATIONS,cps_api_obj_stat_PROCESSID},
+            { "cps/object/operations/process_id", "The process ID of the application registering for object handling", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
+        },
 
     };
     ix = 0;
