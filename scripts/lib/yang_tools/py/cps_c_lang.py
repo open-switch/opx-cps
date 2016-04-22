@@ -19,6 +19,7 @@ import cps_c_dict
 import cps_h
 import object_history
 import sys
+import os
 
 
 def to_string(s):
@@ -181,14 +182,27 @@ class Language:
             en_name = self.to_string(c.name)
             self.names[c.name] = en_name
 
+    def get_yang_history_file_name(self,module_name):        
+        _model = module_name + '.yhist'
+        
+        _main_history = os.path.join(self.context['history']['output'],_model)
+        
+        if os.path.exists(_main_history):
+            return _main_history
+        
+        try:
+            return yin_utils.search_path_for_file(_model)
+        except:
+            pass
+        #if not found return default location
+        return _main_history
+        
     def setup(self, model):
         self.model = model
 
         self.category = "cps_api_obj_CAT_" + to_string(model.module.name())
-
         self.init_names()
-
-        hist_file_name = yin_utils.get_yang_history_file_name(model.filename)
+        hist_file_name = self.get_yang_history_file_name(model.module.model_name())
 
         self.history = object_history.init(
             self.context,

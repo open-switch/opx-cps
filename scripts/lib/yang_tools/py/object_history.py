@@ -174,8 +174,10 @@ class history:
     staticmethod(load_all_globals)
 
     def __init__(self, context, filename, category):
+        """This will initialize the module history file. """
         self.context = context
         self.the_name = filename
+        self.output_file = os.path.join(self.context['history']['output'],os.path.basename(filename))
         self.the_dict = dict()
         self.module = IndexTracker(1)
 
@@ -186,23 +188,20 @@ class history:
             self.GLOBAL_enums.indexer, self.GLOBAL_SECTION)
 
         try:
-            the_file = open(self.the_name, "r")
-            ix_reader = IndexFile(the_file)
-            while True:
-                d = ix_reader.get()
-                if not 'name' in d:
-                    break
-                if not d['name'] in self.the_dict:
-                    self.the_dict[d['name']] = enum_tracker_int(
-                        IndexTracker(None), d['name'])
+            with open(self.the_name, "r") as the_file:
+                ix_reader = IndexFile(the_file)
+                while True:
+                    d = ix_reader.get()
+                    if not 'name' in d:
+                        break
+                    if not d['name'] in self.the_dict:
+                        self.the_dict[d['name']] = enum_tracker_int(
+                            IndexTracker(None), d['name'])
+    
+                    self.the_dict[d['name']].setup(d['list'], must_be_unique=True)
+        except:
+            pass
 
-                self.the_dict[d['name']].setup(d['list'], must_be_unique=True)
-
-            the_file.close()
-
-        except IOError:
-            the_file = open(self.the_name, "w")
-            the_file.close()
 
     def get_global(self, name):
         return self.the_dict[self.GLOBAL_SECTION].get_value(name, None)
@@ -222,9 +221,7 @@ class history:
         return res
 
     def write(self):
-        self.the_name = os.path.join(
-            self.context['history']['output'],
-            os.path.basename(self.the_name))
+        self.the_name = self.output_file
         print "Writing history to " + self.the_name
         with open(self.the_name, "w") as f:
             f.write("# writing " + self.the_name + "\n")
