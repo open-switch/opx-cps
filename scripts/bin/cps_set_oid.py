@@ -23,18 +23,19 @@ import cps_object
 if __name__ == '__main__':
     if len(sys.argv) == 1:
         print "Missing args.  Please ensure you enter a request in the following format:"
-        print " %s operation class-name param=value where... " % sys.argv[0]
+        print " %s qual operation class-name param=value where... " % sys.argv[0]
+        print "qual = target,observed,.."
         print "operation = set,delete,create,rpc"
         print "class-name = a cps class name use cps.info('',True) to get a full system list of classes"
         print "param=value a parameter to set/change/filter on"
-        print "%s operation base-port/physical hardware-port-id=26 admin-state=2" % sys.argv[0]
+        print "%s qual operation base-port/physical hardware-port-id=26 admin-state=2" % sys.argv[0]
         exit(1)
 
-    ch = {'operation': sys.argv[1], 'change': {}}
+    ch = {'operation': sys.argv[2], 'change': {}}
 
-    cur_obj = cps_object.CPSObject(sys.argv[2])
+    cur_obj = cps_object.CPSObject(qual=sys.argv[1],module=sys.argv[3])
 
-    for e in sys.argv[3:]:
+    for e in sys.argv[4:]:
         res = e.split('=', 1)
         cur_obj.add_attr(res[0], res[1])
 
