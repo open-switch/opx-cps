@@ -14,7 +14,12 @@
 # permissions and limitations under the License.
 #
 
-'''CPS common utilities'''
+"""@package cps_utils
+
+CPS Common Utilities
+
+"""
+
 
 import cps
 import os
@@ -57,8 +62,8 @@ def is_ipv6_addr(ip_addr):
 
 def is_mac_addr(mac_addr):
     """
-    Check if string is a valid mac address
-    @mac_addr - mac address string
+    Check if string is a valid MAC address
+    @mac_addr - MAC address string
     """
     if re.match("[0-9a-f]{2}([:])[0-9a-f]{2}(\\1[0-9a-f]{2}){4}$", mac_addr.lower()):
         return True
@@ -67,7 +72,7 @@ def is_mac_addr(mac_addr):
 
 def is_int(val):
     """
-    Check if string is integer
+    Check if string is valid integer value.
     @val - numeric string
     """
     if val.isdigit():
@@ -291,7 +296,7 @@ def printable(obj):
 
 def get_modules_list():
     """
-    Get the list of base python utlity modules
+    Get the list of base python utlity modules.
     """
     file_list = [f.split(".")[0]
                  for f in os.listdir(module_path) if isfile(join(module_path, f))]

@@ -1,7 +1,5 @@
 PROGRAMS= cps_api_service cps_api_example
-SUBDIRS=
 LIBRARIES= cps-api-common cps-class-map-util
-ARCHIVES=
 UNIT_TEST=cps_api_key_unittest cps_api_object_unittest cps_api_operation_unittest cps_api_events_unittest
 
 CXXFLAGS+=-std=c++11
