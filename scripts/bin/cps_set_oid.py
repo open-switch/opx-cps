@@ -29,15 +29,29 @@ if __name__ == '__main__':
         print "class-name = a cps class name use cps.info('',True) to get a full system list of classes"
         print "param=value a parameter to set/change/filter on"
         print "%s qual operation base-port/physical hardware-port-id=26 admin-state=2" % sys.argv[0]
+        print "qual is an optional argument if not specified, target is used by default"
+        print "To add embedded attribute specify the all arguments in comma followed by = and its value"
+        print "For eg. base-stg/entry/intf,0,ifindex=17 base-stg/entry/intf,0,state=1"
         exit(1)
 
-    ch = {'operation': sys.argv[2], 'change': {}}
-
-    cur_obj = cps_object.CPSObject(qual=sys.argv[1],module=sys.argv[3])
-
-    for e in sys.argv[4:]:
+    qual_list = ["target","observed","propsed","realtime"]
+    if sys.argv[1] in qual_list:
+        ch = {'operation': sys.argv[2], 'change': {}}
+        cur_obj = cps_object.CPSObject(qual=sys.argv[1],module=sys.argv[3])
+        arg_list = sys.argv[4:]
+    else:
+        ch = {'operation': sys.argv[1], 'change': {}}
+        cur_obj = cps_object.CPSObject(qual="target",module=sys.argv[2])
+        arg_list = sys.argv[3:
+                            ]
+    for e in arg_list:
         res = e.split('=', 1)
-        cur_obj.add_attr(res[0], res[1])
+        embed_attrs = res[0].split(',')
+        if len(embed_attrs) == 3:
+            cur_obj.add_embed_attr(embed_attrs,res[1])
+        else:
+            cur_obj.add_attr(res[0], res[1])
+
 
     ch['change'] = cur_obj.get()
 
