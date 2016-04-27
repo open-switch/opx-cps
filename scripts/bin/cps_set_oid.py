@@ -46,6 +46,8 @@ if __name__ == '__main__':
                             ]
     for e in arg_list:
         res = e.split('=', 1)
+        # For embedded attribute check if comma seperated attribute list is given
+        # then add it as embedded
         embed_attrs = res[0].split(',')
         if len(embed_attrs) == 3:
             cur_obj.add_embed_attr(embed_attrs,res[1])
