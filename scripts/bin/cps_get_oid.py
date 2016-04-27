@@ -31,7 +31,7 @@ if __name__ == '__main__':
     k = []
     cur_obj = None
     qual = "target"
-    qual_list = ["target","observed","propsed","realtime"]
+    qual_list = ["target","observed","proposed","realtime"]
     for e in sys.argv[1:]:
         if e in qual_list:
             qual = e

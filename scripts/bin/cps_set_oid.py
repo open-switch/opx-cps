@@ -34,7 +34,7 @@ if __name__ == '__main__':
         print "For eg. base-stg/entry/intf,0,ifindex=17 base-stg/entry/intf,0,state=1"
         exit(1)
 
-    qual_list = ["target","observed","propsed","realtime"]
+    qual_list = ["target","observed","proposed","realtime"]
     if sys.argv[1] in qual_list:
         ch = {'operation': sys.argv[2], 'change': {}}
         cur_obj = cps_object.CPSObject(qual=sys.argv[1],module=sys.argv[3])
