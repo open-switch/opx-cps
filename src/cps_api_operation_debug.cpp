@@ -25,7 +25,8 @@
 #include <vector>
 
 void cps_api_object_log(cps_api_object_t obj, const char *prefix) {
-	std::vector<char> buff(10000);
+	static const size_t DEF_LOG_LEN=10000;
+	std::vector<char> buff(DEF_LOG_LEN);
 	std::string _obj = cps_api_object_to_string(obj,&buff[0],buff.size());
 	std::string _key = cps_api_key_print(cps_api_object_key(obj),&buff[0],buff.size());
 

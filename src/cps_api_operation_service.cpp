@@ -339,7 +339,7 @@ static bool cps_api_handle_stats(cps_api_operation_data_t *op, int fd, size_t le
     for ( ; cur < cps_api_obj_stat_MAX ; cur= (cps_api_obj_stats_type_t)(cur+1) ) {
         if (op->exists(cur)) cps_api_object_attr_add_u64(og.get(),cur,op->get_stat(cur));
     }
-    cps_api_object_attr_add_u64(og.get(),cps_api_obj_stat_PROCESSID,std_process_id_get());
+    cps_api_object_attr_add_u64(og.get(),cps_api_obj_stat_PROCESS_ID,std_process_id_get());
 
     if (!cps_api_send_one_object(fd,cps_api_msg_o_STATS,og.get())) return false;
 

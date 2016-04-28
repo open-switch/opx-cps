@@ -51,6 +51,7 @@ const char * cps_api_object_attr_to_string(cps_api_object_attr_t attr, char *buf
             (int)cps_api_object_attr_len(attr));
 	_s += cps_string::tostring(cps_api_object_attr_data_bin(attr),cps_api_object_attr_len(attr));
 	strncpy(buff,_s.c_str(),len);
+	buff[len-1] = '\0';
 
     return buff;
 }

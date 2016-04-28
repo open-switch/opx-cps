@@ -550,14 +550,7 @@ const char * cps_api_object_to_string(cps_api_object_t obj, char *buff, size_t l
 	str += cps_api_key_print(cps_api_object_key(obj),buff,len);
 	str += ")\n";
 	str += cps_string::tostring(cps_api_object_array(obj), cps_api_object_to_array_len(obj));
-#if 0
-    cps_api_object_it_t it;
-    cps_api_object_it_begin(obj,&it);
-    while (cps_api_object_it_valid(&it)) {
-        str+= cps_api_object_attr_to_string(it.attr,buff,len);
-        cps_api_object_it_next(&it);
-    }
-#endif
+
     buff[len-1] = '\0';
     strncpy(buff,str.c_str(),len-1);
     return buff;

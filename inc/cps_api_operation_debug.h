@@ -22,13 +22,13 @@
 #include "cps_api_operation.h"
 
 /**
- * Log the get request to a the default logging mechanism
+ * Log the get request to the default logging mechanism
  * @param req the request structure
  */
 void cps_api_get_request_log(cps_api_get_params_t *req);
 
 /**
- * Log the commit request to a the default logging mechanism
+ * Log the commit request to the default logging mechanism
  * @param req the request structure
  */
 void cps_api_commit_request_log(cps_api_transaction_params_t *req);
@@ -36,14 +36,14 @@ void cps_api_commit_request_log(cps_api_transaction_params_t *req);
 /**
  * Take the object and log it - the object line will be prefixed with the "prefix" string
  * @param obj the object to log
- * @param log_prefix a string prefix
+ * @param log_prefix a string prefix a log entry with
  */
 void cps_api_object_log(cps_api_object_t obj,const char *log_prefix);
 
 /**
  * Take the object list and log it - the object line will be prefixed with the "prefix" string
  * @param obj the object to log
- * @param log_prefix a string prefix
+ * @param log_prefix a string prefix a log entry with
  */
 void cps_api_object_list_log(cps_api_object_list_t lst,const char *log_prefix);
 
