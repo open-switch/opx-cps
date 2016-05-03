@@ -337,6 +337,15 @@ class CPSParser:
 
                 i.set('__identity__',_identity_)
 
+    def is_augmented(self,path):
+        parent_path = "/".join(path.split("/")[:-1])
+        if parent_path in self.all_node_map:
+            if self.module.filter_ns(self.all_node_map[parent_path].tag) == "augment":
+                return (True,self.all_node_map[parent_path])
+            else:
+                return self.is_augmented(parent_path)
+        else:
+            return (False,None)
 
     def walk_nodes(self, node, path):
         nodes = list(node)
@@ -449,6 +458,9 @@ class CPSParser:
                     raise Exception("Missing " + type_name)
 
                 type = self.context['types'][type_name]
+                (ret_val,ret_node) =  self.is_augmented(path)
+                if ret_val:
+                    self.stamp_augmented_children(type,ret_node.get('target-namespace'))
                 type_tag = self.module.filter_ns(type.tag)
                 if type_tag == 'grouping':
                     self.walk_nodes(type, path)
