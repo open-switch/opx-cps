@@ -393,6 +393,10 @@ class CPSParser:
                 i = new_node
                 tag = 'case'
 
+            # make a copy of the current node as node can be contained as part of grouping in
+            # augmented container or non-augmented container. so when marking augmented container
+            # leaves we don't mark the leaves as augmented for the container which is not augmenting
+            # and still using the grouping object
             self.all_node_map[n_path] = i.copy()
 
             if tag == 'choice' or tag == 'input' or tag == 'output' or tag == 'rpc':
