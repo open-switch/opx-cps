@@ -22,6 +22,8 @@
 
 
 #include "cps_api_object_attr.h"
+#include "cps_string_utils.h"
+
 #include "std_assert.h"
 
 #include <stdio.h>
@@ -44,8 +46,13 @@ void cps_api_object_it_from_attr(cps_api_object_attr_t attr, cps_api_object_it_t
 }
 
 const char * cps_api_object_attr_to_string(cps_api_object_attr_t attr, char *buff, size_t len) {
-    snprintf(buff,len,"Attr %X, Len %d",(int)cps_api_object_attr_id(attr),
+	std::string _s;
+	_s = cps_string::sprintf("Attr %X, Len %d\n",(int)cps_api_object_attr_id(attr),
             (int)cps_api_object_attr_len(attr));
+	_s += cps_string::tostring(cps_api_object_attr_data_bin(attr),cps_api_object_attr_len(attr));
+	strncpy(buff,_s.c_str(),len);
+	buff[len-1] = '\0';
+
     return buff;
 }
 
