@@ -19,6 +19,7 @@ import yin_utils
 import sys
 import object_history
 import os
+import copy
 
 import xml.etree.ElementTree as ET
 
@@ -392,7 +393,7 @@ class CPSParser:
                 i = new_node
                 tag = 'case'
 
-            self.all_node_map[n_path] = i
+            self.all_node_map[n_path] = i.copy()
 
             if tag == 'choice' or tag == 'input' or tag == 'output' or tag == 'rpc':
                 tag = 'container'
