@@ -23,8 +23,6 @@
  */
 #include "std_mutex_lock.h"
 
-#include "cps_string_utils.h"
-
 #include "std_tlv.h"
 #include "cps_api_object.h"
 #include "private/cps_api_object_internal.h"
@@ -191,9 +189,6 @@ bool cps_api_list_debug() {
 
 cps_api_object_t cps_api_object_create_int(const char *desc, unsigned int line, const char *file) {
     cps_api_object_t obj = obj_alloc(DEF_OBJECT_SIZE);
-    if (obj==nullptr) {
-    	EV_LOG(ERR,DSAPI,0,"CPS-OBJ","Failed to allocate memory for object.. expect sytem issues.");
-    }
     db_list_tracker_add(obj, desc, line,file);
     return obj;
 }
@@ -307,7 +302,7 @@ void cps_api_object_attr_delete(cps_api_object_t obj, cps_api_attr_id_t attr_id)
     cps_api_object_internal_t *p = (cps_api_object_internal_t*)obj;
 
     cps_api_object_attr_t  attr = cps_api_object_attr_get(obj, attr_id);
-    if (attr != nullptr) {
+    if (attr != CPS_API_ATTR_NULL) {
         void * tlv_end = (((uint8_t*)obj_data(p)) + obj_used_len(p));
         size_t rm_len = std_tlv_total_len(attr);
         void * tlv_rm_end = ((uint8_t*)attr) + rm_len;
@@ -463,7 +458,7 @@ cps_api_key_t * cps_api_object_key(cps_api_object_t obj) {
     return &(((cps_api_object_internal_t*)obj)->data->key);
 }
 
-bool cps_api_array_to_object(const void * data, size_t len, cps_api_object_t obj) {
+bool cps_api_array_to_object(void * data, size_t len, cps_api_object_t obj) {
     if (obj == NULL) return false;
 
     cps_api_object_internal_t * p = (cps_api_object_internal_t *)obj;
@@ -545,12 +540,19 @@ size_t cps_api_object_list_size(cps_api_object_list_t list) {
 }
 
 const char * cps_api_object_to_string(cps_api_object_t obj, char *buff, size_t len) {
+    char *k_str = cps_api_key_print(cps_api_object_key(obj),buff,len);
 
-	std::string str = "Key (";
-	str += cps_api_key_print(cps_api_object_key(obj),buff,len);
-	str += ")\n";
-	str += cps_string::tostring(cps_api_object_array(obj), cps_api_object_to_array_len(obj));
+    std::string str;
+    str+= k_str;
+    str+= " ";
 
+    cps_api_object_it_t it;
+    cps_api_object_it_begin(obj,&it);
+    while (cps_api_object_it_valid(&it)) {
+        str+= cps_api_object_attr_to_string(it.attr,buff,len);
+        str+=" - ";
+        cps_api_object_it_next(&it);
+    }
     buff[len-1] = '\0';
     strncpy(buff,str.c_str(),len-1);
     return buff;

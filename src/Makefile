@@ -8,8 +8,6 @@ cps-class-map-util_SRCS=cps_class_map_query.cpp
 cps-class-map-util_CXXFLAGS=-std=c++11
 cps-class-map-util_LDFLAGS=-ldn_common -levent_log -lcps-api-common -lpthread
 
-cps-api-common_CXXFLAGS+=-I${TOP_SRCDIR}/inc/private
-cps-api-common_CXXFLAGS+=-std=c++11
 
 cps-api-common_SRCS+=cps_api_object.cpp
 cps-api-common_SRCS+=cps_api_events.cpp
@@ -25,10 +23,8 @@ cps-api-common_SRCS+=cps_dictionary_loader.cpp
 cps-api-common_SRCS+=cps_api_object_tools.cpp
 cps-api-common_SRCS+=cps_api_operation_tools.cpp
 cps-api-common_SRCS+=cps_api_utils.cpp
-cps-api-common_SRCS+=cps_string_utils.cpp
-cps-api-common_SRCS+=cps_api_operation_debug.cpp
 
-cps-api-common_LDFLAGS = -levent_log -ldn_common -lpthread -lstdc++
+cps-api-common_LDFLAGS = -levent_log -ldn_common -lpthread
 
 cps_api_service_SRCS=cps_api_service.cpp
 cps_api_service_LDFLAGS = -lcps-api-common -ldn_common -levent_log
