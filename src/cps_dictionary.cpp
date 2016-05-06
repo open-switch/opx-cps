@@ -134,13 +134,6 @@ void cps_dict_walk(void *context, cps_dict_walk_fun fun) {
     }
 }
 
-void cps_key_from_array(cps_api_key_t *key, const cps_api_attr_id_t *ids, size_t ids_len, size_t start_pos=0) {
-    memset(key,0,sizeof(*key));
-    for ( size_t ix = 0 ; ix < ids_len ; ++ix ){
-        cps_api_key_set(key,start_pos+ix,(uint32_t)ids[ix]);
-    }
-    cps_api_key_set_len(key,ids_len+start_pos);
-}
 
 extern "C" {
 
@@ -174,7 +167,7 @@ cps_api_return_code_t cps_class_map_init(cps_api_attr_id_t id, const cps_api_att
     ref.id = id;
 
     cps_api_key_t _key;
-    cps_key_from_array(&_key,&ref.ids[0],ref.ids.size());
+    cps_api_key_init_from_attr_array(&_key,&ref.ids[0],ref.ids.size(),0);
 
     _key_to_map_element.insert(&_key,p.get());
     _str_map[p->full_path] = p.get();
@@ -187,7 +180,7 @@ bool cps_api_key_from_attr(cps_api_key_t *key,cps_api_attr_id_t id, size_t key_s
 
     const cps_class_map_node_details_int_t * it = cps_dict_find_by_id(id);
     if (it==nullptr) return false;
-    cps_key_from_array(key,&it->ids[0],it->ids.size());
+    cps_api_key_init_from_attr_array(key,(cps_api_attr_id_t *)&(it->ids[0]),it->ids.size(),key_start_pos);
     return true;
 }
 
@@ -208,26 +201,39 @@ const char * cps_attr_id_to_name(cps_api_attr_id_t id) {
 }
 
 const char * cps_class_attr_name(const cps_api_attr_id_t *ids, size_t ids_len) {
-    return cps_attr_id_to_name(ids[ids_len-1]);
+    std_mutex_simple_lock_guard lg(&lock);
+
+    cps_api_key_t key;
+    cps_api_key_init_from_attr_array(&key,(cps_api_attr_id_t *)ids,ids_len,0);
+    cps_class_map_node_details_int_t *p = nullptr;
+    _key_to_map_element.find(&key,p,true);
+
+    if (p==nullptr) return nullptr;
+    return p->name.c_str();
 }
 
 bool cps_class_attr_is_embedded(const cps_api_attr_id_t *ids, size_t ids_len) {
-    cps_api_attr_id_t id = ids[ids_len-1];
-    if ((id>=CPS_API_ATTR_RESERVE_RANGE_START) &&(id<=CPS_API_ATTR_RESERVE_RANGE_END)) return true;
-
     std_mutex_simple_lock_guard lg(&lock);
-    const cps_class_map_node_details_int_t * it = cps_dict_find_by_id(id);
-    if (it==nullptr) return true;
-    return it->embedded;
+
+    cps_api_key_t key;
+    cps_api_key_init_from_attr_array(&key,(cps_api_attr_id_t *)ids,ids_len,0);
+    cps_class_map_node_details_int_t *p = nullptr;
+    _key_to_map_element.find(&key,p,true);
+
+    if (p==nullptr) return nullptr;
+
+    return p->embedded;
 }
 
 bool cps_class_attr_is_valid(const cps_api_attr_id_t *ids, size_t ids_len) {
-    cps_api_attr_id_t id = ids[ids_len-1];
-    if ((id>=CPS_API_ATTR_RESERVE_RANGE_START) &&(id<=CPS_API_ATTR_RESERVE_RANGE_END)) return true;
-
     std_mutex_simple_lock_guard lg(&lock);
-    const cps_class_map_node_details_int_t * it = cps_dict_find_by_id(id);
-    return (it!=nullptr) ;
+
+    cps_api_key_t key;
+    cps_api_key_init_from_attr_array(&key,(cps_api_attr_id_t *)ids,ids_len,0);
+    cps_class_map_node_details_int_t *p = nullptr;
+    _key_to_map_element.find(&key,p,true);
+
+    return (p!=nullptr);
 }
 
 bool cps_class_string_to_key(const char *str, cps_api_attr_id_t *ids, size_t *max_ids) {

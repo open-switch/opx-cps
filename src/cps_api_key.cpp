@@ -156,3 +156,12 @@ void cps_api_key_remove_element(cps_api_key_t *key, size_t ix) {
 
     cps_api_key_set_len(key,cur_len);
 }
+
+void cps_api_key_init_from_attr_array(cps_api_key_t *key, cps_api_attr_id_t *elems,size_t len, size_t offset)  {
+    size_t ix = 0;
+    cps_api_key_element_t * dest = cps_api_key_elem_start(key) + offset;
+    for (; ix < len ; ++ix ) {
+        *dest++ = cps_api_key_element_t(*elems++);
+    }
+    cps_api_key_set_len(key,len+offset);
+}
