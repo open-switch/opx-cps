@@ -197,14 +197,6 @@ bool cps_class_objs_load(const char *path, const char * prefix);
 bool cps_class_string_to_key(const char *str, cps_api_attr_id_t *ids, size_t *max_ids);
 
 /**
- * In this case, take a CPS key, search the CPS meta data for a appropriate key path and return the key path if found
- * @param key the key for which the string path is required
- * @return the pointer to the character string holding the full path translation of the key
- */
-const char * cps_class_string_from_key(cps_api_key_t *key);
-
-
-/**
  * From the attribute ID, return the full path of the element.
  *
  * @param id the ID to check

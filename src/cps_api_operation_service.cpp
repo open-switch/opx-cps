@@ -26,19 +26,13 @@
 
 #include "cps_api_operation.h"
 #include "cps_api_object.h"
-
-#include "cps_api_operation_debug.h"
-
-#include "std_thread_tools.h"
 #include "std_socket_service.h"
 #include "std_rw_lock.h"
 #include "std_mutex_lock.h"
-
+#include "event_log.h"
 #include "std_file_utils.h"
 #include "std_time_tools.h"
 #include "std_assert.h"
-#include "std_envvar.h"
-#include "event_log.h"
 
 #include <unistd.h>
 #include <unordered_map>
@@ -54,23 +48,14 @@ struct cps_api_operation_data_t {
     reg_functions_t db_functions;
     cps_api_channel_t ns_handle;
     std::unordered_map<uint64_t,uint64_t> stats;
-    bool enable_logging=false;
 
     void insert_functions(cps_api_registration_functions_t*fun);
 
     uint64_t get_stat(cps_api_obj_stats_type_t stat);
-
     void set_stat(cps_api_obj_stats_type_t stat,uint64_t val);
     void inc_stat(cps_api_obj_stats_type_t stat,int64_t how_much=1);
     void make_ave(cps_api_obj_stats_type_t stat,cps_api_obj_stats_type_t count,uint64_t val);
-    bool exists(cps_api_obj_stats_type_t stat) ;
 };
-
-bool cps_api_operation_data_t::exists(cps_api_obj_stats_type_t s) {
-    std_mutex_simple_lock_guard lg(&mutex);
-    auto it = stats.find(s);
-    return it!=stats.end();
-}
 
 uint64_t cps_api_operation_data_t::get_stat(cps_api_obj_stats_type_t stat) {
     std_mutex_simple_lock_guard lg(&mutex);
@@ -175,9 +160,8 @@ static bool  cps_api_handle_get(cps_api_operation_data_t *op, int fd,size_t len)
                 (cps_api_key_matches(param.keys,&p->key,false)==0)) {
 
             tm.start();
-            if (op->enable_logging) EV_LOG(TRACE,DSAPI,0,"CPS-SERV-FUN","Calling...");
             rc = p->_read_function(p->context,&param,0);
-            if (op->enable_logging) cps_api_get_request_log(&param);
+
             break;
         }
     }
@@ -258,12 +242,8 @@ static bool cps_api_handle_commit(cps_api_operation_data_t *op, int fd, size_t l
         cps_api_registration_functions_t *p = &(op->db_functions[func_ix]);
         if ((p->_write_function!=NULL) &&
                 (cps_api_key_matches(cps_api_object_key(l),&p->key,false)==0)) {
-
-        	tm.start();
-
-        	rc = p->_write_function(p->context,&param,0);
-        	if (op->enable_logging) cps_api_commit_request_log(&param);
-
+            tm.start();
+            rc = p->_write_function(p->context,&param,0);
             break;
         }
     }
@@ -337,9 +317,8 @@ static bool cps_api_handle_stats(cps_api_operation_data_t *op, int fd, size_t le
 
     cps_api_obj_stats_type_t cur = cps_api_obj_stat_BEGIN;
     for ( ; cur < cps_api_obj_stat_MAX ; cur= (cps_api_obj_stats_type_t)(cur+1) ) {
-        if (op->exists(cur)) cps_api_object_attr_add_u64(og.get(),cur,op->get_stat(cur));
+        cps_api_object_attr_add_u64(og.get(),cur,op->get_stat(cur));
     }
-    cps_api_object_attr_add_u64(og.get(),cps_api_obj_stat_PROCESS_ID,std_process_id_get());
 
     if (!cps_api_send_one_object(fd,cps_api_msg_o_STATS,og.get())) return false;
 
@@ -460,11 +439,6 @@ cps_api_return_code_t cps_api_operation_subsystem_init(
 
     cps_api_operation_data_t *p = new cps_api_operation_data_t;
     if (p==NULL) return cps_api_ret_code_ERR;
-
-    const char * enable_log = std_getenv("CPS_TRACE_ENABLE");
-    if (enable_log!=nullptr && strcasecmp("true",enable_log)==0) {
-    	p->enable_logging = true;
-    }
 
     p->handle = NULL;
     memset(&p->service_data,0,sizeof(p->service_data));
