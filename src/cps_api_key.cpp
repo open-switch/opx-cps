@@ -156,3 +156,17 @@ void cps_api_key_remove_element(cps_api_key_t *key, size_t ix) {
 
     cps_api_key_set_len(key,cur_len);
 }
+
+/*Sets the key (leaving offset# of spaces at the beginning). */
+void cps_api_key_init_from_attr_array(cps_api_key_t *key, cps_api_attr_id_t *elems,size_t len, size_t offset)  {
+    size_t ix = 0;
+
+    /*The offset is used to leave space at the beginning of the key.  Used when adding a target qualifier for example*/
+    cps_api_key_element_t * dest = cps_api_key_elem_start(key) + offset;
+    for (; ix < len ; ++ix ) {
+        *dest++ = cps_api_key_element_t(*elems++);
+    }
+    /*Sets the key len to the size requested and the offset */
+    cps_api_key_set_len(key,len+offset);
+
+}

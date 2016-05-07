@@ -40,6 +40,8 @@
 
 
 #include "cps_key_internals.h"
+#include "cps_api_object_attr.h"
+
 #include "std_assert.h"
 
 #include <stdbool.h>
@@ -184,6 +186,26 @@ static inline void cps_api_key_copy(cps_api_key_t *dest, cps_api_key_t *src) {
     memcpy(dest,src,len);
 }
 
+/***
+ * Create a key from an array of element types (eg.. uint32)
+ * @param key a key to initialize
+ * @param elems the elements to initialize to
+ * @param len the length of the element list (the final key)
+ */
+static inline void cps_api_key_init_from_array(cps_api_key_t *key, cps_api_key_element_t *elems,size_t len) {
+    memcpy(cps_api_key_elem_start(key),elems,len*sizeof(*elems));
+    cps_api_key_set_len(key,len);
+}
+
+/**
+ * Create a key from a list of attributes.  Only the key and the size will be updated - the attributes won't be touched
+ * @param key the key to update
+ * @param elems the list of elements
+ * @param len the length of the list
+ */
+void cps_api_key_init_from_attr_array(cps_api_key_t *key, cps_api_attr_id_t *elems,size_t len, size_t offset) ;
+
+
 /**
  * Compare two keys.
  *     <p>if an exact match is required both keys must match exactly in size and contents.</p>
@@ -229,8 +251,10 @@ char * cps_api_key_print(cps_api_key_t *key, char *buff, size_t len);
  */
 bool cps_api_key_from_string(cps_api_key_t *key,const char *buff);
 
+
 #ifdef __cplusplus
 }
+
 #endif
 
 /**
