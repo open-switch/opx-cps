@@ -166,6 +166,7 @@ void cps_api_key_init_from_attr_array(cps_api_key_t *key, cps_api_attr_id_t *ele
     for (; ix < len ; ++ix ) {
         *dest++ = cps_api_key_element_t(*elems++);
     }
+    /*Sets the key len to the size requested and the offset */
     cps_api_key_set_len(key,len+offset);
 
 }
