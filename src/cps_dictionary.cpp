@@ -167,7 +167,8 @@ cps_api_return_code_t cps_class_map_init(cps_api_attr_id_t id, const cps_api_att
     ref.id = id;
 
     cps_api_key_t _key;
-    cps_api_key_init_from_attr_array(&_key,&ref.ids[0],ref.ids.size(),0);
+    const static size_t NO_OFFSET=0;
+    cps_api_key_init_from_attr_array(&_key,&ref.ids[0],ref.ids.size(),NO_OFFSET);
 
     _key_to_map_element.insert(&_key,p.get());
     _str_map[p->full_path] = p.get();
