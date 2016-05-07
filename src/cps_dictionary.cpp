@@ -74,6 +74,7 @@ static cps_class_map_string_t _str_map;
 static cps_class_map_enums_t _enum_map;
 static cps_class_map_id_to_enum_t _attr_id_to_enum;
 static cps_class_map_key_to_map_element _key_to_map_element;
+const static size_t NO_OFFSET=0;
 
 
 
@@ -167,7 +168,6 @@ cps_api_return_code_t cps_class_map_init(cps_api_attr_id_t id, const cps_api_att
     ref.id = id;
 
     cps_api_key_t _key;
-    const static size_t NO_OFFSET=0;
     cps_api_key_init_from_attr_array(&_key,&ref.ids[0],ref.ids.size(),NO_OFFSET);
 
     _key_to_map_element.insert(&_key,p.get());
@@ -205,7 +205,7 @@ const char * cps_class_attr_name(const cps_api_attr_id_t *ids, size_t ids_len) {
     std_mutex_simple_lock_guard lg(&lock);
 
     cps_api_key_t key;
-    cps_api_key_init_from_attr_array(&key,(cps_api_attr_id_t *)ids,ids_len,0);
+    cps_api_key_init_from_attr_array(&key,(cps_api_attr_id_t *)ids,ids_len,NO_OFFSET);
     cps_class_map_node_details_int_t *p = nullptr;
     _key_to_map_element.find(&key,p,true);
 
@@ -217,7 +217,7 @@ bool cps_class_attr_is_embedded(const cps_api_attr_id_t *ids, size_t ids_len) {
     std_mutex_simple_lock_guard lg(&lock);
 
     cps_api_key_t key;
-    cps_api_key_init_from_attr_array(&key,(cps_api_attr_id_t *)ids,ids_len,0);
+    cps_api_key_init_from_attr_array(&key,(cps_api_attr_id_t *)ids,ids_len,NO_OFFSET);
     cps_class_map_node_details_int_t *p = nullptr;
     _key_to_map_element.find(&key,p,true);
 
@@ -230,7 +230,7 @@ bool cps_class_attr_is_valid(const cps_api_attr_id_t *ids, size_t ids_len) {
     std_mutex_simple_lock_guard lg(&lock);
 
     cps_api_key_t key;
-    cps_api_key_init_from_attr_array(&key,(cps_api_attr_id_t *)ids,ids_len,0);
+    cps_api_key_init_from_attr_array(&key,(cps_api_attr_id_t *)ids,ids_len,NO_OFFSET);
     cps_class_map_node_details_int_t *p = nullptr;
     _key_to_map_element.find(&key,p,true);
 

@@ -89,11 +89,11 @@ typedef enum cps_api_object_ATTR_TYPE_t {
 } cps_api_object_ATTR_TYPE_t;
 
 enum cps_api_object_FLAGS_t {
-	cps_api_object_FLAG_RC=0,
+    cps_api_object_FLAG_RC=0,
 };
 
 /**
- * CPS Object. Each CPS Object has a object key along with a number of attributes.
+ * CPS Object. Each CPS Object has an object key along with a number of attributes.
  */
 typedef void * cps_api_object_t;
 
@@ -120,7 +120,7 @@ typedef void * cps_api_object_list_t;
 cps_api_object_ATTR_TYPE_t cps_api_object_int_type_for_len(size_t len);
 
 /**
- * Create a object from a piece of a array.  The memory for the object will be
+ * Create an object from a section of an array.  The memory for the object will be
  * managed outside of the cps_api_object API but allows the object to be
  * stack based.
  * <p>The minimum size of the array must be CPS_API_MIN_OBJ_LEN.</p>
