@@ -93,6 +93,7 @@ class CPSObject:
             for i in attr_str:
                 if "/" in i:
                     ret_str = ""
+                    break
             for i in attr_str:
                 if not i.isdigit():
                     ret_str += i + "/"
