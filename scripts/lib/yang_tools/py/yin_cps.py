@@ -19,6 +19,7 @@ import yin_utils
 import sys
 import object_history
 import os
+import copy
 
 import xml.etree.ElementTree as ET
 
@@ -337,6 +338,15 @@ class CPSParser:
 
                 i.set('__identity__',_identity_)
 
+    def is_augmented(self,path):
+        parent_path = "/".join(path.split("/")[:-1])
+        if parent_path in self.all_node_map:
+            if self.module.filter_ns(self.all_node_map[parent_path].tag) == "augment":
+                return (True,self.all_node_map[parent_path])
+            else:
+                return self.is_augmented(parent_path)
+        else:
+            return (False,None)
 
     def walk_nodes(self, node, path):
         nodes = list(node)
@@ -360,8 +370,11 @@ class CPSParser:
             #can have repeated nodes for some classes (augment)
             if tag not in self.__supports_duplicate_entries:
                 if n_path in self.all_node_map:
-                    continue
-
+                    # Handle the case of leaf named description and description element already existing at this level
+                    if (self.all_node_map[n_path].tag.find('description')) and (i.get('name') == 'description'):
+                        print "description leaf and description tag found"
+                    else:
+                        continue
             #fill in parent
             self.parent[n_path] = path
 
@@ -383,7 +396,11 @@ class CPSParser:
                 i = new_node
                 tag = 'case'
 
-            self.all_node_map[n_path] = i
+            # make a copy of the current node as node can be contained as part of grouping in
+            # augmented container or non-augmented container. so when marking augmented container
+            # leaves we don't mark the leaves as augmented for the container which is not augmenting
+            # and still using the grouping object
+            self.all_node_map[n_path] = i.copy()
 
             if tag == 'choice' or tag == 'input' or tag == 'output' or tag == 'rpc':
                 tag = 'container'
@@ -449,6 +466,9 @@ class CPSParser:
                     raise Exception("Missing " + type_name)
 
                 type = self.context['types'][type_name]
+                (ret_val,ret_node) =  self.is_augmented(path)
+                if ret_val:
+                    self.stamp_augmented_children(type,ret_node.get('target-namespace'))
                 type_tag = self.module.filter_ns(type.tag)
                 if type_tag == 'grouping':
                     self.walk_nodes(type, path)

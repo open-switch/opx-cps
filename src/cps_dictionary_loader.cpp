@@ -103,6 +103,7 @@ void cps_api_class_map_init(void) {
         std::vector<cps_api_attr_id_t> keys;
         cps_class_map_node_details details;
     } internal[] = {
+            // \todo move to a yang model or xml file that can be read at startup
         { CPS_API_ATTR_RESERVE_RANGE_END,{(cps_api_attr_id_t)CPS_API_ATTR_RESERVE_RANGE_END},
             { "cps/key_data", "CPS Internal Key info", true, CPS_CLASS_ATTR_T_CONTAINER, CPS_CLASS_DATA_TYPE_T_EMBEDDED }
         },
@@ -174,6 +175,9 @@ void cps_api_class_map_init(void) {
             { "cps/object/operations/events_sent", "Number of events sent by the name service for registration changes", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
         },
 
+        { cps_api_obj_stat_PROCESS_ID,{(cps_api_attr_id_t)cps_api_obj_cat_CPS_OBJ,cps_api_obj_stat_e_OPERATIONS,cps_api_obj_stat_PROCESS_ID},
+            { "cps/object/operations/process_id", "The process ID of the application registering for object handling", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }
+        },
 
     };
     ix = 0;
