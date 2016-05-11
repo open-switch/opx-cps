@@ -370,8 +370,11 @@ class CPSParser:
             #can have repeated nodes for some classes (augment)
             if tag not in self.__supports_duplicate_entries:
                 if n_path in self.all_node_map:
-                    continue
-
+                    # Handle the case of leaf named description and description element already existing at this level
+                    if (self.all_node_map[n_path].tag.find('description')) and (i.get('name') == 'description'):
+                        print "description leaf and description tag found"
+                    else:
+                        continue
             #fill in parent
             self.parent[n_path] = path
 
