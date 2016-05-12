@@ -175,11 +175,12 @@ class Language:
                 name = k[k.rfind('/') + 1:]
             else:
                 name = k
-            to_add = self.name_to_cms_name(name)
+            to_name = self.name_to_cms_name(name)
+            to_add = to_name
 
             index = 0
             while to_add in seen:
-                to_add = name + str(index)
+                to_add = to_name + str(index)
                 index += 1
             seen[to_add] = to_add
 
