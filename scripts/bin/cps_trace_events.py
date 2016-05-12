@@ -17,19 +17,21 @@
 
 import sys
 import cps
+import cps_utils
 if __name__ == '__main__':
-    if len(sys.argv) == 1:
-        print "Missing args.  Please enter a CPS key path in the format of a.b.c"
-        print "Example to wait for all interface events it is 1.3.1"
-        print "Example wait for all TARGET events is 1"
+    if len(sys.argv) < 3:
+        print "Missing args.  Please enter a CPS key path in the format of base-if-phy/physical"
+        print "Usage: cps_trace_events.py [qualifier] [object]"
+        print "Example: cps_trace_events.py observed base-pas/media"
         exit(1)
 
     handle = cps.event_connect()
-    print "Registering for " + sys.argv[1]
-    cps.event_register(handle, sys.argv[1])
+    print " Registering for " + sys.argv[1] + " " + sys.argv[2]
+    _key = cps.key_from_name(sys.argv[1], sys.argv[2])
+    cps.event_register(handle, _key)
     while True:
         ev = cps.event_wait(handle)
         print ev['key']
         if 'operation' in ev:
             print "Operation : ", ev['operation']
-        print ev['data']
+        cps_utils.print_obj(ev)
