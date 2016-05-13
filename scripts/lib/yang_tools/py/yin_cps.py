@@ -375,6 +375,7 @@ class CPSParser:
                         print "description leaf and description tag found"
                     else:
                         continue
+
             #fill in parent
             self.parent[n_path] = path
 

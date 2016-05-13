@@ -175,11 +175,12 @@ class Language:
                 name = k[k.rfind('/') + 1:]
             else:
                 name = k
-            to_add = self.name_to_cms_name(name)
+            to_name = self.name_to_cms_name(name)
+            to_add = to_name
 
             index = 0
             while to_add in seen:
-                to_add = name + str(index)
+                to_add = to_name + str(index)
                 index += 1
             seen[to_add] = to_add
 
@@ -404,7 +405,7 @@ class Language:
             print ""
             print "      /* Extract data from CPS obj and add it to your structure "
             print "       * Imp: If an attribute with no default value is deleted  "
-            print "       * value will be null. Check whether it is null by calling" 
+            print "       * value will be null. Check whether it is null by calling"
             print "       * val_is_null() before using it */"
             print "      switch(id) {"
         leaf_present=False
@@ -434,11 +435,11 @@ class Language:
                     print "          case " + self.aug_names[leaf] + ":"
                     print "              if(cma_get_data_from_it(&it,&val)) {"
                     typ = yin_utils.node_get_type(self.module_obj, self.model.all_node_map[leaf])
-                    node = self.all_node_map[leaf] 
+                    node = self.all_node_map[leaf]
                     def_node = node.find(self.module_obj.ns() + "default")
                     if def_node is None:
                         print "                  /* No default value. Check for null before using it */"
-                        print "                  if(!val_is_null(val)) {" 
+                        print "                  if(!val_is_null(val)) {"
                         if typ in self.type_extractor_map.keys():
                             print "                       EV_LOG_INFO(MGMT_LOG_SUBSYSTEM,0,\"CMA\",\", value of " + self.names_short[self.names[leaf]] + " is " + self.type_formatter_map[typ] + "\\n\"," + self.type_extractor_map[typ] + "(val));"
                         print "                  }"
