@@ -25,7 +25,9 @@ if __name__ == '__main__':
         print "Missing args...."
         print "Usage: cps_send_event.py [operation] [qualifier] [object_id] attr1=value attr2=value"
         print "operation=set/create/delete, qualifier=target/observed/realtime/proposed"
-        print "Example: cps_send_event set observed base-pas/media slot=1 port=1 type=61"
+        print "Example1: cps_send_event.py set observed base-pas/media slot=1 port=1 type=61"
+        print "Example2: cps_send_event.py create observed  dell-base-if-cmn/if/interfaces-state/interface" \
+              + " if/interfaces-state/interface/name=e101-007-0 if/interfaces-state/interface/oper-status=2"
         exit(1)
 
     handle = cps.event_connect()
