@@ -91,6 +91,10 @@ class CPSObject:
         elif isinstance(attr_str, list):
             ret_str = self.root_path
             for i in attr_str:
+                if "/" in i:
+                    ret_str = ""
+                    break
+            for i in attr_str:
                 if not i.isdigit():
                     ret_str += i + "/"
             return ret_str[:-1]
