@@ -22,7 +22,7 @@
 #include "private/cps_ns.h"
 #include "cps_api_operation.h"
 #include "cps_api_object.h"
-
+#include "cps_class_map.h"
 #include "private/cps_api_key_cache.h"
 #include "private/cps_api_client_utils.h"
 #include "cps_api_operation_stats.h"
@@ -188,7 +188,16 @@ static bool process_registration(int fd,size_t len) {
     reg_created_cache.insert(fd);
     }
     char buff[CPS_API_KEY_STR_MAX];
-    EV_LOG(INFO,DSAPI,0,"NS","%s registration for %s at %s",
+    // The raw key starts at offset 1 ( "0" being the component qualifier)
+    const char *str = cps_class_string_from_key(&r.details.key, 1);
+    if (str!=nullptr)
+      EV_LOG(INFO,DSAPI,0,"NS","%s registration for %s (%s) at %s",
+            "Added" ,
+            str,
+            cps_api_key_print(&r.details.key,buff,sizeof(buff)-1),
+            r.details.addr.address.str);
+    else
+      EV_LOG(INFO,DSAPI,0,"NS","%s registration for %s at %s",
             "Added" ,
             cps_api_key_print(&r.details.key,buff,sizeof(buff)-1),
             r.details.addr.address.str);
@@ -215,7 +224,15 @@ static bool process_query(int fd, size_t len) {
     }
     char ink[DEF_KEY_PRINT_BUFF];//enough to handle key printing
     char matchk[DEF_KEY_PRINT_BUFF];//enough to handle key printing
-    EV_LOG(TRACE,DSAPI,0,"NS","NS query for %s found %s",
+    // The raw key starts at offset 1 ( "0" being the component qualifier)
+    const char *str = cps_class_string_from_key(&key, 1);
+    if (str!=nullptr)
+        EV_LOG(TRACE,DSAPI,0,"NS","NS query for %s (%s) found %s",
+                str,
+                cps_api_key_print(&key,ink,sizeof(ink)-1),
+                found ? cps_api_key_print(&cpy.key,matchk,sizeof(matchk)-1) : "missing");
+    else
+        EV_LOG(TRACE,DSAPI,0,"NS","NS query for %s found %s",
                 cps_api_key_print(&key,ink,sizeof(ink)-1),
                 found ? cps_api_key_print(&cpy.key,matchk,sizeof(matchk)-1) : "missing");
 
@@ -289,9 +306,15 @@ static bool  _client_closed_( void *context, int fd ) {
         for ( size_t ix = 0 ; ix < mx ; ++ix ) {
             if (v[ix].data.fd == fd) {
                 send_out_key_event(&v[ix].key,false);
-                EV_LOG(INFO,DSAPI,0,"NS","Added registration removed %s",
-                            cps_api_key_print(&v[ix].key,buff,sizeof(buff)-1)
-                            );
+                // The raw key starts at offset 1 ( "0" being the component qualifier)
+                const char *str = cps_class_string_from_key(&v[ix].key, 1);
+                if (str!=nullptr)
+                    EV_LOG(INFO,DSAPI,0,"NS","Added registration removed %s (%s) ",
+                           str,
+                           cps_api_key_print(&v[ix].key,buff,sizeof(buff)-1));
+               else
+                   EV_LOG(INFO,DSAPI,0,"NS","Added registration removed %s",
+                          cps_api_key_print(&v[ix].key,buff,sizeof(buff)-1));
 
                 v.erase(v.begin()+ix);
 

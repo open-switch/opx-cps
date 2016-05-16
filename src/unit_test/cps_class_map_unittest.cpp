@@ -178,7 +178,8 @@ TEST(cps_class_map,load) {
 
          ASSERT_TRUE(cps_class_attr_is_embedded(&it._ids[0],it._ids.size()) == it.details.embedded);
 
-         ASSERT_TRUE(strcmp(cps_class_string_from_key(&key),it.details.name)==0);
+         // The raw key starts at offset 0
+         ASSERT_TRUE(strcmp(cps_class_string_from_key(&key, 0),it.details.name)==0);
 
 
          cps_api_key_from_attr_with_qual(&key,it.id,cps_api_qualifier_TARGET);
