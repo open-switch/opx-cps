@@ -249,23 +249,20 @@ bool cps_class_string_to_key(const char *str, cps_api_attr_id_t *ids, size_t *ma
 }
 
 const char * cps_class_string_from_key(cps_api_key_t *key, size_t offset) {
-
-    std_mutex_simple_lock_guard lg(&lock);
-
-    if(cps_api_key_valid_offset(key, offset) ) {
-        cps_api_key_t _key;
-        cps_api_key_copy(&_key,key);
-	
+    cps_api_key_t _key ;
+    //if the offset is !=0... then need to do some additional processing..
+    if (offset > 0) {
+        _key = *key;
         for (size_t ix = 0; ix < offset; ++ix)
             cps_api_key_remove_element(&_key, 0);
+        key = &_key;
+    }
 
-        cps_class_map_node_details_int_t *ref= nullptr;
-        _key_to_map_element.find(&_key,ref,true);
-
-        if (ref==nullptr) return nullptr;
-        return ref->full_path.c_str();
-	}
-    return nullptr;
+    cps_class_map_node_details_int_t *ref= nullptr;
+    std_mutex_simple_lock_guard lg(&lock);
+    _key_to_map_element.find(key,ref,true);
+    if (ref==nullptr) return nullptr;
+    return ref->full_path.c_str();
 }
 
 cps_api_return_code_t cps_class_map_enum_reg(const char *enum_name, const char *field, int value, const char * descr) {
