@@ -28,7 +28,7 @@
 #include <unistd.h>
 
 int main(int argc, char**argv) {
-    //Load the class map
+    //Preload the class meta data before the startup of the nameserver process
     cps_api_class_map_init();
 
     if (cps_api_services_start()!=cps_api_ret_code_OK) {

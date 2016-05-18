@@ -261,7 +261,7 @@ const char * cps_class_string_from_key(cps_api_key_t *key, size_t offset) {
     cps_api_key_t _key ;
     //if the offset is !=0... then need to do some additional processing..
     if (offset > 0) {
-        _key = *key;
+        cps_api_key_copy(&_key,key);
         for (size_t ix = 0; ix < offset; ++ix)
             cps_api_key_remove_element(&_key, 0);
         key = &_key;
