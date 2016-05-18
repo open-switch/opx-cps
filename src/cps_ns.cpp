@@ -313,7 +313,7 @@ static bool  _client_closed_( void *context, int fd ) {
                 const char *str = cps_class_string_from_key(&v[ix].key, 1);
                 const char *qual = cps_class_qual_from_key(&v[ix].key);
                 if (str!=nullptr)
-                    EV_LOG(INFO,DSAPI,0,"NS","Added registration removed %s %s ",
+                    EV_LOG(INFO,DSAPI,0,"NS","Added registration removed for %s %s ",
                            qual,
                            str);
                else
