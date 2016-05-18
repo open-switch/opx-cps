@@ -27,6 +27,7 @@
 #include "cps_api_object_attr.h"
 #include "std_mutex_lock.h"
 #include <unordered_map>
+#include <map>
 #include <memory>
 
 
@@ -63,6 +64,7 @@ using cps_class_map_string_t = std::unordered_map<std::string,cps_class_map_node
 using cps_class_map_enums_t = std::unordered_map<std::string,CPSEnum>;
 using cps_class_map_id_to_enum_t = std::unordered_map<cps_api_attr_id_t,std::string>;
 using cps_class_map_key_to_map_element = cps_api_key_cache<cps_class_map_node_details_int_t*>;
+using cps_class_map_qual_to_string = std::map<cps_api_qualifier_t,std::string>;
 
 
 static std_mutex_lock_create_static_init_rec(lock);
@@ -72,6 +74,13 @@ static cps_class_map_enums_t _enum_map;
 static cps_class_map_id_to_enum_t _attr_id_to_enum;
 static cps_class_map_key_to_map_element _key_to_map_element;
 const static size_t NO_OFFSET=0;
+static const cps_class_map_qual_to_string _qual_to_string = {
+        {cps_api_qualifier_TARGET, "target"}, 
+        {cps_api_qualifier_OBSERVED, "observed"}, 
+        {cps_api_qualifier_PROPOSED, "proposed"}, 
+        {cps_api_qualifier_REALTIME, "realtime"}, 
+        {cps_api_qualifier_REGISTRATION, "registration"}
+};
 
 
 
@@ -266,6 +275,21 @@ const char * cps_class_string_from_key(cps_api_key_t *key, size_t offset) {
         return ref->full_path.c_str();
 	}
     return nullptr;
+}
+
+//Assumption: The first field of the key is the qualifier
+const char * cps_class_qual_from_key(cps_api_key_t *key) {
+
+    cps_api_key_element_t qual;
+    // Offset "0" is reserved for length of the key and offset "1" is reserved for metadata
+    qual = cps_api_key_elem_raw_get(key, 2);
+    
+    auto it = _qual_to_string.find((cps_api_qualifier_t)qual);
+
+    if ( it == _qual_to_string.end() )
+        return nullptr;
+    else
+        return (it->second.c_str());
 }
 
 cps_api_return_code_t cps_class_map_enum_reg(const char *enum_name, const char *field, int value, const char * descr) {

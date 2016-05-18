@@ -207,6 +207,16 @@ const char * cps_class_string_from_key(cps_api_key_t *key, size_t offset);
 
 
 /**
+ * Take a CPS key, search the CPS qualifier and return the qualifier as a string if found
+ *
+ * @param key the key for which the qualifier string is required
+ * @return the pointer to the character string holding the qualifier
+ */
+
+const char * cps_class_qual_from_key(cps_api_key_t *key);
+
+
+/**
  * From the attribute ID, return the full path of the element.
  *
  * @param id the ID to check

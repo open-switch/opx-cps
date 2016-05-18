@@ -190,11 +190,12 @@ static bool process_registration(int fd,size_t len) {
     char buff[CPS_API_KEY_STR_MAX];
     // The raw key starts at offset 1 ( "0" being the component qualifier)
     const char *str = cps_class_string_from_key(&r.details.key, 1);
+    const char *qual = cps_class_qual_from_key(&r.details.key);
     if (str!=nullptr)
-      EV_LOG(INFO,DSAPI,0,"NS","%s registration for %s (%s) at %s",
+      EV_LOG(INFO,DSAPI,0,"NS","%s registration for %s %s at %s",
             "Added" ,
+            qual,
             str,
-            cps_api_key_print(&r.details.key,buff,sizeof(buff)-1),
             r.details.addr.address.str);
     else
       EV_LOG(INFO,DSAPI,0,"NS","%s registration for %s at %s",
@@ -226,8 +227,10 @@ static bool process_query(int fd, size_t len) {
     char matchk[DEF_KEY_PRINT_BUFF];//enough to handle key printing
     // The raw key starts at offset 1 ( "0" being the component qualifier)
     const char *str = cps_class_string_from_key(&key, 1);
+    const char *qual = cps_class_qual_from_key(&key);
     if (str!=nullptr)
-        EV_LOG(TRACE,DSAPI,0,"NS","NS query for %s (%s) found %s",
+        EV_LOG(TRACE,DSAPI,0,"NS","NS query for %s %s found %s",
+                qual,
                 str,
                 cps_api_key_print(&key,ink,sizeof(ink)-1),
                 found ? cps_api_key_print(&cpy.key,matchk,sizeof(matchk)-1) : "missing");
@@ -308,10 +311,11 @@ static bool  _client_closed_( void *context, int fd ) {
                 send_out_key_event(&v[ix].key,false);
                 // The raw key starts at offset 1 ( "0" being the component qualifier)
                 const char *str = cps_class_string_from_key(&v[ix].key, 1);
+                const char *qual = cps_class_qual_from_key(&v[ix].key);
                 if (str!=nullptr)
-                    EV_LOG(INFO,DSAPI,0,"NS","Added registration removed %s (%s) ",
-                           str,
-                           cps_api_key_print(&v[ix].key,buff,sizeof(buff)-1));
+                    EV_LOG(INFO,DSAPI,0,"NS","Added registration removed %s %s ",
+                           qual,
+                           str);
                else
                    EV_LOG(INFO,DSAPI,0,"NS","Added registration removed %s",
                           cps_api_key_print(&v[ix].key,buff,sizeof(buff)-1));
