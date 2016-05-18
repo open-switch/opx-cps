@@ -276,17 +276,16 @@ const char * cps_class_string_from_key(cps_api_key_t *key, size_t offset) {
 
 //Assumption: The first field of the key is the qualifier
 const char * cps_class_qual_from_key(cps_api_key_t *key) {
+    static const int QUAL_POS=0;
 
-    cps_api_key_element_t qual;
-    // Offset "0" is reserved for length of the key and offset "1" is reserved for metadata
-    qual = cps_api_key_elem_raw_get(key, 2);
-    
+    cps_api_key_element_t qual = cps_api_key_element_at(key, QUAL_POS);
     auto it = _qual_to_string.find((cps_api_qualifier_t)qual);
-
-    if ( it == _qual_to_string.end() )
-        return nullptr;
-    else
+    
+    if (it!=_qual_to_string.end()) {
         return (it->second.c_str());
+    }
+
+    return nullptr;
 }
 
 cps_api_return_code_t cps_class_map_enum_reg(const char *enum_name, const char *field, int value, const char * descr) {
