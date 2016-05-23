@@ -33,6 +33,7 @@
 const static unsigned int CUSTOM_KEY_POS = 2;
 
 bool py_cps_util_set_item_to_dict(PyObject *d, const char * item, PyObject *o, bool gc) {
+	//always clean up the element after inserting into the dict since the dict will increase the ref count
     PyRef r(o);
     if (!gc) r.release();
 
@@ -40,7 +41,6 @@ bool py_cps_util_set_item_to_dict(PyObject *d, const char * item, PyObject *o, b
     if (PyDict_SetItemString(d,item,o)) {
         return false;
     }
-    r.release();
     return true;
 }
 
@@ -52,7 +52,6 @@ bool py_cps_util_set_item_to_list(PyObject *l, size_t ix , PyObject *o , bool gc
     if (PyList_SetItem(l,ix,o)) {
         return false;
     }
-    r.release();
     return true;
 }
 
@@ -64,7 +63,6 @@ bool py_cps_util_append_item_to_list(PyObject *l, PyObject *o , bool gc ) {
     if (PyList_Append(l,o)) {
         return false;
     }
-    r.release();
     return true;
 }
 
@@ -145,19 +143,26 @@ static void py_obj_dump_level(PyObject * d, cps_api_object_it_t *it, std::vector
                 cpy.push_back(id);
                 py_obj_dump_level(r.get(),&contained_it,cpy);
                 py_cps_util_set_item_to_dict(d,name.c_str(),r.get());
-                r.release();
                 break;
             }
 
             if ((ent->attr_type & CPS_CLASS_ATTR_T_LEAF_LIST)==CPS_CLASS_ATTR_T_LEAF_LIST) {
-                PyObject *o = PyDict_GetItemString(d,name.c_str());
+                bool _created = false;
+            	PyObject *o = PyDict_GetItemString(d,name.c_str());
                 if (o == NULL) {
                     o = PyList_New(0);
+                    _created=true;
                 }
-                PyList_Append(o,PyByteArray_FromStringAndSize(
+                PyObject *_tmp = PyByteArray_FromStringAndSize(
                         (const char *)cps_api_object_attr_data_bin(it->attr),
-                                    cps_api_object_attr_len(it->attr)));
+                                    cps_api_object_attr_len(it->attr));
+                PyList_Append(o,_tmp);
+                Py_DECREF(_tmp);
+
                 PyDict_SetItemString(d,name.c_str(),o);
+
+                if (_created) Py_DECREF(o);
+
                 break;
             }
 
@@ -189,10 +194,11 @@ PyObject * cps_obj_to_dict(cps_api_object_t obj) {
     py_obj_dump_level(d,&it,ids);
 
     PyObject *o = PyDict_New();
-    PyRef _o(o);
-
     py_cps_util_set_item_to_dict(o,"data",d);
-    py_cps_util_set_item_to_dict(o,"key",PyString_FromString(cps_key_to_string(cps_api_object_key(obj)).c_str()));
+
+    PyObject *_key_str = PyString_FromString(cps_key_to_string(cps_api_object_key(obj)).c_str());
+    py_cps_util_set_item_to_dict(o,"key",_key_str);
+
 
     cps_api_operation_types_t type = cps_api_object_type_operation(cps_api_object_key(obj));
 
@@ -204,7 +210,6 @@ PyObject * cps_obj_to_dict(cps_api_object_t obj) {
         py_cps_util_set_item_to_dict(o,"operation",PyString_FromString(a_it->first.c_str()));
     }
 
-    _o.release();
     return o;
 }
 
