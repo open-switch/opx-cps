@@ -23,13 +23,11 @@
 
 #include "private/cps_dictionary.h"
 #include "cps_api_key_cache.h"
-
+#include "cps_api_key.h"
 #include "cps_api_object_attr.h"
-
-
 #include "std_mutex_lock.h"
-
 #include <unordered_map>
+#include <map>
 #include <memory>
 
 
@@ -66,6 +64,7 @@ using cps_class_map_string_t = std::unordered_map<std::string,cps_class_map_node
 using cps_class_map_enums_t = std::unordered_map<std::string,CPSEnum>;
 using cps_class_map_id_to_enum_t = std::unordered_map<cps_api_attr_id_t,std::string>;
 using cps_class_map_key_to_map_element = cps_api_key_cache<cps_class_map_node_details_int_t*>;
+using cps_class_map_qual_to_string = std::map<cps_api_qualifier_t,std::string>;
 
 
 static std_mutex_lock_create_static_init_rec(lock);
@@ -75,6 +74,13 @@ static cps_class_map_enums_t _enum_map;
 static cps_class_map_id_to_enum_t _attr_id_to_enum;
 static cps_class_map_key_to_map_element _key_to_map_element;
 const static size_t NO_OFFSET=0;
+static const cps_class_map_qual_to_string _qual_to_string = {
+        {cps_api_qualifier_TARGET, "target"}, 
+        {cps_api_qualifier_OBSERVED, "observed"}, 
+        {cps_api_qualifier_PROPOSED, "proposed"}, 
+        {cps_api_qualifier_REALTIME, "realtime"}, 
+        {cps_api_qualifier_REGISTRATION, "registration"}
+};
 
 
 
@@ -251,15 +257,35 @@ bool cps_class_string_to_key(const char *str, cps_api_attr_id_t *ids, size_t *ma
     return true;
 }
 
-const char * cps_class_string_from_key(cps_api_key_t *key) {
-    std_mutex_simple_lock_guard lg(&lock);
+const char * cps_class_string_from_key(cps_api_key_t *key, size_t offset) {
+    cps_api_key_t _key ;
+    //if the offset is !=0... then need to do some additional processing..
+    if (offset > 0) {
+        cps_api_key_copy(&_key,key);
+        for (size_t ix = 0; ix < offset; ++ix)
+            cps_api_key_remove_element(&_key, 0);
+        key = &_key;
+    }
 
     cps_class_map_node_details_int_t *ref= nullptr;
-
+    std_mutex_simple_lock_guard lg(&lock);
     _key_to_map_element.find(key,ref,true);
-
     if (ref==nullptr) return nullptr;
     return ref->full_path.c_str();
+}
+
+//Assumption: The first field of the key is the qualifier
+const char * cps_class_qual_from_key(cps_api_key_t *key) {
+    static const int QUAL_POS=0;
+
+    cps_api_key_element_t qual = cps_api_key_element_at(key, QUAL_POS);
+    auto it = _qual_to_string.find((cps_api_qualifier_t)qual);
+    
+    if (it!=_qual_to_string.end()) {
+        return (it->second.c_str());
+    }
+
+    return nullptr;
 }
 
 cps_api_return_code_t cps_class_map_enum_reg(const char *enum_name, const char *field, int value, const char * descr) {
