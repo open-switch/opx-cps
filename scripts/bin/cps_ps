@@ -111,7 +111,6 @@ def get_cps_components(input_proc_name):
             if all(x in line for x in reg_strs_to_find):
                 e = line.split()
                 pid = e[-1].split('-')[-2]  # -2 gives the pid registered with CPS
-                #obj = line.split("Added registration for")[1].split()[0]  # Get the object key
                 # Get the object
                 tmp_list = line.split("Added registration for")[1].split()
                 if '.' in tmp_list[0]:
