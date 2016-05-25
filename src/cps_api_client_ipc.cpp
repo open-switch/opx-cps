@@ -23,7 +23,7 @@
 #include "private/cps_ns.h"
 
 #include "cps_api_object.h"
-
+#include "cps_class_map.h"
 
 #include "event_log.h"
 #include "std_file_utils.h"
@@ -323,11 +323,30 @@ cps_api_return_code_t cps_api_process_commit_request(cps_api_transaction_params_
 
     cps_api_object_t obj = cps_api_object_list_get(param->change_list,ix);
     cps_api_object_t pre = cps_api_object_list_get(param->prev,ix);
-    if (obj==NULL) return rc;
+    if (obj==NULL) {
+        EV_LOG(ERR,DSAPI,0,"CPS IPC","No Commit Object\n");
+        return rc;
+    }
 
     cps_api_channel_t handle;
     cps_api_key_t *key = cps_api_object_key(obj);
-    if (!cps_api_get_handle(*key,handle)) return cps_api_ret_code_NO_SERVICE;
+    char buff[CPS_API_KEY_STR_MAX];
+    // The raw key starts at offset 1 ( "0" being the component qualifier)
+    const char *str = cps_class_string_from_key(key, 1);
+    const char *qual = cps_class_qual_from_key(key);
+    if (str!=nullptr)
+        EV_LOG(INFO,DSAPI,0, "CPS IPC", "Object for the commit request: %s %s\n",
+               qual,
+               str );
+    else
+        EV_LOG(INFO,DSAPI,0, "CPS IPC", "key for the commit request: %s\n", cps_api_key_print(key,buff,sizeof(buff)));
+
+
+    if (!cps_api_get_handle(*key,handle)) {
+        EV_LOG(ERR,DSAPI,0,"CPS IPC","No Service\n");
+        return cps_api_ret_code_NO_SERVICE;
+    }
+ 
 
     rc = cps_api_ret_code_ERR;
 
@@ -336,19 +355,32 @@ cps_api_return_code_t cps_api_process_commit_request(cps_api_transaction_params_
     FD_SET(handle,&rset);
 
     do {
-        if (!cps_api_send_one_object(handle,cps_api_msg_o_COMMIT_CHANGE,obj)) break;
-        if (!cps_api_send_one_object(handle,cps_api_msg_o_COMMIT_PREV,pre)) break;
+        if (!cps_api_send_one_object(handle,cps_api_msg_o_COMMIT_CHANGE,obj)) {
+            EV_LOG(ERR,DSAPI,0,"CPS IPC","Could not send COMMIT CHANGE \n");
+            break;
+        }
+ 
+        if (!cps_api_send_one_object(handle,cps_api_msg_o_COMMIT_PREV,pre)) {
+            EV_LOG(ERR,DSAPI,0,"CPS IPC","Could not send COMMIT PREV \n");
+            break;
+        }
+ 
 
         uint32_t op;
         size_t len;
         if (param->timeout > 0) {
             if ((rc=cps_api_timeout_wait(handle,&rset,param->timeout,"CPS-OP-TR"))!=cps_api_ret_code_OK) {
+                EV_LOG(ERR,DSAPI,0,"CPS IPC","Transaction Response timed out \n");
                 break;
             }
         }
         rc = cps_api_ret_code_ERR;
 
-        if (!cps_api_receive_header(handle,op,len)) break;
+        if (!cps_api_receive_header(handle,op,len)) {
+            EV_LOG(ERR,DSAPI,0,"CPS IPC","Failed to read the receive header \n");
+            break;
+        }
+ 
 
         if (op == cps_api_msg_o_COMMIT_OBJECT) {
             cps_api_object_guard og(cps_api_receive_object(handle,len));
@@ -358,8 +390,15 @@ cps_api_return_code_t cps_api_process_commit_request(cps_api_transaction_params_
             }
             cps_api_object_clone(obj,og.get());
 
-            if (!cps_api_receive_header(handle,op,len)) break;
-            if (op!=cps_api_msg_o_COMMIT_OBJECT) break;
+            if (!cps_api_receive_header(handle,op,len)) {
+                EV_LOG(ERR,DSAPI,0,"CPS IPC","Failed to read the receive header for prev object \n");
+                break;
+            }
+ 
+            if (op!=cps_api_msg_o_COMMIT_OBJECT) {
+                EV_LOG(ERR,DSAPI,0,"CPS IPC","Transaction response header incorrect for prev object\n" );
+                break;
+            }
 
             if (len>0) {
                 cps_api_object_guard og(cps_api_receive_object(handle,len));
@@ -399,20 +438,46 @@ cps_api_return_code_t cps_api_process_rollback_request(cps_api_transaction_param
     cps_api_return_code_t rc = cps_api_ret_code_ERR;
 
     cps_api_object_t obj = cps_api_object_list_get(param->prev,ix);
-    if (obj==NULL) return rc;
+    if (obj==NULL) {
+        EV_LOG(ERR,DSAPI,0,"CPS IPC","No Revert Object\n");
+        return rc;
+    }
 
     cps_api_channel_t handle;
-    if (!cps_api_get_handle(*cps_api_object_key(obj),handle)) return cps_api_ret_code_NO_SERVICE;
+    cps_api_key_t *key = cps_api_object_key(obj);
+
+    char buff[CPS_API_KEY_STR_MAX];
+    // The raw key starts at offset 1 ( "0" being the component qualifier)
+    const char *str = cps_class_string_from_key(key, 1);
+    const char *qual = cps_class_qual_from_key(key);
+    if (str!=nullptr)
+        EV_LOG(INFO,DSAPI,0, "CPS IPC", "Object for the rollback request: %s %s\n",
+              qual,
+              str );
+    else
+        EV_LOG(INFO,DSAPI,0, "CPS IPC", "key for the rollback request: %s\n", cps_api_key_print(key,buff,sizeof(buff)));
+
+    if (!cps_api_get_handle(*key,handle)) {
+        EV_LOG(ERR,DSAPI,0,"CPS IPC","No Service\n");
+        return cps_api_ret_code_NO_SERVICE;
+    }
+
     cps_api_channel_handle_guard hg(handle);
 
     rc = cps_api_ret_code_ERR;
 
     do {
-        if (!cps_api_send_one_object(handle,cps_api_msg_o_REVERT,obj)) break;
+        if (!cps_api_send_one_object(handle,cps_api_msg_o_REVERT,obj)) {
+            EV_LOG(ERR,DSAPI,0,"CPS IPC","Could not send REVERT header\n");
+            break;
+        }
 
         uint32_t op;
            size_t len;
-           if (!cps_api_receive_header(handle,op,len)) break;
+           if (!cps_api_receive_header(handle,op,len)) {
+               EV_LOG(ERR,DSAPI,0,"CPS IPC","Failed to read the receive header for revert object\n");
+               break;
+           }
 
            if (op == cps_api_msg_o_RETURN_CODE) {
                if (!cps_api_receive_data(handle,&rc,sizeof(rc))) break;

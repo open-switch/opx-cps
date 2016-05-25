@@ -161,14 +161,16 @@ cps_api_return_code_t cps_api_commit(cps_api_transaction_params_t * param) {
     size_t mx = cps_api_object_list_size(param->change_list);
     for ( ; ix < mx ; ++ix ) {
         if ((rc=cps_api_process_commit_request(param,ix))!=cps_api_ret_code_OK) {
+            EV_LOG(ERR,DSAPI,0,"COMMIT","Failed to commit request at %d out of %d\n",ix, mx);
             break;
         }
     }
     if (rc!=cps_api_ret_code_OK) {
+        size_t mx_bk = mx;
         while (mx > 0) {
             ix = mx-1;
             if (cps_api_process_rollback_request(param,ix)!=cps_api_ret_code_OK) {
-                EV_LOG(ERR,DSAPI,0,"ROLLBACK","Failed to rollback request at %d",ix);
+                EV_LOG(ERR,DSAPI,0,"ROLLBACK","Failed to rollback request at %d out of %d\n",ix, mx_bk);
             }
             --mx;
         }
