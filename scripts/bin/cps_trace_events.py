@@ -18,6 +18,7 @@
 import sys
 import cps
 import cps_utils
+
 def cps_trace_usage():
     print ""
     print "Usage: cps_trace_events.py <qualifier> [object]"
@@ -53,7 +54,7 @@ if __name__ == '__main__':
     print "Key : " + _key
 
     if (_key == "") or (_key == None)):
-        print "Check the object name, object not present"
+        print "Check the object name, not a valid object"
         exit(1)
 
     handle = cps.event_connect()
