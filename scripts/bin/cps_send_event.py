@@ -30,6 +30,23 @@ if __name__ == '__main__':
               + " if/interfaces-state/interface/name=e101-007-0 if/interfaces-state/interface/oper-status=2"
         exit(1)
 
+   _operation = {'set', 'create', 'delete'}
+    if sys.argv[1] not in _operation:
+       print "\nCheck operation, supported operations (set/create/delete)\n"
+       exit(1)
+
+    _qual = {'target', 'observed', 'proposed', 'realtime'}
+    if sys.argv[2] not in _qual:
+       print "\nCheck qualifier, supported qualifiers (target/observed/proposed//
+realtime\n)"
+       exit(1)
+
+    _key = cps.key_from_name(sys.argv[2], sys.argv[3])
+
+    if (_key == "") or (_key  == None):
+        print "\nCheck the object name, object not valid\n"
+        exit(1)
+
     handle = cps.event_connect()
     print " sending event for...."
     _obj = cps_object.CPSObject(qual=sys.argv[2], module=sys.argv[3])
