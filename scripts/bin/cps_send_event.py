@@ -22,29 +22,28 @@ import cps_utils
 
 if __name__ == '__main__':
     if len(sys.argv) < 4:
-        print "Missing args...."
+        print "\nMissing args...."
         print "Usage: cps_send_event.py [operation] [qualifier] [object_id] attr1=value attr2=value"
         print "operation=set/create/delete, qualifier=target/observed/realtime/proposed"
         print "Example1: cps_send_event.py set observed base-pas/media slot=1 port=1 type=61"
         print "Example2: cps_send_event.py create observed  dell-base-if-cmn/if/interfaces-state/interface" \
-              + " if/interfaces-state/interface/name=e101-007-0 if/interfaces-state/interface/oper-status=2"
+              + " if/interfaces-state/interface/name=e101-007-0 if/interfaces-state/interface/oper-status=2\n"
         exit(1)
 
-   _operation = {'set', 'create', 'delete'}
+    _operation = {'set', 'create', 'delete'}
     if sys.argv[1] not in _operation:
        print "\nCheck operation, supported operations (set/create/delete)\n"
        exit(1)
 
     _qual = {'target', 'observed', 'proposed', 'realtime'}
     if sys.argv[2] not in _qual:
-       print "\nCheck qualifier, supported qualifiers (target/observed/proposed//
-realtime\n)"
+       print "\nCheck qualifier, supported qualifiers (target/observed/proposed/realtime)\n"
        exit(1)
 
     _key = cps.key_from_name(sys.argv[2], sys.argv[3])
 
-    if (_key == "") or (_key  == None):
-        print "\nCheck the object name, object not valid\n"
+    if ((_key == "") or (_key  == None)):
+        print "\nCheck the object name, not a valid object\n"
         exit(1)
 
     handle = cps.event_connect()
