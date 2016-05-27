@@ -414,13 +414,10 @@ class Language:
                 if function.find('get') != -1:
                     leaf_present = True
                     print "          case " + self.aug_names[leaf] + ":"
-                    print "              /* Iterate inside for the leaf-list */"
-                    print "              for(cma_get_tag_it_inside(obj," + self.aug_names[leaf] + ",&it);"
-                    print "                  cps_api_object_it_valid(&it);"
-                    print "                  cps_api_object_it_next(&it)) {"
-                    print "                  if(cma_get_data_fr_it(&it,&val)){;"
-                    print "                      /* process data here - i.e. val_valid */ "
-                    print "                      ;"
+                    print "              /* Process leaf-list */"
+                    print "              if(cma_get_data_fr_it(&it,&val)){;"
+                    print "                  /* No default value. Check for null before using it */"
+                    print "                  if(!val_is_null(val)) {"
                     print "                  }"
                     print "              }"
                     print "              break;"
