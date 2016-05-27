@@ -416,8 +416,9 @@ class Language:
                     print "          case " + self.aug_names[leaf] + ":"
                     print "              /* Process leaf-list */"
                     print "              if(cma_get_data_fr_it(&it,&val)){;"
-                    print "                  /* process data here - i.e. val_valid */ "
-                    print "                      ;"
+                    print "                  /* No default value. Check for null before using it */"
+                    print "                  if(!val_is_null(val)) {"
+                    print "                  }"
                     print "              }"
                     print "              break;"
                 else:
