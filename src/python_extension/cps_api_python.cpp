@@ -349,34 +349,33 @@ static PyObject * py_cps_key_from_name(PyObject *self, PyObject *args) {
 
 static PyObject * py_cps_name_from_key(PyObject *self, PyObject *args) {
 
-	const char * key=NULL;
-	int offset = 0;
+    const char * key=NULL;
+    int offset = 0;
 	
-	if (! PyArg_ParseTuple( args, "si", &key, &offset)) return NULL;
+    if (! PyArg_ParseTuple( args, "si", &key, &offset)) return NULL;
 	
-	cps_api_key_t k;
-        cps_api_key_from_string(&k, key);
+    cps_api_key_t k;
+    cps_api_key_from_string(&k, key);
 	
-	const char *path = NULL;
-	path = cps_class_string_from_key(&k, offset);
+    const char *path = NULL;
+    path = cps_class_string_from_key(&k, offset);
 	
-	return PyString_FromString(path);
+    return PyString_FromString(path);
 	
 }
 
 static PyObject * py_cps_qual_from_key(PyObject *self, PyObject *args) {
 
-	const char * key=NULL;
-	if (! PyArg_ParseTuple( args, "s", &key)) return NULL;
+    const char * key=NULL;
+    if (! PyArg_ParseTuple( args, "s", &key)) return NULL;
 	
-	cps_api_key_t k;
-
+    cps_api_key_t k;
     cps_api_key_from_string(&k, key);
 	
-	const char *qualifier = NULL;
-	qualifier = cps_class_qual_from_key(&k);
+    const char *qualifier = NULL;
+    qualifier = cps_class_qual_from_key(&k);
 	
-	return PyString_FromString(qualifier);
+    return PyString_FromString(qualifier);
 }
 
 #define CPS_FN_DOC(x) x##_doc
