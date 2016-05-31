@@ -359,6 +359,8 @@ static PyObject * py_cps_name_from_key(PyObject *self, PyObject *args) {
 	
     const char *path = NULL;
     path = cps_class_string_from_key(&k, offset);
+    if (path == NULL)
+        path = "";
 	
     return PyString_FromString(path);
 	
@@ -374,6 +376,8 @@ static PyObject * py_cps_qual_from_key(PyObject *self, PyObject *args) {
 	
     const char *qualifier = NULL;
     qualifier = cps_class_qual_from_key(&k);
+    if (qualifier == NULL)
+        qualifier = "";
 	
     return PyString_FromString(qualifier);
 }
