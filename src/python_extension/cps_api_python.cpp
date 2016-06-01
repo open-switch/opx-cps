@@ -188,6 +188,7 @@ static PyObject * py_cps_info(PyObject *self, PyObject *args) {
 
     PyRef names(PyDict_New());
     PyRef ids(PyDict_New());
+
     if (names.get()==nullptr || ids.get()==nullptr) {
         return nullptr;
     }

@@ -50,12 +50,15 @@ PyObject * py_cps_get(PyObject *self, PyObject *args) {
 
     if (PyDict_Check(res_obj)) {
         PyObject *l = PyList_New(0);
+        PyRef _l(l);
         if (l==NULL) {
             py_set_error_string("Can not create a list.");
             return nullptr;
         }
-        if (PyDict_GetItemString(res_obj,"list")!=NULL)
+        PyObject *_prev = PyDict_GetItemString(res_obj,"list");
+        if (_prev!=NULL) {
             PyDict_DelItemString(res_obj,"list");
+        }
 
         if (!py_cps_util_set_item_to_dict(res_obj,"list",l)) {
             py_set_error_string("Can not create a list.");
@@ -128,7 +131,6 @@ PyObject * py_cps_get(PyObject *self, PyObject *args) {
             py_set_error_string("Memory allocation error.");
             return nullptr;
         }
-        r.release();
     }
 
     Py_RETURN_TRUE;
@@ -231,7 +233,7 @@ PyObject * py_cps_trans(PyObject *self, PyObject *args) {
             py_set_error_string("Failed to convert the transaction response.");
             return nullptr;
         }
-        PyDict_SetItemString(_req,"key",
+        py_cps_util_set_item_to_dict(_req,"key",
                 PyString_FromString(cps_key_to_string(cps_api_object_key(obj)).c_str()));
 
         if (PyDict_GetItemString(dict,"change")!=NULL)
@@ -271,6 +273,7 @@ static cps_api_return_code_t _read_function (void * context, cps_api_get_params_
 
     py_cps_util_set_item_to_dict(p,"filter",cps_obj_to_dict(cps_api_object_list_get(
             param->filters,key_ix)));
+
     py_cps_util_set_item_to_dict(p,"list",PyList_New(0));
 
     PyObject * res = cb->execute("get",p);
@@ -298,7 +301,6 @@ static cps_api_return_code_t _read_function (void * context, cps_api_get_params_
 }
 
 static cps_api_return_code_t _write_function(void * context, cps_api_transaction_params_t * param,size_t ix) {
-
     GILLock gil;
 
     cps_api_object_t obj = cps_api_object_list_get(param->change_list,ix);
