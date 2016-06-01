@@ -19,14 +19,20 @@
  */
 
 #include "cps_api_service.h"
+#include "private/cps_ns.h"
+#include "private/db/cps_api_db.h"
+
 #include "std_event_service.h"
 #include "event_log.h"
-#include "private/cps_ns.h"
+#include "std_assert.h"
 
 #include <string>
 #include <unistd.h>
 
 int main(int argc, char**argv) {
+
+	STD_ASSERT(cps_db::cps_api_db_init()==cps_api_ret_code_OK);
+
     if (cps_api_services_start()!=cps_api_ret_code_OK) {
         EV_LOG(ERR,DSAPI,0,"FLT","Failed to initialize the messaging service.");
         return cps_api_ret_code_ERR;

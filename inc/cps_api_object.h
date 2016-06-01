@@ -261,6 +261,41 @@ void cps_api_object_attr_delete(cps_api_object_t obj, cps_api_attr_id_t attr);
 cps_api_object_attr_t cps_api_object_e_get(cps_api_object_t obj, cps_api_attr_id_t *id,
         size_t id_size);
 
+
+/**
+ * This API is meant for getting the value of an attribute.  The pointer returned will be to the data itself
+ *
+ * @param obj object that contains the attribute
+ * @param id a list of attribute ids (for embedded objects)
+ * @param id_size the length of ids in the attribute
+ * @return the void pointer to the data of the attribute
+ */
+void* cps_api_object_e_get_data(cps_api_object_t obj, cps_api_attr_id_t *id,
+        size_t id_size);
+
+static inline void *cps_api_object_get_data(cps_api_object_t obj, cps_api_attr_id_t id) {
+	return cps_api_object_e_get_data(obj,&id,1);
+}
+
+/**
+ * This API will get a list of the same attribute value into a array.  This can be though of (in yang) as a leaf-list.
+ * Pass in an object, a attribute ID (or list for embedded attributes) and this API will find it and return the pointer
+ * to the TLV's data in the attr_data void * list.  The number of attributes found will be returned.
+ *
+ * @param obj the object containing the attributes
+ * @param ids the list of attibutes
+ * @param len the length of the attribute list
+ * @param attr_data the list of void *
+ * @param attr_data_max  the number of elements in attr_data for storing void *
+ * @return the number of found attributes
+ */
+size_t cps_api_object_e_get_list_data(cps_api_object_t obj, cps_api_attr_id_t *ids, size_t len,
+		void ** attr_data, size_t attr_data_max);
+
+static inline size_t cps_api_object_get_list_data(cps_api_object_t obj, cps_api_attr_id_t id,
+		void ** attr_data, size_t attr_data_max) {
+	return cps_api_object_e_get_list_data(obj,&id,1,attr_data,attr_data_max);
+}
 /**
  * This API is meant for getting iterators on for any attribute within the object.
  * If you query a single attribute, it will only create an iterator that point to the existing attribute.

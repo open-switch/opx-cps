@@ -181,13 +181,14 @@ bool cps_api_key_from_attr(cps_api_key_t *key,cps_api_attr_id_t id, size_t key_s
 
     const cps_class_map_node_details_int_t * it = cps_dict_find_by_id(id);
     if (it==nullptr) return false;
+
+    cps_api_key_set_attr(key,0);
     cps_api_key_init_from_attr_array(key,(cps_api_attr_id_t *)&(it->ids[0]),it->ids.size(),key_start_pos);
     return true;
 }
 
 bool cps_api_key_from_attr_with_qual(cps_api_key_t *key,cps_api_attr_id_t id,
         cps_api_qualifier_t cat) {
-
     bool rc = cps_api_key_from_attr(key,id,CPS_OBJ_KEY_INST_POS+1);
     if (!rc) return false;
     cps_api_key_set(key,CPS_OBJ_KEY_INST_POS,cat);

@@ -70,6 +70,9 @@ typedef struct {
     cps_api_event_reg_prio_t priority; //!< priority of the registration, optional for the implementation
     cps_api_key_t *objects;    //!< list of objects
     size_t number_of_objects;  //!< number of objects in the list
+
+    cps_api_object_list_t list_of_objs; /// A list of objects that need to be registered for
+    									/// if instance keys are present they will be used to filter the requests
 } cps_api_event_reg_t;
 
 /**
@@ -109,6 +112,19 @@ cps_api_return_code_t cps_api_event_client_disconnect(cps_api_event_service_hand
 cps_api_return_code_t cps_api_event_client_register(cps_api_event_service_handle_t handle,
         cps_api_event_reg_t * req);
 
+/**
+ * Register for a list of objects.
+ *
+ * Each object can have in an addition to the static key of an object, the following attributes can also be used:
+ * 		* Node Grouping
+ * 		* Instance attributes
+ *
+ * @param handle the handle on which to register
+ * @param objects the list that contains object (keys, instance attrs, group attrs) to register for
+ * @return cps_api_ret_code_OK if successful otherwise an error
+ */
+cps_api_return_code_t cps_api_event_client_register_object(cps_api_event_service_handle_t handle,
+        cps_api_object_list_t objects);
 /**
  * Send an object to the event service for publishing using a previously registered handle
  * @param handle the handle to the CPS event service

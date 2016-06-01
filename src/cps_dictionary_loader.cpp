@@ -32,6 +32,8 @@
 #include "std_utils.h"
 #include "event_log.h"
 
+#include "dell-cps.h"
+
 #include <sys/stat.h>
 #include <string>
 #include <map>
@@ -185,7 +187,7 @@ void cps_api_class_map_init(void) {
     for ( ; ix < mx ; ++ix ) {
         cps_class_map_init(internal[ix].id,&internal[ix].keys[0],internal[ix].keys.size(),&internal[ix].details);
     }
-
+    cps_api_yang_module_init();
 }
 
 

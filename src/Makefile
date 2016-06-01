@@ -9,10 +9,11 @@ cps-class-map-util_SRCS=cps_class_map_query.cpp
 cps-class-map-util_CXXFLAGS=-std=c++11
 cps-class-map-util_LDFLAGS=-ldn_common -levent_log -lcps-api-common -lpthread
 
-cps-api-common_CXXFLAGS+=-I${TOP_SRCDIR}/inc/private
+cps-api-common_CXXFLAGS+=-I${TOP_SRCDIR}/inc/private -I${TOP_SRCDIR}/inc/private/db
+
 cps-api-common_SRCS+=cps_api_object.cpp
 cps-api-common_SRCS+=cps_api_events.cpp
-cps-api-common_SRCS+=cps_api_base_event_adapter.cpp
+#cps-api-common_SRCS+=cps_api_base_event_adapter.cpp
 cps-api-common_SRCS+=cps_api_operation_common.cpp
 cps-api-common_SRCS+=cps_api_key.cpp
 cps-api-common_SRCS+=cps_api_object_attr.cpp
@@ -26,12 +27,26 @@ cps-api-common_SRCS+=cps_api_operation_tools.cpp
 cps-api-common_SRCS+=cps_api_utils.cpp
 cps-api-common_SRCS+=cps_string_utils.cpp
 cps-api-common_SRCS+=cps_api_operation_debug.cpp
+cps-api-common_SRCS+=db/cps_api_db_connection.cpp
+cps-api-common_SRCS+=db/cps_api_db_response.cpp
+cps-api-common_SRCS+=db/cps_api_db_object_key.cpp
+cps-api-common_SRCS+=db/cps_redis.cpp
+cps-api-common_SRCS+=cps_api_vector_utils.cpp
+cps-api-common_SRCS+=cps_comm_utils.cpp
+cps-api-common_SRCS+=dell-cps.cpp
+cps-api-common_SRCS+=cps_api_node.cpp db/cps_api_db_init.cpp
+cps-api-common_SRCS+=db/cps_api_db_event_adapter.cpp
 
-cps-api-common_LDFLAGS = -levent_log -ldn_common -lpthread
+cps-api-common_LDFLAGS = -levent_log -ldn_common -lpthread -lhiredis
+
 
 cps_api_service_SRCS=cps_api_service.cpp
 cps_api_service_LDFLAGS = -lcps-api-common -ldn_common -levent_log
 
+cps_api_db_unittest_CXXFLAGS+=-I$(TOP_SRCDIR)/inc/private/db -I$(TOP_SRCDIR)/inc/private
+cps_api_db_unittest_SRCS=unit_test/cps_api_db_unittest.cpp
+cps_api_db_unittest_LDFLAGS=-lcps-api-common
+UNIT_TEST+= cps_api_db_unittest
 
 cps_api_key_unittest_SRCS=unit_test/cps_api_key_unittest.cpp
 cps_api_key_unittest_LDFLAGS=-lcps-api-common

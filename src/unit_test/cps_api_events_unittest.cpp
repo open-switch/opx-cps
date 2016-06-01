@@ -20,7 +20,7 @@
 
 
 #include "cps_api_events.h"
-
+#include "private/db/cps_api_db.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,12 +34,16 @@
 #include "cps_api_event_init.h"
 #include "std_event_service.h"
 #include "cps_api_service.h"
+#include "cps_class_map.h"
+
+//IP Meta data
+#include "cps_class_ut_data.h"
 
 #include <pthread.h>
 #include <sys/select.h>
 
-cps_api_event_service_handle_t handle;
 
+cps_api_event_service_handle_t handle;
 
 bool _cps_api_event_thread_callback(cps_api_object_t object,void * context) {
      char buff[1024];
@@ -201,15 +205,55 @@ bool test_init() {
     return (cps_api_event_service_init()==cps_api_ret_code_OK);
 }
 
+TEST(cps_api_events,seed_meta_data) {
+    std::vector<cps_api_attr_id_t> ids ;
+
+    size_t ix = 0;
+    for ( ; ix < lst_len ; ++ix ) {
+        cps_class_map_init(lst[ix].id,&(lst[ix]._ids[0]),lst[ix]._ids.size(),&lst[ix].details);
+    }
+}
+
 TEST(cps_api_events,init) {
     ASSERT_TRUE(test_init());
+    ASSERT_TRUE(cps_db::cps_api_db_init()==cps_api_ret_code_OK);
+}
+
+TEST(cps_api_events,basic_clients) {
+	cps_api_event_service_handle_t handle;
+	ASSERT_TRUE(cps_api_event_client_connect(&handle)==cps_api_ret_code_OK);
+
+	cps_api_event_reg_t reg;
+	reg.priority = 0;
+
+	cps_api_key_t keys;
+	ASSERT_TRUE(cps_api_key_from_attr_with_qual(&keys,BASE_IP_IPV6_ADDRESS,cps_api_qualifier_TARGET));
+
+	reg.objects = &keys;
+	reg.number_of_objects =1;
+
+	ASSERT_TRUE(cps_api_event_client_register(handle,&reg)==cps_api_ret_code_OK) ;
+
+	char buff[1024];
+	int cnt=10;
+	while(--cnt > 0) {
+		cps_api_object_guard og(cps_api_object_create());
+		ASSERT_TRUE(cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),BASE_IP_IPV6_ADDRESS,cps_api_qualifier_TARGET));
+		cps_api_object_attr_add( og.get(),BASE_IP_IPV6_ADDRESS_IP,"10.10.10.10",12);
+		cps_api_object_attr_add( og.get(),BASE_IP_IPV6_ADDRESS_PREFIX_LENGTH,"24",3);
+
+		cps_api_event_publish(handle,og.get());
+		ASSERT_TRUE(cps_api_wait_for_event(handle,og.get())==cps_api_ret_code_OK);
+		printf("3(%d) -  %s\n",cnt,cps_api_object_to_string(og.get(),buff,sizeof(buff)));
+	}
+	cps_api_event_client_disconnect(handle);
+}
+
+TEST(cps_api_events,full_test) {
     ASSERT_TRUE(cps_api_event_thread_init()==cps_api_ret_code_OK);
     ASSERT_TRUE(full_reg());
     ASSERT_TRUE(threaded_client_test());
-    ASSERT_TRUE(simple_client_use());
-
 }
-
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

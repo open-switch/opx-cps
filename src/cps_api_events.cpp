@@ -52,7 +52,17 @@ cps_api_return_code_t cps_api_event_client_connect(cps_api_event_service_handle_
 
 cps_api_return_code_t cps_api_event_client_register(cps_api_event_service_handle_t handle,
         cps_api_event_reg_t * req) {
-    return m_method.register_function(handle,req);
+	cps_api_object_list_guard lg(cps_api_object_list_create());
+	for ( size_t ix = 0 ; ix < req->number_of_objects; ++ix ) {
+		cps_api_object_t o = cps_api_object_list_create_obj_and_append(lg.get());
+		cps_api_key_copy(cps_api_object_key(o),req->objects + ix);
+	}
+    return m_method.register_function_objs(handle,lg.get());
+}
+
+cps_api_return_code_t cps_api_event_client_register_object(cps_api_event_service_handle_t handle,
+        cps_api_object_list_t objects) {
+	return m_method.register_function_objs(handle,objects);
 }
 
 cps_api_return_code_t cps_api_event_publish(cps_api_event_service_handle_t handle,
