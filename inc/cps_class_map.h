@@ -92,6 +92,12 @@ typedef enum {
     CPS_CLASS_DATA_TYPE_T_KEY,
 }CPS_CLASS_DATA_TYPE_t;
 
+typedef enum {
+    CPS_API_OBJECT_STORE_SERVICE,
+    CPS_API_OBJECT_STORE_CACHE,
+    CPS_API_OBJECT_STORE_DB
+}CPS_API_OBJECT_STORAGE_TYPE_t ;
+
 /**
  * Structure representing a node in the CPS yang map.  This map can be used to get extended inforamtion
  * about a CPS object.

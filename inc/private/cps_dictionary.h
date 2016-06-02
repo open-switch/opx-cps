@@ -38,6 +38,7 @@
 #include <string>
 #include <vector>
 
+
 struct cps_class_map_node_details_int_t {
     std::string name;
     std::string full_path;
@@ -59,13 +60,10 @@ void cps_dict_walk(void * context, cps_dict_walk_fun fun);
 /**
  * For now... always return cached state of object
  * @param obj the object to check
- * @return true if the object state is cache-able false otherwise
+ * @return based on the object, return the type of storage
  */
-static inline bool cps_api_obj_has_cached_state(cps_api_object_t obj) {
-	if (cps_api_object_type_operation(cps_api_object_key(obj))==cps_api_oper_ACTION) return false;
-	return true;
-}
-
+CPS_API_OBJECT_STORAGE_TYPE_t cps_api_obj_get_storage_type(cps_api_object_t obj);
+void cps_api_obj_set_storage_type(cps_api_object_t obj, CPS_API_OBJECT_STORAGE_TYPE_t type);
 
 /**
  * @}

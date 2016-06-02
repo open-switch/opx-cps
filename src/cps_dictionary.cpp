@@ -66,7 +66,7 @@ using cps_class_map_string_t = std::unordered_map<std::string,cps_class_map_node
 using cps_class_map_enums_t = std::unordered_map<std::string,CPSEnum>;
 using cps_class_map_id_to_enum_t = std::unordered_map<cps_api_attr_id_t,std::string>;
 using cps_class_map_key_to_map_element = cps_api_key_cache<cps_class_map_node_details_int_t*>;
-
+using cps_class_map_key_to_type = cps_api_key_cache<CPS_API_OBJECT_STORAGE_TYPE_t>;
 
 static std_mutex_lock_create_static_init_rec(lock);
 static cps_class_map_type_t _class_def;
@@ -74,6 +74,7 @@ static cps_class_map_string_t _str_map;
 static cps_class_map_enums_t _enum_map;
 static cps_class_map_id_to_enum_t _attr_id_to_enum;
 static cps_class_map_key_to_map_element _key_to_map_element;
+static cps_class_map_key_to_type _key_storage_type;
 const static size_t NO_OFFSET=0;
 
 
@@ -134,9 +135,6 @@ void cps_dict_walk(void *context, cps_dict_walk_fun fun) {
         if (!fun(context,it->second.get())) break;
     }
 }
-
-
-extern "C" {
 
 cps_api_return_code_t cps_class_map_init(cps_api_attr_id_t id, const cps_api_attr_id_t *ids, size_t ids_len,
         cps_class_map_node_details *details) {
@@ -307,4 +305,14 @@ bool cps_class_map_attr_type(cps_api_attr_id_t id, CPS_CLASS_DATA_TYPE_t *t) {
     return true;
 }
 
+CPS_API_OBJECT_STORAGE_TYPE_t cps_api_obj_get_storage_type(cps_api_object_t obj) {
+    std_mutex_simple_lock_guard lg(&lock);
+    CPS_API_OBJECT_STORAGE_TYPE_t *p = _key_storage_type.at(cps_api_object_key(obj),true);
+    if (p==nullptr) return CPS_API_OBJECT_STORE_SERVICE;
+    return *p;
+}
+
+void cps_api_obj_set_storage_type(cps_api_object_t obj, CPS_API_OBJECT_STORAGE_TYPE_t type) {
+    std_mutex_simple_lock_guard lg(&lock);
+    _key_storage_type.insert(cps_api_object_key(obj),type);
 }

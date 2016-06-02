@@ -80,3 +80,19 @@ extern "C" bool cps_api_obj_tool_matches_filter(cps_api_object_t filter, cps_api
     cps_api_object_it_begin(obj,&obj_it);
     return __cps_api_obj_tool_matches_filter(it,obj_it,require_all_attribs);
 }
+
+
+bool cps_api_obj_tool_merge(cps_api_object_t main, cps_api_object_t overlay) {
+    cps_api_object_it_t it;
+
+    cps_api_object_it_begin(overlay,&it);
+    do {
+        cps_api_object_attr_delete(main,cps_api_object_attr_id(it.attr));
+        if (!cps_api_object_attr_add(main,cps_api_object_attr_id(it.attr),cps_api_object_attr_data_bin(it.attr),
+                cps_api_object_attr_len(it.attr))) {
+            return false;
+        }
+    } while (cps_api_object_it_next(&it));
+    return true;
+}
+
