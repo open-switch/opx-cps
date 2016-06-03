@@ -330,16 +330,10 @@ cps_api_return_code_t cps_api_process_commit_request(cps_api_transaction_params_
 
     cps_api_channel_t handle;
     cps_api_key_t *key = cps_api_object_key(obj);
+
     char buff[CPS_API_KEY_STR_MAX];
-    // The raw key starts at offset 1 ( "0" being the component qualifier)
-    const char *str = cps_class_string_from_key(key, 1);
-    const char *qual = cps_class_qual_from_key(key);
-    if (str!=nullptr)
-        EV_LOG(INFO,DSAPI,0, "CPS IPC", "Object for the commit request: %s %s",
-               qual,
-               str );
-    else
-        EV_LOG(INFO,DSAPI,0, "CPS IPC", "key for the commit request: %s", cps_api_key_print(key,buff,sizeof(buff)));
+    EV_LOG(TRACE,DSAPI,0, "CPS IPC", "Object for commit request: %s ",
+                                    cps_api_key_name_print(key, buff, sizeof(buff)));
 
 
     if (!cps_api_get_handle(*key,handle)) {
@@ -447,15 +441,8 @@ cps_api_return_code_t cps_api_process_rollback_request(cps_api_transaction_param
     cps_api_key_t *key = cps_api_object_key(obj);
 
     char buff[CPS_API_KEY_STR_MAX];
-    // The raw key starts at offset 1 ( "0" being the component qualifier)
-    const char *str = cps_class_string_from_key(key, 1);
-    const char *qual = cps_class_qual_from_key(key);
-    if (str!=nullptr)
-        EV_LOG(INFO,DSAPI,0, "CPS IPC", "Object for the rollback request: %s %s",
-              qual,
-              str );
-    else
-        EV_LOG(INFO,DSAPI,0, "CPS IPC", "key for the rollback request: %s", cps_api_key_print(key,buff,sizeof(buff)));
+    EV_LOG(TRACE,DSAPI,0, "CPS IPC", "Object for rollback request: %s ",
+                                    cps_api_key_name_print(key, buff, sizeof(buff)));
 
     if (!cps_api_get_handle(*key,handle)) {
         EV_LOG(ERR,DSAPI,0,"CPS IPC","No Service");

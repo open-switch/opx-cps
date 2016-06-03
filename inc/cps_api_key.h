@@ -41,7 +41,6 @@
 
 #include "cps_key_internals.h"
 #include "cps_api_object_attr.h"
-
 #include "std_assert.h"
 
 #include <stdbool.h>
@@ -242,6 +241,17 @@ int cps_api_key_matches(cps_api_key_t * key, cps_api_key_t * prefix, bool exact)
  * @sa CPS_API_KEY_STR_MAX
  */
 char * cps_api_key_print(cps_api_key_t *key, char *buff, size_t len);
+
+/**
+ * A debug API to print the key full path along with its qualifier into the provided buffer.
+ * @param key to convert to full path string
+ * @param buff the string buffer that will hold the text
+ * @param len the length of the buffer
+ * @return a pointer to buff passed in
+ * @sa CPS_API_KEY_STR_MAX
+ */
+
+char *cps_api_key_name_print(cps_api_key_t *key, char *buff, size_t len);
 
 /**
  * An API that takes a key as a string (dot separated integer values) and returns the key object filled in.
