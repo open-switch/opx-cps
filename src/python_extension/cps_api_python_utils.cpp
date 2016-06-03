@@ -33,7 +33,7 @@
 const static unsigned int CUSTOM_KEY_POS = 2;
 
 bool py_cps_util_set_item_to_dict(PyObject *d, const char * item, PyObject *o, bool gc) {
-	//always clean up the element after inserting into the dict since the dict will increase the ref count
+    //always clean up the element after inserting into the dict since the dict will increase the ref count
     PyRef r(o);
     if (!gc) r.release();
 
@@ -133,22 +133,22 @@ static void py_obj_dump_level(PyObject * d, cps_api_object_it_t *it, std::vector
             }
 
             if (ent->embedded) {
-                PyRef r (PyDict_New());
-                if (r.get()==nullptr) break;
+                PyObject *container = (PyDict_New());
+                if (container==nullptr) break;
 
                 cps_api_object_it_t contained_it = *it;
                 cps_api_object_it_inside(&contained_it);
 
                 std::vector<cps_api_attr_id_t> cpy = ids;
                 cpy.push_back(id);
-                py_obj_dump_level(r.get(),&contained_it,cpy);
-                py_cps_util_set_item_to_dict(d,name.c_str(),r.get());
+                py_obj_dump_level(container,&contained_it,cpy);
+                py_cps_util_set_item_to_dict(d,name.c_str(),container);
                 break;
             }
 
             if ((ent->attr_type & CPS_CLASS_ATTR_T_LEAF_LIST)==CPS_CLASS_ATTR_T_LEAF_LIST) {
                 bool _created = false;
-            	PyObject *o = PyDict_GetItemString(d,name.c_str());
+                PyObject *o = PyDict_GetItemString(d,name.c_str());
                 if (o == NULL) {
                     o = PyList_New(0);
                     _created=true;
