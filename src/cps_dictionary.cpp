@@ -312,7 +312,7 @@ CPS_API_OBJECT_STORAGE_TYPE_t cps_api_obj_get_storage_type(cps_api_object_t obj)
     return *p;
 }
 
-void cps_api_obj_set_storage_type(cps_api_object_t obj, CPS_API_OBJECT_STORAGE_TYPE_t type) {
+void cps_api_obj_set_storage_type(cps_api_key_t *key, CPS_API_OBJECT_STORAGE_TYPE_t type) {
     std_mutex_simple_lock_guard lg(&lock);
-    _key_storage_type.insert(cps_api_object_key(obj),type);
+    _key_storage_type.insert(key,type);
 }

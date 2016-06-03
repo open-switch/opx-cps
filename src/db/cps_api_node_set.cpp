@@ -14,6 +14,10 @@ static cps_api_nodes *_nodes = new cps_api_nodes;
 
 bool cps_api_db_get_node_group(const std::string &group,std::vector<std::string> &lst) {
     std::lock_guard<std::mutex> lg(_mutex);
+    if (group.find(':')!=std::string::npos) {
+        lst.push_back(group);
+        return true;
+    }
     _nodes->load();
     if (!_nodes->address_list(group,lst)) return false;
     return true;

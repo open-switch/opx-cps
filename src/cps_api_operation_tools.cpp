@@ -77,6 +77,9 @@ extern "C" cps_api_return_code_t cps_api_get_objs(cps_api_object_t filt, cps_api
     if (ms_delay_between==0) ms_delay_between = BASIC_WAIT_TIME;
     ms_delay_between = MILLI_TO_MICRO(ms_delay_between);
 
+    cps_api_object_list_t _tmp_lst = get_req.list;
+    get_req.list = obj_list;
+
     bool inf = retry_count==0;
     while (inf || (retry_count >0) ) {
         rc = cps_api_get(&get_req);
@@ -84,6 +87,6 @@ extern "C" cps_api_return_code_t cps_api_get_objs(cps_api_object_t filt, cps_api
         if (!inf) --retry_count;
         std_usleep(ms_delay_between);
     }
-
+    get_req.list = _tmp_lst;
     return rc;
 }

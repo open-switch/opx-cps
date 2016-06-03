@@ -195,7 +195,6 @@ cps_api_return_code_t cps_api_commit(cps_api_transaction_params_t * param) {
             --mx;
         }
     }
-
     return rc;
 }
 
@@ -216,7 +215,6 @@ cps_api_return_code_t cps_api_get_request_close(cps_api_get_params_t *req) {
     if (req->filters!=NULL) {
         cps_api_object_list_destroy(req->filters,true);
     }
-
     return cps_api_ret_code_OK;
 }
 

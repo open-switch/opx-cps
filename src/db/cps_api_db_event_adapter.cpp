@@ -213,41 +213,50 @@ static cps_api_return_code_t _cps_api_event_service_client_deregister(cps_api_ev
     return cps_api_ret_code_OK;
 }
 
+static ssize_t __setup_fd_set(_handle_data *nh, fd_set &set) {
+    std::lock_guard<std::mutex> lg(nh->_mutex);
+    ssize_t mx = -1;
+    FD_ZERO(&set);
+    for (auto &it : nh->_connections) {
+        FD_SET(it.second->get_fd(), &set);
+        if (mx < it.second->get_fd())  mx = it.second->get_fd();
+    }
+    return mx;
+}
+
 static cps_api_return_code_t _cps_api_wait_for_event(
         cps_api_event_service_handle_t handle,
         cps_api_object_t msg) {
 
     _handle_data *nh = handle_to_data(handle);
 
+    fd_set _template_set;
+    ssize_t max_fd = __setup_fd_set(nh,_template_set);
+
     while (true) {
-        fd_set _set;
-        int max_fd = -1;
-        {
-            {
-                std::lock_guard<std::mutex> lg(nh->_mutex);
-                FD_ZERO(&_set);
-                for (auto &it : nh->_connections) {
-                    FD_SET(it.second->get_fd(), &_set);
-                    if (max_fd < it.second->get_fd())  max_fd = it.second->get_fd();
-                }
-            }
-            if (max_fd == -1) { std_usleep(1000*1000*1);continue; }
-        }
-        struct timeval tv; tv.tv_sec=1; tv.tv_usec =0;
-        ssize_t rc = std_select_ignore_intr(max_fd+1,&_set,nullptr,nullptr,&tv,nullptr);
 
-        std::lock_guard<std::mutex> lg(nh->_mutex);
+        ssize_t rc = 0;
 
-        if (rc==-1) {
+        std::function<bool()> check_connections = [max_fd,&_template_set]() ->bool {
+            struct timeval tv; tv.tv_sec=1; tv.tv_usec =0;
+            fd_set _r_set = _template_set;
+            return std_select_ignore_intr(max_fd+1,&_r_set,nullptr,nullptr,&tv,nullptr);
+        };
+
+        if (max_fd==-1 || (rc=check_connections())==-1) {
+            std::lock_guard<std::mutex> lg(nh->_mutex);
             if (__check_connections(handle)) {
                 __resync_regs(handle);
             }
+            max_fd = __setup_fd_set(nh,_template_set);
             continue;
         }
 
         if (rc==0) continue;
+
+        std::lock_guard<std::mutex> lg(nh->_mutex);
         for (auto &it : nh->_connections) {
-            if (FD_ISSET(it.second->get_fd(),&_set)) {
+            if (FD_ISSET(it.second->get_fd(),&_template_set)) {
                 cps_db::response_set set;
                 if (!it.second->get_event(set.get())) {
                     nh->_connections.erase(it.first);

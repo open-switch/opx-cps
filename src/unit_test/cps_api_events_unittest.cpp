@@ -35,6 +35,7 @@
 #include "std_event_service.h"
 #include "cps_api_service.h"
 #include "cps_class_map.h"
+#include "cps_api_node.h"
 
 //IP Meta data
 #include "cps_class_ut_data.h"
@@ -277,16 +278,14 @@ TEST(cps_api_events,performance) {
     cps_api_event_service_handle_t handle;
     ASSERT_TRUE(cps_api_event_client_connect(&handle)==cps_api_ret_code_OK);
 
-    cps_api_event_reg_t reg;
-    reg.priority = 0;
+    cps_api_object_list_guard event_reg(cps_api_object_list_create());
+    cps_api_object_t obj = cps_api_object_list_create_obj_and_append(event_reg.get());
+    ASSERT_TRUE(obj!=nullptr);
 
-    cps_api_key_t keys;
-    ASSERT_TRUE(cps_api_key_from_attr_with_qual(&keys,BASE_IP_IPV6_ADDRESS,cps_api_qualifier_TARGET));
+    ASSERT_TRUE(cps_api_key_from_attr_with_qual(cps_api_object_key(obj),BASE_IP_IPV6_ADDRESS,cps_api_qualifier_TARGET));
+    cps_api_key_set_group(obj,"localhost");
 
-    reg.objects = &keys;
-    reg.number_of_objects =1;
-
-    ASSERT_TRUE(cps_api_event_client_register(handle,&reg)==cps_api_ret_code_OK) ;
+    ASSERT_TRUE(cps_api_event_client_register_object(handle,event_reg.get())==cps_api_ret_code_OK) ;
     m.unlock();
     cps_api_object_guard og(cps_api_object_create());
     while (count-- > 0) {

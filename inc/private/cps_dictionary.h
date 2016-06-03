@@ -57,13 +57,7 @@ typedef bool (*cps_dict_walk_fun)(void * context, const cps_class_map_node_detai
 
 void cps_dict_walk(void * context, cps_dict_walk_fun fun);
 
-/**
- * For now... always return cached state of object
- * @param obj the object to check
- * @return based on the object, return the type of storage
- */
-CPS_API_OBJECT_STORAGE_TYPE_t cps_api_obj_get_storage_type(cps_api_object_t obj);
-void cps_api_obj_set_storage_type(cps_api_object_t obj, CPS_API_OBJECT_STORAGE_TYPE_t type);
+
 
 /**
  * @}

@@ -156,7 +156,7 @@ bool cps_api_nodes::part_of(const char *group, const char *addr) {
 
 bool cps_api_key_set_group(cps_api_object_t obj,const char *group) {
     cps_api_attr_id_t ids[] = {CPS_OBJECT_GROUP,CPS_OBJECT_GROUP_GROUP};
-    return cps_api_object_e_add(obj,ids,2,cps_api_object_ATTR_T_BIN,group,strlen(group));
+    return cps_api_object_e_add(obj,ids,2,cps_api_object_ATTR_T_BIN,group,strlen(group)+1);
 }
 
 const char * cps_api_key_get_group(cps_api_object_t obj) {

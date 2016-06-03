@@ -258,6 +258,13 @@ void cps_api_class_map_init(void);
  */
 bool cps_class_map_attr_type(cps_api_attr_id_t id, CPS_CLASS_DATA_TYPE_t *t);
 
+/**
+ * For now... always return cached state of object
+ * @param obj the object to check
+ * @return based on the object, return the type of storage
+ */
+CPS_API_OBJECT_STORAGE_TYPE_t cps_api_obj_get_storage_type(cps_api_object_t obj);
+void cps_api_obj_set_storage_type(cps_api_key_t *key, CPS_API_OBJECT_STORAGE_TYPE_t type);
 
 #ifdef __cplusplus
 }
