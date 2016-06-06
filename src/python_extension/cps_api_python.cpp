@@ -26,6 +26,7 @@
 #include "cps_api_object_key.h"
 
 #include "cps_api_python.h"
+#include "cps_api_node.h"
 
 #include <stdlib.h>
 #include "python2.7/Python.h"
@@ -346,6 +347,31 @@ static PyObject * py_cps_key_from_name(PyObject *self, PyObject *args) {
     return PyString_FromString(cps_api_key_print(&k,buff,sizeof(buff)-1));
 }
 
+static PyObject * py_cps_node_set_update(PyObject *self, PyObject *args) {
+    const char *id=NULL;
+    PyObject *_list=nullptr;
+    if (! PyArg_ParseTuple( args, "sO!", &id, &PyList_Type, &_list)) Py_RETURN_FALSE;
+
+    cps_api_node_group_t _group;
+    _group.id = id;
+    std::vector<char*> _addresses;
+
+    Py_ssize_t str_keys = PyList_Size(_list);
+    {
+        Py_ssize_t ix = 0;
+        for ( ;ix < str_keys ; ++ix ) {
+            PyObject *strObj = PyList_GetItem(_list, ix);
+            if (PyString_Check(strObj)) {
+                _addresses.push_back(PyString_AsString(strObj));
+            }
+        }
+    }
+    if (cps_api_create_node_group(&_group)==cps_api_ret_code_OK) {
+        Py_RETURN_TRUE;
+    }
+    Py_RETURN_FALSE;
+}
+
 #define CPS_FN_DOC(x) x##_doc
 
 PyDoc_STRVAR(cps_get__doc__, "get(fl_list,resp_list)\n\n"
@@ -463,6 +489,13 @@ PyDoc_STRVAR(CPS_FN_DOC(py_cps_obj_reg), "obj_register(handle,key,callbacks)\n\n
     "             and its callback function as its value\n"
     "@return - True if successful otherwise False");
 
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_node_set_update), "node_set_update(set_name,list_of_addresses)\n\n"
+    "Using the addresses (and ports) specified, create a node set.\n"
+    "@set_name - the name of the collection of nodes\n"
+    "@list_of_addresses - Python list of IP addresses and ports.\n"
+    "@return - True if successful otherwise False");
+
+
 /* A list of all the methods defined by this module. */
 /* "METH_VARGS" tells Python how to call the handler */
 static PyMethodDef cps_methods[] = {
@@ -495,6 +528,8 @@ static PyMethodDef cps_methods[] = {
 
     {"get",  py_cps_get, METH_VARARGS, cps_get__doc__},
     {"transaction",  py_cps_trans, METH_VARARGS, cps_trans__doc__},
+
+    {"node_set_update",  py_cps_node_set_update, METH_VARARGS, CPS_FN_DOC(py_cps_node_set_update)},
 
     {NULL, NULL}      /* sentinel */
 };
