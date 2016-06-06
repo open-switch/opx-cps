@@ -12,6 +12,7 @@
 #include "cps_api_node_set.h"
 
 namespace {
+
 cps_api_return_code_t __cps_api_db_operation_get(cps_api_object_t obj, cps_api_object_list_t results, bool stop_at_first) {
     const char * node = cps_api_key_get_group(obj);
     bool result = false;

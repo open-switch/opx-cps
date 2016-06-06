@@ -51,7 +51,7 @@ struct _reg_data {
 };
 
 struct _handle_data {
-    std::mutex _mutex;
+    std::recursive_mutex _mutex;
 
     cps_db::connection_cache _sub;
     cps_db::connection_cache _pub;
@@ -144,7 +144,7 @@ static cps_api_return_code_t _register_one_object(cps_api_event_service_handle_t
         cps_api_object_t object) {
 
     _handle_data *nh = handle_to_data(handle);
-    std::lock_guard<std::mutex> lg(nh->_mutex);
+    std::lock_guard<std::recursive_mutex> lg(nh->_mutex);
 
     const char *_group = cps_api_key_get_group(object);
 
@@ -178,7 +178,7 @@ static cps_api_return_code_t _cps_api_event_service_publish_msg(cps_api_event_se
         cps_api_object_t msg) {
 
     _handle_data *nh = handle_to_data(handle);
-    std::lock_guard<std::mutex> lg(nh->_mutex);
+    std::lock_guard<std::recursive_mutex> lg(nh->_mutex);
 
     STD_ASSERT(msg!=NULL);
     STD_ASSERT(handle!=NULL);
@@ -214,7 +214,7 @@ static cps_api_return_code_t _cps_api_event_service_client_deregister(cps_api_ev
 }
 
 static ssize_t __setup_fd_set(_handle_data *nh, fd_set &set) {
-    std::lock_guard<std::mutex> lg(nh->_mutex);
+    std::lock_guard<std::recursive_mutex> lg(nh->_mutex);
     ssize_t mx = -1;
     FD_ZERO(&set);
     for (auto &it : nh->_connections) {
@@ -244,7 +244,7 @@ static cps_api_return_code_t _cps_api_wait_for_event(
         };
 
         if (max_fd==-1 || (rc=check_connections())==-1) {
-            std::lock_guard<std::mutex> lg(nh->_mutex);
+            std::lock_guard<std::recursive_mutex> lg(nh->_mutex);
             if (__check_connections(handle)) {
                 __resync_regs(handle);
             }
@@ -254,7 +254,7 @@ static cps_api_return_code_t _cps_api_wait_for_event(
 
         if (rc==0) continue;
 
-        std::lock_guard<std::mutex> lg(nh->_mutex);
+        std::lock_guard<std::recursive_mutex> lg(nh->_mutex);
         for (auto &it : nh->_connections) {
             if (FD_ISSET(it.second->get_fd(),&_template_set)) {
                 cps_db::response_set set;
