@@ -206,9 +206,20 @@ bool cps_class_string_to_key(const char *str, cps_api_attr_id_t *ids, size_t *ma
  * Take a CPS key, search the CPS meta data for a appropriate key path and return the class string if found
  *
  * @param key the key for which the string path is required
+ * @param offset the offset from where the raw key starts
  * @return the pointer to the character string holding the full path translation of the key
  */
-const char * cps_class_string_from_key(cps_api_key_t *key);
+const char * cps_class_string_from_key(cps_api_key_t *key, size_t offset);
+
+
+/**
+ * Take a CPS key, search the CPS qualifier and return the qualifier as a string if found
+ *
+ * @param key the key for which the qualifier string is required
+ * @return the pointer to the character string holding the qualifier
+ */
+
+const char * cps_class_qual_from_key(cps_api_key_t *key);
 
 
 /**
