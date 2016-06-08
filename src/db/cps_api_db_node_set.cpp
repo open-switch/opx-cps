@@ -7,18 +7,30 @@
 
 #include <mutex>
 
-static std::mutex _mutex;
+static std::recursive_mutex _mutex;
+
 static cps_api_node_alias *_aliases = new cps_api_node_alias;
 static cps_api_nodes *_nodes = new cps_api_nodes;
+static uint64_t _last_loaded = 0;
 
+
+static bool load_groups() {
+    std::lock_guard<std::recursive_mutex> lg(_mutex);
+       if (std_time_is_expired(_last_loaded,1000)) {
+           _last_loaded = std_get_uptime(nullptr);
+           return _nodes->load();
+       }
+       return false;
+}
 
 bool cps_api_db_get_node_group(const std::string &group,std::vector<std::string> &lst) {
-    std::lock_guard<std::mutex> lg(_mutex);
-    if (group.find(':')!=std::string::npos) {
+    if (group.find(':')!=std::string::npos) {//case where a node is a group (or more that a node is a group)
         lst.push_back(group);
         return true;
     }
-    _nodes->load();
+
+    std::lock_guard<std::recursive_mutex> lg(_mutex);
+    (void)load_groups();
     if (!_nodes->address_list(group,lst)) return false;
     return true;
 }

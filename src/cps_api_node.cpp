@@ -97,21 +97,31 @@ bool cps_api_nodes::address_list(const std::string &addr, std::vector<std::strin
     return true;
 }
 
+size_t cps_api_nodes::gen_hash(_group_data &src) {
+    size_t rc = 0;
+    for ( auto group_elem : src ) {
+        rc = std::hash<std::string>()(group_elem.first) ^ ( rc << 8 );
+        for ( auto node_elem : group_elem.second._addrs ) {
+            rc = std::hash<std::string>()(group_elem.first) ^ ( rc << 8 );
+        }
+    }
+    return rc;
+}
+
 bool cps_api_nodes::load() {
     cps_api_object_guard og(cps_api_object_create());
 
-    cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),CPS_NODE_GROUP, cps_api_qualifier_TARGET);
+    if (!cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),CPS_NODE_GROUP, cps_api_qualifier_TARGET)) {
+        EV_LOG(ERR,DSAPI,0,"CPS-CLS-MAP","Meta data for cluster set is not loaded.");
+        return false;
+    }
     cps_db::connection_request b(cps_db::ProcessDBCache(),DEFAULT_REDIS_ADDR);
 
-    _group_data cpy;
-
-    std::swap(cpy,_groups);
-
     if (!b.valid()) {
-        return cps_api_ret_code_ERR;
+        return false;
     }
 
-    bool changed = false;
+    _group_data cpy;
 
     cps_api_object_list_guard lg(cps_api_object_list_create());
     if (!cps_db::get_objects(b.get(),og.get(),lg.get())) return false;
@@ -125,25 +135,23 @@ bool cps_api_nodes::load() {
         cps_api_node_data_type_t *_type = (cps_api_node_data_type_t*)cps_api_object_get_data(o,CPS_NODE_GROUP_TYPE);
         if (_type!=nullptr) nd.type = *_type;
 
-        static const int MAX_EXPECTED_ADDRESSES=20;
+        static const int MAX_EXPECTED_ADDRESSES=40;
         char *addrs[MAX_EXPECTED_ADDRESSES];
-
-        auto _nit = cpy.find(name);
         size_t len = cps_api_object_get_list_data(o,CPS_NODE_GROUP_IP,(void**)addrs,MAX_EXPECTED_ADDRESSES);
+
         for (size_t _ix = 0; _ix < len ; ++_ix ) {
             nd._addrs.push_back(addrs[_ix]);
-
-            bool found = false;
-            if (_nit!=cpy.end()) {
-                auto it = std::find(_nit->second._addrs.begin(),_nit->second._addrs.end(),addrs[ix]);
-                found = it != _nit->second._addrs.end();
-            }
-            changed |= !found;
         }
-
-        _groups[name] = nd;
+        cpy[name] = nd;
     }
-    return changed;
+
+    size_t _new_hash = cps_api_nodes::gen_hash(_groups);
+
+    if (_new_hash==_hash) return false;  ///TODO is this unique enough?
+
+    std::swap(_groups,cpy);
+    _hash = _new_hash;
+    return true;
 }
 
 bool cps_api_nodes::part_of(const char *group, const char *addr) {

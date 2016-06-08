@@ -13,7 +13,6 @@ cps-api-common_CXXFLAGS+=-I${TOP_SRCDIR}/inc/private -I${TOP_SRCDIR}/inc/private
 
 cps-api-common_SRCS+=cps_api_object.cpp
 cps-api-common_SRCS+=cps_api_events.cpp
-#cps-api-common_SRCS+=cps_api_base_event_adapter.cpp
 cps-api-common_SRCS+=cps_api_operation_common.cpp
 cps-api-common_SRCS+=cps_api_key.cpp
 cps-api-common_SRCS+=cps_api_object_attr.cpp
@@ -34,8 +33,9 @@ cps-api-common_SRCS+=db/cps_redis.cpp
 cps-api-common_SRCS+=cps_api_vector_utils.cpp
 cps-api-common_SRCS+=cps_comm_utils.cpp
 cps-api-common_SRCS+=dell-cps.cpp
-cps-api-common_SRCS+=cps_api_node.cpp db/cps_api_db_init.cpp
-cps-api-common_SRCS+=db/cps_api_db_event_adapter.cpp db/cps_api_node_set.cpp db/cps_api_db_operations.cpp
+cps-api-common_SRCS+=cps_api_node.cpp db/cps_api_db_init.cpp db/cps_api_db_node_set.cpp
+cps-api-common_SRCS+=db/cps_api_db_event_adapter.cpp db/cps_api_db_operations.cpp
+#cps-api-common_SRCS+=cps_api_base_event_adapter.cpp
 
 cps-api-common_LDFLAGS = -levent_log -ldn_common -lpthread -lhiredis
 

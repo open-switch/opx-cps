@@ -55,12 +55,15 @@ struct _handle_data {
 
     cps_db::connection_cache _sub;
     cps_db::connection_cache _pub;
+
     std::unordered_map<std::string,std::vector<_reg_data>> _group_keys;
 
     std::unordered_map<std::string,std::unique_ptr<cps_db::connection>> _connections;
 
     std::unordered_map<std::string,bool> _group_updated;
 };
+
+
 
 
 inline _handle_data* handle_to_data(cps_api_event_service_handle_t handle) {
@@ -73,7 +76,7 @@ static std::unordered_set<_handle_data *> _handles;
 
 static void __resync_regs(cps_api_event_service_handle_t handle) {
     _handle_data *nd = handle_to_data(handle);
-
+    /// TODO clean up unused connections as well as add new
     for (auto it : nd->_group_keys) {
 
         bool success = true;
@@ -132,6 +135,15 @@ static bool __check_connections(cps_api_event_service_handle_t handle) {
     }
 
     return changed;
+}
+
+static bool __maintain_connections(_handle_data *nh) {
+    std::lock_guard<std::recursive_mutex> lg(nh->_mutex);
+    if (__check_connections(nh)) {
+        __resync_regs(nh);
+        return true;
+    }
+    return false;
 }
 
 static cps_api_return_code_t _cps_api_event_service_client_connect(cps_api_event_service_handle_t * handle) {
@@ -233,9 +245,24 @@ static cps_api_return_code_t _cps_api_wait_for_event(
     fd_set _template_set;
     ssize_t max_fd = __setup_fd_set(nh,_template_set);
 
-    while (true) {
+    uint64_t last_checked = 0;
 
+    while (true) {
         ssize_t rc = 0;
+        bool updated = false;
+
+        if (std_time_is_expired(last_checked,1000)) {
+            last_checked = std_get_uptime(nullptr);
+            updated = __maintain_connections(nh);
+        }
+
+        if (updated) max_fd = __setup_fd_set(nh,_template_set);
+
+        if (max_fd==-1) {
+            const static size_t RETRY_TIME_US = 1000*500;
+            std_usleep(RETRY_TIME_US);
+            continue;
+        }
 
         std::function<bool()> check_connections = [max_fd,&_template_set]() ->bool {
             struct timeval tv; tv.tv_sec=1; tv.tv_usec =0;
@@ -243,12 +270,8 @@ static cps_api_return_code_t _cps_api_wait_for_event(
             return std_select_ignore_intr(max_fd+1,&_r_set,nullptr,nullptr,&tv,nullptr);
         };
 
-        if (max_fd==-1 || (rc=check_connections())==-1) {
-            std::lock_guard<std::recursive_mutex> lg(nh->_mutex);
-            if (__check_connections(handle)) {
-                __resync_regs(handle);
-            }
-            max_fd = __setup_fd_set(nh,_template_set);
+        if ((rc=check_connections())==-1) {
+            last_checked = 0;
             continue;
         }
 
