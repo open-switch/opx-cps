@@ -170,7 +170,7 @@ bool cps_api_key_set_group(cps_api_object_t obj,const char *group) {
 const char * cps_api_key_get_group(cps_api_object_t obj) {
     cps_api_attr_id_t ids[] = {CPS_OBJECT_GROUP,CPS_OBJECT_GROUP_GROUP};
     const char * p = (const char*)cps_api_object_e_get_data(obj,ids,2);
-    if (p==nullptr) return CPS_API_NODE_LOCAL_GROUP;
+    if (p==nullptr) return DEFAULT_REDIS_ADDR;
     return p;
 }
 

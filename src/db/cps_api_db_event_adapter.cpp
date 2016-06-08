@@ -64,8 +64,6 @@ struct _handle_data {
 };
 
 
-
-
 inline _handle_data* handle_to_data(cps_api_event_service_handle_t handle) {
     return (_handle_data*) handle;
 }
@@ -130,7 +128,6 @@ static bool __check_connections(cps_api_event_service_handle_t handle) {
                     changed = true;
                 }
             },handle)) {
-
         }
     }
 

@@ -16,7 +16,7 @@ static uint64_t _last_loaded = 0;
 
 static bool load_groups() {
     std::lock_guard<std::recursive_mutex> lg(_mutex);
-       if (std_time_is_expired(_last_loaded,1000)) {
+       if (std_time_is_expired(_last_loaded,5*1000*1000)) {
            _last_loaded = std_get_uptime(nullptr);
            return _nodes->load();
        }
