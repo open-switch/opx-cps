@@ -26,12 +26,14 @@
 #include "cps_api_event_init.h"
 #include "cps_api_node_set.h"
 
+#include "dell-cps.h"
+#include "cps_class_map.h"
 #include "cps_api_operation.h"
 #include "cps_api_service.h"
 #include "private/cps_ns.h"
 #include "cps_api_service.h"
-#include "std_mutex_lock.h"
 
+#include "std_mutex_lock.h"
 #include "event_log.h"
 
 #include "std_time_tools.h"
@@ -61,6 +63,8 @@ struct _handle_data {
     std::unordered_map<std::string,std::unique_ptr<cps_db::connection>> _connections;
 
     std::unordered_map<std::string,bool> _group_updated;
+
+    cps_api_object_list_t _pending_events=nullptr;
 };
 
 
@@ -93,6 +97,7 @@ static void __resync_regs(cps_api_event_service_handle_t handle) {
                         nd->_connections.erase(con_it);
                         break;
                     }
+                    ///TODO add event when connected to a new node..
                 }
             }
 
@@ -125,6 +130,10 @@ static bool __check_connections(cps_api_event_service_handle_t handle) {
                     }
                     nd->_connections[node] = std::move(c);
                     nd->_group_updated[node] = true;
+
+					cps_api_object_t o = cps_api_object_list_create_obj_and_append(nd->_pending_events);
+					if (o!=nullptr)
+						cps_api_key_from_attr_with_qual(cps_api_object_key(o),CPS_CONNECTION_ENTRY, cps_api_qualifier_TARGET);
                     changed = true;
                 }
             },handle)) {
@@ -145,6 +154,8 @@ static bool __maintain_connections(_handle_data *nh) {
 
 static cps_api_return_code_t _cps_api_event_service_client_connect(cps_api_event_service_handle_t * handle) {
     std::unique_ptr<_handle_data> _h(new _handle_data);
+    _h->_pending_events = cps_api_object_list_create();
+    if (_h->_pending_events==nullptr) return cps_api_ret_code_ERR;
     *handle = _h.release();
     return cps_api_ret_code_OK;
 }
@@ -160,13 +171,17 @@ static cps_api_return_code_t _register_one_object(cps_api_event_service_handle_t
     _reg_data rd ;
     rd._sync = false;
     cps_db::dbkey_from_instance_key(rd._key,object);
-
+    if (rd._key.size()==0) {
+		static const int CPS_OBJ_STR_LEN = 1000;
+    	char buff[CPS_OBJ_STR_LEN];
+    	EV_LOG(ERR,DSAPI,0,"CPS-EVNT-REG","Invalid object being registered for %s",cps_api_object_to_string(object,buff,sizeof(buff)-1));
+    	return cps_api_ret_code_ERR;
+    }
     nh->_group_keys[_group].push_back(rd);
     nh->_group_updated[_group] = true;
 
     return cps_api_ret_code_OK;
 }
-
 
 static cps_api_return_code_t _cps_api_event_service_register_objs_function_(cps_api_event_service_handle_t handle,
         cps_api_object_list_t objects) {
@@ -178,7 +193,7 @@ static cps_api_return_code_t _cps_api_event_service_register_objs_function_(cps_
         if (rc!=cps_api_ret_code_OK) return rc;
     }
 
-    if (__check_connections(handle)) __resync_regs(handle);
+    __maintain_connections(handle_to_data(handle));
 
     return cps_api_ret_code_OK;
 }
@@ -216,6 +231,7 @@ static cps_api_return_code_t _cps_api_event_service_client_deregister(cps_api_ev
     //no point in locking the handle on close..
     //clients will be messed up anyway if they try to have multiple threads
     //using and destroying event channels
+    cps_api_object_list_destroy(nh->_pending_events,true);
 
     delete nh;
 
@@ -246,7 +262,20 @@ static cps_api_return_code_t _cps_api_wait_for_event(
 
     while (true) {
         ssize_t rc = 0;
+
         bool updated = false;
+
+        {	//allow insertion of node loss messages
+        	std::lock_guard<std::recursive_mutex> lock (nh->_mutex);
+        	if (cps_api_object_list_size(nh->_pending_events)>0) {
+        		cps_api_object_guard og(cps_api_object_list_get(nh->_pending_events,0));
+
+        		cps_api_object_list_remove(nh->_pending_events,0);
+        		cps_api_object_clone(msg,og.get());
+        		return cps_api_ret_code_OK;
+        	}
+        }
+        ///TODO when a node goes from a cluster - should not be included in the connection list anymore
 
         if (std_time_is_expired(last_checked,1000)) {
             last_checked = std_get_uptime(nullptr);

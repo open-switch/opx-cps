@@ -1,9 +1,19 @@
 /*
- * cps_api_node_private.h
+ * Copyright (c) 2016 Dell Inc.
  *
- *  Created on: May 24, 2016
- *      Author: cwichmann
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License. You may obtain
+ * a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * THIS CODE IS PROVIDED ON AN  *AS IS* BASIS, WITHOUT WARRANTIES OR
+ * CONDITIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT
+ *  LIMITATION ANY IMPLIED WARRANTIES OR CONDITIONS OF TITLE, FITNESS
+ * FOR A PARTICULAR PURPOSE, MERCHANTABLITY OR NON-INFRINGEMENT.
+ *
+ * See the Apache Version 2.0 License for specific language governing
+ * permissions and limitations under the License.
  */
+
 
 #ifndef CPS_API_INC_PRIVATE_CPS_API_NODE_PRIVATE_H_
 #define CPS_API_INC_PRIVATE_CPS_API_NODE_PRIVATE_H_
@@ -39,23 +49,25 @@ class cps_api_nodes {
         std::vector<std::string> _addrs;
         cps_api_node_data_type_t type;
     };
-    using _group_data = std::unordered_map<std::string,_node_data>;
-    _group_data _groups;
+    using alias_map_t = std::unordered_map<std::string,std::string> ;
+    using group_data_t = std::unordered_map<std::string,_node_data>;
+    group_data_t _groups;
     size_t _hash;
 
-    static size_t gen_hash(_group_data &src);
-public:
-    bool address_list(const std::string &addr, std::vector<std::string> &addrs);
-    bool load();
-    bool part_of(const char *group, const char *addr);
-};
+    alias_map_t _alias_map;
 
-class cps_api_node_alias {
-    std::unordered_map<std::string,std::string> _alias_map;
+    static size_t gen_hash(group_data_t &src);
+    bool load_groups();
+    bool load_aliases();
 public:
     const char * addr(const char *addr);
     const char * addr(const std::string &str) { return addr(str.c_str()); }
+
+    bool group_addresses(const std::string &group, std::vector<std::string> &addrs);
+
     bool load();
+
+    bool part_of(const char *group, const char *addr);
 };
 
 

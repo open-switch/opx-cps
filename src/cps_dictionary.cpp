@@ -66,7 +66,7 @@ using cps_class_map_string_t = std::unordered_map<std::string,cps_class_map_node
 using cps_class_map_enums_t = std::unordered_map<std::string,CPSEnum>;
 using cps_class_map_id_to_enum_t = std::unordered_map<cps_api_attr_id_t,std::string>;
 using cps_class_map_key_to_map_element = cps_api_key_cache<cps_class_map_node_details_int_t*>;
-using cps_class_map_key_to_type = cps_api_key_cache<CPS_API_OBJECT_STORAGE_TYPE_t>;
+using cps_class_map_key_to_type = cps_api_key_cache<CPS_API_OBJECT_OWNER_TYPE_t>;
 using cps_class_map_qual_to_string = std::unordered_map<int,std::string>;
 
 
@@ -334,14 +334,14 @@ bool cps_class_map_attr_type(cps_api_attr_id_t id, CPS_CLASS_DATA_TYPE_t *t) {
     return true;
 }
 
-CPS_API_OBJECT_STORAGE_TYPE_t cps_api_obj_get_storage_type(cps_api_object_t obj) {
+CPS_API_OBJECT_OWNER_TYPE_t cps_api_obj_get_ownership_type(cps_api_object_t obj) {
     std_mutex_simple_lock_guard lg(&lock);
-    CPS_API_OBJECT_STORAGE_TYPE_t *p = _key_storage_type.at(cps_api_object_key(obj),true);
-    if (p==nullptr) return CPS_API_OBJECT_STORE_SERVICE;
+    CPS_API_OBJECT_OWNER_TYPE_t *p = _key_storage_type.at(cps_api_object_key(obj),true);
+    if (p==nullptr) return CPS_API_OBJECT_SERVICE;
     return *p;
 }
 
-void cps_api_obj_set_storage_type(cps_api_key_t *key, CPS_API_OBJECT_STORAGE_TYPE_t type) {
+void cps_api_obj_set_ownership_type(cps_api_key_t *key, CPS_API_OBJECT_OWNER_TYPE_t type) {
     std_mutex_simple_lock_guard lg(&lock);
     _key_storage_type.insert(key,type);
 }

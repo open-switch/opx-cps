@@ -21,6 +21,7 @@
  */
 
 #include "cps_class_map.h"
+#include "cps_class_map_query.h"
 
 #include "private/cps_dictionary.h"
 #include "cps_api_operation_stats.h"

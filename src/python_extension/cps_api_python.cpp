@@ -355,19 +355,29 @@ static PyObject * py_cps_node_set_update(PyObject *self, PyObject *args) {
 
     cps_api_node_group_t _group;
     _group.id = id;
-    std::vector<char*> _addresses;
+
+    std::vector<cps_api_node_ident> _ids;
 
     Py_ssize_t str_keys = PyList_Size(_list);
     {
         Py_ssize_t ix = 0;
         for ( ;ix < str_keys ; ++ix ) {
-            PyObject *strObj = PyList_GetItem(_list, ix);
-            if (PyString_Check(strObj)) {
-                _addresses.push_back(PyString_AsString(strObj));
+            PyObject *tupObj = PyList_GetItem(_list, ix);
+            if (tupObj==nullptr) Py_RETURN_FALSE;
+            PyObject *nameObj = PyTuple_GetItem(tupObj,0);
+            PyObject *addrObj = PyTuple_GetItem(tupObj,1);
+            if (nameObj==nullptr || addrObj==nullptr) Py_RETURN_FALSE;
+            if (PyString_Check(nameObj) && PyString_Check(addrObj)) {
+            	cps_api_node_ident _id;
+            	_id.addr = PyString_AsString(addrObj);
+            	_id.node_name = PyString_AsString(nameObj);
+            	_ids.push_back(_id);
             }
         }
     }
-    if (cps_api_create_node_group(&_group)==cps_api_ret_code_OK) {
+    _group.addrs = &_ids[0];
+    _group.addr_len = _ids.size();
+    if (cps_api_set_node_group(&_group)==cps_api_ret_code_OK) {
         Py_RETURN_TRUE;
     }
     Py_RETURN_FALSE;

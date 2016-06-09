@@ -70,9 +70,6 @@ typedef struct {
     cps_api_event_reg_prio_t priority; //!< priority of the registration, optional for the implementation
     cps_api_key_t *objects;    //!< list of objects
     size_t number_of_objects;  //!< number of objects in the list
-
-    cps_api_object_list_t list_of_objs; /// A list of objects that need to be registered for
-    									/// if instance keys are present they will be used to filter the requests
 } cps_api_event_reg_t;
 
 /**

@@ -56,6 +56,8 @@ void cps_class_ids_from_string(std::vector<cps_api_attr_id_t> &v, const char * s
 std::string cps_class_ids_to_string(const std::vector<cps_api_attr_id_t> &v);
 std::string cps_key_to_string(const cps_api_key_t * key);
 
+t_std_error cps_api_yang_module_init(void);
+
 
 /**
  * @}

@@ -62,6 +62,8 @@ cps_api_return_code_t cps_api_get_objs(cps_api_object_t filt, cps_api_object_lis
 
 #ifdef __cplusplus
 }
+
+
 #endif
 
 /**

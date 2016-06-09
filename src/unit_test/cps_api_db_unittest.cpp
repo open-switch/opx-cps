@@ -1,3 +1,18 @@
+/*
+ * Copyright (c) 2016 Dell Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License. You may obtain
+ * a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * THIS CODE IS PROVIDED ON AN  *AS IS* BASIS, WITHOUT WARRANTIES OR
+ * CONDITIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT
+ *  LIMITATION ANY IMPLIED WARRANTIES OR CONDITIONS OF TITLE, FITNESS
+ * FOR A PARTICULAR PURPOSE, MERCHANTABLITY OR NON-INFRINGEMENT.
+ *
+ * See the Apache Version 2.0 License for specific language governing
+ * permissions and limitations under the License.
+ */
 
 #include "cps_api_events.h"
 
@@ -40,10 +55,10 @@ TEST(cps_api_db,init) {
     }
     cps_api_object_guard og(cps_api_object_create());
     cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),BASE_IP_IPV6,cps_api_qualifier_TARGET);
-    cps_api_obj_set_storage_type(cps_api_object_key(og.get()),CPS_API_OBJECT_STORE_DB);
+    cps_api_obj_set_ownership_type(cps_api_object_key(og.get()),CPS_API_OBJECT_DB);
 
     cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),BASE_IP_IPV6_ADDRESS,cps_api_qualifier_TARGET);
-    cps_api_obj_set_storage_type(cps_api_object_key(og.get()),CPS_API_OBJECT_STORE_DB);
+    cps_api_obj_set_ownership_type(cps_api_object_key(og.get()),CPS_API_OBJECT_DB);
 }
 
 TEST(cps_api_db,db_ping) {
@@ -177,21 +192,21 @@ TEST(cps_api_db,db_node_list) {
     cps_api_object_list_t list =cps_api_object_list_create();
     cps_api_object_list_guard lg(list);
 
+    cps_api_node_ident ids[2] = { {"NODE1", "127.0.0.1:6379"}, {"NODE2","172.17.0.6:6380"} };
     cps_api_node_group_t _g;
-    const char *names[] = { "127.0.0.1:6379" , "172.17.0.6:6379" };
 
     _g.id = "A";
-    _g.addresses = names;
+    _g.addrs = ids;
     _g.addr_len = 2;
     _g.data_type = cps_api_node_data_NODAL;
 
-    cps_api_create_node_group(&_g);
+    cps_api_set_node_group(&_g);
 
     cps_api_nodes nodes;
     ASSERT_TRUE(nodes.load());
 
     ASSERT_TRUE(nodes.part_of("A","127.0.0.1:6379"));
-    ASSERT_TRUE(nodes.part_of("A","172.17.0.6:6379"));
+    ASSERT_TRUE(nodes.part_of("A","172.17.0.6:6380"));
     ASSERT_TRUE(!nodes.part_of("A","372.17.0.6:6379"));
 }
 
@@ -201,11 +216,11 @@ TEST(cps_api_db,db_node_alias) {
     const char *lst[]={"cliff","this","local" };
     ASSERT_TRUE(cps_api_set_identity(DEFAULT_REDIS_ADDR,lst,sizeof(lst)/sizeof(*lst))==cps_api_ret_code_OK);
 
-    cps_api_node_alias a;
-    a.load();
+    cps_api_nodes n;
+    ASSERT_TRUE(n.load());
 
     for (size_t ix = 0, mx = sizeof(lst)/sizeof(*lst) ; ix < mx ; ++ix ) {
-        const char *addr = a.addr(lst[ix]);
+        const char *addr = n.addr(lst[ix]);
         ASSERT_TRUE(strcmp(addr,DEFAULT_REDIS_ADDR)==0);
     }
 }
@@ -213,15 +228,15 @@ TEST(cps_api_db,db_node_alias) {
 TEST(cps_api_db,db_node_get_set) {
 
 
+    cps_api_node_ident ids[2] = { {"NODE1", "127.0.0.1:6379 "}, {"NODE2","127.0.0.1:6380"} };
     cps_api_node_group_t _g;
-    const char *names[] = { "127.0.0.1:6379" , "127.0.0.1:6380" };
 
     _g.id = "A";
-    _g.addresses = names;
+    _g.addrs = ids;
     _g.addr_len = 2;
     _g.data_type = cps_api_node_data_NODAL;
 
-    ASSERT_TRUE(cps_api_create_node_group(&_g)==cps_api_ret_code_OK);
+    cps_api_set_node_group(&_g);
 
     {
         cps_api_object_guard og(cps_api_object_create());
