@@ -328,6 +328,18 @@ bool cps_api_object_e_add(cps_api_object_t obj, cps_api_attr_id_t *id,
         size_t id_size, cps_api_object_ATTR_TYPE_t type, const void *data, size_t len);
 
 /**
+ * Take an object's attributes and add it to another object at the attribute path specified.
+ *
+ * @param obj the object that will contain the other object's attributes
+ * @param id the attribute ID list where we will store the attributes
+ * @param id_size the size of the attribute list
+ * @param emb_object the object to embed
+ * @return true if successful otherwise a failure
+ */
+bool cps_api_object_e_add_object(cps_api_object_t obj,cps_api_attr_id_t *id,
+        size_t id_size,cps_api_object_t emb_object);
+
+/**
  * A helper function to add a int type to an object.  The int type can be 1, 2, 4, 8 bytes long
  *
  * @param obj the object to add the attribute to

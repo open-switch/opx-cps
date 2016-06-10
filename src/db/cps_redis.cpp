@@ -24,6 +24,7 @@
 #include "cps_string_utils.h"
 
 #include "cps_api_vector_utils.h"
+#include "event_log.h"
 
 #include <vector>
 #include <functional>
@@ -250,6 +251,7 @@ bool cps_db::subscribe(cps_db::connection &conn, std::vector<char> &key) {
 
     response_set resp;
     if (!conn.sync_operation(e,2,resp)) {
+    	EV_LOG(ERR,DSAPI,0,"CPS-DB-SUB","Subscribe failed to return response");
         return false;
     }
 
@@ -259,7 +261,10 @@ bool cps_db::subscribe(cps_db::connection &conn, std::vector<char> &key) {
             cps_db::response msg (r.element_at(0));
             cps_db::response status (r.element_at(2));
             if (msg.is_str() && strcasecmp(msg.get_str(),"psubscribe")==0) {
-                return (status.is_int() && status.get_int()==1);
+
+                bool rc = (status.is_int() && status.get_int()>0);
+                if (!rc) EV_LOG(ERR,DSAPI,0,"CPS-DB-SUB","Subscribe failed rc %d",status.get_int());
+                return rc;
             }
         }
     }

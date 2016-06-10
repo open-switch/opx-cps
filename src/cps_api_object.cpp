@@ -433,6 +433,15 @@ static bool add_embedded(cps_api_object_internal_t * obj, cps_api_attr_id_t *id,
 
 }
 
+bool cps_api_object_e_add_object(cps_api_object_t obj,cps_api_attr_id_t *id,
+        size_t id_size,cps_api_object_t emb_object) {
+
+	cps_api_object_it_t it;
+	cps_api_object_it_begin(emb_object,&it);
+
+	return cps_api_object_e_add(obj,id,id_size,cps_api_object_ATTR_T_BIN,it.attr,it.len);
+}
+
 bool cps_api_object_e_add(cps_api_object_t obj, cps_api_attr_id_t *id,
         size_t id_size, cps_api_object_ATTR_TYPE_t type, const void *data, size_t dlen) {
 

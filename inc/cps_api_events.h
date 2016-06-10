@@ -195,6 +195,9 @@ cps_api_return_code_t cps_api_event_thread_init(void);
 cps_api_return_code_t cps_api_event_thread_reg(cps_api_event_reg_t * reg,
         cps_api_event_thread_callback_t cb, void * context );
 
+cps_api_return_code_t cps_api_event_thread_reg_object(cps_api_object_list_t objects,
+        cps_api_event_thread_callback_t cb, void * context );
+
 /**
  * Publish an event to the CPS API event service.
  *

@@ -84,6 +84,10 @@ UNIT_TEST+=cps_api_registration_unittest
 cps_api_registration_unittest_SRCS=unit_test/cps_registration_unittest.cpp
 cps_api_registration_unittest_LDFLAGS=-lcps-api-common -lcps-class-map-util -ldn_common
 
+UNIT_TEST+=cps_api_db_event_unittest
+cps_api_db_event_unittest_SRCS=unit_test/cps_api_db_event_unittest.cpp
+cps_api_db_event_unittest_LDFLAGS=-lcps-api-common -lcps-class-map-util -ldn_common
+
 PY_OBJ_PATH=${BUILD_CURDIR}/pybuild
 
 ADDED_FOLDERS+=${PY_OBJ_PATH}

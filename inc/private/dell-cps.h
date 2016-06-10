@@ -1,3 +1,9 @@
+
+/*
+* source file : dell-base-cps.h
+*/
+
+
 /*
 * Copyright (c) 2015 Dell Inc.
 *
@@ -40,15 +46,18 @@ combinations are IPv4:port or [IPv6]:port*/
 /* Object cps/connection-entry */
 
 typedef enum { 
-
+/*The node ID.*/
 /*type=string*/ 
   CPS_CONNECTION_ENTRY_NAME = 131086,
-
+/*The IP address of the node (may be same as node ID*/
 /*type=string*/ 
   CPS_CONNECTION_ENTRY_IP = 131087,
-
+/*The name of the group if present*/
 /*type=string*/ 
   CPS_CONNECTION_ENTRY_GROUP = 131088,
+/*Indicates if the node is in contact or out of contact.*/
+/*type=boolean*/ 
+  CPS_CONNECTION_ENTRY_CONNECTION_STATE = 131096,
 } CPS_CONNECTION_ENTRY_t;
 /* Object cps/node-details */
 
@@ -114,6 +123,7 @@ joe or jain, you want to convert these aliases for the node back to 10.11.11.11:
   CPS_OBJECT_GROUP = 131078,
   CPS_OBJECT_GROUP_OBJ = 131078,
 
+/*The event that is generated from the system when a DB connection is received or lost.*/
   CPS_CONNECTION_ENTRY = 131090,
   CPS_CONNECTION_ENTRY_OBJ = 131090,
 

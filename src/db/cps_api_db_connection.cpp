@@ -220,7 +220,10 @@ bool cps_db::connection::operation(db_operation_atom_t * lst_,size_t len_, bool 
 bool cps_db::connection::response(std::vector<void*> &data_, ssize_t at_least_) {
     size_t _needed = at_least_;
 
-    if (_pending<=0 && _needed<=0) return false; //no data to read
+    if (_pending<=0 && _needed<=0) {
+    	EV_LOG(ERR,DSAPI,0,"CPS-DB-RESP","response get called with no expected events");
+    	return false; //no data to read
+    }
     if (_needed <=0 ) _needed = _pending;
 
     while (_needed-- > 0) {
@@ -260,6 +263,7 @@ bool cps_db::connection::get_event(std::vector<void*> &data) {
     }
     do {
         bool rc = response(data,1);
+
         if (!rc || data.size()==0) return false;
 
         cps_db::response r(data[0]);
@@ -272,6 +276,10 @@ bool cps_db::connection::get_event(std::vector<void*> &data) {
             }
             return true;
         }
+
+        response_set set;
+        set.get() = data;
+        data.clear();	//free up request
 
     } while (0);
     return true;
