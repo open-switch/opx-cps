@@ -70,24 +70,29 @@ public:
 
     void disconnect();
 
-    bool response(std::vector<void*> &data, ssize_t at_least=0);
+    bool command(db_operation_atom_t * lst,size_t len,response_set &set);
+
+
+    bool response(response_set &data, ssize_t at_least=0);
     bool sync_operation(db_operation_atom_t * lst,size_t len, std::vector<void*> &data);
 
     bool sync_operation(db_operation_atom_t * lst,size_t len, response_set &set) ;
-    bool response(response_set &set, ssize_t at_least=0);
+
 
     bool operation(db_operation_atom_t * lst,size_t len, bool no_reponse=false);
 
     bool async_operation(db_operation_atom_t * lst,size_t len);
 
-    bool get_event(std::vector<void*> &data);
+    bool get_event(response_set &data);
+    bool has_event();
+
 private:
     std::string _addr ;
     bool _async=false;
     void * _ctx=nullptr;
     size_t _pending = 0;
 
-    std::list<std::vector<void*>> _pending_events;
+    std::list<void*> _pending_events;
 };
 
 class connection_cache {

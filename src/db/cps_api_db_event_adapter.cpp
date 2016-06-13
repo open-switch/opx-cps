@@ -258,6 +258,23 @@ static ssize_t __setup_fd_set(_handle_data *nh, fd_set &set) {
     return mx;
 }
 
+static bool get_event(cps_db::connection *conn, cps_api_object_t obj) {
+    cps_db::response_set set;
+    if (!conn->get_event(set)) {
+    	return false;
+    }
+    cps_db::response r = set.get_response(0);
+    cps_db::response type (r.element_at(0));
+
+    if (strcasecmp(type.get_str(),"pmessage")==0) {
+        cps_db::response data(r.element_at(3));
+        if (cps_api_array_to_object(data.get_str(),data.get_str_len(),obj)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static cps_api_return_code_t _cps_api_wait_for_event(
         cps_api_event_service_handle_t handle,
         cps_api_object_t msg) {
@@ -298,6 +315,12 @@ static cps_api_return_code_t _cps_api_wait_for_event(
             std_usleep(RETRY_TIME_US);
             continue;
         }
+        bool has_event = false;
+        for (auto &it : nh->_connections) {
+        	if (it.second->has_event()) {
+        		has_event = true;
+        	}
+        }
 
         std::function<bool()> check_connections = [max_fd,&_template_set]() ->bool {
             struct timeval tv; tv.tv_sec=1; tv.tv_usec =0;
@@ -305,32 +328,22 @@ static cps_api_return_code_t _cps_api_wait_for_event(
             return std_select_ignore_intr(max_fd+1,&_r_set,nullptr,nullptr,&tv,nullptr);
         };
 
-        if ((rc=check_connections())==-1) {
-            last_checked = 0;
-            continue;
-        }
+        if (!has_event) {
+			if ((rc=check_connections())==-1) {
+				last_checked = 0;
+				continue;
+			}
 
-        if (rc==0) continue;
+			if (rc==0) continue;
+        }
 
         std::lock_guard<std::recursive_mutex> lg(nh->_mutex);
         for (auto &it : nh->_connections) {
-            if (FD_ISSET(it.second->get_fd(),&_template_set)) {
-                cps_db::response_set set;
-                if (!it.second->get_event(set.get())) {
-                    nh->_connections.erase(it.first);
-                    __add_connection_state(handle,it.first.c_str(),"",false);
-                    break;
-                }
-
-                cps_db::response r = set.get_response(0);
-                cps_db::response type (r.element_at(0));
-                if (strcasecmp(type.get_str(),"pmessage")==0) {
-                    cps_db::response data(r.element_at(3));
-                    if (cps_api_array_to_object(data.get_str(),data.get_str_len(),msg)) {
-                    	cps_api_object_attr_add(msg,CPS_OBJECT_GROUP_NODE,it.first.c_str(),it.first.size()+1);
-                        return cps_api_ret_code_OK;
-                    }
-                }
+            if (FD_ISSET(it.second->get_fd(),&_template_set) || it.second->has_event()) {
+            	if (get_event(it.second.get(),msg)) {
+        			cps_api_object_attr_add(msg,CPS_OBJECT_GROUP_NODE,it.first.c_str(),it.first.size()+1);
+        			return cps_api_ret_code_OK;
+            	}
             }
         }
     }

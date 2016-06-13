@@ -95,14 +95,23 @@ struct request_walker_contexct_t {
     const char *cmds[MAX_EXP_CMD];
     size_t cmds_lens[MAX_EXP_CMD];
 
-    const char **cmds_ptr ;
-    size_t *cmds_lens_ptr ;
+    const char **cmds_ptr = cmds;
+    size_t *cmds_lens_ptr = cmds_lens;
 
     std::vector<std::vector<char>> key_scratch;
     ssize_t key_scratch_len=-1;
 
     std::vector<std::vector<char>> key;  //just a buffer to hold the key portion of the data structure until we call into REDIS
     size_t scratch_pad_ix=0;
+
+    bool set(cps_db::connection::db_operation_atom_t * lst_,size_t len_);
+
+    request_walker_contexct_t(cps_db::connection::db_operation_atom_t * lst_,size_t len_) {
+    	if (!set(lst_,len_)) {
+    		cmds_ptr = cmds;
+    		cmds_lens_ptr = cmds_lens;
+    	}
+    }
 
     request_walker_contexct_t() {
         cmds_ptr = cmds;
@@ -121,8 +130,8 @@ struct request_walker_contexct_t {
         *(cmds_ptr++) = data;
         *(cmds_lens_ptr++) = len;
     }
+    bool valid() { return cmds_ptr!=cmds; }
 };
-
 bool handle_str(request_walker_contexct_t &ctx) {
     if (!ctx.enough(1)) return false;
     ctx.set_current_entry(ctx._cur->_string,ctx._cur->_len);
@@ -168,15 +177,7 @@ bool handle_object_data(request_walker_contexct_t &ctx) {
     return true;
 }
 
-}
-
-static void __redisCallbackFn__(struct redisAsyncContext*c, void *reply, void *app_context) {
-
-}
-
-bool cps_db::connection::operation(db_operation_atom_t * lst_,size_t len_, bool no_response_) {
-    request_walker_contexct_t ctx;
-
+bool request_walker_contexct_t::set(cps_db::connection::db_operation_atom_t * lst_,size_t len_) {
     static const std::unordered_map<int,std::function<bool(request_walker_contexct_t&)>> _map = {
         {(int)cps_db::connection::db_operation_atom_t::obj_fields_t::obj_field_STRING,handle_str},
         {(int)cps_db::connection::db_operation_atom_t::obj_fields_t::obj_field_OBJ_CLASS,handle_class_key},
@@ -187,9 +188,22 @@ bool cps_db::connection::operation(db_operation_atom_t * lst_,size_t len_, bool 
 
     size_t iter = 0;
     for ( ; iter < len_; ++iter ) {
-        ctx._cur = lst_+iter;
-        if (!_map.at((int)ctx._cur->_atom_type)(ctx)) return false;
+        _cur = lst_+iter;
+        if (!_map.at((int)_cur->_atom_type)(*this)) return false;
     }
+    return true;
+}
+
+}
+
+static void __redisCallbackFn__(struct redisAsyncContext*c, void *reply, void *app_context) {
+
+}
+
+bool cps_db::connection::operation(db_operation_atom_t * lst_,size_t len_, bool no_response_) {
+    request_walker_contexct_t ctx(lst_,len_);
+
+    if (!ctx.valid()) return false;
 
     size_t MAX_RETRY=3;
     do {
@@ -217,7 +231,19 @@ bool cps_db::connection::operation(db_operation_atom_t * lst_,size_t len_, bool 
     return true;
 }
 
-bool cps_db::connection::response(std::vector<void*> &data_, ssize_t at_least_) {
+bool cps_db::connection::command(db_operation_atom_t * lst,size_t len,response_set &set) {
+    request_walker_contexct_t ctx(lst,len);
+
+    if (!ctx.valid()) return false;
+    redisReply *r = (redisReply*)redisCommandArgv(static_cast<redisContext*>(_ctx),ctx.cmds_ptr - ctx.cmds,ctx.cmds,ctx.cmds_lens);
+    if (r==nullptr) {
+    	return false;
+    }
+    set.get().push_back(r);
+    return true;
+}
+
+bool cps_db::connection::response(response_set &data_, ssize_t at_least_) {
     size_t _needed = at_least_;
 
     if (_pending<=0 && _needed<=0) {
@@ -234,39 +260,59 @@ bool cps_db::connection::response(std::vector<void*> &data_, ssize_t at_least_) 
             //clean up response so no partial responses
             return false;
         }
-        data_.push_back(reply);
+        data_.get().push_back(reply);
         --_pending;
     }
     if (_pending <=0 ) _pending = 0;
     return true;
 }
 
-bool cps_db::connection::sync_operation(db_operation_atom_t * lst,size_t len, cps_db::response_set &set) {
-    return sync_operation(lst,len,set.get());
-}
-bool cps_db::connection::response(cps_db::response_set &set, ssize_t at_least) {
-    return response(set.get(),at_least);
-}
-
-bool cps_db::connection::sync_operation(db_operation_atom_t * lst,size_t len, std::vector<void*> &data) {
+bool cps_db::connection::sync_operation(db_operation_atom_t * lst,size_t len,response_set &data) {
     if (!operation(lst,len)) {
         return false;
     }
     return response(data);
 }
 
-bool cps_db::connection::get_event(std::vector<void*> &data) {
+static bool is_event_message(void *resp) {
+    cps_db::response r(resp);
+    if (r.elements() >=3) {
+        cps_db::response hdr(r.element_at(0));
+        if (hdr.is_str()) {
+            if (strstr(hdr.get_str(),"message")!=nullptr) { //first entry of the array should indicate message or pmessage
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool cps_db::connection::has_event() {
+	void *rep ;
+	int rc = REDIS_OK;
+	do {
+		if ((rc=redisReaderGetReply(static_cast<redisContext*>(_ctx)->reader,&rep))==REDIS_OK) {
+			if (rep==nullptr) break;
+			if (is_event_message(rep)) _pending_events.push_back(rep);
+			else freeReplyObject(rep);
+		}
+	} while (rc==REDIS_OK);
+	return _pending_events.size()>0;
+}
+
+bool cps_db::connection::get_event(response_set &data) {
     if (_pending_events.size()>0) {
-        data = *_pending_events.begin();
+        data.get().push_back(*_pending_events.begin());
+
         _pending_events.erase(_pending_events.begin());
         return true;
     }
     do {
         bool rc = response(data,1);
 
-        if (!rc || data.size()==0) return false;
+        if (!rc || data.get().size()==0) return false;
 
-        cps_db::response r(data[0]);
+        cps_db::response r(data.get()[0]);
         if (r.elements() >=3) {
             cps_db::response hdr(r.element_at(0));
             if (hdr.is_str()) {
@@ -278,8 +324,8 @@ bool cps_db::connection::get_event(std::vector<void*> &data) {
         }
 
         response_set set;
-        set.get() = data;
-        data.clear();	//free up request
+        set = data;
+        data.get().clear();	//free up request
 
     } while (0);
     return true;

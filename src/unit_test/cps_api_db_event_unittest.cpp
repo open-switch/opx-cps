@@ -125,10 +125,10 @@ TEST(cps_api_events,event_thread) {
 			cps_api_event_thread_publish(og.get());
 		}
 	}
-	//time_t now = time(NULL);
+	time_t now = time(NULL);
 	while (cnt < (mx*_mx*cbs)) {
 		sleep(1);
-//		if ((time(NULL) - now)> 1000) break;
+		if ((time(NULL) - now)> 1000) break;
 	}
 	ASSERT_EQ(cnt,(mx*_mx*cbs));
 }

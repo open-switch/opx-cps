@@ -35,7 +35,7 @@ cps-api-common_SRCS+=cps_comm_utils.cpp
 cps-api-common_SRCS+=dell-cps.cpp
 cps-api-common_SRCS+=cps_api_node.cpp db/cps_api_db_init.cpp db/cps_api_db_node_set.cpp
 cps-api-common_SRCS+=db/cps_api_db_event_adapter.cpp db/cps_api_db_operations.cpp
-#cps-api-common_SRCS+=cps_api_base_event_adapter.cpp
+
 
 cps-api-common_LDFLAGS = -levent_log -ldn_common -lpthread -lhiredis
 
@@ -87,6 +87,11 @@ cps_api_registration_unittest_LDFLAGS=-lcps-api-common -lcps-class-map-util -ldn
 UNIT_TEST+=cps_api_db_event_unittest
 cps_api_db_event_unittest_SRCS=unit_test/cps_api_db_event_unittest.cpp
 cps_api_db_event_unittest_LDFLAGS=-lcps-api-common -lcps-class-map-util -ldn_common
+
+UNIT_TEST+=cps_api_libevent_unittest
+cps_api_libevent_unittest_SRCS=unit_test/cps_api_libevnent_unittest.cpp
+cps_api_libevent_unittest_LDFLAGS=-lcps-api-common -lcps-class-map-util -ldn_common -levent 
+cps_api_libevent_unittest_CXXFLAGS+=-I$(TOP_SRCDIR)/inc/private/db -I$(TOP_SRCDIR)/inc/private
 
 PY_OBJ_PATH=${BUILD_CURDIR}/pybuild
 

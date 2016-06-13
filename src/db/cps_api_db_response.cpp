@@ -38,7 +38,8 @@ void *cps_db::response::element_at(size_t ix) {
 	return static_cast<redisReply*>(_reply)->element[ix];
 }
 bool cps_db::response::is_str() {
-	return static_cast<redisReply*>(_reply)->type == REDIS_REPLY_STRING;
+	return static_cast<redisReply*>(_reply)->type == REDIS_REPLY_STRING ||
+			static_cast<redisReply*>(_reply)->type == REDIS_REPLY_STATUS ;
 }
 
 size_t cps_db::response::elements()  {
