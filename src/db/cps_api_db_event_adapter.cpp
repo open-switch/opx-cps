@@ -384,6 +384,8 @@ static cps_api_return_code_t _cps_api_wait_for_event(
             }
 
             if (rc==0) continue;
+        } else {
+            memset(&_r_set,0,sizeof(_r_set));
         }
 
         std::lock_guard<std::recursive_mutex> lg(nh->_mutex);
