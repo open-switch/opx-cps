@@ -266,12 +266,13 @@ TEST(cps_api_events,performance) {
         ASSERT_TRUE(cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),BASE_IP_IPV6_ADDRESS,cps_api_qualifier_TARGET));
         cps_api_object_attr_add( og.get(),BASE_IP_IPV6_ADDRESS_IP,"10.10.10.10",12);
         cps_api_object_attr_add( og.get(),BASE_IP_IPV6_ADDRESS_PREFIX_LENGTH,"24",3);
-
+        cps_api_key_set_group(og.get(),"A");
         m.lock();
         size_t ix = 0;
         size_t mx = count;
         for ( ; ix < mx ; ++ix ) {
             cps_api_event_publish(handle,og.get());
+
         }
     });
 
@@ -283,7 +284,7 @@ TEST(cps_api_events,performance) {
     ASSERT_TRUE(obj!=nullptr);
 
     ASSERT_TRUE(cps_api_key_from_attr_with_qual(cps_api_object_key(obj),BASE_IP_IPV6_ADDRESS,cps_api_qualifier_TARGET));
-    cps_api_key_set_group(obj,"localhost");
+
 
     ASSERT_TRUE(cps_api_event_client_register_object(handle,event_reg.get())==cps_api_ret_code_OK) ;
     m.unlock();

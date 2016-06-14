@@ -46,12 +46,12 @@ bool cps_db::get_sequence(cps_db::connection &conn, std::vector<char> &key, ssiz
         return false;
     }
 
-	cps_db::response r = resp.get_response(0);
-	if (r.is_int()) {
-		cntr = (r.get_int());
-		return true;
-	}
-	return false;
+    cps_db::response r = resp.get_response(0);
+    if (r.is_int()) {
+        cntr = (r.get_int());
+        return true;
+    }
+    return false;
 }
 
 bool cps_db::fetch_all_keys(cps_db::connection &conn, const void *filt, size_t flen,
@@ -69,19 +69,19 @@ bool cps_db::fetch_all_keys(cps_db::connection &conn, const void *filt, size_t f
         e[5].from_string("1000");
 
         response_set resp;
-		if (!conn.command(e,sizeof(e)/sizeof(*e),resp)) {
-			return false;
-		}
+        if (!conn.command(e,sizeof(e)/sizeof(*e),resp)) {
+            return false;
+        }
 
-		cps_db::response it(resp.get()[0]);
-		if (it.elements()!=2) {
-			return false;
-		}
-		cps_db::response cursor(it.element_at(0));
-		cps_db::response values(it.element_at(1));
-		start = cursor.get_str();
-		values.iterator([&fun](size_t ix, int type, const void *data, size_t len){ fun(data,len);});
-		if (start=="0") break;
+        cps_db::response it(resp.get()[0]);
+        if (it.elements()!=2) {
+            return false;
+        }
+        cps_db::response cursor(it.element_at(0));
+        cps_db::response values(it.element_at(1));
+        start = cursor.get_str();
+        values.iterator([&fun](size_t ix, int type, const void *data, size_t len){ fun(data,len);});
+        if (start=="0") break;
     } while(true);
     return true;
 }
@@ -95,11 +95,14 @@ bool cps_db::ping(cps_db::connection &conn) {
         return false;
     }
 
-	cps_db::response r = resp.get_response(0);
-
-	return r.is_ok() ?
-			strcasecmp((const char *)r.get_str(),"PONG")==0 :
-			false;
+    cps_db::response r = resp.get_response(0);
+    if (r.has_elements()) {
+        r = cps_db::response(r.element_at(0));
+        return strcasecmp((const char *)r.get_str(),"PONG")==0 ;
+    }
+    return r.is_ok() ?
+            strcasecmp((const char *)r.get_str(),"PONG")==0 :
+            false;
 }
 
 bool cps_db::select_db(cps_db::connection &conn,const std::string &db_id) {
@@ -112,8 +115,8 @@ bool cps_db::select_db(cps_db::connection &conn,const std::string &db_id) {
         return false;
     }
 
-	cps_db::response r = resp.get_response(0);
-	return  (r.is_status() && strcmp("OK",r.get_str())==0);
+    cps_db::response r = resp.get_response(0);
+    return  (r.is_status() && strcmp("OK",r.get_str())==0);
 }
 
 bool cps_db::multi_start(cps_db::connection &conn) {
@@ -124,8 +127,8 @@ bool cps_db::multi_start(cps_db::connection &conn) {
     if (!conn.command(&e,1,resp)) {
         return false;
     }
-	cps_db::response r = resp.get_response(0);
-	return  (r.is_status() && strcmp("OK",r.get_str())==0);
+    cps_db::response r = resp.get_response(0);
+    return  (r.is_status() && strcmp("OK",r.get_str())==0);
 }
 
 bool cps_db::multi_end(cps_db::connection &conn, bool commit) {
@@ -136,8 +139,8 @@ bool cps_db::multi_end(cps_db::connection &conn, bool commit) {
     if (!conn.command(&e,1,resp)) {
         return false;
     }
-	cps_db::response r = resp.get_response(0);
-	return  (r.is_status() && strcmp("OK",r.get_str())==0);
+    cps_db::response r = resp.get_response(0);
+    return  (r.is_status() && strcmp("OK",r.get_str())==0);
 }
 
 bool cps_db::delete_object(cps_db::connection &conn,std::vector<char> &key) {
@@ -149,11 +152,11 @@ bool cps_db::delete_object(cps_db::connection &conn,std::vector<char> &key) {
 }
 
 bool cps_db::delete_object(cps_db::connection &conn,cps_api_object_t obj) {
-	std::vector<char> key;
-	if (cps_db::dbkey_from_instance_key(key,obj)) {
-		return delete_object(conn,key);
-	}
-	return false;
+    std::vector<char> key;
+    if (cps_db::dbkey_from_instance_key(key,obj)) {
+        return delete_object(conn,key);
+    }
+    return false;
 }
 
 namespace {
@@ -163,7 +166,7 @@ bool op_on_objects(const char *op, cps_db::connection &conn,cps_api_object_list_
     multi.from_string("MULTI");
     if (!conn.operation(&multi,1,false)) return false;
 
-	size_t ix = 0;
+    size_t ix = 0;
     size_t mx = cps_api_object_list_size(objs);
     for ( ; ix < mx ; ++ix ) {
         cps_db::connection::db_operation_atom_t e[2];
@@ -180,16 +183,16 @@ bool op_on_objects(const char *op, cps_db::connection &conn,cps_api_object_list_
     if (!conn.operation(&multi,1,false)) return false;
 
     {
-    	cps_db::response_set multi;
-    	if (!conn.response(multi,1)) return false;
-    	cps_db::response _multi(multi.get()[0]);
-    	if (!_multi.is_str() || strcmp(_multi.get_str(),"OK")!=0) return false;
+        cps_db::response_set multi;
+        if (!conn.response(multi,1)) return false;
+        cps_db::response _multi(multi.get()[0]);
+        if (!_multi.is_str() || strcmp(_multi.get_str(),"OK")!=0) return false;
     }
     for (ix = 0; ix < mx ; ++ix ) {
-    	cps_db::response_set queue;
-    	if (!conn.response(queue,1)) return false;
-    	cps_db::response _queue(queue.get()[0]);
-    	if (!_queue.is_str() || strcmp(_queue.get_str(),"QUEUED")!=0) return false;
+        cps_db::response_set queue;
+        if (!conn.response(queue,1)) return false;
+        cps_db::response _queue(queue.get()[0]);
+        if (!_queue.is_str() || strcmp(_queue.get_str(),"QUEUED")!=0) return false;
     }
 
     cps_db::response_set resp;
@@ -200,9 +203,9 @@ bool op_on_objects(const char *op, cps_db::connection &conn,cps_api_object_list_
     cps_db::response _exec(resp.get()[0]);
 
     for ( ix = 0, mx = _exec.elements(); ix < mx ; ++ix ) {
-    	cps_db::response _resp(_exec.element_at(ix));
-    	if (_resp.is_ok()) continue;
-    	return false;
+        cps_db::response _resp(_exec.element_at(ix));
+        if (_resp.is_ok()) continue;
+        return false;
     }
     return true;
 }
@@ -235,8 +238,8 @@ bool cps_db::publish(cps_db::connection &conn, cps_api_object_t obj) {
         return false;
     }
 
-	cps_db::response r = resp.get_response(0);
-	bool rc = r.is_int();
+    cps_db::response r = resp.get_response(0);
+    bool rc = r.is_int();
 
     return rc;
 }
@@ -249,21 +252,21 @@ bool cps_db::subscribe(cps_db::connection &conn, std::vector<char> &key) {
 
     response_set resp;
     if (!conn.command(e,2,resp)) {
-    	EV_LOG(ERR,DSAPI,0,"CPS-DB-SUB","Subscribe failed to return response");
+        EV_LOG(ERR,DSAPI,0,"CPS-DB-SUB","Subscribe failed to return response");
         return false;
     }
 
-	cps_db::response r = resp.get_response(0);
-	if (r.elements()==3) {
-		cps_db::response msg (r.element_at(0));
-		cps_db::response status (r.element_at(2));
-		if (msg.is_str() && strcasecmp(msg.get_str(),"psubscribe")==0) {
+    cps_db::response r = resp.get_response(0);
+    if (r.elements()==3) {
+        cps_db::response msg (r.element_at(0));
+        cps_db::response status (r.element_at(2));
+        if (msg.is_str() && strcasecmp(msg.get_str(),"psubscribe")==0) {
 
-			bool rc = (status.is_int() && status.get_int()>0);
-			if (!rc) EV_LOG(ERR,DSAPI,0,"CPS-DB-SUB","Subscribe failed rc %d",status.get_int());
-			return rc;
-		}
-	}
+            bool rc = (status.is_int() && status.get_int()>0);
+            if (!rc) EV_LOG(ERR,DSAPI,0,"CPS-DB-SUB","Subscribe failed rc %d",status.get_int());
+            return rc;
+        }
+    }
     return false;
 }
 
@@ -277,8 +280,8 @@ bool cps_db::store_object(cps_db::connection &conn,cps_api_object_t obj) {
     if (!conn.command(e,2,resp)) {
         return false;
     }
-	cps_db::response r = resp.get_response(0);
-	return r.is_int() && (r.get_int()==0 || r.get_int()==1);
+    cps_db::response r = resp.get_response(0);
+    return r.is_int() && (r.get_int()==0 || r.get_int()==1);
 }
 
 bool cps_db::get_object(cps_db::connection &conn, const std::vector<char> &key, cps_api_object_t obj) {

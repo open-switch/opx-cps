@@ -193,6 +193,7 @@ static PyObject * py_cps_info(PyObject *self, PyObject *args) {
     if (names.get()==nullptr || ids.get()==nullptr) {
         return nullptr;
     }
+
     if (!py_cps_util_set_item_to_dict(d.get(),"names",names.get(),false)) return nullptr;
     if (!py_cps_util_set_item_to_dict(d.get(),"ids",ids.get(),false)) return nullptr;
 
@@ -368,10 +369,10 @@ static PyObject * py_cps_node_set_update(PyObject *self, PyObject *args) {
             PyObject *addrObj = PyTuple_GetItem(tupObj,1);
             if (nameObj==nullptr || addrObj==nullptr) Py_RETURN_FALSE;
             if (PyString_Check(nameObj) && PyString_Check(addrObj)) {
-            	cps_api_node_ident _id;
-            	_id.addr = PyString_AsString(addrObj);
-            	_id.node_name = PyString_AsString(nameObj);
-            	_ids.push_back(_id);
+                cps_api_node_ident _id;
+                _id.addr = PyString_AsString(addrObj);
+                _id.node_name = PyString_AsString(nameObj);
+                _ids.push_back(_id);
             }
         }
     }
@@ -387,34 +388,34 @@ static PyObject * py_cps_name_from_key(PyObject *self, PyObject *args) {
 
     const char * key=NULL;
     int offset = 0;
-	
+
     if (! PyArg_ParseTuple( args, "si", &key, &offset)) return NULL;
-	
+
     cps_api_key_t k;
     cps_api_key_from_string(&k, key);
-	
+
     const char *path = NULL;
     path = cps_class_string_from_key(&k, offset);
     if (path == NULL)
         path = "";
-	
+
     return PyString_FromString(path);
-	
+
 }
 
 static PyObject * py_cps_qual_from_key(PyObject *self, PyObject *args) {
 
     const char * key=NULL;
     if (! PyArg_ParseTuple( args, "s", &key)) return NULL;
-	
+
     cps_api_key_t k;
     cps_api_key_from_string(&k, key);
-	
+
     const char *qualifier = NULL;
     qualifier = cps_class_qual_from_key(&k);
     if (qualifier == NULL)
         qualifier = "";
-	
+
     return PyString_FromString(qualifier);
 }
 
@@ -506,7 +507,7 @@ PyDoc_STRVAR(CPS_FN_DOC(py_cps_name_from_key), "name_from_key(key, offset)\n\n"
 
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_qual_from_key), "qual_from_key(key)\n\n"
     "Take a CPS key, search the CPS qualifier and return the qualifier as a string if found\n"
-    "@key - the key for which the qualifier string is required \n"	
+    "@key - the key for which the qualifier string is required \n"
     "@return - the character string holding the qualifier if successful otherwise returns empty string\n");
 
 
@@ -527,6 +528,12 @@ PyDoc_STRVAR(CPS_FN_DOC(py_cps_event_reg), "event_reg(handle,key)\n\n"
     "Register to be notified when an event for the given CPS key is published.\n"
     "@handle - CPS event handle\n"
     "@key - CPS key of object\n"
+    "@return - True if event handle was closed successfully otherwise False");
+
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_event_reg_object), "event_register_object(handle,object)\n\n"
+    "Register to be notified when an event for the given object details are discovered - only support registering for key attributes or groups.\n"
+    "@handle - CPS event handle\n"
+    "@object - the python dictionary containing the \"key\" and \"data\" fields of an object\n"
     "@return - True if event handle was closed successfully otherwise False");
 
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_event_send), "event_send(handle,obj)\n\n"
@@ -576,6 +583,7 @@ static PyMethodDef cps_methods[] = {
 
     //Event processing
     {"event_register",  py_cps_event_reg, METH_VARARGS, CPS_FN_DOC(py_cps_event_reg)},
+    {"event_register_object",py_cps_event_reg_object,METH_VARARGS, CPS_FN_DOC(py_cps_event_reg_object)},
     {"event_close",  py_cps_event_close, METH_VARARGS, CPS_FN_DOC(py_cps_event_close)},
     {"event_connect",  py_cps_event_connect, METH_VARARGS, CPS_FN_DOC(py_cps_event_connect)},
     {"event_wait",  py_cps_event_wait, METH_VARARGS, CPS_FN_DOC(py_cps_event_wait)},

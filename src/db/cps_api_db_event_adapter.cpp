@@ -33,6 +33,7 @@
 #include "private/cps_ns.h"
 #include "cps_api_service.h"
 #include "cps_string_utils.h"
+#include "cps_api_vector_utils.h"
 
 #include "std_mutex_lock.h"
 #include "event_log.h"
@@ -53,6 +54,33 @@ struct _reg_data {
     std::vector<char> _key;
 };
 
+struct db_connection_details {
+    static const uint64_t timeout = 10*1000*1000 ; //10 seconds
+
+    using cv_hash = cps_utils::vector_hash<char>;
+    std::unordered_set<std::vector<char>,cv_hash> _keys;
+
+    std::unordered_map<std::string,bool> _group_reg;
+
+    uint64_t _last_msg;
+
+    void reset() {
+        _group_reg.clear();
+        _keys.clear();
+        _last_msg = 0;
+    }
+    void communicated() {
+        _last_msg = std_get_uptime(nullptr);
+    }
+    bool expired(bool update =true) {
+        if (std_time_is_expired(_last_msg,timeout)) {
+            if (update) communicated();
+            return true;
+        }
+        return false;
+    }
+};
+
 struct _handle_data {
     std::recursive_mutex _mutex;
 
@@ -62,8 +90,9 @@ struct _handle_data {
     std::unordered_map<std::string,std::vector<_reg_data>> _group_keys;
 
     std::unordered_map<std::string,std::unique_ptr<cps_db::connection>> _connections;
+    std::unordered_map<std::string,db_connection_details> _connection_mon;
 
-    std::unordered_map<std::string,bool> _group_updated;
+    std::unordered_map<std::string,bool> _group_dirty;
 
     cps_api_object_list_t _pending_events=nullptr;
 };
@@ -77,15 +106,15 @@ static std::mutex _mutex;
 static std::unordered_set<_handle_data *> _handles;
 
 static void __add_connection_state(cps_api_event_service_handle_t handle, const char *node, const char *group, bool state) {
-	_handle_data *nd = handle_to_data(handle);
-	cps_api_object_t o = cps_api_object_list_create_obj_and_append(nd->_pending_events);
-	if (o!=nullptr) {
-		cps_api_key_from_attr_with_qual(cps_api_object_key(o),CPS_CONNECTION_ENTRY, cps_api_qualifier_TARGET);
-		cps_api_object_attr_add(o,CPS_CONNECTION_ENTRY_IP, node,strlen(node)+1);
-		cps_api_object_attr_add(o,CPS_CONNECTION_ENTRY_NAME, node,strlen(node)+1);
-		cps_api_object_attr_add(o,CPS_CONNECTION_ENTRY_GROUP, group,strlen(group)+1);
-		cps_api_object_attr_add_u32(o,CPS_CONNECTION_ENTRY_CONNECTION_STATE, state);
-	}
+    _handle_data *nd = handle_to_data(handle);
+    cps_api_object_t o = cps_api_object_list_create_obj_and_append(nd->_pending_events);
+    if (o!=nullptr) {
+        cps_api_key_from_attr_with_qual(cps_api_object_key(o),CPS_CONNECTION_ENTRY, cps_api_qualifier_TARGET);
+        cps_api_object_attr_add(o,CPS_CONNECTION_ENTRY_IP, node,strlen(node)+1);
+        cps_api_object_attr_add(o,CPS_CONNECTION_ENTRY_NAME, node,strlen(node)+1);
+        cps_api_object_attr_add(o,CPS_CONNECTION_ENTRY_GROUP, group,strlen(group)+1);
+        cps_api_object_attr_add_u32(o,CPS_CONNECTION_ENTRY_CONNECTION_STATE, state);
+    }
 }
 
 static void __resync_regs(cps_api_event_service_handle_t handle) {
@@ -94,34 +123,35 @@ static void __resync_regs(cps_api_event_service_handle_t handle) {
     for (auto it : nd->_group_keys) {
 
         bool success = true;
-        bool group_updated = nd->_group_updated[it.first];
-        if (!group_updated) continue;
 
-        if (!cps_api_node_set_iterate(it.first,[nd,&it,&success,&group_updated,&handle](const std::string &node,void *context) {
+        if (!cps_api_node_set_iterate(it.first,[nd,&it,&success,&handle](const std::string &node,void *context) {
             auto con_it = nd->_connections.find(node);
             if (con_it==nd->_connections.end()) {
                 return;
             }
+            if (nd->_connection_mon[node]._group_reg[it.first]==true) return ;
 
             //for each client key associated with the group
             for ( auto reg_it : it.second) {
-                if (!reg_it._sync || group_updated) { //best we can do for now but come back and fix this condition
-                    if (!cps_db::subscribe(*con_it->second,reg_it._key)) {
-                        nd->_connections.erase(con_it);
-                        EV_LOG(ERR,DSAPI,0,"CPS-EVT-REG","Failed to register with %s - connection closed (%s key size)",node.c_str(),
-                        		cps_string::tostring(&reg_it._key[0],reg_it._key.size()).c_str());
-                        __add_connection_state(handle,node.c_str(),it.first.c_str(),false);
-                        break;
-                    }
-                    ///TODO add event when connected to a new node..
+                if (nd->_connection_mon[node]._keys.find(reg_it._key)!=nd->_connection_mon[node]._keys.end()) {
+                    continue;
                 }
+                if (!cps_db::subscribe(*con_it->second,reg_it._key)) {
+                    nd->_connections.erase(con_it);
+                    EV_LOG(ERR,DSAPI,0,"CPS-EVT-REG","Failed to register with %s - connection closed (%s key size)",node.c_str(),
+                            cps_string::tostring(&reg_it._key[0],reg_it._key.size()).c_str());
+                    __add_connection_state(handle,node.c_str(),it.first.c_str(),false);
+                    return;
+                }
+                nd->_connection_mon[node]._keys.insert(reg_it._key);
+                nd->_connection_mon[node].communicated();
+                ///TODO add event when connected to a new node..
             }
+            nd->_connection_mon[node]._group_reg[it.first] = true;
 
         },handle)) {
             success=false;
         }
-
-        nd->_group_updated[it.first] = true;
     }
 }
 
@@ -136,17 +166,30 @@ static bool __check_connections(cps_api_event_service_handle_t handle) {
                 if (con_it==nd->_connections.end()) {
                     std::unique_ptr<cps_db::connection> c(new cps_db::connection);
                     if (!c->connect(node)) {
-                    	EV_LOG(TRACE,DSAPI,0,"CPS-EVT-CONN","Failed to connect to the remote node %s",node.c_str());
+                        EV_LOG(TRACE,DSAPI,0,"CPS-EVT-CONN","Failed to connect to the remote node %s",node.c_str());
                         return;
                     }
+                    if (!cps_db::ping(*c)) return;
+                    nd->_connection_mon[node].reset();
+                    nd->_connection_mon[node].communicated();
                     nd->_connections[node] = std::move(c);
-                    nd->_group_updated[node] = true;
                     __add_connection_state(handle,node.c_str(),it.first.c_str(),true);
                     changed = true;
                 }
+                if (nd->_connection_mon[node].expired()) {
+                    if (!cps_db::ping(*nd->_connections[node])) {
+                        nd->_connections.erase(node);
+                        nd->_connection_mon[node].reset();
+                        return;
+                    }
+                }
+                if (nd->_connection_mon[node]._group_reg.find(it.first)==nd->_connection_mon[node]._group_reg.end()) {
+                    nd->_connection_mon[node]._group_reg[it.first] = false;
+                }
             },handle)) {
-        	EV_LOG(TRACE,DSAPI,0,"CPS-EVT-CONNS","issues when processing group %s - not able to iterate",it.first.c_str());
+            EV_LOG(TRACE,DSAPI,0,"CPS-EVT-CONNS","issues when processing group %s - not able to iterate",it.first.c_str());
         }
+
     }
 
     return changed;
@@ -154,11 +197,11 @@ static bool __check_connections(cps_api_event_service_handle_t handle) {
 
 static bool __maintain_connections(_handle_data *nh) {
     std::lock_guard<std::recursive_mutex> lg(nh->_mutex);
-    if (__check_connections(nh)) {
-        __resync_regs(nh);
-        return true;
-    }
-    return false;
+    bool new_conn = __check_connections(nh);
+
+    __resync_regs(nh);
+
+    return new_conn;
 }
 
 static cps_api_return_code_t _cps_api_event_service_client_connect(cps_api_event_service_handle_t * handle) {
@@ -181,14 +224,18 @@ static cps_api_return_code_t _register_one_object(cps_api_event_service_handle_t
     rd._sync = false;
     cps_db::dbkey_from_instance_key(rd._key,object);
     if (rd._key.size()==0) {
-		static const int CPS_OBJ_STR_LEN = 1000;
-    	char buff[CPS_OBJ_STR_LEN];
-    	EV_LOG(ERR,DSAPI,0,"CPS-EVNT-REG","Invalid object being registered for %s",cps_api_object_to_string(object,buff,sizeof(buff)-1));
-    	return cps_api_ret_code_ERR;
+        static const int CPS_OBJ_STR_LEN = 1000;
+        char buff[CPS_OBJ_STR_LEN];
+        EV_LOG(ERR,DSAPI,0,"CPS-EVNT-REG","Invalid object being registered for %s",cps_api_object_to_string(object,buff,sizeof(buff)-1));
+        return cps_api_ret_code_ERR;
     }
     nh->_group_keys[_group].push_back(rd);
-    nh->_group_updated[_group] = true;
 
+    if (!cps_api_node_set_iterate(_group,[&nh,_group](const std::string &node,void *context) {
+        nh->_connection_mon[node]._group_reg[_group] = false;
+    },nullptr)) {
+        EV_LOG(ERR,DSAPI,0,"CPS-EVNT-REG","Failed to load group data for %s",_group);
+    }
     return cps_api_ret_code_OK;
 }
 
@@ -261,7 +308,7 @@ static ssize_t __setup_fd_set(_handle_data *nh, fd_set &set) {
 static bool get_event(cps_db::connection *conn, cps_api_object_t obj) {
     cps_db::response_set set;
     if (!conn->get_event(set)) {
-    	return false;
+        return false;
     }
     cps_db::response r = set.get_response(0);
     cps_db::response type (r.element_at(0));
@@ -291,15 +338,15 @@ static cps_api_return_code_t _cps_api_wait_for_event(
 
         bool updated = false;
 
-        {	//allow insertion of node loss messages
-        	std::lock_guard<std::recursive_mutex> lock (nh->_mutex);
-        	if (cps_api_object_list_size(nh->_pending_events)>0) {
-        		cps_api_object_guard og(cps_api_object_list_get(nh->_pending_events,0));
+        {    //allow insertion of node loss messages
+            std::lock_guard<std::recursive_mutex> lock (nh->_mutex);
+            if (cps_api_object_list_size(nh->_pending_events)>0) {
+                cps_api_object_guard og(cps_api_object_list_get(nh->_pending_events,0));
 
-        		cps_api_object_list_remove(nh->_pending_events,0);
-        		cps_api_object_clone(msg,og.get());
-        		return cps_api_ret_code_OK;
-        	}
+                cps_api_object_list_remove(nh->_pending_events,0);
+                cps_api_object_clone(msg,og.get());
+                return cps_api_ret_code_OK;
+            }
         }
         ///TODO when a node goes from a cluster - should not be included in the connection list anymore
 
@@ -317,33 +364,35 @@ static cps_api_return_code_t _cps_api_wait_for_event(
         }
         bool has_event = false;
         for (auto &it : nh->_connections) {
-        	if (it.second->has_event()) {
-        		has_event = true;
-        	}
+            if (it.second->has_event()) {
+                has_event = true;
+            }
         }
 
-        std::function<bool()> check_connections = [max_fd,&_template_set]() ->bool {
+        fd_set _r_set = _template_set;
+
+        std::function<bool()> check_connections = [max_fd,&_r_set]() ->bool {
             struct timeval tv; tv.tv_sec=1; tv.tv_usec =0;
-            fd_set _r_set = _template_set;
+
             return std_select_ignore_intr(max_fd+1,&_r_set,nullptr,nullptr,&tv,nullptr);
         };
 
         if (!has_event) {
-			if ((rc=check_connections())==-1) {
-				last_checked = 0;
-				continue;
-			}
+            if ((rc=check_connections())==-1) {
+                last_checked = 0;
+                continue;
+            }
 
-			if (rc==0) continue;
+            if (rc==0) continue;
         }
 
         std::lock_guard<std::recursive_mutex> lg(nh->_mutex);
         for (auto &it : nh->_connections) {
-            if (FD_ISSET(it.second->get_fd(),&_template_set) || it.second->has_event()) {
-            	if (get_event(it.second.get(),msg)) {
-        			cps_api_object_attr_add(msg,CPS_OBJECT_GROUP_NODE,it.first.c_str(),it.first.size()+1);
-        			return cps_api_ret_code_OK;
-            	}
+            if (FD_ISSET(it.second->get_fd(),&_r_set) || it.second->has_event()) {
+                if (get_event(it.second.get(),msg)) {
+                    cps_api_object_attr_add(msg,CPS_OBJECT_GROUP_NODE,it.first.c_str(),it.first.size()+1);
+                    return cps_api_ret_code_OK;
+                }
             }
         }
     }

@@ -54,17 +54,19 @@ cps_api_return_code_t cps_api_event_client_connect(cps_api_event_service_handle_
 
 cps_api_return_code_t cps_api_event_client_register(cps_api_event_service_handle_t handle,
         cps_api_event_reg_t * req) {
-	cps_api_object_list_guard lg(cps_api_object_list_create());
-	for ( size_t ix = 0 ; ix < req->number_of_objects; ++ix ) {
-		cps_api_object_t o = cps_api_object_list_create_obj_and_append(lg.get());
-		cps_api_key_copy(cps_api_object_key(o),req->objects + ix);
-	}
+    cps_api_object_list_guard lg(cps_api_object_list_create());
+    for ( size_t ix = 0 ; ix < req->number_of_objects; ++ix ) {
+        cps_api_object_t o = cps_api_object_list_create_obj_and_append(lg.get());
+        if (o==nullptr) return cps_api_ret_code_ERR;
+
+        cps_api_key_copy(cps_api_object_key(o),&req->objects[ix]);
+    }
     return m_method.register_function_objs(handle,lg.get());
 }
 
 cps_api_return_code_t cps_api_event_client_register_object(cps_api_event_service_handle_t handle,
         cps_api_object_list_t objects) {
-	return m_method.register_function_objs(handle,objects);
+    return m_method.register_function_objs(handle,objects);
 }
 
 cps_api_return_code_t cps_api_event_publish(cps_api_event_service_handle_t handle,
@@ -138,14 +140,14 @@ cps_api_return_code_t cps_api_event_thread_init(void) {
 static pthread_once_t _once_control = PTHREAD_ONCE_INIT;
 
 void one_time_init() {
-	init_event_thread_func();
-	while (true) {
-		if (cps_api_event_client_connect(&_thread_handle)==cps_api_ret_code_OK) break;
-		EV_LOG(ERR,DSAPI,0,"CPS-EVT-THR","Failed to create thread event handle");
-		std_usleep(1000*1000*1);
-	}
+    init_event_thread_func();
+    while (true) {
+        if (cps_api_event_client_connect(&_thread_handle)==cps_api_ret_code_OK) break;
+        EV_LOG(ERR,DSAPI,0,"CPS-EVT-THR","Failed to create thread event handle");
+        std_usleep(1000*1000*1);
+    }
 
-	is_running = true;
+    is_running = true;
     std_thread_init_struct(&params);
     params.name = "local-event-thread";
     params.thread_function = _thread_function_;
@@ -156,7 +158,7 @@ void one_time_init() {
 
 cps_api_return_code_t cps_api_event_thread_reg_object(cps_api_object_list_t objects,
         cps_api_event_thread_callback_t cb, void * context ) {
-	pthread_once(&_once_control,one_time_init);
+    pthread_once(&_once_control,one_time_init);
 
     if (cps_api_event_client_register_object(_thread_handle,objects)!=cps_api_ret_code_OK) {
         return cps_api_ret_code_ERR;
@@ -169,15 +171,15 @@ cps_api_return_code_t cps_api_event_thread_reg_object(cps_api_object_list_t obje
     size_t mx = cps_api_object_list_size(objects);
 
     for ( ; ix < mx ; ++ix ) {
-    	p.obj = cps_api_object_create();
-    	if (p.obj==nullptr) {
-    		//memory allocation failure
-    		return cps_api_ret_code_ERR;
-    	}
-    	if (!cps_api_object_clone(p.obj,cps_api_object_list_get(objects,ix))) {
-    		cps_api_object_delete(p.obj);
-    		return cps_api_ret_code_ERR;
-    	}
+        p.obj = cps_api_object_create();
+        if (p.obj==nullptr) {
+            //memory allocation failure
+            return cps_api_ret_code_ERR;
+        }
+        if (!cps_api_object_clone(p.obj,cps_api_object_list_get(objects,ix))) {
+            cps_api_object_delete(p.obj);
+            return cps_api_ret_code_ERR;
+        }
         std_rw_lock_write_guard wg(&rw_lock);
         cb_map.push_back(p);
     }
@@ -188,31 +190,20 @@ cps_api_return_code_t cps_api_event_thread_reg_object(cps_api_object_list_t obje
 
 cps_api_return_code_t cps_api_event_thread_reg(cps_api_event_reg_t * reg,
         cps_api_event_thread_callback_t cb, void * context ) {
-	pthread_once(&_once_control,one_time_init);
+    pthread_once(&_once_control,one_time_init);
 
-    if (cps_api_event_client_register(_thread_handle,reg)!=cps_api_ret_code_OK) {
-        return cps_api_ret_code_ERR;
+    cps_api_object_list_guard lg(cps_api_object_list_create());
+    for ( size_t ix = 0, mx = reg->number_of_objects ; ix < mx ; ++ix ) {
+        cps_api_object_t o = cps_api_object_list_create_obj_and_append(lg.get());
+        if (o==nullptr) return cps_api_ret_code_ERR;
+        cps_api_key_copy(cps_api_object_key(o),&reg->objects[ix]);
     }
-    cps_api_event_thread_cbs_t p ;
-    p.cb = cb;
-    p.context = context;
-    size_t ix = 0;
-    size_t mx = reg->number_of_objects;
-    for ( ; ix < mx ; ++ix ) {
-    	p.obj = cps_api_object_create();
-    	if (p.obj==nullptr) {
-    		//memory allocation failure
-    		return cps_api_ret_code_ERR;
-    	}
-        cps_api_key_copy(cps_api_object_key(p.obj),reg->objects+ix);
-        std_rw_lock_write_guard wg(&rw_lock);
-        cb_map.push_back(p);
-    }
-    return cps_api_ret_code_OK;
+
+    return cps_api_event_thread_reg_object(lg.get(),cb,context);
 }
 
 cps_api_return_code_t cps_api_event_thread_publish(cps_api_object_t object) {
-	pthread_once(&_once_control,one_time_init);
+    pthread_once(&_once_control,one_time_init);
     std_mutex_simple_lock_guard l(&mutex);
     return cps_api_event_publish(_thread_handle,object);
 }

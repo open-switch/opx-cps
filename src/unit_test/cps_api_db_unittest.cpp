@@ -228,12 +228,12 @@ TEST(cps_api_db,db_node_alias) {
 TEST(cps_api_db,db_node_get_set) {
 
 
-    cps_api_node_ident ids[2] = { {"NODE1", "127.0.0.1:6379 "}, {"NODE2","127.0.0.1:6380"} };
+    cps_api_node_ident ids[3] = { {"NODE1", "127.0.0.1:6379 "}, {"NODE2","10.11.56.27:6379"},{"NODE3","10.11.57.21:6379"} };
     cps_api_node_group_t _g;
 
     _g.id = "A";
     _g.addrs = ids;
-    _g.addr_len = 2;
+    _g.addr_len = 3;
     _g.data_type = cps_api_node_data_NODAL;
 
     cps_api_set_node_group(&_g);
@@ -275,7 +275,7 @@ TEST(cps_api_db,db_node_get_set) {
     cps_api_key_from_attr_with_qual(cps_api_object_key(obj),BASE_IP_IPV6,cps_api_qualifier_TARGET);
     cps_api_key_set_group(obj,"A");
     ASSERT_TRUE(cps_api_get_objs(og.get(), lg.get(),0,100)==cps_api_ret_code_OK);
-    ASSERT_EQ(cps_api_object_list_size(lg.get()),4);
+    ASSERT_EQ(cps_api_object_list_size(lg.get()),_g.addr_len*2);
 
     lg.set(cps_api_object_list_create());
     og.free();
@@ -287,7 +287,7 @@ TEST(cps_api_db,db_node_get_set) {
 
     ASSERT_TRUE(cps_api_get_objs(og.get(), lg.get(),0,100)==cps_api_ret_code_OK);
 
-    ASSERT_TRUE(cps_api_object_list_size(lg.get())==2);
+    ASSERT_TRUE(cps_api_object_list_size(lg.get())==_g.addr_len);
 
     og.set(cps_api_object_create());
     ASSERT_TRUE(og.get()!=nullptr);
