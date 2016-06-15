@@ -19,6 +19,7 @@
 #include "cps_api_node_set.h"
 
 #include "std_time_tools.h"
+#include "event_log.h"
 
 #include <mutex>
 
@@ -53,7 +54,10 @@ bool cps_api_node_set_iterate(const std::string &group_name,const std::function<
         void *context) {
     std::vector<std::string> lst;
 
-    if (!cps_api_db_get_node_group(group_name,lst)) return false;
+    if (!cps_api_db_get_node_group(group_name,lst)) {
+        EV_LOG(ERR,DSAPI,0,"CPS-DB-NODES","Failed to load db for group %s",group_name.c_str());
+        return false;
+    }
 
     for (auto node_it : lst ) {
         operation(node_it,context);

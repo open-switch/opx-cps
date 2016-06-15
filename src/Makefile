@@ -88,11 +88,6 @@ UNIT_TEST+=cps_api_db_event_unittest
 cps_api_db_event_unittest_SRCS=unit_test/cps_api_db_event_unittest.cpp
 cps_api_db_event_unittest_LDFLAGS=-lcps-api-common -lcps-class-map-util -ldn_common
 
-UNIT_TEST+=cps_api_libevent_unittest
-cps_api_libevent_unittest_SRCS=unit_test/cps_api_libevnent_unittest.cpp
-cps_api_libevent_unittest_LDFLAGS=-lcps-api-common -lcps-class-map-util -ldn_common -levent 
-cps_api_libevent_unittest_CXXFLAGS+=-I$(TOP_SRCDIR)/inc/private/db -I$(TOP_SRCDIR)/inc/private
-
 PY_OBJ_PATH=${BUILD_CURDIR}/pybuild
 
 ADDED_FOLDERS+=${PY_OBJ_PATH}
