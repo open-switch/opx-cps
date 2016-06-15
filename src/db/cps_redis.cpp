@@ -80,7 +80,12 @@ bool cps_db::fetch_all_keys(cps_db::connection &conn, const void *filt, size_t f
         cps_db::response cursor(it.element_at(0));
         cps_db::response values(it.element_at(1));
         start = cursor.get_str();
-        values.iterator([&fun](size_t ix, int type, const void *data, size_t len){ fun(data,len);});
+
+        for (size_t ix =0,mx=values.elements(); ix < mx ; ++ix ) {
+            redisReply * data = (redisReply *)values.element_at(ix);
+            fun(data->str,data->len);
+        }
+
         if (start=="0") break;
     } while(true);
     return true;
@@ -346,8 +351,9 @@ bool cps_db::get_objects(cps_db::connection &conn, cps_api_object_t obj,cps_api_
 }
 
 cps_db::response_set::~response_set() {
-    for (auto it: _data) {
-        freeReplyObject((redisReply*)it);
+    for ( size_t ix = 0; ix < _used ; ++ix ) {
+        freeReplyObject((redisReply*)_data[ix]);
     }
+    _used = 0;
 }
 

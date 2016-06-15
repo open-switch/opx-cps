@@ -30,49 +30,48 @@
 namespace cps_db {
 
 class response {
-	void * _reply;
+    void * _reply;
 public:
-	response(void *p) { _reply = p ; }
+    response(void *p) { _reply = p ; }
 
-	//simple string returns
-	int get_str_len() ;
-	const char *get_str() ;
-	bool is_str();
+    //simple string returns
+    int get_str_len() ;
+    const char *get_str() ;
+    bool is_str();
 
-	//error status check
-	bool is_ok();
+    //error status check
+    bool is_ok();
 
-	//int gets
-	bool is_int();
-	int get_int();
+    //int gets
+    bool is_int();
+    int get_int();
 
-	//for walking array responses
-	bool has_elements();
-	void *element_at(size_t ix);
+    //for walking array responses
+    bool has_elements();
+    void *element_at(size_t ix);
+    size_t elements();
 
-	std::tuple<void *, size_t> get_element(size_t ix);
+    bool is_status();
 
-	size_t elements();
-
-	void iterator(const std::function<void(size_t ix, int type, const void *data, size_t len)> &fun);
-
-	bool is_status();
-
-
-
-	using response_element_t = std::tuple<int, const void *, size_t>;
-	size_t extract_elements(response_element_t *lst, size_t max);
-
-	void dump();
+    void dump();
 };
 
 class response_set {
-	std::vector<void*> _data;
+    static constexpr size_t ARRAY_LEN=10;
+    void *_data[ARRAY_LEN];
+    size_t _used=0;
 public:
-	std::vector<void*>& get() { return _data; }
-	size_t size() const { return _data.size(); }
-	response get_response(size_t ix) { return response(_data[ix]); }
-	~response_set();
+    bool add(void *entry) {
+        if (_used < ARRAY_LEN) {
+            _data[_used++] = entry;
+            return true;
+        }
+        return false;
+    }
+    void** get() { return _data; }
+    size_t size() const { return _used; }
+    response get_response(size_t ix) { return response(_data[ix]); }
+    ~response_set();
 };
 
 }

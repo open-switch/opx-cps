@@ -132,7 +132,6 @@ static void __resync_regs(cps_api_event_service_handle_t handle) {
     bool _connections_changed = false;
 
     for (auto it : nd->_group_keys) {
-
         cps_api_node_set_iterate(it.first,[nd,&it,&handle,&_connections_changed](const std::string &node,void *context) {
             auto con_it = nd->_connections.find(node);
             if (con_it==nd->_connections.end()) {
@@ -331,30 +330,29 @@ static cps_api_return_code_t _cps_api_wait_for_event(
             cps_api_object_clone(msg,og.get());
             return cps_api_ret_code_OK;
         }
-        if (std_time_is_expired(last_checked,1000)) {
+        if (std_time_is_expired(last_checked,MILLI_TO_MICRO(1000*15))) {    //wait for 5 seconds before scanning again
             last_checked = std_get_uptime(nullptr);
-
             __maintain_connections(nh);
         }
 
         if (nh->_max_fd==-1) {
-            const static size_t RETRY_TIME_US = 1000*500;
+            const static size_t RETRY_TIME_US = 1000*1000;
             std_usleep(RETRY_TIME_US);
             continue;
         }
 
 
-        bool has_event = false;
+        bool pending_event = false;
         for (auto &it : nh->_connections) {
             if (it.second->has_event()) {
-                has_event = true;
+                pending_event = true;
             }
         }
 
-        if (!has_event) {
+        if (!pending_event) {
             _r_set = nh->_connection_set;
             fd_max = nh->_max_fd+1;
-            timeval tv={0,0};
+            timeval tv={10,0};
             nh->_mutex.unlock();
             rc = std_select_ignore_intr(fd_max,&_r_set,nullptr,nullptr,&tv,nullptr);
             nh->_mutex.lock();
@@ -370,9 +368,10 @@ static cps_api_return_code_t _cps_api_wait_for_event(
                 EV_LOG(ERR,DSAPI,0,"CPS-EVT-WAIT","Invalid Max FD value %d vs current fd %d",nh->_max_fd,it.second->get_fd());
                 continue;
             }
-            bool has_data = !has_event ? FD_ISSET(it.second->get_fd(),&_r_set) : 0;
+            bool has_data = it.second->has_event();
+            has_data |= !pending_event && FD_ISSET(it.second->get_fd(),&_r_set) ;
 
-            if (has_data || it.second->has_event()) {
+            if (has_data) {
                 if (get_event(it.second.get(),msg)) {
                     cps_api_object_attr_add(msg,CPS_OBJECT_GROUP_NODE,it.first.c_str(),it.first.size()+1);
                     return cps_api_ret_code_OK;

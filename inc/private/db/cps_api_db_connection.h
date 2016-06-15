@@ -60,28 +60,23 @@ public:
         void from_object(cps_api_object_t obj, bool instance, bool data);
     };
 
+    void disconnect();
     bool reconnect();
+
     bool connect(const std::string &em, const std::string &db_instance="", bool async=false);
+
     int get_fd();
 
     ~connection() { disconnect() ; }
 
     std::string addr() { return _addr; } //make a copy.. since reconnects could change it in the future
 
-    void disconnect();
 
     bool command(db_operation_atom_t * lst,size_t len,response_set &set);
 
-
     bool response(response_set &data, ssize_t at_least=0);
-    bool sync_operation(db_operation_atom_t * lst,size_t len, std::vector<void*> &data);
-
-    bool sync_operation(db_operation_atom_t * lst,size_t len, response_set &set) ;
-
 
     bool operation(db_operation_atom_t * lst,size_t len, bool no_reponse=false);
-
-    bool async_operation(db_operation_atom_t * lst,size_t len);
 
     bool get_event(response_set &data);
     bool has_event();

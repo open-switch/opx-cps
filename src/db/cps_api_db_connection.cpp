@@ -26,6 +26,7 @@
 #include <hiredis/async.h>
 #include <functional>
 
+static bool __added_logging = true;
 
 void cps_db::connection::db_operation_atom_t::from_string(const char *str, size_t len) {
     _atom_type = cps_db::connection::db_operation_atom_t::obj_fields_t::obj_field_STRING;
@@ -239,7 +240,7 @@ bool cps_db::connection::command(db_operation_atom_t * lst,size_t len,response_s
     if (r==nullptr) {
         return false;
     }
-    set.get().push_back(r);
+    set.add(r);
     return true;
 }
 
@@ -260,18 +261,11 @@ bool cps_db::connection::response(response_set &data_, ssize_t at_least_) {
             //clean up response so no partial responses
             return false;
         }
-        data_.get().push_back(reply);
+        data_.add(reply);
         --_pending;
     }
     if (_pending <=0 ) _pending = 0;
     return true;
-}
-
-bool cps_db::connection::sync_operation(db_operation_atom_t * lst,size_t len,response_set &data) {
-    if (!operation(lst,len)) {
-        return false;
-    }
-    return response(data);
 }
 
 static bool is_event_message(void *resp) {
@@ -299,27 +293,33 @@ bool cps_db::connection::has_event() {
     } while (rc==REDIS_OK);
     return _pending_events.size()>0;
 }
+
 #include "std_select_tools.h"
 
 bool cps_db::connection::get_event(response_set &data) {
     do {
         if (_pending_events.size() == 0) {
-            fd_set _set;
-            FD_ZERO(&_set);
-            FD_SET(static_cast<redisContext*>(_ctx)->fd,&_set);
-            timeval tv = {0,0};
-            int rc = std_select_ignore_intr(static_cast<redisContext*>(_ctx)->fd+1,&_set,nullptr,nullptr,&tv,nullptr);
-            if (rc <=0) {
-                EV_LOG(ERR,DSAPI,0,"CPS-DB-EVT","Called to get event when no data waiting.");
+            int rc = 0;
+            if (__added_logging) {
+                fd_set _set;
+                FD_ZERO(&_set);
+                FD_SET(static_cast<redisContext*>(_ctx)->fd,&_set);
+                timeval tv = {0,0};
+                rc = std_select_ignore_intr(static_cast<redisContext*>(_ctx)->fd+1,&_set,nullptr,nullptr,&tv,nullptr);
+                if (rc <=0) {
+                    EV_LOG(ERR,DSAPI,0,"CPS-DB-EVT","Called to get event when no data waiting.");
+                    break;
+                }
             }
             rc = redisBufferRead(static_cast<redisContext*>(_ctx));
             if (rc==REDIS_ERR) break;
             if (!has_event()) break;
-            if (_pending_events.size()>0) {
-                data.get().push_back(*_pending_events.begin());
-                _pending_events.erase(_pending_events.begin());
-                return true;
-            }
+
+        }
+        if (_pending_events.size()>0) {
+            data.add(*_pending_events.begin());
+            _pending_events.erase(_pending_events.begin());
+            return true;
         }
     } while (0);
     return false;
