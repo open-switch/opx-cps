@@ -316,29 +316,25 @@ static cps_api_return_code_t _cps_api_wait_for_event(
 
     uint64_t last_checked = 0;
 
+    int fd_max = -1;
     fd_set _r_set ;
     ssize_t rc = 0;
 
     while (true) {
 
-        {    //allow insertion of node loss messages
-            std::lock_guard<std::recursive_mutex> lock (nh->_mutex);
-            if (cps_api_object_list_size(nh->_pending_events)>0) {
-                cps_api_object_guard og(cps_api_object_list_get(nh->_pending_events,0));
+        //allow insertion of node loss messages
+        std::lock_guard<std::recursive_mutex> lock (nh->_mutex);
+        if (cps_api_object_list_size(nh->_pending_events)>0) {
+            cps_api_object_guard og(cps_api_object_list_get(nh->_pending_events,0));
 
-                cps_api_object_list_remove(nh->_pending_events,0);
-                cps_api_object_clone(msg,og.get());
-                return cps_api_ret_code_OK;
-            }
+            cps_api_object_list_remove(nh->_pending_events,0);
+            cps_api_object_clone(msg,og.get());
+            return cps_api_ret_code_OK;
         }
+        if (std_time_is_expired(last_checked,1000)) {
+            last_checked = std_get_uptime(nullptr);
 
-        {
-            std::lock_guard<std::recursive_mutex> lg(nh->_mutex);
-            if (std_time_is_expired(last_checked,1000)) {
-                last_checked = std_get_uptime(nullptr);
-
-                __maintain_connections(nh);
-            }
+            __maintain_connections(nh);
         }
 
         if (nh->_max_fd==-1) {
@@ -346,6 +342,7 @@ static cps_api_return_code_t _cps_api_wait_for_event(
             std_usleep(RETRY_TIME_US);
             continue;
         }
+
 
         bool has_event = false;
         for (auto &it : nh->_connections) {
@@ -355,21 +352,27 @@ static cps_api_return_code_t _cps_api_wait_for_event(
         }
 
         if (!has_event) {
-            struct timeval tv = { 1, 0 };
             _r_set = nh->_connection_set;
-            rc = std_select_ignore_intr(nh->_max_fd+1,&_r_set,nullptr,nullptr,&tv,nullptr);
+            fd_max = nh->_max_fd+1;
+            timeval tv={0,0};
+            nh->_mutex.unlock();
+            rc = std_select_ignore_intr(fd_max,&_r_set,nullptr,nullptr,&tv,nullptr);
+            nh->_mutex.lock();
             if (rc==-1) {
                 last_checked = 0;
                 continue;
             }
             if (rc==0) continue;
-        } else {
-            memset(&_r_set,0,sizeof(_r_set));
         }
 
-        std::lock_guard<std::recursive_mutex> lg(nh->_mutex);
         for (auto &it : nh->_connections) {
-            if (FD_ISSET(it.second->get_fd(),&_r_set) || it.second->has_event()) {
+            if (it.second->get_fd() > nh->_max_fd) {
+                EV_LOG(ERR,DSAPI,0,"CPS-EVT-WAIT","Invalid Max FD value %d vs current fd %d",nh->_max_fd,it.second->get_fd());
+                continue;
+            }
+            bool has_data = !has_event ? FD_ISSET(it.second->get_fd(),&_r_set) : 0;
+
+            if (has_data || it.second->has_event()) {
                 if (get_event(it.second.get(),msg)) {
                     cps_api_object_attr_add(msg,CPS_OBJECT_GROUP_NODE,it.first.c_str(),it.first.size()+1);
                     return cps_api_ret_code_OK;

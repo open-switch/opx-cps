@@ -107,10 +107,10 @@ struct request_walker_contexct_t {
     bool set(cps_db::connection::db_operation_atom_t * lst_,size_t len_);
 
     request_walker_contexct_t(cps_db::connection::db_operation_atom_t * lst_,size_t len_) {
-    	if (!set(lst_,len_)) {
-    		cmds_ptr = cmds;
-    		cmds_lens_ptr = cmds_lens;
-    	}
+        if (!set(lst_,len_)) {
+            cmds_ptr = cmds;
+            cmds_lens_ptr = cmds_lens;
+        }
     }
 
     request_walker_contexct_t() {
@@ -237,7 +237,7 @@ bool cps_db::connection::command(db_operation_atom_t * lst,size_t len,response_s
     if (!ctx.valid()) return false;
     redisReply *r = (redisReply*)redisCommandArgv(static_cast<redisContext*>(_ctx),ctx.cmds_ptr - ctx.cmds,ctx.cmds,ctx.cmds_lens);
     if (r==nullptr) {
-    	return false;
+        return false;
     }
     set.get().push_back(r);
     return true;
@@ -247,8 +247,8 @@ bool cps_db::connection::response(response_set &data_, ssize_t at_least_) {
     size_t _needed = at_least_;
 
     if (_pending<=0 && _needed<=0) {
-    	EV_LOG(ERR,DSAPI,0,"CPS-DB-RESP","response get called with no expected events");
-    	return false; //no data to read
+        EV_LOG(ERR,DSAPI,0,"CPS-DB-RESP","response get called with no expected events");
+        return false; //no data to read
     }
     if (_needed <=0 ) _needed = _pending;
 
@@ -288,47 +288,41 @@ static bool is_event_message(void *resp) {
 }
 
 bool cps_db::connection::has_event() {
-	void *rep ;
-	int rc = REDIS_OK;
-	do {
-		if ((rc=redisReaderGetReply(static_cast<redisContext*>(_ctx)->reader,&rep))==REDIS_OK) {
-			if (rep==nullptr) break;
-			if (is_event_message(rep)) _pending_events.push_back(rep);
-			else freeReplyObject(rep);
-		}
-	} while (rc==REDIS_OK);
-	return _pending_events.size()>0;
+    void *rep ;
+    int rc = REDIS_OK;
+    do {
+        if ((rc=redisReaderGetReply(static_cast<redisContext*>(_ctx)->reader,&rep))==REDIS_OK) {
+            if (rep==nullptr) break;
+            if (is_event_message(rep)) _pending_events.push_back(rep);
+            else freeReplyObject(rep);
+        }
+    } while (rc==REDIS_OK);
+    return _pending_events.size()>0;
 }
+#include "std_select_tools.h"
 
 bool cps_db::connection::get_event(response_set &data) {
-    if (_pending_events.size()>0) {
-        data.get().push_back(*_pending_events.begin());
-
-        _pending_events.erase(_pending_events.begin());
-        return true;
-    }
     do {
-        bool rc = response(data,1);
-
-        if (!rc || data.get().size()==0) return false;
-
-        cps_db::response r(data.get()[0]);
-        if (r.elements() >=3) {
-            cps_db::response hdr(r.element_at(0));
-            if (hdr.is_str()) {
-                if (strstr(hdr.get_str(),"message")==nullptr) { //first entry of the array should indicate message or pmessage
-                    continue;
-                }
+        if (_pending_events.size() == 0) {
+            fd_set _set;
+            FD_ZERO(&_set);
+            FD_SET(static_cast<redisContext*>(_ctx)->fd,&_set);
+            timeval tv = {0,0};
+            int rc = std_select_ignore_intr(static_cast<redisContext*>(_ctx)->fd+1,&_set,nullptr,nullptr,&tv,nullptr);
+            if (rc <=0) {
+                EV_LOG(ERR,DSAPI,0,"CPS-DB-EVT","Called to get event when no data waiting.");
             }
-            return true;
+            rc = redisBufferRead(static_cast<redisContext*>(_ctx));
+            if (rc==REDIS_ERR) break;
+            if (!has_event()) break;
+            if (_pending_events.size()>0) {
+                data.get().push_back(*_pending_events.begin());
+                _pending_events.erase(_pending_events.begin());
+                return true;
+            }
         }
-
-        response_set set;
-        set = data;
-        data.get().clear();	//free up request
-
     } while (0);
-    return true;
+    return false;
 }
 
 static pthread_once_t  onceControl = PTHREAD_ONCE_INIT;
