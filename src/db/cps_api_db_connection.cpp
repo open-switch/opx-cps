@@ -78,7 +78,8 @@ bool cps_db::connection::connect(const std::string &s_, const std::string &db_in
     if (_async) {
         _ctx = redisAsyncConnect(lst[0].c_str(), port);
     } else {
-        _ctx = redisConnect(lst[0].c_str(), port);
+        timeval tv = { 1 /*Second */ , 0 };
+        _ctx = redisConnectWithTimeout(lst[0].c_str(), port,tv);
     }
 
     if (db_instance_.size()!=0) {
