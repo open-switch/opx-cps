@@ -347,6 +347,42 @@ static PyObject * py_cps_key_from_name(PyObject *self, PyObject *args) {
     return PyString_FromString(cps_api_key_print(&k,buff,sizeof(buff)-1));
 }
 
+
+static PyObject * py_cps_name_from_key(PyObject *self, PyObject *args) {
+
+    const char * key=NULL;
+    int offset = 0;
+	
+    if (! PyArg_ParseTuple( args, "si", &key, &offset)) return NULL;
+	
+    cps_api_key_t k;
+    cps_api_key_from_string(&k, key);
+	
+    const char *path = NULL;
+    path = cps_class_string_from_key(&k, offset);
+    if (path == NULL)
+        path = "";
+	
+    return PyString_FromString(path);
+	
+}
+
+static PyObject * py_cps_qual_from_key(PyObject *self, PyObject *args) {
+
+    const char * key=NULL;
+    if (! PyArg_ParseTuple( args, "s", &key)) return NULL;
+	
+    cps_api_key_t k;
+    cps_api_key_from_string(&k, key);
+	
+    const char *qualifier = NULL;
+    qualifier = cps_class_qual_from_key(&k);
+    if (qualifier == NULL)
+        qualifier = "";
+	
+    return PyString_FromString(qualifier);
+}
+
 #define CPS_FN_DOC(x) x##_doc
 
 PyDoc_STRVAR(cps_get__doc__, "get(fl_list,resp_list)\n\n"
@@ -427,6 +463,18 @@ PyDoc_STRVAR(CPS_FN_DOC(py_cps_key_from_name), "key_from_name(qualifier,object_p
     "@object_path - Complete object path\n"
     "@return - CPS key if successful otherwise returns empty string\n");
 
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_name_from_key), "name_from_key(key, offset)\n\n"
+    "Take a CPS key, search the CPS meta data for a appropriate key path and return the string if found\n"
+    "@key - the key for which the string path is required \n"
+    "@offset - the offset from where the raw key starts"
+    "@return - complete object path if successful otherwise returns empty string\n");
+
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_qual_from_key), "qual_from_key(key)\n\n"
+    "Take a CPS key, search the CPS qualifier and return the qualifier as a string if found\n"
+    "@key - the key for which the qualifier string is required \n"	
+    "@return - the character string holding the qualifier if successful otherwise returns empty string\n");
+
+
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_event_connect), "event_connect()\n\n"
     "Returns a CPS handle to register send/receive events");
 
@@ -480,6 +528,9 @@ static PyMethodDef cps_methods[] = {
     {"config",py_cps_config, METH_VARARGS, CPS_FN_DOC(py_cps_config) },
     {"key_from_name",py_cps_key_from_name, METH_VARARGS, CPS_FN_DOC(py_cps_key_from_name) },
     {"get_keys",py_cps_get_keys, METH_VARARGS, cps_cps_generic_doc__ },
+
+    {"name_from_key",py_cps_name_from_key, METH_VARARGS, CPS_FN_DOC(py_cps_name_from_key) },
+    {"qual_from_key",py_cps_qual_from_key, METH_VARARGS, CPS_FN_DOC(py_cps_qual_from_key) },
 
     //Event processing
     {"event_register",  py_cps_event_reg, METH_VARARGS, CPS_FN_DOC(py_cps_event_reg)},
