@@ -114,13 +114,19 @@ static  void * _thread_function_(void * param) {
     while (is_running) {
         if (cps_api_wait_for_event(_thread_handle,obj)==cps_api_ret_code_OK) {
             std_rw_lock_read_guard rg(&rw_lock);
-            key_list_t::iterator it = cb_map.begin();
-            key_list_t::iterator end = cb_map.end();
-            for ( ; it != end ; ++it ) {
+            size_t ix = 0;
+            size_t mx = cb_map.size();
+
+            for ( ; ix < mx ; ++ix ) {
                 cps_api_key_t * obj_key = cps_api_object_key(obj);
-                cps_api_key_t * pref = cps_api_object_key(it->obj);
+                cps_api_key_t * pref = cps_api_object_key(cb_map[ix].obj);
                 if (cps_api_key_matches(obj_key,pref,false)==0) {
-                    if (!it->cb(obj,it->context)) break;
+                    auto cb = cb_map[ix].cb;
+                    auto param = cb_map[ix].context;
+                    std_rw_unlock(&rw_lock);
+                    if (!cb(obj,param)) break;
+                    std_rw_rlock(&rw_lock);
+                    mx = cb_map.size();
                 }
             }
         } else {
