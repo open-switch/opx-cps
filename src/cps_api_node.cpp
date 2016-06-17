@@ -33,12 +33,12 @@ cps_api_return_code_t cps_api_set_node_group(cps_api_node_group_t *group) {
     cps_api_object_attr_add(og.get(),CPS_NODE_GROUP_NAME,group->id,strlen(group->id)+1);
 
     for ( size_t ix = 0; ix < group->addr_len; ++ix ) {
-    	cps_api_attr_id_t _ip[]={CPS_NODE_GROUP_NODE,ix,CPS_NODE_GROUP_NODE_IP};
+        cps_api_attr_id_t _ip[]={CPS_NODE_GROUP_NODE,ix,CPS_NODE_GROUP_NODE_IP};
         cps_api_object_e_add(og.get(),_ip,sizeof(_ip)/sizeof(*_ip),cps_api_object_ATTR_T_BIN,
-        		group->addrs[ix].addr,strlen(group->addrs[ix].addr)+1);
-    	cps_api_attr_id_t _alias[]={CPS_NODE_GROUP_NODE,ix,CPS_NODE_GROUP_NODE_NAME};
+                group->addrs[ix].addr,strlen(group->addrs[ix].addr)+1);
+        cps_api_attr_id_t _alias[]={CPS_NODE_GROUP_NODE,ix,CPS_NODE_GROUP_NODE_NAME};
         cps_api_object_e_add(og.get(),_alias,sizeof(_alias)/sizeof(*_alias),cps_api_object_ATTR_T_BIN,
-        		group->addrs[ix].node_name,strlen(group->addrs[ix].node_name)+1);
+                group->addrs[ix].node_name,strlen(group->addrs[ix].node_name)+1);
     }
 
     cps_api_object_attr_add(og.get(),CPS_NODE_GROUP_TYPE,&group->data_type,sizeof(group->data_type));
@@ -95,6 +95,7 @@ bool cps_api_nodes::group_addresses(const std::string &addr, std::vector<std::st
     if (it==_groups.end()) return false;
 
     addrs = it->second._addrs;
+
     return true;
 }
 
@@ -110,7 +111,7 @@ size_t cps_api_nodes::gen_hash(group_data_t &src) {
 }
 
 bool cps_api_nodes::load_groups() {
-	cps_api_object_guard og(cps_api_object_create());
+    cps_api_object_guard og(cps_api_object_create());
     if (!cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),CPS_NODE_GROUP, cps_api_qualifier_TARGET)) {
         EV_LOG(ERR,DSAPI,0,"CPS-CLS-MAP","Meta data for cluster set is not loaded.");
         return false;
@@ -120,7 +121,6 @@ bool cps_api_nodes::load_groups() {
     if (!b.valid()) {
         return false;
     }
-
 
     group_data_t cpy;
 
@@ -144,21 +144,25 @@ bool cps_api_nodes::load_groups() {
         cps_api_object_it_inside(&it);
 
         while (cps_api_object_it_valid(&it)) {
-        	cps_api_attr_id_t id = cps_api_object_attr_id(it.attr);
-        	(void)id;
-        	cps_api_object_it_t elem = it;
+            cps_api_attr_id_t id = cps_api_object_attr_id(it.attr);
+            (void)id;
+            cps_api_object_it_t elem = it;
 
-        	cps_api_object_it_inside(&elem);
+            cps_api_object_it_inside(&elem);
 
-        	if (!cps_api_object_it_valid(&elem)) continue;
-        	cps_api_object_attr_t _ip =cps_api_object_it_find(&elem,CPS_NODE_GROUP_NODE_IP);
-        	cps_api_object_attr_t _name =cps_api_object_it_find(&elem,CPS_NODE_GROUP_NODE_NAME);
-        	if (_ip==nullptr || _name==nullptr) continue;
-        	const char *__ip = (const char*)cps_api_object_attr_data_bin(_ip);
-        	const char *__name =(const char*)cps_api_object_attr_data_bin(_name);
-        	_alias_map[__name] = __ip;
-        	nd._addrs.push_back(__ip);
-        	cps_api_object_it_next(&it);
+            if (!cps_api_object_it_valid(&elem)) continue;
+            cps_api_object_attr_t _ip =cps_api_object_it_find(&elem,CPS_NODE_GROUP_NODE_IP);
+            cps_api_object_attr_t _name =cps_api_object_it_find(&elem,CPS_NODE_GROUP_NODE_NAME);
+            if (_ip==nullptr || _name==nullptr) continue;
+            const char *__ip = (const char*)cps_api_object_attr_data_bin(_ip);
+            const char *__name =(const char*)cps_api_object_attr_data_bin(_name);
+
+            _alias_map[__name] = __ip;
+
+            const char * _alias = this->addr(__ip);
+            if (_alias!=nullptr) __ip = _alias;
+            nd._addrs.push_back(__ip);
+            cps_api_object_it_next(&it);
         }
         cpy[name] = nd;
     }
@@ -183,7 +187,7 @@ bool cps_api_nodes::load_aliases() {
 
     cps_api_object_guard og(cps_api_object_create());
     if (!cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),CPS_NODE_DETAILS, cps_api_qualifier_TARGET)) {
-    	return false;
+        return false;
     }
 
     cps_api_object_list_guard lg(cps_api_object_list_create());
@@ -202,8 +206,8 @@ bool cps_api_nodes::load_aliases() {
 }
 
 bool cps_api_nodes::load() {
-	load_aliases();
-	return load_groups();
+    load_aliases();
+    return load_groups();
 }
 
 bool cps_api_nodes::part_of(const char *group, const char *addr) {
@@ -214,9 +218,16 @@ bool cps_api_nodes::part_of(const char *group, const char *addr) {
 }
 
 const char * cps_api_nodes::addr(const char *addr) {
-    auto it = _alias_map.find(addr);
-    if (it==_alias_map.end()) return addr;
-    return it->second.c_str();
+    const char *_ret = nullptr;
+
+    do {
+        auto it = _alias_map.find(addr);
+        if (it==_alias_map.end()) break;
+        _ret = it->second.c_str();
+        addr = _ret;
+        continue;
+    } while (0);
+    return _ret;
 }
 
 bool cps_api_key_set_group(cps_api_object_t obj,const char *group) {
@@ -224,12 +235,12 @@ bool cps_api_key_set_group(cps_api_object_t obj,const char *group) {
 }
 
 const char * cps_api_key_get_group(cps_api_object_t obj) {
-	const char *p = (const char*) cps_api_object_get_data(obj,CPS_OBJECT_GROUP_GROUP);
+    const char *p = (const char*) cps_api_object_get_data(obj,CPS_OBJECT_GROUP_GROUP);
     if (p==nullptr) return DEFAULT_REDIS_ADDR;
     return p;
 }
 
 const char * cps_api_key_get_node(cps_api_object_t obj) {
-	return (const char*) cps_api_object_get_data(obj,CPS_OBJECT_GROUP_NODE);
+    return (const char*) cps_api_object_get_data(obj,CPS_OBJECT_GROUP_NODE);
 }
 

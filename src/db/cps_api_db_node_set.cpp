@@ -43,10 +43,13 @@ bool cps_api_db_get_node_group(const std::string &group,std::vector<std::string>
         lst.push_back(group);
         return true;
     }
-
     std::lock_guard<std::recursive_mutex> lg(_mutex);
     (void)load_groups();
-    if (!_nodes->group_addresses(group,lst)) return false;
+    if (!_nodes->group_addresses(group,lst)) {
+        const char * __addr = _nodes->addr(group.c_str());
+        if (__addr==nullptr) return false;
+        lst.push_back(__addr);
+    }
     return true;
 }
 
