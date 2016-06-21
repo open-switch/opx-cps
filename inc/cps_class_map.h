@@ -54,11 +54,6 @@ extern "C" {
 /** Class map version number */
 #define CPS_CLASS_MAP_VER (2)
 
-/** @cond HIDDEN_SYMBOLS */
-#define CPS_DEF_SEARCH_PATH "/opt/dell/os10/lib"        //the location of the generated class
-#define CPS_DEF_CLASS_FILE_NAME "cpsclass"      //must match with the generated lib name
-/** @endcond */
-
 /** Class attribute types */
 typedef enum  {
     CPS_CLASS_ATTR_T_LEAF=1,

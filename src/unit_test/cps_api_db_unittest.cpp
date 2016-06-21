@@ -228,12 +228,12 @@ TEST(cps_api_db,db_node_alias) {
 TEST(cps_api_db,db_node_get_set) {
 
 
-    cps_api_node_ident ids[3] = { {"NODE1", "127.0.0.1:6379 "}, {"NODE2","10.11.56.27:6379"},{"NODE3","10.11.57.21:6379"} };
+    cps_api_node_ident ids[1] = { {"NODE1", "127.0.0.1:6379 "} };
     cps_api_node_group_t _g;
 
     _g.id = "A";
     _g.addrs = ids;
-    _g.addr_len = 3;
+    _g.addr_len = 1;
     _g.data_type = cps_api_node_data_NODAL;
 
     cps_api_set_node_group(&_g);

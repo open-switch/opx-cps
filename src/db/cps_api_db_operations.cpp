@@ -78,11 +78,13 @@ cps_api_return_code_t cps_api_db_operation_commit(cps_api_transaction_params_t *
         cps_api_object_list_guard lg(cps_api_object_list_create());
         if (__cps_api_db_operation_get(o,lg.get(),true)==cps_api_ret_code_OK) {
             cps_api_object_t _exp_prev = cps_api_object_list_get(lg.get(),0);
-            if (!cps_api_object_list_append(param->prev,_exp_prev)) {
-                return cps_api_ret_code_ERR;
+            if (cps_api_object_list_size(lg.get()) > 0 ) {
+				if (!cps_api_object_list_append(param->prev,_exp_prev)) {
+					return cps_api_ret_code_ERR;
+				}
+				prev = _exp_prev;
+				cps_api_object_list_remove(lg.get(),0);
             }
-            prev = _exp_prev;
-            cps_api_object_list_remove(lg.get(),0);
         }
     }
 

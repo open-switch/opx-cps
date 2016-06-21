@@ -1,0 +1,138 @@
+<!-- Meta Data Entry 
+
+<metadata_entry key="key format" id="id format" name="name format" desc="description" embedded="has embedeed flag" node-type="node type" data-type="data type" owner-type="owner type" />
+
+Key Format:
+Can be a "." separated string of either numbers (eg 0x1 or 1) or attribute/object names encliosed in []
+		Example 1:  2.3.4.0x10202
+		Example 2:  [if].[if/interfaces].[if/interfaces/interface].[if/interfaces/interface/name]
+
+Special Note... If you defining the key of a list or other item, you need to include your key attribute in the key string as well.  For example if
+your class is called myscope/myclass and it has two attributes used as keys attribute A and attribute B the key string should look like:
+[myscope/myclass].[myscope/myclass/A].[myscope/myclass/B]
+
+ID Format:
+Id format can be either a simple decimal number or hexidecimal number prefixed with 0x.
+
+Example 1: 0x101
+Example 2: 257 
+
+Name Format:
+The name should be the fully defined name including path details.  For example of your class is called myclass and it is in a container called mycontainer 
+sitting in a prefix of myprefix, the name should be "myprefix/mycontainer/myclass"
+
+Description Format:
+This is a free format text string
+
+Node Type Format:
+The node type can be any of the following:
+container - this element can have any number of attributes but not expected to have key attributes to identify itself  
+list - this element is a list also known as an element with key attributes
+subsystem - this is a subsystem (simular functionality as list or container)
+leaf	- there is only one attribute of this type in the class
+leaf-list - there could be many atttributes of this type in the class
+
+Data Type Format:
+The data format indicates the type of values being held by this node and the format can be:
+uint8_t - the attribute is a unsigned character
+uint16_t - the attribute is a unsigned short
+uint32_t - the attribute is a unsigned int32
+uint64_t - the attribute is a unsigned int64
+int8_t - the attribute is a character
+int16_t - the attribute is a short
+int32_t - the attribute is a int32
+int64_t - the attribute is a int64
+string - the attribute is a string
+enum - the attribute is integer
+bool - the attribute is a boolean (true or false)
+obj-id - the attribute is an object ID
+date - the attribute is a date
+bin - the attribute is binary
+double - the attribute is a double
+embedded - the attribute contains embedded attributes (list or containers should have this as their type)
+key - the attribute contains a key
+
+Examples...
+<metadata_entry key="[cps]" id="2" name="cps" desc="The CPS embedded space." embedded="true" node-type="subsystem" data-type="bin" />
+
+<metadata_entry key="[cps].[cps/key_data]" id="0xffffffffffffffff" name="cps/key_data" desc="The CPS key data conainer." embedded="true" node-type="container" data-type="embedded" />
+
+<metadata_entry key="[cps].[cps/object]" id="0x8" name="cps/object" desc="This object contains attributes related to CPS operations on an object" embedded="true" node-type="container" data-type="embedded" />
+
+<metadata_entry key="[cps].[cps/object].[cps/object/stat]" id="0x80000" name="cps/object/stat" desc="Contains the CPS internal statisics for this object." embedded="true" node-type="container" data-type="embedded" />
+
+-->
+
+<!-- CPS Node Ownership 
+
+<class_ownership id="attribute ID" qualifiers="valid qualifier" owner-type="ownership type" />
+
+Where...
+Attribute ID:
+This is the string attribute ID of the component
+
+Example 1: cps/object
+Example 2: base-acl/counter
+
+Qualifier Format:
+target - the target state of an object
+observed - the status of an object
+proposed - the proposed state of an object 
+realtime - realtime data from the object
+registration - registration related inforamtion for the object (object registrations, and de-registrations)
+
+Ownership Type:
+servce - this means that a active service is running on the system handling the object requests/responses 
+		all data is stored (if needed) and managed by the application
+service-cache - a service is running on the system but the data shoudl also be cached in a running database (triggers back end processing in CPS infra)
+db - the data is stored in a db and not validated by CPS before storing/retrieving.  RPC operations will also be rejected. 
+
+
+Example...
+
+<class_ownership id="cps/node-group" qualifiers="target,observed" owner-type="db" />
+
+-->
+
+<!-- Enum Definition and Associations
+
+Firstly you need to define an enum and then secondly associate it to attributes
+
+Defining enums is done with creating enum entries and the contained enums.
+
+<enum_entry name="Enum class name">
+  <enum name="Specific enum name" value="enum value" />
+  ...
+</enum_entry>
+
+Eample:
+<enum_entry name="base-acl/counter-type" >
+  <enum name="PACKET" value="1" />
+  <enum name="BYTE" value="2" />
+</enum_entry>
+
+
+Assiciating Enums to Attributes
+All you need to do after the enum is define is assocate the enum to an attribute ID and that is shown below.
+<enum_association name="attribute name" enum="associated enum" />
+
+
+Example 1: 
+<enum_association name="base-acl/counter/types" enum="base-acl/counter-type" />
+
+-->
+
+<!-- Putting it all together in a small example... -->
+
+<cps-class-map >
+<metadata_entry key="[cps]" id="2" name="cps" desc="The CPS embedded space." embedded="true" node-type="subsystem" data-type="bin" />
+<class_ownership id="cps/node-group" qualifiers="target,observed" owner-type="db" />
+
+<enum_entry name="base-acl/counter-type" >
+  <enum name="PACKET" value="1" />
+  <enum name="BYTE" value="2" />
+</enum_entry>
+
+<enum_association name="base-acl/counter/types" enum="base-acl/counter-type" />
+
+</cps-class-map>
