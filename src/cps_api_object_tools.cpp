@@ -23,6 +23,10 @@
 #include "cps_api_object.h"
 #include "cps_class_map.h"
 
+#include "cps_api_object_key.h"
+
+#include <string.h>
+
 extern "C" cps_api_object_t cps_api_obj_tool_create(cps_api_qualifier_t qual,cps_api_attr_id_t id, bool add_defaults) {
     cps_api_object_guard og(cps_api_object_create());
     if (!og.valid()) return nullptr;
@@ -96,3 +100,16 @@ bool cps_api_obj_tool_merge(cps_api_object_t main, cps_api_object_t overlay) {
     return true;
 }
 
+bool cps_api_obj_tool_attr_matches(cps_api_object_t obj, cps_api_attr_id_t *ids, void ** values, size_t *len, size_t mx_) {
+    for ( size_t ix = 0 ; ix < mx_ ; ++ix ) {
+        cps_api_object_attr_t attr = cps_api_get_key_data(obj,ids[ix]);
+        if (attr==nullptr) return false;
+        size_t _len = cps_api_object_attr_len(attr);
+        void * _data = cps_api_object_attr_data_bin(attr);
+        if (len[ix]==_len) {
+            if (memcmp(_data,values[ix],len[ix])==0) continue;
+        }
+        return false;
+    }
+    return true;
+}

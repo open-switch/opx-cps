@@ -79,6 +79,10 @@ bool cps_api_obj_tool_matches_filter(cps_api_object_t filter, cps_api_object_t o
  */
 bool cps_api_obj_tool_merge(cps_api_object_t main, cps_api_object_t overlay);
 
+
+
+bool cps_api_obj_tool_attr_matches(cps_api_object_t obj, cps_api_attr_id_t *ids, void ** values, size_t *len, size_t id_list_len);
+
 #ifdef __cplusplus
 }
 #endif

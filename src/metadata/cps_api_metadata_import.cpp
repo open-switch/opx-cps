@@ -23,7 +23,6 @@
 
 namespace {
 
-
 bool __process_key(std::vector<cps_api_attr_id_t> &ids, const char * str_key, cps_api_attr_id_t _elem_id, const cps_class_map_node_details & details) {
 
     std::vector<std::string> _key_fields = cps_string::split(str_key,".");
@@ -41,7 +40,7 @@ bool __process_key(std::vector<cps_api_attr_id_t> &ids, const char * str_key, cp
                 id = *_id;
             }
         } else {
-            id = (cps_api_attr_id_t) strtoll(_field.c_str(),nullptr,0);
+            id = (cps_api_attr_id_t) strtoull(_field.c_str(),nullptr,0);
         }
 
         ids.push_back(id);
@@ -115,7 +114,7 @@ void __process_node(std_config_node_t node, void *user_data) {
         return;
     }
 
-    cps_api_attr_id_t _id = (cps_api_attr_id_t) strtoll(id,nullptr,0);
+    cps_api_attr_id_t _id = (cps_api_attr_id_t) strtoull(id,nullptr,0);
 
     cps_class_map_node_details details;
     details.desc = desc;
@@ -259,7 +258,7 @@ bool __cb(const char *name, std_dir_file_TYPE_t type,void *context) {
         auto _version_elements = cps_string::split(filename_elements[VER_POS],".");
         for (auto & num : _version_elements) {
             _position *= 1000;
-            _position += strtol(num.c_str(),nullptr,0);
+            _position += strtoll(num.c_str(),nullptr,0);
         }
     }
 

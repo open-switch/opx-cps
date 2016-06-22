@@ -46,6 +46,4 @@
 
 <enum_association name="base-acl/counter/types" enum="base-acl/counter-type" />
 
-
-
 </cps-class-map>
