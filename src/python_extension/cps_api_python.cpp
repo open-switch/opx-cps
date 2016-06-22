@@ -246,7 +246,7 @@ static PyObject * py_cps_types(PyObject *self, PyObject *args) {
         py_cps_util_set_item_to_dict(dict,"attribute_type", PyString_FromString(_attr_type));
     }
     if (_data_type!=nullptr) {
-        py_cps_util_set_item_to_dict(dict,"attribute_type", PyString_FromString(_data_type));
+        py_cps_util_set_item_to_dict(dict,"data_type", PyString_FromString(_data_type));
     }
 
     return dict;
