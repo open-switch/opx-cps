@@ -28,6 +28,7 @@
 #include "cps_api_object.h"
 
 #include "cps_api_operation_debug.h"
+#include "cps_class_map.h"
 
 #include "std_thread_tools.h"
 #include "std_socket_service.h"
@@ -53,6 +54,7 @@ struct cps_api_operation_data_t {
     std_mutex_type_t mutex;
     reg_functions_t db_functions;
     cps_api_channel_t ns_handle;
+    cps_api_key_t key; //!< key registered
     std::unordered_map<uint64_t,uint64_t> stats;
     bool enable_logging=false;
 
@@ -348,16 +350,45 @@ static bool cps_api_handle_stats(cps_api_operation_data_t *op, int fd, size_t le
 
 static bool  _some_data_( void *context, int fd ) {
     cps_api_operation_data_t *p = (cps_api_operation_data_t *)context;
-
+    char buff[CPS_API_KEY_STR_MAX];
     uint32_t op;
     size_t len;
 
-    if(!cps_api_receive_header(fd,op,len)) return false;
+    if(!cps_api_receive_header(fd,op,len)) {
+        EV_LOG(ERR,DSAPI,0,"CPS-SERV","Rx header failed for %s",
+             cps_api_key_name_print(&p->key,buff,sizeof(buff)));
+        return false;
 
-    if (op==cps_api_msg_o_GET) return cps_api_handle_get(p,fd,len);
-    if (op==cps_api_msg_o_COMMIT_CHANGE) return cps_api_handle_commit(p,fd,len);
-    if (op==cps_api_msg_o_REVERT) return cps_api_handle_revert(p,fd,len);
-    if (op==cps_api_msg_o_STATS) return cps_api_handle_stats(p,fd,len);
+    }
+
+    if (op==cps_api_msg_o_GET) {
+        if (!cps_api_handle_get(p,fd,len)) {
+            EV_LOG(ERR,DSAPI,0,"CPS-SERV","GET failed for %s",
+                 cps_api_key_name_print(&p->key,buff,sizeof(buff)));
+            return false;
+        }
+    }
+    if (op==cps_api_msg_o_COMMIT_CHANGE) {
+        if (!cps_api_handle_commit(p,fd,len)) {
+            EV_LOG(ERR,DSAPI,0,"CPS-SERV","COMMIT_CHANGE failed for %s",
+                 cps_api_key_name_print(&p->key,buff,sizeof(buff)));
+            return false;
+        }
+    }
+    if (op==cps_api_msg_o_REVERT) {
+        if (!cps_api_handle_revert(p,fd,len)) {
+            EV_LOG(ERR,DSAPI,0,"CPS-SERV","REVERT failed for %s",
+                 cps_api_key_name_print(&p->key,buff,sizeof(buff)));
+            return false;
+        }
+    }
+    if (op==cps_api_msg_o_STATS) {
+        if (!cps_api_handle_stats(p,fd,len)) {
+            EV_LOG(ERR,DSAPI,0,"CPS-SERV","STATS failed for %s",
+                 cps_api_key_name_print(&p->key,buff,sizeof(buff)));
+            return false;
+        }
+    }
     return true;
 }
 
@@ -420,6 +451,9 @@ cps_api_return_code_t cps_api_register(cps_api_registration_functions_t * reg) {
     cps_api_operation_data_t *p = (cps_api_operation_data_t *)reg->handle;
     std_rw_lock_write_guard g(&p->db_lock);
 
+    for(size_t ix = 0; ix < CPS_OBJ_KEY_BYTE_MAX_LEN; ix++) {
+        p->key[ix] = reg->key[ix];
+    }
     if (p->ns_handle==STD_INVALID_FD) {
         reconnect_with_ns(p);
     }

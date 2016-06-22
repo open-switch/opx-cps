@@ -295,6 +295,8 @@ cps_api_return_code_t cps_api_process_get_request(cps_api_get_params_t *param, s
                 FD_ZERO(&rset);
                 FD_SET(handle,&rset);
                 if ((rc=cps_api_timeout_wait(handle,&rset,param->timeout,"CPS-OP-GET"))!=cps_api_ret_code_OK) {
+                    EV_LOG(ERR,DSAPI,0,"CPS-OP-GET","Send request %s timed out",
+                           cps_api_key_print(key,buff,sizeof(buff)-1));
                     break;
                 }
             }
