@@ -54,11 +54,6 @@ extern "C" {
 /** Class map version number */
 #define CPS_CLASS_MAP_VER (2)
 
-/** @cond HIDDEN_SYMBOLS */
-#define CPS_DEF_SEARCH_PATH "/opt/dell/os10/lib"        //the location of the generated class
-#define CPS_DEF_CLASS_FILE_NAME "cpsclass"      //must match with the generated lib name
-/** @endcond */
-
 /** Class attribute types */
 typedef enum  {
     CPS_CLASS_ATTR_T_LEAF=1,
@@ -95,8 +90,8 @@ typedef enum {
 typedef enum {
     CPS_API_OBJECT_SERVICE, /// the request for get and set will be forwarded to the service which owns the object or objects
     CPS_API_OBJECT_SERVICE_CACHE, ///the request for gets will be redirected to the database while the sets and updates will be
-								///forwarded to the object after journaled into the database (to support cases where services restart)
-    CPS_API_OBJECT_DB			///this is an object that will be stored directly in the database with no validation
+                                ///forwarded to the object after journaled into the database (to support cases where services restart)
+    CPS_API_OBJECT_DB            ///this is an object that will be stored directly in the database with no validation
 }CPS_API_OBJECT_OWNER_TYPE_t ;
 
 /**
@@ -272,11 +267,11 @@ bool cps_class_map_attr_type(cps_api_attr_id_t id, CPS_CLASS_DATA_TYPE_t *t);
 
 /****
  * The following API indicate an object's ownership (or also considered as storage location) of an object.
- * 	This can be a:
- * 		service object - the request for get and set will be forwarded to the service which owns the object or objects
- * 		service cached object - the request for gets will be redirected to the database while the sets and updates will be
- * 								forwarded to the object after journaled into the database (to support cases where services restart)
- * 		database object - this is an object that will be stored directly in the database with no validation
+ *     This can be a:
+ *         service object - the request for get and set will be forwarded to the service which owns the object or objects
+ *         service cached object - the request for gets will be redirected to the database while the sets and updates will be
+ *                                 forwarded to the object after journaled into the database (to support cases where services restart)
+ *         database object - this is an object that will be stored directly in the database with no validation
  *
  * @param obj the object to check
  * @return based on the object, return the type of storage

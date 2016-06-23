@@ -49,8 +49,17 @@ class cps_api_nodes {
         std::vector<std::string> _addrs;
         cps_api_node_data_type_t type;
     };
+
+    struct _db_node_data{
+        std::string _addr;
+        std::string _name;
+    };
+
     using alias_map_t = std::unordered_map<std::string,std::string> ;
     using group_data_t = std::unordered_map<std::string,_node_data>;
+    using group_master_data_t = std::unordered_map<std::string,std::string>;
+    using db_node_data_t = std::unordered_map<std::string,std::vector<_db_node_data>>;
+
     group_data_t _groups;
     size_t _hash;
 
@@ -60,9 +69,15 @@ class cps_api_nodes {
     bool load_groups();
     bool load_aliases();
 public:
+      db_node_data_t _db_node_map;
+    group_master_data_t _master;
+
+    bool add_db_node(const char * group, const char *ip,_db_node_data & db_node);
+      bool get_port_info(const char *name,_db_node_data *nd);
+
     const char * addr(const char *addr);
     const char * addr(const std::string &str) { return addr(str.c_str()); }
-
+    bool get_group_type(std::string & group,cps_api_node_data_type_t &type);
     bool group_addresses(const std::string &group, std::vector<std::string> &addrs);
 
     bool load();

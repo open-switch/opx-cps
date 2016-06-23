@@ -22,20 +22,20 @@
 #include <stddef.h>
 
 typedef enum {
-	cps_api_node_data_NODAL, 				/// Data resides on each node and is not duplicated by node group
-	cps_api_node_data_1_PLUS_1_REDUNDENCY	/// Data is stored in a global database and replicated to a backup node
+    cps_api_node_data_NODAL,                 /// Data resides on each node and is not duplicated by node group
+    cps_api_node_data_1_PLUS_1_REDUNDENCY    /// Data is stored in a global database and replicated to a backup node
 } cps_api_node_data_type_t;
 
 typedef struct {
-	const char * node_name;
-	const char * addr;
+    const char * node_name;
+    const char * addr;
 } cps_api_node_ident;
 
 struct cps_api_node_group_t {
-	const char * id; 				/// the group ID string.
-	cps_api_node_ident *addrs; 	/// the list of addresses for the nodes
-	size_t addr_len;				///the length of the addresses in this node
-	cps_api_node_data_type_t data_type;		///in the case of database clustering, determine if it will be 1+1 or nodal
+    const char * id;                 /// the group ID string.
+    cps_api_node_ident *addrs;     /// the list of addresses for the nodes
+    size_t addr_len;                ///the length of the addresses in this node
+    cps_api_node_data_type_t data_type;        ///in the case of database clustering, determine if it will be 1+1 or nodal
 };
 
 /**
@@ -54,8 +54,8 @@ cps_api_return_code_t cps_api_delete_node_group(const char *group);
 
 /**
  * Create a list of aliases that when seen, will be converted to name - this is really focused on the IP/port combinations for the ipaddresses
- * 	in a group.  This allows remapping or simplified aliases (eg.. IP address/port of Node 1 is 49.10.2.32:2342 and the software
- * 	wants to use that address any time "127.0.0.1:1233" or "joe" or "jane" is seen
+ *     in a group.  This allows remapping or simplified aliases (eg.. IP address/port of Node 1 is 49.10.2.32:2342 and the software
+ *     wants to use that address any time "127.0.0.1:1233" or "joe" or "jane" is seen
  *
  * @param name the string that will replace any of the aliases seen
  * @param alias the alias list that will be converted to "name" if seen
@@ -67,7 +67,7 @@ cps_api_return_code_t cps_api_set_identity(const char *name, const char **alias,
 
 /**
  * Set the group attribute on the object to the string specified.  This will trigger the CPS to look up the node chracteristics based
- * 	on the group specified.
+ *     on the group specified.
  * @param obj the object in question
  * @param group the group name
  * @return true if the group has been set on the object otherwise false
@@ -88,5 +88,12 @@ const char * cps_api_key_get_group(cps_api_object_t obj);
  */
 const char * cps_api_key_get_node(cps_api_object_t obj);
 
+/**
+ * Set the master node of a group for 1+1 type group
+ * @param group the group configuration
+ * @node_name name of the node which is part of configuration
+ * @return on success the call returns cps_api_ret_code_OK otherwise there will be a specific cps return code
+ */
+cps_api_return_code_t cps_api_set_master_node(cps_api_node_group_t *group,const char * node_name);
 
 #endif /* CPS_API_NODE_H_ */

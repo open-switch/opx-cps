@@ -6,7 +6,8 @@
 
 #include "cps_api_object.h"
 #include "cps_class_map.h"
-
+#include "cps_api_object_key.h"
+#include "cps_api_node_set.h"
 #include "dell-cps.h"
 
 #include "event_log.h"
@@ -25,7 +26,105 @@ cps_api_return_code_t cps_api_delete_node_group(const char *grp) {
     return cps_api_ret_code_OK;
 }
 
+
+static bool cps_api_find_local_node(cps_api_node_group_t *group,size_t &node_ix){
+    for(size_t ix = 0 ; ix < group->addr_len ; ++ix){
+        if(strncmp(group->addrs->addr,"127.0.0.1",strlen("127.0.0.1"))==0){
+            node_ix = ix;
+            return true;
+        }
+    }
+    return false;
+}
+
+
+cps_api_return_code_t cps_api_create_global_instance(cps_api_node_group_t *group){
+    if(group == nullptr) return cps_api_ret_code_ERR;
+
+    size_t local_node_ix;
+    if(!cps_api_find_local_node(group,local_node_ix)){
+        /*@TODO add an error log */
+        return cps_api_ret_code_ERR;
+    }
+
+    if(local_node_ix >= group->addr_len){
+        return cps_api_ret_code_ERR;
+    }
+
+    cps_api_transaction_params_t tr;
+    if (cps_api_transaction_init(&tr)!=cps_api_ret_code_OK) {
+        /*@TODO add an error log */
+        return cps_api_ret_code_ERR;
+    }
+
+    cps_api_transaction_guard tg(&tr);
+    cps_api_object_t  db_obj = cps_api_object_create();
+
+    if(db_obj == nullptr ) return cps_api_ret_code_ERR;
+
+    cps_api_key_from_attr_with_qual(cps_api_object_key(db_obj),CPS_DB_INSTANCE_OBJ,
+                                        cps_api_qualifier_TARGET);
+
+    cps_api_object_attr_add(db_obj,CPS_DB_INSTANCE_GROUP,group->id,strlen(group->id)+1);
+
+    if(cps_api_create(&tr,db_obj) != cps_api_ret_code_OK ){
+        /*@TODO add an error log */
+        return cps_api_ret_code_ERR;
+    }
+
+    if(cps_api_commit(&tr) != cps_api_ret_code_OK ) {
+        /*@TODO add an error log */
+        return cps_api_ret_code_ERR;
+    }
+
+    cps_api_object_t ret_obj = cps_api_object_list_get(tr.change_list,0);
+    if (ret_obj == nullptr ){
+        /*@TODO add an error log */
+        return cps_api_ret_code_ERR;
+    }
+
+    // Get the port where new db instance was started
+    const char * db_port = (const char*) cps_api_object_get_data(ret_obj,CPS_DB_INSTANCE_PORT);
+    std::string _db_port = db_port;
+
+    if(cps_api_transaction_close(&tr) != cps_api_ret_code_OK ){
+        /*@TODO add an error log */
+        return cps_api_ret_code_ERR;
+    }
+
+    /*
+     * Push the group name local node id and its port to local/remote DB.
+     */
+    cps_api_node_ident & node = group->addrs[local_node_ix];
+    cps_api_object_guard db_node(cps_api_object_create());
+    if (db_node.get() == nullptr){
+        return cps_api_ret_code_ERR;
+    }
+
+    cps_api_key_from_attr_with_qual(cps_api_object_key(db_node.get()),CPS_DB_INSTANCE_OBJ, cps_api_qualifier_TARGET);
+
+    cps_api_set_key_data(db_node.get(),CPS_DB_INSTANCE_GROUP,cps_api_object_ATTR_T_BIN,group->id,strlen(group->id)+1);
+    cps_api_set_key_data(db_node.get(),CPS_DB_INSTANCE_NODE_ID,cps_api_object_ATTR_T_BIN,node.node_name,strlen(node.node_name)+1);
+    cps_api_object_attr_add(db_node.get(),CPS_DB_INSTANCE_PORT,_db_port.c_str(),strlen(_db_port.c_str())+1);
+
+    std::string _failed_nodes = "";
+    bool result = false;
+
+    if (!cps_api_node_set_iterate(group->id,[&db_node,&result,&_failed_nodes](const std::string &name,void *c){
+            cps_db::connection_request r(cps_db::ProcessDBCache(),name.c_str());
+
+                result |= cps_db::store_object(r.get(),db_node.get());
+                if (!result) _failed_nodes+=name+",";
+                return;
+
+        },nullptr)) {
+        return cps_api_ret_code_ERR;
+    }
+    return cps_api_ret_code_OK;
+}
+
 cps_api_return_code_t cps_api_set_node_group(cps_api_node_group_t *group) {
+
     cps_api_object_guard og(cps_api_object_create());
 
     cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),CPS_NODE_GROUP, cps_api_qualifier_TARGET);
@@ -64,9 +163,15 @@ cps_api_return_code_t cps_api_set_node_group(cps_api_node_group_t *group) {
     }
 
     //send out changed...
+    if(group->data_type == cps_api_node_data_1_PLUS_1_REDUNDENCY){
+        if(!cps_api_create_global_instance(group)){
+            return cps_api_ret_code_ERR;
+        }
+    }
 
     return cps_api_ret_code_OK;
 }
+
 
 cps_api_return_code_t cps_api_set_identity(const char *name, const char **alias, size_t len) {
     cps_db::connection_request b(cps_db::ProcessDBCache(),DEFAULT_REDIS_ADDR);
@@ -110,6 +215,51 @@ size_t cps_api_nodes::gen_hash(group_data_t &src) {
     return rc;
 }
 
+bool cps_api_nodes::get_port_info(const char *group, _db_node_data *nd){
+    cps_api_object_guard og(cps_api_object_create());
+
+    if (!cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),CPS_DB_INSTANCE_OBJ,
+                                        cps_api_qualifier_TARGET)) {
+        EV_LOGGING(DSAPI,ERR,"CPS-CLS-MAP","Meta data for cluster set is not loaded.");
+        return false;
+    }
+
+    cps_db::connection_request b(cps_db::ProcessDBCache(),DEFAULT_REDIS_ADDR);
+
+    if (!b.valid()) {
+        return false;
+    }
+
+    cps_api_set_key_data(og.get(),CPS_DB_INSTANCE_GROUP,cps_api_object_ATTR_T_BIN,group,strlen(group)+1);
+    cps_api_set_key_data(og.get(),CPS_DB_INSTANCE_NODE_ID,cps_api_object_ATTR_T_BIN,nd->_name.c_str(),strlen(nd->_name.c_str())+1);
+
+    if (cps_db::get_object(b.get(),og.get())) {
+
+        const char *port = (const char*) cps_api_object_get_data(og.get(),CPS_DB_INSTANCE_PORT);
+        if(port == nullptr){
+            return false;
+        }
+        nd->_addr = port;
+    }
+    return true;
+}
+
+bool cps_api_nodes::add_db_node(const char *group,const char *ip,_db_node_data & db_node){
+    std::string old_ip = ip;
+    std::size_t ip_pos = old_ip.find(':');
+    old_ip = old_ip.substr(0,ip_pos);
+    db_node._addr = old_ip + db_node._addr;
+    auto it = _db_node_map.find(group);
+    if( it == _db_node_map.end()){
+        std::vector<_db_node_data> v;
+        v.push_back(std::move(db_node));
+        _db_node_map[group] = std::move(v);
+    }else{
+        _db_node_map[group].push_back(std::move(db_node));
+    }
+    return true;
+}
+
 bool cps_api_nodes::load_groups() {
     cps_api_object_guard og(cps_api_object_create());
     if (!cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),CPS_NODE_GROUP, cps_api_qualifier_TARGET)) {
@@ -132,10 +282,14 @@ bool cps_api_nodes::load_groups() {
 
         const char *name = (const char*) cps_api_object_get_data(o,CPS_NODE_GROUP_NAME);
         _node_data nd;
+        _db_node_data db_node;
 
         cps_api_node_data_type_t *_type = (cps_api_node_data_type_t*)cps_api_object_get_data(o,CPS_NODE_GROUP_TYPE);
-        if (_type!=nullptr) nd.type = *_type;
-
+        if (_type==nullptr){
+            EV_LOGGING(DSAPI,ERR,"NODE-LOAD","Could not get the group type for group %s",name);
+            return false;
+        }
+        nd.type = *_type;
         cps_api_object_attr_t _node_group = cps_api_object_attr_get(o,CPS_NODE_GROUP_NODE);
         if (_node_group==nullptr) continue; ///TODO log
 
@@ -157,10 +311,21 @@ bool cps_api_nodes::load_groups() {
             const char *__ip = (const char*)cps_api_object_attr_data_bin(_ip);
             const char *__name =(const char*)cps_api_object_attr_data_bin(_name);
 
+            if(nd.type == cps_api_node_data_1_PLUS_1_REDUNDENCY){
+                db_node._name = __name;
+                if(!get_port_info(name,&db_node)){
+                    EV_LOGGING(DSAPI,ERR,"CPS-DB","Failed to get port info for group %s and node %s",
+                       name,__name);
+                    return false;
+                }
+
+                add_db_node(name,__ip,db_node);
+            }
             _alias_map[__name] = __ip;
 
             const char * _alias = this->addr(__ip);
             if (_alias!=nullptr) __ip = _alias;
+
             nd._addrs.push_back(__ip);
             cps_api_object_it_next(&it);
         }
@@ -244,3 +409,11 @@ const char * cps_api_key_get_node(cps_api_object_t obj) {
     return (const char*) cps_api_object_get_data(obj,CPS_OBJECT_GROUP_NODE);
 }
 
+bool cps_api_nodes::get_group_type(std::string &group,cps_api_node_data_type_t &type){
+    auto it = _groups.find(group);
+    if(it != _groups.end()){
+        type = it->second._type;
+        return true;
+    }
+    return false;
+}

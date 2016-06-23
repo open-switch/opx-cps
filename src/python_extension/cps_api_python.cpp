@@ -90,45 +90,6 @@ static PyObject * py_cps_obj_to_array(PyObject *self, PyObject *args) {
 }
 
 
-
-static const std::map<std::string,CPS_CLASS_ATTR_TYPES_t> _attr_types = {
-        {"leaf",CPS_CLASS_ATTR_T_LEAF},
-        {"leaf-list",CPS_CLASS_ATTR_T_LEAF_LIST },
-        {"container",CPS_CLASS_ATTR_T_CONTAINER },
-        {"subsystem",CPS_CLASS_ATTR_T_SUBSYSTEM },
-        {"list",CPS_CLASS_ATTR_T_LIST },
-};
-
-static const std::map<std::string,CPS_CLASS_DATA_TYPE_t> _data_types = {
-        {"uint8_t",CPS_CLASS_DATA_TYPE_T_UINT8},
-        {"uint16_t",CPS_CLASS_DATA_TYPE_T_UINT16},
-        {"uint32_t",CPS_CLASS_DATA_TYPE_T_UINT32},
-        {"uint64_t",CPS_CLASS_DATA_TYPE_T_UINT64},
-        {"int8_t",CPS_CLASS_DATA_TYPE_T_INT8},
-        {"int16_t",CPS_CLASS_DATA_TYPE_T_INT16},
-        {"int32_t",CPS_CLASS_DATA_TYPE_T_INT32},
-        {"int64_t",CPS_CLASS_DATA_TYPE_T_INT64},
-        {"string",CPS_CLASS_DATA_TYPE_T_STRING},
-        {"enum",CPS_CLASS_DATA_TYPE_T_ENUM},
-        {"bool",CPS_CLASS_DATA_TYPE_T_BOOL},
-        {"obj-id",CPS_CLASS_DATA_TYPE_T_OBJ_ID},
-        {"date",CPS_CLASS_DATA_TYPE_T_DATE},
-        {"ipv4",CPS_CLASS_DATA_TYPE_T_IPV4},
-        {"ipv6",CPS_CLASS_DATA_TYPE_T_IPV6},
-        {"ip",CPS_CLASS_DATA_TYPE_T_IP},
-        {"bin",CPS_CLASS_DATA_TYPE_T_BIN},
-        {"double",CPS_CLASS_DATA_TYPE_T_DOUBLE},
-        {"embedded",CPS_CLASS_DATA_TYPE_T_EMBEDDED},
-        {"key",CPS_CLASS_DATA_TYPE_T_KEY},
-};
-
-struct _attr_type_match {
-    uint32_t _val;
-    template <typename T> bool operator()(T &it) const {
-        return (uint32_t)it->second == _val;
-    }
-};
-
 static PyObject * py_cps_config(PyObject *self, PyObject *args) {
     const char * path=NULL, *name, *desc,*_id,*attr_type,*data_type;
     PyObject *has_emb;
@@ -150,14 +111,14 @@ static PyObject * py_cps_config(PyObject *self, PyObject *args) {
     details.desc = desc;
     details.name = name;
     details.embedded = has_emb != Py_False;
-    if (_attr_types.find(attr_type)==_attr_types.end()) {
+
+    const CPS_CLASS_DATA_TYPE_t *_data_type = cps_class_data_type_from_string(data_type);
+    const CPS_CLASS_ATTR_TYPES_t *_attr_type = cps_class_attr_type_from_string(attr_type);
+    if (_data_type==nullptr || _attr_type==nullptr) {
         Py_RETURN_FALSE;
     }
-    if (_data_types.find(data_type)==_data_types.end()) {
-        Py_RETURN_FALSE;
-    }
-    details.attr_type = _attr_types.at(attr_type);
-    details.data_type = _data_types.at(data_type);
+    details.attr_type = *_attr_type;
+    details.data_type = *_data_type;
     if (cps_class_map_init((cps_api_attr_id_t)id,&ids[0],ids.size(),&details)!=cps_api_ret_code_OK) {
         Py_RETURN_FALSE;
     }
@@ -278,20 +239,13 @@ static PyObject * py_cps_types(PyObject *self, PyObject *args) {
     py_cps_util_set_item_to_dict(dict,"id", PyString_FromString(buff));
     }
 
-    auto attr_it = std::find_if(_attr_types.begin(),_attr_types.end(),[&ref]
-        (const std::map<std::string,CPS_CLASS_ATTR_TYPES_t>::value_type &it){
-            return (it.second == ref->attr_type);
-        });
-    if (attr_it!=_attr_types.end()) {
-        py_cps_util_set_item_to_dict(dict,"attribute_type", PyString_FromString(attr_it->first.c_str()));
+    const char *_attr_type = cps_class_attr_type_to_string(ref->attr_type);
+    const char *_data_type = cps_class_data_type_to_string(ref->data_type);
+    if (_attr_type!=nullptr) {
+        py_cps_util_set_item_to_dict(dict,"attribute_type", PyString_FromString(_attr_type));
     }
-
-    auto data_it = std::find_if(_data_types.begin(),_data_types.end(),[&ref]
-        (const std::map<std::string,CPS_CLASS_DATA_TYPE_t>::value_type &it){
-            return (it.second == ref->data_type);
-        });
-    if (data_it!=_data_types.end()) {
-        py_cps_util_set_item_to_dict(dict,"data_type", PyString_FromString(data_it->first.c_str()));
+    if (_data_type!=nullptr) {
+        py_cps_util_set_item_to_dict(dict,"attribute_type", PyString_FromString(_data_type));
     }
 
     return dict;
@@ -326,22 +280,15 @@ static PyObject * py_cps_key_from_name(PyObject *self, PyObject *args) {
     const char * path=NULL, *cat=NULL;
     if (! PyArg_ParseTuple( args, "ss", &cat, &path)) return NULL;
 
-    static const std::map<std::string,cps_api_qualifier_t> _cat = {
-            { "target",cps_api_qualifier_TARGET },
-            { "observed",cps_api_qualifier_OBSERVED },
-            { "proposed",cps_api_qualifier_PROPOSED},
-            { "realtime",cps_api_qualifier_REALTIME}
-    };
-    auto i  = _cat.find(cat);
-    if (i==_cat.end()) {
-        return PyString_FromString("");
-    }
+    const cps_api_qualifier_t * _op_type = cps_class_qual_from_string(cat);
+    if (_op_type==nullptr) return PyString_FromString("");
+
 
     const cps_class_map_node_details_int_t *ent = cps_dict_find_by_name(path);
     if (ent==nullptr) return PyString_FromString("");
 
     cps_api_key_t k;
-    if (!cps_api_key_from_attr_with_qual(&k,ent->id,i->second)) {
+    if (!cps_api_key_from_attr_with_qual(&k,ent->id,*_op_type)) {
         return PyString_FromString("");
     }
     char buff[CPS_API_KEY_STR_MAX];
@@ -350,12 +297,18 @@ static PyObject * py_cps_key_from_name(PyObject *self, PyObject *args) {
 }
 
 static PyObject * py_cps_node_set_update(PyObject *self, PyObject *args) {
-    const char *id=NULL;
+    const char *id=NULL, *node_type;
     PyObject *_list=nullptr;
-    if (! PyArg_ParseTuple( args, "sO!", &id, &PyList_Type, &_list)) Py_RETURN_FALSE;
+    if (! PyArg_ParseTuple( args, "ssO!", &id, &node_type, &PyList_Type, &_list)) Py_RETURN_FALSE;
+
+    auto _node_type = cps_node_type_from_string(node_type);
+    if (_node_type==nullptr) {
+        Py_RETURN_FALSE;
+    }
 
     cps_api_node_group_t _group;
     _group.id = id;
+    _group.data_type = *_node_type;
 
     std::vector<cps_api_node_ident> _ids;
 

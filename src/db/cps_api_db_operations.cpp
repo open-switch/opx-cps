@@ -37,11 +37,11 @@ cps_api_return_code_t __cps_api_db_operation_get(cps_api_object_t obj, cps_api_o
         cps_db::connection_request r(cps_db::ProcessDBCache(),name.c_str());
         result |= cps_db::get_objects(r.get(),obj,results);
         if (!result) {
-        	cps_api_object_t o = cps_api_object_list_create_obj_and_append(results);
-        	cps_api_key_from_attr_with_qual(cps_api_object_key(o),CPS_CONNECTION_ENTRY,cps_api_qualifier_OBSERVED);
-        	cps_api_object_attr_add(o,CPS_CONNECTION_ENTRY_NAME,name.c_str(),name.size()+1);
-        	cps_api_object_attr_add(o,CPS_CONNECTION_ENTRY_IP,name.c_str(),name.size()+1);
-        	cps_api_object_attr_add(o,CPS_CONNECTION_ENTRY_GROUP,node,strlen(node)+1);
+            cps_api_object_t o = cps_api_object_list_create_obj_and_append(results);
+            cps_api_key_from_attr_with_qual(cps_api_object_key(o),CPS_CONNECTION_ENTRY,cps_api_qualifier_OBSERVED);
+            cps_api_object_attr_add(o,CPS_CONNECTION_ENTRY_NAME,name.c_str(),name.size()+1);
+            cps_api_object_attr_add(o,CPS_CONNECTION_ENTRY_IP,name.c_str(),name.size()+1);
+            cps_api_object_attr_add(o,CPS_CONNECTION_ENTRY_GROUP,node,strlen(node)+1);
         }
 
     },nullptr);
@@ -59,7 +59,7 @@ cps_api_return_code_t cps_api_db_operation_get(cps_api_get_params_t * param, siz
 
 cps_api_return_code_t cps_api_db_operation_commit(cps_api_transaction_params_t * param, size_t ix) {
 
-	///TODO add watch for data modifications between get and sets
+    ///TODO add watch for data modifications between get and sets
     cps_api_object_t o = cps_api_object_list_get(param->change_list,ix);
     STD_ASSERT(o!=nullptr);
 
@@ -78,11 +78,13 @@ cps_api_return_code_t cps_api_db_operation_commit(cps_api_transaction_params_t *
         cps_api_object_list_guard lg(cps_api_object_list_create());
         if (__cps_api_db_operation_get(o,lg.get(),true)==cps_api_ret_code_OK) {
             cps_api_object_t _exp_prev = cps_api_object_list_get(lg.get(),0);
-            if (!cps_api_object_list_append(param->prev,_exp_prev)) {
-                return cps_api_ret_code_ERR;
+            if (cps_api_object_list_size(lg.get()) > 0 ) {
+                if (!cps_api_object_list_append(param->prev,_exp_prev)) {
+                    return cps_api_ret_code_ERR;
+                }
+                prev = _exp_prev;
+                cps_api_object_list_remove(lg.get(),0);
             }
-            prev = _exp_prev;
-            cps_api_object_list_remove(lg.get(),0);
         }
     }
 
