@@ -27,6 +27,7 @@
 
 #include "cps_api_python.h"
 #include "cps_api_node.h"
+#include "private/cps_string_utils.h"
 
 #include <stdlib.h>
 #include "python2.7/Python.h"
@@ -245,12 +246,11 @@ static PyObject * py_cps_types(PyObject *self, PyObject *args) {
         py_cps_util_set_item_to_dict(dict,"attribute_type", PyString_FromString(_attr_type));
     }
     if (_data_type!=nullptr) {
-        py_cps_util_set_item_to_dict(dict,"attribute_type", PyString_FromString(_data_type));
+        py_cps_util_set_item_to_dict(dict,"data_type", PyString_FromString(_data_type));
     }
 
     return dict;
 }
-
 
 static PyObject * py_cps_get_keys(PyObject *self, PyObject *args) {
     PyObject *d = NULL;
@@ -296,6 +296,17 @@ static PyObject * py_cps_key_from_name(PyObject *self, PyObject *args) {
     return PyString_FromString(cps_api_key_print(&k,buff,sizeof(buff)-1));
 }
 
+static PyObject * py_key_from_qualifer(PyObject *self, PyObject *args) {
+    const char *cat=NULL;
+    if (! PyArg_ParseTuple( args, "s", &cat)) return NULL;
+
+    const cps_api_qualifier_t * _op_type = cps_class_qual_from_string(cat);
+    if (_op_type==nullptr) return PyString_FromString("");
+
+    std::string _key = cps_string::sprintf("%d.",(int)*_op_type);
+    return PyString_FromString(_key.c_str());
+}
+
 static PyObject * py_cps_node_set_update(PyObject *self, PyObject *args) {
     const char *id=NULL, *node_type;
     PyObject *_list=nullptr;
@@ -338,7 +349,6 @@ static PyObject * py_cps_node_set_update(PyObject *self, PyObject *args) {
 }
 
 static PyObject * py_cps_name_from_key(PyObject *self, PyObject *args) {
-
     const char * key=NULL;
     int offset = 0;
 
@@ -394,6 +404,7 @@ PyDoc_STRVAR(cps_trans__doc__, "transaction(op_list)\n\n"
 PyDoc_STRVAR(cps_doc__, "A Python interface to the CPS API");
 
 PyDoc_STRVAR(cps_cps_generic_doc__, "A CPS mapping function.");
+
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_byte_array_key), "arraykey(ba)\n\n"
     "Return the CPS key from bytearray 'ba'.\n"
     "Return empty string if the bytearray does not have a valid CPS key.\n"
@@ -450,6 +461,11 @@ PyDoc_STRVAR(CPS_FN_DOC(py_cps_key_from_name), "key_from_name(qualifier,object_p
     "Returns a CPS key for a given qualifier and object path\n"
     "@qualifier - qualifier for the key(target,observed..) \n"
     "@object_path - Complete object path\n"
+    "@return - CPS key if successful otherwise returns empty string\n");
+
+PyDoc_STRVAR(CPS_FN_DOC(py_key_from_qualifer), "key_from_qual(qualifier)\n\n"
+    "Returns a CPS wildcard key for a given qualifier\n"
+    "@qualifier - qualifier for the key(target,observed..) \n"
     "@return - CPS key if successful otherwise returns empty string\n");
 
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_name_from_key), "name_from_key(key, offset)\n\n"
@@ -530,6 +546,7 @@ static PyMethodDef cps_methods[] = {
     {"config",py_cps_config, METH_VARARGS, CPS_FN_DOC(py_cps_config) },
     {"key_from_name",py_cps_key_from_name, METH_VARARGS, CPS_FN_DOC(py_cps_key_from_name) },
     {"get_keys",py_cps_get_keys, METH_VARARGS, cps_cps_generic_doc__ },
+    {"key_from_qual",py_key_from_qualifer,METH_VARARGS,CPS_FN_DOC(py_key_from_qualifer) },
 
     {"name_from_key",py_cps_name_from_key, METH_VARARGS, CPS_FN_DOC(py_cps_name_from_key) },
     {"qual_from_key",py_cps_qual_from_key, METH_VARARGS, CPS_FN_DOC(py_cps_qual_from_key) },

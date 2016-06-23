@@ -81,21 +81,21 @@ extern "C" char * cps_api_key_print(cps_api_key_t *key, char *buff, size_t len) 
 extern "C" char *cps_api_key_name_print(cps_api_key_t *key, char *buff, size_t len) {
 
     STD_ASSERT(buff!=NULL);
-    
+
     const char *qual = nullptr;
     const char *path = nullptr;
-    
+
     qual = cps_class_qual_from_key(key);
     path = cps_class_string_from_key(key, 1);
-        
+
     if (qual != nullptr && path != nullptr) { strncpy(buff,qual,len-1); strncat(buff,"/",len-1);  }
     else *buff = '\0';
-      
+
     if (path != nullptr) strncat(buff,path,len-1);
     else cps_api_key_print(key,buff,len);
 
     buff[len-1] = '\0';
-        
+
     return buff;
 }
 
@@ -128,7 +128,6 @@ extern "C" cps_api_object_attr_t cps_api_get_key_data(cps_api_object_t obj,cps_a
     return p;
 }
 
-
 extern "C" bool cps_api_set_key_data(cps_api_object_t obj,cps_api_attr_id_t id,
         cps_api_object_ATTR_TYPE_t type, const void *data, size_t len) {
     cps_api_attr_id_t ids[] = {CPS_API_OBJ_KEY_ATTRS,id};
@@ -147,7 +146,6 @@ extern "C" uint64_t cps_api_key_hash(cps_api_key_t *key) {
     }
     return hash;
 }
-
 
 bool cps_api_key_insert_element(cps_api_key_t *key, size_t ix, cps_api_key_element_t elem) {
     if ((cps_api_key_get_len(key)+1) >= CPS_OBJ_MAX_KEY_LEN) {

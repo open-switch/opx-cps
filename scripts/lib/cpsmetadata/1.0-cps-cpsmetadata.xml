@@ -1,0 +1,49 @@
+<cps-class-map >
+
+<metadata_entry key="[cps]" id="2" name="cps" desc="The CPS embedded space." embedded="true" node-type="subsystem" data-type="bin" owner-type="db" />
+
+<!-- Key data container-->
+<metadata_entry key="[cps].[cps/key_data]" id="0xffffffffffffffff" name="cps/key_data" desc="The CPS key data conainer." embedded="true" node-type="container" data-type="bin" />
+
+<!-- CPS Object attributes -->
+<metadata_entry key="[cps].[cps/object]" id="0x8" name="cps/object" desc="This object contains attributes related to CPS operations on an object" embedded="true" node-type="container" data-type="bin" />
+
+<!-- CPS Service Statistics  -->
+<metadata_entry key="[cps].[cps/object].[cps/object/stat]" id="0x80000" name="cps/object/stat" desc="Contains the CPS internal statisics for this object." embedded="true" node-type="container" data-type="bin" />
+
+<metadata_entry key="[cps].[cps/object].[cps/object/stat].[cps/object/operations/set_min_time]" id="0x80001" name="cps/object/operations/set_min_time" desc="the fastest response to a set request." embedded="false" node-type="leaf" data-type="uint64_t" />
+<metadata_entry key="[cps].[cps/object].[cps/object/stat].[cps/object/operations/set_man_time]" id="0x80002" name="cps/object/operations/set_max_time" desc="the longest time it took to process a set request." embedded="false" node-type="leaf" data-type="uint64_t" />
+<metadata_entry key="[cps].[cps/object].[cps/object/stat].[cps/object/operations/set_ave_time]" id="0x80003" name="cps/object/operations/set_ave_time" desc="the average time it takes to process a set request." embedded="false" node-type="leaf" data-type="uint64_t" />
+<metadata_entry key="[cps].[cps/object].[cps/object/stat].[cps/object/operations/set_requests]" id="0x80004" name="cps/object/operations/set_requests" desc="the number of set requests." embedded="false" node-type="leaf" data-type="uint64_t" />
+
+<metadata_entry key="[cps].[cps/object].[cps/object/stat].[cps/object/operations/get_min_time]" id="0x80005" name="cps/object/operations/get_min_time" desc="the fastest response to a get request." embedded="false" node-type="leaf" data-type="uint64_t" />
+<metadata_entry key="[cps].[cps/object].[cps/object/stat].[cps/object/operations/get_max_time]" id="0x80006" name="cps/object/operations/get_max_time" desc="the longest time it took to process a get request." embedded="false" node-type="leaf" data-type="uint64_t" />
+<metadata_entry key="[cps].[cps/object].[cps/object/stat].[cps/object/operations/get_ave_time]" id="0x80007" name="cps/object/operations/get_ave_time" desc="the average time it takes to process a get request." embedded="false" node-type="leaf" data-type="uint64_t" />
+<metadata_entry key="[cps].[cps/object].[cps/object/stat].[cps/object/operations/get_requests]" id="0x80008" name="cps/object/operations/get_requests" desc="the number of get requests." embedded="false" node-type="leaf" data-type="uint64_t" />
+
+<metadata_entry key="[cps].[cps/object].[cps/object/stat].[cps/object/operations/nameservice_reconnects]" id="0x80009" name="cps/object/operations/nameservice_reconnects" desc="the number of reconnections with the name service." embedded="false" node-type="leaf" data-type="uint64_t" />
+<metadata_entry key="[cps].[cps/object].[cps/object/stat].[cps/object/operations/nameservice_lost_conn]" id="0x8000a" name="cps/object/operations/nameservice_lost_conn" desc="Number of times that the NS disconnected." embedded="false" node-type="leaf" data-type="uint64_t" />
+<metadata_entry key="[cps].[cps/object].[cps/object/stat].[cps/object/operations/set_failed]" id="0x8000b" name="cps/object/operations/set_failed" desc="Number of failed set requests." embedded="false" node-type="leaf" data-type="uint64_t" />
+<metadata_entry key="[cps].[cps/object].[cps/object/stat].[cps/object/operations/set_invalid_req]" id="0x8000c" name="cps/object/operations/set_invalid_req" desc="Number of invalid set requests (communication error)." embedded="false" node-type="leaf" data-type="uint64_t" />
+<metadata_entry key="[cps].[cps/object].[cps/object/stat].[cps/object/operations/get_failed]" id="0x8000d" name="cps/object/operations/get_failed" desc="Number of failed get requests." embedded="false" node-type="leaf" data-type="uint64_t" />
+<metadata_entry key="[cps].[cps/object].[cps/object/stat].[cps/object/operations/get_invalid_req]" id="0x8000f" name="cps/object/operations/get_invalid_req" desc="Number of invalid set requests due to protocol errors." embedded="false" node-type="leaf" data-type="uint64_t" />
+<metadata_entry key="[cps].[cps/object].[cps/object/stat].[cps/object/operations/key_field]" id="0x80010" name="cps/object/operations/key_field" desc="The keys registered with this service" embedded="false" node-type="leaf-list" data-type="key" />
+
+<metadata_entry key="[cps].[cps/object].[cps/object/stat].[cps/object/operations/close_count]" id="0x80011" name="cps/object/operations/close_count" desc="Number of close operations done with the nameservice." embedded="false" node-type="leaf" data-type="uint64_t" />
+<metadata_entry key="[cps].[cps/object].[cps/object/stat].[cps/object/operations/cleanup_runs]" id="0x80012" name="cps/object/operations/cleanup_runs" desc="Number of clean ups on cache done due to close connections." embedded="false" node-type="leaf" data-type="uint64_t" />
+<metadata_entry key="[cps].[cps/object].[cps/object/stat].[cps/object/operations/events_sent]" id="0x80013" name="cps/object/operations/events_sent" desc="Number of events sent by the name service for registration changes." embedded="false" node-type="leaf" data-type="uint64_t" />
+<metadata_entry key="[cps].[cps/object].[cps/object/stat].[cps/object/operations/process_id]" id="0x80014" name="cps/object/operations/process_id" desc="The process ID of the application registering for object handling." embedded="false" node-type="leaf" data-type="uint64_t" />
+
+<!-- CPS Node Ownership  -->
+<class_ownership id="cps/node-group" qualifiers="target,observed" owner-type="db" />
+
+
+<!-- CPS Enum Mapping  -->
+<enum_entry name="base-acl/counter-type" >
+  <enum name="PACKET" value="1" />
+  <enum name="BYTE" value="2" />
+</enum_entry>
+
+<enum_association name="base-acl/counter/types" enum="base-acl/counter-type" />
+
+</cps-class-map>
