@@ -33,7 +33,7 @@
 #include "cps_api_object.h"
 #include "cps_api_object_attr.h"
 #include "cps_class_map.h"
-
+#include "cps_api_node.h"
 
 #include "private/cps_dictionary.h"
 
@@ -41,6 +41,16 @@
 #include <string>
 #include <vector>
 #include <string>
+
+/** @cond HIDDEN_SYMBOLS */
+#define CPS_DEF_PRODUCT_LOC "/opt/dell/os10"
+#define CPS_DEF_SEARCH_PATH CPS_DEF_PRODUCT_LOC "/lib"        //the location of the generated class
+#define CPS_DEF_SEARCH_PATH_CFG "/etc" CPS_DEF_PRODUCT_LOC
+#define CPS_DEF_META_SEARCH_PATHS  CPS_DEF_SEARCH_PATH ":/etc/sonic:" CPS_DEF_SEARCH_PATH_CFG
+
+#define CPS_DEF_CLASS_FILE_NAME "cpsclass"      //must match with the generated lib name
+#define CPS_DEF_CLASS_XML_SUFFIX "-cpsmetadata.xml"
+/** @endcond */
 
 using cps_class_node_detail_list_t = std::vector<cps_class_map_node_details_int_t>;
 
@@ -56,6 +66,29 @@ void cps_class_ids_from_string(std::vector<cps_api_attr_id_t> &v, const char * s
 std::string cps_class_ids_to_string(const std::vector<cps_api_attr_id_t> &v);
 std::string cps_key_to_string(const cps_api_key_t * key);
 
+const CPS_API_OBJECT_OWNER_TYPE_t *cps_class_owner_type_from_string(const char *str);
+const CPS_CLASS_DATA_TYPE_t *cps_class_data_type_from_string(const char *str);
+const CPS_CLASS_ATTR_TYPES_t *cps_class_attr_type_from_string(const char *str);
+const cps_api_qualifier_t *cps_class_qual_from_string(const char *str);
+const cps_api_operation_types_t* cps_operation_type_from_string(const char *str);
+const cps_api_node_data_type_t* cps_node_type_from_string(const char *str);
+
+const char * cps_class_owner_type_to_string(CPS_API_OBJECT_OWNER_TYPE_t data);
+const char * cps_class_attr_type_to_string(CPS_CLASS_ATTR_TYPES_t data);
+const char * cps_class_qual_to_string(cps_api_qualifier_t qual) ;
+const char * cps_class_data_type_to_string(CPS_CLASS_DATA_TYPE_t data);
+const char * cps_operation_type_to_string(cps_api_operation_types_t data);
+
+/**
+ * This API searches for the first matchign name.  If the at_end is true, then the API will ensure that the string
+ * is the suffix for a successful match.
+ * @param either the whole or part of the attribute name
+ * @return a pointer to the attribute ID or null if it doesn't exist
+ */
+cps_api_attr_id_t *cps_api_attr_name_to_id(const char *name);
+
+
+t_std_error cps_api_yang_module_init(void);
 
 /**
  * @}

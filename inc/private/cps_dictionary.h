@@ -38,6 +38,7 @@
 #include <string>
 #include <vector>
 
+
 struct cps_class_map_node_details_int_t {
     std::string name;
     std::string full_path;
@@ -56,15 +57,6 @@ typedef bool (*cps_dict_walk_fun)(void * context, const cps_class_map_node_detai
 
 void cps_dict_walk(void * context, cps_dict_walk_fun fun);
 
-/**
- * For now... always return cached state of object
- * @param obj the object to check
- * @return true if the object state is cache-able false otherwise
- */
-static inline bool cps_api_obj_has_cached_state(cps_api_object_t obj) {
-	if (cps_api_object_type_operation(cps_api_object_key(obj))==cps_api_oper_ACTION) return false;
-	return true;
-}
 
 
 /**

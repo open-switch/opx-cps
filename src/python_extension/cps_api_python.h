@@ -112,6 +112,7 @@ void py_set_error_string(const char * msg) ;
  */
 PyObject * py_cps_event_connect(PyObject *self, PyObject *args);
 PyObject * py_cps_event_reg(PyObject *self, PyObject *args) ;
+PyObject * py_cps_event_reg_object(PyObject *self,PyObject *args);
 PyObject * py_cps_event_close(PyObject *self, PyObject *args);
 PyObject * py_cps_event_wait(PyObject *self, PyObject *args);
 PyObject * py_cps_event_send(PyObject *self, PyObject *args);

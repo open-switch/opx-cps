@@ -26,7 +26,10 @@
 #include "std_rw_lock.h"
 #include "event_log.h"
 #include "cps_api_event_init.h"
+#include "cps_dictionary.h"
+#include "dell-cps.h"
 
+#include "cps_api_db_operations.h"
 #include "private/cps_api_client_utils.h"
 #include "private/cps_ns.h"
 
@@ -44,8 +47,6 @@ typedef enum {
 
 
 typedef std::vector<cps_api_object_category_types_t> processed_objs_t;
-
-extern "C" {
 
 bool cps_api_filter_set_count(cps_api_object_t obj, size_t obj_count) {
     cps_api_attr_id_t ids[] = { CPS_API_ATTR_INFO, cps_api_ATTR_Q_COUNT};
@@ -145,7 +146,14 @@ cps_api_return_code_t cps_api_get(cps_api_get_params_t * param) {
 
     ix = 0;
     for ( ; ix < mx ; ++ix ) {
-        if ((rc=cps_api_process_get_request(&new_req,ix))!=cps_api_ret_code_OK) break;
+        cps_api_object_t o = cps_api_object_list_get(new_req.filters,ix);
+        STD_ASSERT(o!=nullptr);
+        if (cps_api_obj_get_ownership_type(o)!=CPS_API_OBJECT_SERVICE) {
+            rc = cps_api_db_operation_get(&new_req,ix);
+        } else {
+            rc=cps_api_process_get_request(&new_req,ix);
+        }
+        if (rc!=cps_api_ret_code_OK) break;
     }
 
     //based on the return - get the response list
@@ -156,26 +164,40 @@ cps_api_return_code_t cps_api_get(cps_api_get_params_t * param) {
 
 cps_api_return_code_t cps_api_commit(cps_api_transaction_params_t * param) {
     cps_api_return_code_t rc =cps_api_ret_code_OK;
+    ///TODO remove any previous operation status from the object
 
     size_t ix = 0;
     size_t mx = cps_api_object_list_size(param->change_list);
     for ( ; ix < mx ; ++ix ) {
-        if ((rc=cps_api_process_commit_request(param,ix))!=cps_api_ret_code_OK) {
-            EV_LOG(ERR,DSAPI,0,"COMMIT","Failed to commit request at %d out of %d",ix, (int)mx);
-            break;
+
+        cps_api_object_t o = cps_api_object_list_get(param->change_list,ix);
+        cps_api_object_attr_delete(o,CPS_OBJECT_GROUP_FAILED_NODES);
+        STD_ASSERT(o!=nullptr);
+        if (cps_api_obj_get_ownership_type(o)!=CPS_API_OBJECT_SERVICE) {
+            rc = cps_api_db_operation_commit(param,ix);
+        } else {
+            rc=cps_api_process_commit_request(param,ix);
         }
+        if (rc!=cps_api_ret_code_OK) break;
     }
     if (rc!=cps_api_ret_code_OK) {
-        size_t mx_bk = mx;
         while (mx > 0) {
             ix = mx-1;
-            if (cps_api_process_rollback_request(param,ix)!=cps_api_ret_code_OK) {
-                EV_LOG(ERR,DSAPI,0,"ROLLBACK","Failed to rollback request at %d out of %d",ix, (int)mx_bk);
+
+            cps_api_object_t o = cps_api_object_list_get(param->change_list,ix);
+            STD_ASSERT(o!=nullptr);
+            if (cps_api_obj_get_ownership_type(o)!=CPS_API_OBJECT_SERVICE) {
+                rc = cps_api_db_operation_rollback(param,ix);
+            } else {
+                rc=cps_api_process_rollback_request(param,ix);
+            }
+
+            if (rc!=cps_api_ret_code_OK) {
+                EV_LOG(ERR,DSAPI,0,"ROLLBACK","Failed to rollback request at %d",ix);
             }
             --mx;
         }
     }
-
     return rc;
 }
 
@@ -196,7 +218,6 @@ cps_api_return_code_t cps_api_get_request_close(cps_api_get_params_t *req) {
     if (req->filters!=NULL) {
         cps_api_object_list_destroy(req->filters,true);
     }
-
     return cps_api_ret_code_OK;
 }
 
@@ -272,4 +293,3 @@ bool cps_api_is_registered(cps_api_key_t *key, cps_api_return_code_t *rc) {
     return cps_api_find_owners(key,owner);
 }
 
-}

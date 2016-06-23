@@ -54,11 +54,6 @@ extern "C" {
 /** Class map version number */
 #define CPS_CLASS_MAP_VER (2)
 
-/** @cond HIDDEN_SYMBOLS */
-#define CPS_DEF_SEARCH_PATH "/opt/dell/os10/lib"        //the location of the generated class
-#define CPS_DEF_CLASS_FILE_NAME "cpsclass"      //must match with the generated lib name
-/** @endcond */
-
 /** Class attribute types */
 typedef enum  {
     CPS_CLASS_ATTR_T_LEAF=1,
@@ -91,6 +86,13 @@ typedef enum {
     CPS_CLASS_DATA_TYPE_T_EMBEDDED,
     CPS_CLASS_DATA_TYPE_T_KEY,
 }CPS_CLASS_DATA_TYPE_t;
+
+typedef enum {
+    CPS_API_OBJECT_SERVICE, /// the request for get and set will be forwarded to the service which owns the object or objects
+    CPS_API_OBJECT_SERVICE_CACHE, ///the request for gets will be redirected to the database while the sets and updates will be
+                                ///forwarded to the object after journaled into the database (to support cases where services restart)
+    CPS_API_OBJECT_DB            ///this is an object that will be stored directly in the database with no validation
+}CPS_API_OBJECT_OWNER_TYPE_t ;
 
 /**
  * Structure representing a node in the CPS yang map.  This map can be used to get extended inforamtion
@@ -263,6 +265,27 @@ void cps_api_class_map_init(void);
  */
 bool cps_class_map_attr_type(cps_api_attr_id_t id, CPS_CLASS_DATA_TYPE_t *t);
 
+/****
+ * The following API indicate an object's ownership (or also considered as storage location) of an object.
+ *     This can be a:
+ *         service object - the request for get and set will be forwarded to the service which owns the object or objects
+ *         service cached object - the request for gets will be redirected to the database while the sets and updates will be
+ *                                 forwarded to the object after journaled into the database (to support cases where services restart)
+ *         database object - this is an object that will be stored directly in the database with no validation
+ *
+ * @param obj the object to check
+ * @return based on the object, return the type of storage
+ */
+CPS_API_OBJECT_OWNER_TYPE_t cps_api_obj_get_ownership_type(cps_api_object_t obj);
+
+
+/****
+ * This API will update the object storage type.  For a longer description of the storage type take a look at the documentation for
+ * cps_api_obj_get_storage_type.
+ * @param key is the the class of the object
+ * @param type is the object's ownership
+ */
+void cps_api_obj_set_ownership_type(cps_api_key_t *key, CPS_API_OBJECT_OWNER_TYPE_t type);
 
 #ifdef __cplusplus
 }

@@ -110,6 +110,19 @@ cps_api_return_code_t cps_api_event_client_register(cps_api_event_service_handle
         cps_api_event_reg_t * req);
 
 /**
+ * Register for a list of objects.
+ *
+ * Each object can have in an addition to the static key of an object, the following attributes can also be used:
+ *         * Node Grouping
+ *         * Instance attributes
+ *
+ * @param handle the handle on which to register
+ * @param objects the list that contains object (keys, instance attrs, group attrs) to register for
+ * @return cps_api_ret_code_OK if successful otherwise an error
+ */
+cps_api_return_code_t cps_api_event_client_register_object(cps_api_event_service_handle_t handle,
+        cps_api_object_list_t objects);
+/**
  * Send an object to the event service for publishing using a previously registered handle
  * @param handle the handle to the CPS event service
  * @param object the object to send
@@ -180,6 +193,9 @@ cps_api_return_code_t cps_api_event_thread_init(void);
  * @return cps_api_ret_code_OK if successful, error code otherwise
  */
 cps_api_return_code_t cps_api_event_thread_reg(cps_api_event_reg_t * reg,
+        cps_api_event_thread_callback_t cb, void * context );
+
+cps_api_return_code_t cps_api_event_thread_reg_object(cps_api_object_list_t objects,
         cps_api_event_thread_callback_t cb, void * context );
 
 /**

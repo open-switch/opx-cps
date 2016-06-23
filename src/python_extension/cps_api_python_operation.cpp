@@ -24,7 +24,7 @@
 #include "cps_api_python.h"
 #include "private/cps_class_map_query.h"
 
-#include "Python.h"
+#include "python2.7/Python.h"
 #include <map>
 #include <memory>
 
