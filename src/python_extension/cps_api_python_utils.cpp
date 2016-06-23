@@ -66,7 +66,6 @@ bool py_cps_util_append_item_to_list(PyObject *l, PyObject *o , bool gc ) {
     return true;
 }
 
-
 cps_api_object_t cps_obj_from_array(PyObject *array) {
     cps_api_object_t obj = cps_api_object_create();
     cps_api_object_guard og(obj);
@@ -285,8 +284,8 @@ cps_api_object_t dict_to_cps_obj(PyObject *dict) {
 
     cps_api_operation_types_t _op = (cps_api_operation_types_t)(0);
     if (op!=nullptr) {
-    	const cps_api_operation_types_t* __op = cps_operation_type_from_string(PyString_AsString(op));
-    	if (__op==nullptr) _op = *__op;
+        const cps_api_operation_types_t* __op = cps_operation_type_from_string(PyString_AsString(op));
+        if (__op!=nullptr) _op = *__op;
     }
 
     cps_api_object_guard og(dict_to_cps_obj(PyString_AsString(key),d));

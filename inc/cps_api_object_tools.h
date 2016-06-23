@@ -80,8 +80,27 @@ bool cps_api_obj_tool_matches_filter(cps_api_object_t filter, cps_api_object_t o
 bool cps_api_obj_tool_merge(cps_api_object_t main, cps_api_object_t overlay);
 
 
+/**
+ * Scan through the object looking for attributes and ensure that the contents match the request items exactly.
+ * For instance...
+@code{.cpp}
+cps_api_attr_id_t ids = { NAME, IFINDEX };
+int _ifix = 1;
+void *values[] = { "Cliff", &_ifix };
+size_t lens[] = { strlen("Cliff"),sizeof(int) };
 
-bool cps_api_obj_tool_attr_matches(cps_api_object_t obj, cps_api_attr_id_t *ids, void ** values, size_t *len, size_t id_list_len);
+cps_api_obj_tool_attr_matches(obj,ids,values,lens,sizeof(ids)/sizeof(*ids));
+@endcode
+ *
+ * @param obj the object to check for the values
+ * @param ids the list of attribute IDs
+ * @param values the list of values
+ * @param len the list of the length of the content in the values array
+ * @param attr_id_list_len the total number of ids to scan
+ *     NOTE: the ids, values and len are assumed to be the same size
+ * @return
+ */
+bool cps_api_obj_tool_attr_matches(cps_api_object_t obj, cps_api_attr_id_t *ids, void ** values, size_t *len, size_t attr_id_list_len);
 
 #ifdef __cplusplus
 }

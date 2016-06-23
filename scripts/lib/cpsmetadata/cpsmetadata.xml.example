@@ -1,4 +1,20 @@
-<!-- Meta Data Entry 
+<!--
+
+CPS Metadata File Format
+
+
+The metadata file is contained within a <cps-class-map> section.
+
+In the cps-class-map section, the following tags can be used:
+
+metadata_entry 		- creates a mapping including a name, object key, description, node type, data type and numeric value (id).
+class_ownership 	- specifies the ownership model for a CPS object
+enum_entry 			- creates a mapping for enumeration names to values and vice versa
+enum_association 	- associates a enum_entry with a CPS attribute ID
+
+=========================================================================================
+
+Metadata Entry
 
 <metadata_entry key="key format" id="id format" name="name format" desc="description" embedded="has embedeed flag" node-type="node type" data-type="data type" owner-type="owner type" />
 
@@ -15,10 +31,10 @@ ID Format:
 Id format can be either a simple decimal number or hexidecimal number prefixed with 0x.
 
 Example 1: 0x101
-Example 2: 257 
+Example 2: 257
 
 Name Format:
-The name should be the fully defined name including path details.  For example of your class is called myclass and it is in a container called mycontainer 
+The name should be the fully defined name including path details.  For example of your class is called myclass and it is in a container called mycontainer
 sitting in a prefix of myprefix, the name should be "myprefix/mycontainer/myclass"
 
 Description Format:
@@ -26,7 +42,7 @@ This is a free format text string
 
 Node Type Format:
 The node type can be any of the following:
-container - this element can have any number of attributes but not expected to have key attributes to identify itself  
+container - this element can have any number of attributes but not expected to have key attributes to identify itself
 list - this element is a list also known as an element with key attributes
 subsystem - this is a subsystem (simular functionality as list or container)
 leaf	- there is only one attribute of this type in the class
@@ -61,9 +77,9 @@ Examples...
 
 <metadata_entry key="[cps].[cps/object].[cps/object/stat]" id="0x80000" name="cps/object/stat" desc="Contains the CPS internal statisics for this object." embedded="true" node-type="container" data-type="embedded" />
 
--->
+=========================================================================================
 
-<!-- CPS Node Ownership 
+Class Ownership
 
 <class_ownership id="attribute ID" qualifiers="valid qualifier" owner-type="ownership type" />
 
@@ -75,26 +91,27 @@ Example 1: cps/object
 Example 2: base-acl/counter
 
 Qualifier Format:
+A comma separated string consisting of the following values:
 target - the target state of an object
 observed - the status of an object
-proposed - the proposed state of an object 
+proposed - the proposed state of an object
 realtime - realtime data from the object
 registration - registration related inforamtion for the object (object registrations, and de-registrations)
 
 Ownership Type:
-servce - this means that a active service is running on the system handling the object requests/responses 
+servce - this means that a active service is running on the system handling the object requests/responses
 		all data is stored (if needed) and managed by the application
 service-cache - a service is running on the system but the data shoudl also be cached in a running database (triggers back end processing in CPS infra)
-db - the data is stored in a db and not validated by CPS before storing/retrieving.  RPC operations will also be rejected. 
+db - the data is stored in a db and not validated by CPS before storing/retrieving.  RPC operations will also be rejected.
 
 
 Example...
 
 <class_ownership id="cps/node-group" qualifiers="target,observed" owner-type="db" />
 
--->
+=========================================================================================
 
-<!-- Enum Definition and Associations
+Enum Entry
 
 Firstly you need to define an enum and then secondly associate it to attributes
 
@@ -111,21 +128,24 @@ Eample:
   <enum name="BYTE" value="2" />
 </enum_entry>
 
+=========================================================================================
 
-Assiciating Enums to Attributes
+Enum Association
 All you need to do after the enum is define is assocate the enum to an attribute ID and that is shown below.
 <enum_association name="attribute name" enum="associated enum" />
 
 
-Example 1: 
+Example 1:
 <enum_association name="base-acl/counter/types" enum="base-acl/counter-type" />
 
--->
+=========================================================================================
 
-<!-- Putting it all together in a small example... -->
+Putting it all together in a small example... -->
 
 <cps-class-map >
+
 <metadata_entry key="[cps]" id="2" name="cps" desc="The CPS embedded space." embedded="true" node-type="subsystem" data-type="bin" />
+
 <class_ownership id="cps/node-group" qualifiers="target,observed" owner-type="db" />
 
 <enum_entry name="base-acl/counter-type" >

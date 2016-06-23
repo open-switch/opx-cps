@@ -252,7 +252,6 @@ static PyObject * py_cps_types(PyObject *self, PyObject *args) {
     return dict;
 }
 
-
 static PyObject * py_cps_get_keys(PyObject *self, PyObject *args) {
     PyObject *d = NULL;
     if (! PyArg_ParseTuple( args, "O!",&PyDict_Type, &d)) return NULL;
@@ -350,7 +349,6 @@ static PyObject * py_cps_node_set_update(PyObject *self, PyObject *args) {
 }
 
 static PyObject * py_cps_name_from_key(PyObject *self, PyObject *args) {
-
     const char * key=NULL;
     int offset = 0;
 
