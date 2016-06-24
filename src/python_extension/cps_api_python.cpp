@@ -348,6 +348,30 @@ static PyObject * py_cps_node_set_update(PyObject *self, PyObject *args) {
     Py_RETURN_FALSE;
 }
 
+
+static PyObject * py_cps_node_delete_group(PyObject *self, PyObject *args) {
+    const char *id=NULL;
+    if (! PyArg_ParseTuple( args, "s", &id)) Py_RETURN_FALSE;
+
+    if (cps_api_delete_node_group(id)==cps_api_ret_code_OK) {
+        Py_RETURN_TRUE;
+    }
+    Py_RETURN_FALSE;
+}
+
+
+static PyObject * py_cps_node_set_master(PyObject *self, PyObject *args) {
+    const char *id=NULL;
+    const char *node_id=NULL;
+    if (! PyArg_ParseTuple( args, "ss", &id,&node_id)) Py_RETURN_FALSE;
+
+    if (cps_api_set_master_node(id,node_id)==cps_api_ret_code_OK) {
+        Py_RETURN_TRUE;
+    }
+    Py_RETURN_FALSE;
+}
+
+
 static PyObject * py_cps_name_from_key(PyObject *self, PyObject *args) {
     const char * key=NULL;
     int offset = 0;
@@ -526,7 +550,19 @@ PyDoc_STRVAR(CPS_FN_DOC(py_cps_obj_reg), "obj_register(handle,key,callbacks)\n\n
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_node_set_update), "node_set_update(set_name,list_of_addresses)\n\n"
     "Using the addresses (and ports) specified, create a node set.\n"
     "@set_name - the name of the collection of nodes\n"
+    "@type - type of the group (nodal or 1+1)\n"
     "@list_of_addresses - Python list of IP addresses and ports.\n"
+    "@return - True if successful otherwise False");
+
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_node_delete_group), "node_delete_group(group_name)\n\n"
+    "Deletes a give node set group.\n"
+    "@group_name - name of the group\n"
+    "@return - True if successful otherwise False");
+
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_node_set_master), "node_set_master(group_name,node_name)\n\n"
+    "Sets a give node as the master of the group in case of 1+1 group type.\n"
+    "@group_name - name of the group\n"
+    "@node_name - name of the node which is part of the group\n"
     "@return - True if successful otherwise False");
 
 
@@ -569,6 +605,8 @@ static PyMethodDef cps_methods[] = {
     {"transaction",  py_cps_trans, METH_VARARGS, cps_trans__doc__},
 
     {"node_set_update",  py_cps_node_set_update, METH_VARARGS, CPS_FN_DOC(py_cps_node_set_update)},
+    {"node_delete_group",  py_cps_node_delete_group, METH_VARARGS, CPS_FN_DOC(py_cps_node_delete_group)},
+    {"node_set_master",  py_cps_node_set_master, METH_VARARGS, CPS_FN_DOC(py_cps_node_set_master)},
 
     {NULL, NULL}      /* sentinel */
 };

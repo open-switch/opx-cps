@@ -20,6 +20,9 @@
 #include "cps_api_node.h"
 #include "cps_api_db_connection.h"
 #include "cps_api_db.h"
+#include "cps_class_map.h"
+#include "cps_api_object_key.h"
+#include "dell-cps.h"
 
 #include "std_time_tools.h"
 #include "event_log.h"
@@ -39,6 +42,84 @@ static bool load_groups() {
            return _nodes->load();
        }
        return false;
+}
+
+static bool cps_api_clean_db_instance(const char *group){
+    cps_api_transaction_params_t tr;
+    if (cps_api_transaction_init(&tr)!=cps_api_ret_code_OK) {
+        return false;
+    }
+
+    cps_api_transaction_guard tg(&tr);
+    cps_api_object_t  db_obj = cps_api_object_create();
+
+    if(db_obj == nullptr ) return false;
+
+    cps_api_key_from_attr_with_qual(cps_api_object_key(db_obj),CPS_DB_INSTANCE_OBJ,
+                                    cps_api_qualifier_TARGET);
+
+    cps_api_object_attr_add(db_obj,CPS_DB_INSTANCE_GROUP,group,strlen(group)+1);
+
+    if(cps_api_delete(&tr,db_obj) != cps_api_ret_code_OK ){
+        return false;
+    }
+
+    if(cps_api_commit(&tr) != cps_api_ret_code_OK ) {
+        EV_LOGGING(DSAPI,ERR,"CPS-DB","Failed to delete db instance for group %s",group);
+        return false;
+    }
+
+    if(cps_api_transaction_close(&tr) != cps_api_ret_code_OK ){
+        return false;
+    }
+    return true;
+}
+
+bool cps_api_db_del_node_group(const char *group){
+     std::lock_guard<std::recursive_mutex> lg(_mutex);
+
+     cps_api_node_data_type_t type;
+     if(!_nodes->get_group_type(std::string(group),type)){
+         EV_LOGGING(DSAPI,ERR,"DEL-MASTER","Failed to get group type for %s",group);
+         return cps_api_ret_code_ERR;
+     }
+
+     if(type != cps_api_node_data_1_PLUS_1_REDUNDENCY){
+         return cps_api_ret_code_OK;
+     }
+
+     auto it = _nodes->_db_node_map.find(group);
+     if( it == _nodes->_db_node_map.end()){
+         EV_LOGGING(DSAPI,ERR,"CPS-DB","No group named %s found",group);
+         return cps_api_ret_code_ERR;
+     }
+
+     for ( auto node_it : it->second){
+         cps_db::connection_request b(cps_db::ProcessDBCache(),DEFAULT_REDIS_ADDR);
+         if (!b.valid()) {
+             return false;
+         }
+         cps_api_object_guard og(cps_api_object_create());
+
+         if (!cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),CPS_DB_INSTANCE_OBJ,
+                                                cps_api_qualifier_TARGET)) {
+             EV_LOGGING(DSAPI,ERR,"CPS-CLS-MAP","Meta data for cluster set is not loaded.");
+             return false;
+         }
+
+
+         cps_api_set_key_data(og.get(),CPS_DB_INSTANCE_GROUP,cps_api_object_ATTR_T_BIN,group,strlen(group)+1);
+         cps_api_set_key_data(og.get(),CPS_DB_INSTANCE_NODE_ID,cps_api_object_ATTR_T_BIN,node_it._name.c_str(),
+                                 strlen(node_it._name.c_str())+1);
+
+        cps_db::delete_object(b.get(),og.get());
+     }
+
+     _nodes->_master.erase(std::string(group));
+     _nodes->_db_node_map.erase(std::string(group));
+
+     return cps_api_clean_db_instance(group);
+
 }
 
 bool cps_api_db_get_node_group(const std::string &group,std::vector<std::string> &lst) {
@@ -64,13 +145,15 @@ bool cps_api_db_get_node_group(const std::string &group,std::vector<std::string>
     return true;
 }
 
-cps_api_return_code_t cps_api_set_master_node(cps_api_node_group_t *group,const char * node_name){
+
+
+cps_api_return_code_t cps_api_set_master_node(const char *group,const char * node_name){
     std::lock_guard<std::recursive_mutex> lg(_mutex);
     (void)load_groups();
 
     cps_api_node_data_type_t type;
-    if(!_nodes->get_group_type(std::string(group->id),type)){
-        EV_LOGGING(DSAPI,ERR,"SET-MASTER","Failed to get group type for %s",group->id);
+    if(!_nodes->get_group_type(std::string(group),type)){
+        EV_LOGGING(DSAPI,ERR,"SET-MASTER","Failed to get group type for %s",group);
         return cps_api_ret_code_ERR;
     }
 
@@ -79,7 +162,7 @@ cps_api_return_code_t cps_api_set_master_node(cps_api_node_group_t *group,const 
         return cps_api_ret_code_ERR;
     }
 
-    auto it = _nodes->_db_node_map.find(group->id);
+    auto it = _nodes->_db_node_map.find(group);
     if( it == _nodes->_db_node_map.end()){
         EV_LOGGING(DSAPI,ERR,"CPS-DB","No group named %s found",group);
         return cps_api_ret_code_ERR;
@@ -88,9 +171,9 @@ cps_api_return_code_t cps_api_set_master_node(cps_api_node_group_t *group,const 
     std::string master_node;
     for ( auto node_it : it->second){
         if (strncmp(node_it._name.c_str(),node_name,strlen(node_name))==0){
-            auto master_it = _nodes->_master.find(group->id);
+            auto master_it = _nodes->_master.find(group);
             if(master_it != _nodes->_master.end()){
-                if(master_it->second.compare(node_it._addr)){
+                if(master_it->second.compare(node_it._addr) == 0){
                     return cps_api_ret_code_OK;
                 }else{
                     cps_db::connection_request b(cps_db::ProcessDBCache(),node_it._addr.c_str());
@@ -106,9 +189,10 @@ cps_api_return_code_t cps_api_set_master_node(cps_api_node_group_t *group,const 
                 }
 
             }
-            _nodes->_master[group->id]=node_it._addr;
+            _nodes->_master[group]=node_it._addr;
             master_node = node_it._addr;
             found = true;
+            break;
         }
     }
 

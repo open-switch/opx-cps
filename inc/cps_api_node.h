@@ -90,10 +90,10 @@ const char * cps_api_key_get_node(cps_api_object_t obj);
 
 /**
  * Set the master node of a group for 1+1 type group
- * @param group the group configuration
- * @node_name name of the node which is part of configuration
+ * @param group name of the group
+ * @node_name name of the node which is part of the group
  * @return on success the call returns cps_api_ret_code_OK otherwise there will be a specific cps return code
  */
-cps_api_return_code_t cps_api_set_master_node(cps_api_node_group_t *group,const char * node_name);
+cps_api_return_code_t cps_api_set_master_node(const char *group,const char * node_name);
 
 #endif /* CPS_API_NODE_H_ */

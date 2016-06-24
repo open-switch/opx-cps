@@ -63,6 +63,7 @@ TEST(cps_api_db,db_node_list) {
     _g.data_type = cps_api_node_data_1_PLUS_1_REDUNDENCY;
 
     cps_api_set_node_group(&_g);
+    cps_api_set_master_node("A","NODE1");
 
     cps_api_nodes nodes;
     ASSERT_TRUE(nodes.load());

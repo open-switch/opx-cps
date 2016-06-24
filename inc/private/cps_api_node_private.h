@@ -69,11 +69,10 @@ class cps_api_nodes {
     bool load_groups();
     bool load_aliases();
 public:
-      db_node_data_t _db_node_map;
+    db_node_data_t _db_node_map;
     group_master_data_t _master;
 
-    bool add_db_node(const char * group, const char *ip,_db_node_data & db_node);
-      bool get_port_info(const char *name,_db_node_data *nd);
+    bool get_port_info(const char *name,_db_node_data *nd);
 
     const char * addr(const char *addr);
     const char * addr(const std::string &str) { return addr(str.c_str()); }

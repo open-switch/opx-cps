@@ -1,13 +1,14 @@
 
 #include "cps_api_node.h"
 #include "cps_api_node_private.h"
-
+#include "cps_api_node_set.h"
 #include "cps_api_db.h"
 
 #include "cps_api_object.h"
 #include "cps_class_map.h"
 #include "cps_api_object_key.h"
 #include "cps_api_node_set.h"
+#include "cps_string_utils.h"
 #include "dell-cps.h"
 
 #include "event_log.h"
@@ -16,6 +17,7 @@
 
 
 cps_api_return_code_t cps_api_delete_node_group(const char *grp) {
+    cps_api_db_del_node_group(grp);
     cps_api_object_guard og(cps_api_object_create());
     cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),CPS_NODE_DETAILS, cps_api_qualifier_TARGET);
 
@@ -29,7 +31,7 @@ cps_api_return_code_t cps_api_delete_node_group(const char *grp) {
 
 static bool cps_api_find_local_node(cps_api_node_group_t *group,size_t &node_ix){
     for(size_t ix = 0 ; ix < group->addr_len ; ++ix){
-        if(strncmp(group->addrs->addr,"127.0.0.1",strlen("127.0.0.1"))==0){
+        if(strncmp(group->addrs[ix].addr,"127.0.0.1",strlen("127.0.0.1"))==0){
             node_ix = ix;
             return true;
         }
@@ -240,25 +242,11 @@ bool cps_api_nodes::get_port_info(const char *group, _db_node_data *nd){
             return false;
         }
         nd->_addr = port;
+        return true;
     }
-    return true;
+    return false;
 }
 
-bool cps_api_nodes::add_db_node(const char *group,const char *ip,_db_node_data & db_node){
-    std::string old_ip = ip;
-    std::size_t ip_pos = old_ip.find(':');
-    old_ip = old_ip.substr(0,ip_pos);
-    db_node._addr = old_ip + db_node._addr;
-    auto it = _db_node_map.find(group);
-    if( it == _db_node_map.end()){
-        std::vector<_db_node_data> v;
-        v.push_back(std::move(db_node));
-        _db_node_map[group] = std::move(v);
-    }else{
-        _db_node_map[group].push_back(std::move(db_node));
-    }
-    return true;
-}
 
 bool cps_api_nodes::load_groups() {
     cps_api_object_guard og(cps_api_object_create());
@@ -273,6 +261,7 @@ bool cps_api_nodes::load_groups() {
     }
 
     group_data_t cpy;
+    std::vector<_db_node_data> v;
 
     cps_api_object_list_guard lg(cps_api_object_list_create());
     if (!cps_db::get_objects(b.get(),og.get(),lg.get())) return false;
@@ -283,6 +272,7 @@ bool cps_api_nodes::load_groups() {
         const char *name = (const char*) cps_api_object_get_data(o,CPS_NODE_GROUP_NAME);
         _node_data nd;
         _db_node_data db_node;
+
 
         cps_api_node_data_type_t *_type = (cps_api_node_data_type_t*)cps_api_object_get_data(o,CPS_NODE_GROUP_TYPE);
         if (_type==nullptr){
@@ -313,14 +303,23 @@ bool cps_api_nodes::load_groups() {
 
             if(nd.type == cps_api_node_data_1_PLUS_1_REDUNDENCY){
                 db_node._name = __name;
-                if(!get_port_info(name,&db_node)){
-                    EV_LOGGING(DSAPI,ERR,"CPS-DB","Failed to get port info for group %s and node %s",
-                       name,__name);
-                    return false;
+                if(get_port_info(name,&db_node)){
+                    auto lst = cps_string::split(std::string(__ip),":");
+                    if (lst.size()!=2) {
+                        return false;
+                    }
+                    db_node._addr = lst[0] + ':'+ db_node._addr;
+                    v.push_back(std::move(db_node));
                 }
+                EV_LOGGING(DSAPI,ERR,"CPS-DB","Failed to get port info for group %s and node %s",
+                                       name,__name);
 
-                add_db_node(name,__ip,db_node);
             }
+
+            if(v.size()>0){
+                _db_node_map[name] = v;
+            }
+
             _alias_map[__name] = __ip;
 
             const char * _alias = this->addr(__ip);
