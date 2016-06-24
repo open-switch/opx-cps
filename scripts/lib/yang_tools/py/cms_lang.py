@@ -438,11 +438,11 @@ class Language:
                         print "                  /* No default value. Check for null before using it */"
                         print "                  if(!val_is_null(val)) {"
                         if typ in self.type_extractor_map.keys():
-                            print "                       EV_LOG_INFO(MGMT_LOG_SUBSYSTEM,0,\"CMA\",\", value of " + self.names_short[self.names[leaf]] + " is " + self.type_formatter_map[typ] + "\\n\"," + self.type_extractor_map[typ] + "(val));"
+                            print "                       EV_LOGGING(MGMT_LOG_SUBSYSTEM,INFO,\"CMA\",\", value of " + self.names_short[self.names[leaf]] + " is " + self.type_formatter_map[typ] + "\\n\"," + self.type_extractor_map[typ] + "(val));"
                         print "                  }"
                     else:
                         if typ in self.type_extractor_map.keys():
-                            print "                  EV_LOG_INFO(MGMT_LOG_SUBSYSTEM,0,\"CMA\",\", value of " + self.names_short[self.names[leaf]] + " is " + self.type_formatter_map[typ] + "\\n\"," + self.type_extractor_map[typ] + "(val));"
+                            print "                  EV_LOGGING(MGMT_LOG_SUBSYSTEM,INFO,\"CMA\",\", value of " + self.names_short[self.names[leaf]] + " is " + self.type_formatter_map[typ] + "\\n\"," + self.type_extractor_map[typ] + "(val));"
                     print "              }"
                     print "              break;"
                 else:
@@ -463,7 +463,7 @@ class Language:
     def spit_rpc_node(self, cb_node):
         print "cps_api_return_code_t _rpc_" + self.get_aug_key_for_key(cb_node) + "(void * context, cps_api_transaction_params_t * param, size_t key_ix) {"
         print ""
-        print "  EV_LOG_INFO(MGMT_LOG_SUBSYSTEM,0,\"CMA\","
+        print "  EV_LOGGING(MGMT_LOG_SUBSYSTEM,INFO,\"CMA\","
         print "     \"_rpc_" + self.get_aug_key_for_key(cb_node) + " called.\\n\"); "
         print "  /*iterator for leaf-list*/"
         print "  cps_api_object_it_t it;"
@@ -484,7 +484,7 @@ class Language:
     def read_cb_node(self, cb_node):
         print "static cps_api_return_code_t _get_" + self.get_aug_key_for_key(cb_node) + " (void * context, cps_api_get_params_t * param, size_t key_ix) {"
         print ""
-        print "  EV_LOG_INFO(MGMT_LOG_SUBSYSTEM,0,\"CMA\","
+        print "  EV_LOGGING(MGMT_LOG_SUBSYSTEM,INFO,\"CMA\","
         print "     \"_get_" + self.get_aug_key_for_key(cb_node) + " called.\\n\"); "
         print "  cps_api_object_t filter = cps_api_object_list_get(param->filters,key_ix);"
         print "  cps_api_key_t *key    = cps_api_object_key(filter);"
@@ -520,7 +520,7 @@ class Language:
         print "  cma_edit_mode_t edit_mode;"
         print "  cma_edit_mode(obj,&edit_mode);"
 
-        print "  EV_LOG_INFO(MGMT_LOG_SUBSYSTEM,0,\"CMA\","
+        print "  EV_LOGGING(MGMT_LOG_SUBSYSTEM,INFO,\"CMA\","
         print "     \"_set_" + self.get_aug_key_for_key(cb_node) + " called. phase is %d and op is %d.\\n\", "
         print "     edit_mode.phase, edit_mode.op);"
 
@@ -576,11 +576,11 @@ class Language:
         if self.module_obj.get_if_augments() != True:
             print "    /* Register with CMS to get the startup config replayed */"
             print "    if (cma_module_register(1, modreg) !=true) {"
-            print "        EV_LOG(ERR,MGMT,0,\"CMA\",\"Error registering modules has failed\\n\");"
+            print "        EV_LOGGING(MGMT_LOG_SUBSYSTEM,ERR,\"CMA\",\"Error registering modules has failed\\n\");"
             print "        return;"
             print "    }"
             print ""
-            print "    EV_LOG_INFO(MGMT_LOG_SUBSYSTEM,0,\"CMA\",\"Interface cma registered to CMS SUCCESS.\\n\");"
+            print "    EV_LOGGING(MGMT_LOG_SUBSYSTEM,INFO,\"CMA\",\"Interface cma registered to CMS SUCCESS.\\n\");"
         print ""
         print "}"
 
