@@ -122,6 +122,7 @@ cps_api_return_code_t cps_api_db_operation_commit(cps_api_transaction_params_t *
     },nullptr)) {
         return cps_api_ret_code_ERR;
     }
+    ///TODO add send event for changed events
     if (_failed_nodes.size()!=0) cps_api_object_attr_add(o,CPS_OBJECT_GROUP_FAILED_NODES,_failed_nodes.c_str(),_failed_nodes.size()+1);
     return result==true? cps_api_ret_code_OK : cps_api_ret_code_ERR;
 }

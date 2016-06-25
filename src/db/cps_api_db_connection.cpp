@@ -78,7 +78,7 @@ bool cps_db::connection::connect(const std::string &s_, const std::string &db_in
     if (_async) {
         _ctx = redisAsyncConnect(lst[0].c_str(), port);
     } else {
-        timeval tv = { 1 /*Second */ , 0 };
+        timeval tv = { 2 /*Second */ , 0 };
         _ctx = redisConnectWithTimeout(lst[0].c_str(), port,tv);
     }
 
@@ -265,7 +265,7 @@ bool cps_db::connection::response(response_set &data_, ssize_t at_least_) {
         data_.add(reply);
         --_pending;
     }
-    if (_pending <=0 ) _pending = 0;
+    if (_pending <0 ) _pending = 0;
     return true;
 }
 

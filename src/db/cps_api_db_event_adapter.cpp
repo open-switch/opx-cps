@@ -14,9 +14,6 @@
  * permissions and limitations under the License.
  */
 
-/*
- * filename: hal_event_service.c
- */
 
 
 #include "cps_api_node_private.h"
@@ -27,11 +24,9 @@
 #include "cps_api_node_set.h"
 
 #include "dell-cps.h"
+
 #include "cps_class_map.h"
-#include "cps_api_operation.h"
-#include "cps_api_service.h"
-#include "private/cps_ns.h"
-#include "cps_api_service.h"
+
 #include "cps_string_utils.h"
 #include "cps_api_vector_utils.h"
 
@@ -46,7 +41,6 @@
 #include <vector>
 #include <mutex>
 #include <unordered_map>
-#include <unordered_set>
 #include <memory>
 
 struct db_connection_details {

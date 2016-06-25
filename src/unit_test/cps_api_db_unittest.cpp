@@ -14,36 +14,26 @@
  * permissions and limitations under the License.
  */
 
-#include "cps_api_events.h"
-
-
-#include <stdio.h>
-#include <stdlib.h>
-
-
-#include "gtest/gtest.h"
 
 #include "cps_api_node.h"
 #include "cps_api_node_private.h"
-
+#include "cps_class_map.h"
 #include "cps_api_db.h"
 #include "cps_string_utils.h"
-
-#include "cps_class_map.h"
-#include "cps_api_events.h"
-#include "cps_api_event_init.h"
-#include "std_event_service.h"
-
-#include "cps_api_service.h"
 
 #include "cps_api_operation_tools.h"
 #include "cps_dictionary.h"
 
+#include "cps_class_ut_data.h"
+
+#include "gtest/gtest.h"
+
 #include <pthread.h>
 #include <sys/select.h>
-
+#include <stdio.h>
+#include <stdlib.h>
 #include <vector>
-#include "cps_class_ut_data.h"
+
 
 
 TEST(cps_api_db,init) {
@@ -160,7 +150,7 @@ TEST(cps_api_db,db_set_list_obj) {
     cps_api_object_attr_add_u32(obj,BASE_IP_IPV6_VRF_ID,0);
 
     size_t ix = 0;
-    size_t mx = 100;
+    static const size_t mx = 1000;
     for ( ; ix < mx ; ++ix ) {
         cps_api_object_t o = cps_api_object_list_create_obj_and_append(list);
         cps_api_object_clone(o,obj);
@@ -171,6 +161,7 @@ TEST(cps_api_db,db_set_list_obj) {
 
     cps_db::connection_request b(cps_db::ProcessDBCache(),DEFAULT_REDIS_ADDR);
     ASSERT_TRUE(b.valid());
+
 
     ASSERT_TRUE(cps_db::delete_objects(b.get(),list));
 
@@ -228,7 +219,7 @@ TEST(cps_api_db,db_node_alias) {
 TEST(cps_api_db,db_node_get_set) {
 
 
-    cps_api_node_ident ids[1] = { {"NODE1", "127.0.0.1:6379 "} };
+    cps_api_node_ident ids[1] = { {"NODE1", "10.11.57.21:6379 "} };
     cps_api_node_group_t _g;
 
     _g.id = "A";

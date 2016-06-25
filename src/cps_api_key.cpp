@@ -19,6 +19,7 @@
  * cps_api_key.c
  */
 
+#include "cps_class_map.h"
 #include "cps_api_key.h"
 #include "cps_api_object_key.h"
 #include "std_utils.h"
@@ -76,6 +77,28 @@ extern "C" char * cps_api_key_print(cps_api_key_t *key, char *buff, size_t len) 
 
     return buff;
 }
+
+extern "C" char *cps_api_key_name_print(cps_api_key_t *key, char *buff, size_t len) {
+
+    STD_ASSERT(buff!=NULL);
+    
+    const char *qual = nullptr;
+    const char *path = nullptr;
+    
+    qual = cps_class_qual_from_key(key);
+    path = cps_class_string_from_key(key, 1);
+        
+    if (qual != nullptr && path != nullptr) { strncpy(buff,qual,len-1); strncat(buff,"/",len-1);  }
+    else *buff = '\0';
+      
+    if (path != nullptr) strncat(buff,path,len-1);
+    else cps_api_key_print(key,buff,len);
+
+    buff[len-1] = '\0';
+        
+    return buff;
+}
+
 
 extern "C" bool cps_api_key_from_string(cps_api_key_t *key,const char *buff) {
     std_parsed_string_t handle;
