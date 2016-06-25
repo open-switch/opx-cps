@@ -336,7 +336,7 @@ bool __get_objs(cps_db::connection &conn, std::vector<std::vector<char>> &all_ke
     multi.from_string("EXEC");
     if (!conn.operation(&multi,1,false)) return false;
 
-    {	//start of multi
+    {    //start of multi
         cps_db::response_set multi;
         if (!conn.response(multi,1)) return false;
         cps_db::response _multi(multi.get()[0]);
@@ -356,13 +356,13 @@ bool __get_objs(cps_db::connection &conn, std::vector<std::vector<char>> &all_ke
 
     //load the respose for the exec - all responses in array
     cps_db::response _exec(resp.get()[0]);
-    for ( size_t ix = start, _end_elem = _exec.elements(); ix < _end_elem; ++ix  ) {
+    for ( size_t ix = 0, _end_elem = _exec.elements(); ix < _end_elem; ++ix  ) {
         cps_db::response _resp(_exec.element_at(ix));
         cps_api_object_guard og(cps_api_object_create());
         if (_resp.is_str() && _resp.get_str()!=nullptr &&
-        		cps_api_array_to_object(_resp.get_str(),_resp.get_str_len(),og.get())) {
+                cps_api_array_to_object(_resp.get_str(),_resp.get_str_len(),og.get())) {
             if (!cps_api_object_list_append(obj_list,og.get())) {
-            	return false;
+                return false;
             }
             og.release();
         }
@@ -386,12 +386,12 @@ bool cps_db::get_objects(cps_db::connection &conn,std::vector<char> &key,cps_api
     const static int CHUNK_SIZE = CPS_DB_MAX_ITEMS_PER_PIPELINE;
 
     do {
-    	size_t _start = _processed_len;
-    	_processed_len = _start + CHUNK_SIZE;
-    	if (_processed_len > all_keys.size()) _processed_len = all_keys.size();
-    	if (!__get_objs(conn,all_keys,_start,_processed_len,obj_list)) {
-    		return false;
-    	}
+        size_t _start = _processed_len;
+        _processed_len = _start + CHUNK_SIZE;
+        if (_processed_len > all_keys.size()) _processed_len = all_keys.size();
+        if (!__get_objs(conn,all_keys,_start,_processed_len,obj_list)) {
+            return false;
+        }
     } while (_processed_len < all_keys.size());
 
     return true;

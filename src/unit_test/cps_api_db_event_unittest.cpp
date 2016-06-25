@@ -18,8 +18,6 @@
 #include "cps_api_events.h"
 #include "private/db/cps_api_db.h"
 
-
-
 #include "cps_api_operation.h"
 #include "cps_api_events.h"
 #include "cps_api_event_init.h"
