@@ -54,7 +54,7 @@ TEST(cps_api_db,db_node_list) {
     cps_api_object_list_t list =cps_api_object_list_create();
     cps_api_object_list_guard lg(list);
 
-    cps_api_node_ident ids[2] = { {"NODE1", "127.0.0.1:6379"}, {"NODE2","10.11.63.197:6379"} };
+    cps_api_node_ident ids[2] = { {"NODE1", "10.11.56.37:6379"}, {"NODE2","127.0.0.1:6379"} };
     cps_api_node_group_t _g;
 
     _g.id = "A";
@@ -62,15 +62,10 @@ TEST(cps_api_db,db_node_list) {
     _g.addr_len = 2;
     _g.data_type = cps_api_node_data_1_PLUS_1_REDUNDENCY;
 
-    cps_api_set_node_group(&_g);
-    cps_api_set_master_node("A","NODE1");
+    ASSERT_EQ(cps_api_set_node_group(&_g),cps_api_ret_code_OK);
+    ASSERT_EQ(cps_api_set_master_node("A","NODE1"),cps_api_ret_code_OK);
+    ASSERT_EQ(cps_api_delete_node_group("A"),cps_api_ret_code_OK);
 
-    cps_api_nodes nodes;
-    ASSERT_TRUE(nodes.load());
-
-    ASSERT_TRUE(nodes.part_of("A","127.0.0.1:6379"));
-    ASSERT_TRUE(nodes.part_of("A","172.17.0.6:6380"));
-    ASSERT_TRUE(!nodes.part_of("A","372.17.0.6:6379"));
 }
 
 

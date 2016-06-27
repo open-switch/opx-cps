@@ -146,6 +146,21 @@ bool cps_api_db_get_node_group(const std::string &group,std::vector<std::string>
 }
 
 
+static bool cps_api_remove_slave(std::string & addr){
+     cps_db::connection_request b(cps_db::ProcessDBCache(),addr.c_str());
+     if (!b.valid()) {
+         return false;
+     }
+
+    if (!cps_db::remove_slave(b.get())) {
+        EV_LOGGING(DSAPI,ERR,"SET-MASTER","Failed to remove node %s as slave",
+                    addr.c_str());
+        return false;
+    }
+
+    return true;
+}
+
 
 cps_api_return_code_t cps_api_set_master_node(const char *group,const char * node_name){
     std::lock_guard<std::recursive_mutex> lg(_mutex);
@@ -176,14 +191,7 @@ cps_api_return_code_t cps_api_set_master_node(const char *group,const char * nod
                 if(master_it->second.compare(node_it._addr) == 0){
                     return cps_api_ret_code_OK;
                 }else{
-                    cps_db::connection_request b(cps_db::ProcessDBCache(),node_it._addr.c_str());
-                    if (!b.valid()) {
-                        return cps_api_ret_code_ERR;
-                    }
-
-                    if (!cps_db::remove_slave(b.get())) {
-                        EV_LOGGING(DSAPI,ERR,"SET-MASTER","Failed to remove node %s as slave",
-                                    node_it._name.c_str());
+                    if(!cps_api_remove_slave(node_it._addr)){
                         return cps_api_ret_code_ERR;
                     }
                 }
@@ -191,6 +199,10 @@ cps_api_return_code_t cps_api_set_master_node(const char *group,const char * nod
             }
             _nodes->_master[group]=node_it._addr;
             master_node = node_it._addr;
+            if(strncmp(node_it._addr.c_str(),"127.0.0.1",strlen("127.0.0.1"))==0){
+                EV_LOGGING(DSAPI,DEBUG,"SET-MASTER","Setting local node %s master for group %s",node_name,group);
+                return cps_api_remove_slave(node_it._addr) ? cps_api_ret_code_OK : cps_api_ret_code_ERR;
+            }
             found = true;
             break;
         }

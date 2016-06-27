@@ -19,9 +19,9 @@
 cps_api_return_code_t cps_api_delete_node_group(const char *grp) {
     cps_api_db_del_node_group(grp);
     cps_api_object_guard og(cps_api_object_create());
-    cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),CPS_NODE_DETAILS, cps_api_qualifier_TARGET);
+    cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),CPS_NODE_GROUP, cps_api_qualifier_TARGET);
 
-    cps_api_object_attr_add(og.get(),CPS_NODE_DETAILS_NAME,grp,strlen(grp)+1);
+    cps_api_object_attr_add(og.get(),CPS_NODE_GROUP_NAME,grp,strlen(grp)+1);
 
     cps_db::connection_request b(cps_db::ProcessDBCache(),DEFAULT_REDIS_ADDR);
     cps_db::delete_object(b.get(),og.get());
@@ -166,9 +166,7 @@ cps_api_return_code_t cps_api_set_node_group(cps_api_node_group_t *group) {
 
     //send out changed...
     if(group->data_type == cps_api_node_data_1_PLUS_1_REDUNDENCY){
-        if(!cps_api_create_global_instance(group)){
-            return cps_api_ret_code_ERR;
-        }
+        return cps_api_create_global_instance(group);
     }
 
     return cps_api_ret_code_OK;
