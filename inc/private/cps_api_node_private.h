@@ -64,7 +64,6 @@ class cps_api_nodes {
     size_t _hash;
 
     alias_map_t _alias_map;
-
     static size_t gen_hash(group_data_t &src);
     bool load_groups();
     bool load_aliases();
@@ -73,7 +72,6 @@ public:
     group_master_data_t _master;
 
     bool get_port_info(const char *name,_db_node_data *nd);
-
     const char * addr(const char *addr);
     const char * addr(const std::string &str) { return addr(str.c_str()); }
     bool get_group_type(const std::string & group,cps_api_node_data_type_t &type);

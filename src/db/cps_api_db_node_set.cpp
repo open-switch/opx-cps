@@ -81,17 +81,17 @@ bool cps_api_db_del_node_group(const char *group){
      cps_api_node_data_type_t type;
      if(!_nodes->get_group_type(std::string(group),type)){
          EV_LOGGING(DSAPI,ERR,"DEL-MASTER","Failed to get group type for %s",group);
-         return cps_api_ret_code_ERR;
+         return false;
      }
 
      if(type != cps_api_node_data_1_PLUS_1_REDUNDENCY){
-         return cps_api_ret_code_OK;
+         return false;
      }
 
      auto it = _nodes->_db_node_map.find(group);
      if( it == _nodes->_db_node_map.end()){
          EV_LOGGING(DSAPI,ERR,"CPS-DB","No group named %s found",group);
-         return cps_api_ret_code_ERR;
+         return false;
      }
 
      for ( auto node_it : it->second){
