@@ -14,11 +14,6 @@
  * permissions and limitations under the License.
  */
 
-/*
- * cps_class_map_query.cpp
- *
- *  Created on: Aug 5, 2015
- */
 
 
 #include "cps_class_map.h"

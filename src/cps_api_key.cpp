@@ -128,7 +128,6 @@ extern "C" cps_api_object_attr_t cps_api_get_key_data(cps_api_object_t obj,cps_a
     return p;
 }
 
-
 extern "C" bool cps_api_set_key_data(cps_api_object_t obj,cps_api_attr_id_t id,
         cps_api_object_ATTR_TYPE_t type, const void *data, size_t len) {
     cps_api_attr_id_t ids[] = {CPS_API_OBJ_KEY_ATTRS,id};
@@ -147,7 +146,6 @@ extern "C" uint64_t cps_api_key_hash(cps_api_key_t *key) {
     }
     return hash;
 }
-
 
 bool cps_api_key_insert_element(cps_api_key_t *key, size_t ix, cps_api_key_element_t elem) {
     if ((cps_api_key_get_len(key)+1) >= CPS_OBJ_MAX_KEY_LEN) {

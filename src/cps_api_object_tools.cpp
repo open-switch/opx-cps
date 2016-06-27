@@ -23,6 +23,10 @@
 #include "cps_api_object.h"
 #include "cps_class_map.h"
 
+#include "cps_api_object_key.h"
+
+#include <string.h>
+
 extern "C" cps_api_object_t cps_api_obj_tool_create(cps_api_qualifier_t qual,cps_api_attr_id_t id, bool add_defaults) {
     cps_api_object_guard og(cps_api_object_create());
     if (!og.valid()) return nullptr;
@@ -79,4 +83,33 @@ extern "C" bool cps_api_obj_tool_matches_filter(cps_api_object_t filter, cps_api
     cps_api_object_it_t obj_it;
     cps_api_object_it_begin(obj,&obj_it);
     return __cps_api_obj_tool_matches_filter(it,obj_it,require_all_attribs);
+}
+
+
+bool cps_api_obj_tool_merge(cps_api_object_t main, cps_api_object_t overlay) {
+    cps_api_object_it_t it;
+
+    cps_api_object_it_begin(overlay,&it);
+    do {
+        cps_api_object_attr_delete(main,cps_api_object_attr_id(it.attr));
+        if (!cps_api_object_attr_add(main,cps_api_object_attr_id(it.attr),cps_api_object_attr_data_bin(it.attr),
+                cps_api_object_attr_len(it.attr))) {
+            return false;
+        }
+    } while (cps_api_object_it_next(&it));
+    return true;
+}
+
+bool cps_api_obj_tool_attr_matches(cps_api_object_t obj, cps_api_attr_id_t *ids, void ** values, size_t *len, size_t mx_) {
+    for ( size_t ix = 0 ; ix < mx_ ; ++ix ) {
+        cps_api_object_attr_t attr = cps_api_get_key_data(obj,ids[ix]);
+        if (attr==nullptr) return false;
+        size_t _len = cps_api_object_attr_len(attr);
+        void * _data = cps_api_object_attr_data_bin(attr);
+        if (len[ix]==_len) {
+            if (memcmp(_data,values[ix],len[ix])==0) continue;
+        }
+        return false;
+    }
+    return true;
 }

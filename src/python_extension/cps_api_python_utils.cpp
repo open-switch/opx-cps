@@ -66,7 +66,6 @@ bool py_cps_util_append_item_to_list(PyObject *l, PyObject *o , bool gc ) {
     return true;
 }
 
-
 cps_api_object_t cps_obj_from_array(PyObject *array) {
     cps_api_object_t obj = cps_api_object_create();
     cps_api_object_guard og(obj);
@@ -174,12 +173,6 @@ static void py_obj_dump_level(PyObject * d, cps_api_object_it_t *it, std::vector
     }
 }
 
-static std::map<std::string,cps_api_operation_types_t> _op_types = {
-        { "delete",cps_api_oper_DELETE},
-        { "create",cps_api_oper_CREATE},
-        { "set",cps_api_oper_SET},
-        { "action",cps_api_oper_ACTION}
-};
 
 PyObject * cps_obj_to_dict(cps_api_object_t obj) {
     if (obj==NULL) return PyDict_New();
@@ -201,13 +194,10 @@ PyObject * cps_obj_to_dict(cps_api_object_t obj) {
 
 
     cps_api_operation_types_t type = cps_api_object_type_operation(cps_api_object_key(obj));
+    const char * _type = cps_operation_type_to_string(type);
 
-    auto a_it = std::find_if(_op_types.begin(),_op_types.end(),[&type]
-        (const std::map<std::string,cps_api_operation_types_t>::value_type &val) {
-            return val.second ==type;
-        });
-    if (a_it!=_op_types.end()) {
-        py_cps_util_set_item_to_dict(o,"operation",PyString_FromString(a_it->first.c_str()));
+    if (_type!=nullptr) {
+        py_cps_util_set_item_to_dict(o,"operation",PyString_FromString(_type));
     }
 
     return o;
@@ -294,16 +284,11 @@ cps_api_object_t dict_to_cps_obj(PyObject *dict) {
 
     cps_api_operation_types_t _op = (cps_api_operation_types_t)(0);
     if (op!=nullptr) {
-        auto it = _op_types.find(PyString_AsString(op));
-        if (it==_op_types.end()) {
-            py_set_error_string("Invalid operation type specified on converted object.");
-            return nullptr;
-        }
-        _op = it->second;
+        const cps_api_operation_types_t* __op = cps_operation_type_from_string(PyString_AsString(op));
+        if (__op!=nullptr) _op = *__op;
     }
 
     cps_api_object_guard og(dict_to_cps_obj(PyString_AsString(key),d));
-
     cps_api_object_set_type_operation(cps_api_object_key(og.get()),_op);
 
     return og.release();

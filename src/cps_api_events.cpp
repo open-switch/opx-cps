@@ -27,6 +27,8 @@
 #include "std_thread_tools.h"
 #include "std_error_codes.h"
 
+#include "event_log.h"
+#include "std_time_tools.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <vector>
@@ -52,7 +54,19 @@ cps_api_return_code_t cps_api_event_client_connect(cps_api_event_service_handle_
 
 cps_api_return_code_t cps_api_event_client_register(cps_api_event_service_handle_t handle,
         cps_api_event_reg_t * req) {
-    return m_method.register_function(handle,req);
+    cps_api_object_list_guard lg(cps_api_object_list_create());
+    for ( size_t ix = 0 ; ix < req->number_of_objects; ++ix ) {
+        cps_api_object_t o = cps_api_object_list_create_obj_and_append(lg.get());
+        if (o==nullptr) return cps_api_ret_code_ERR;
+
+        cps_api_key_copy(cps_api_object_key(o),&req->objects[ix]);
+    }
+    return m_method.register_function_objs(handle,lg.get());
+}
+
+cps_api_return_code_t cps_api_event_client_register_object(cps_api_event_service_handle_t handle,
+        cps_api_object_list_t objects) {
+    return m_method.register_function_objs(handle,objects);
 }
 
 cps_api_return_code_t cps_api_event_publish(cps_api_event_service_handle_t handle,
@@ -69,15 +83,14 @@ cps_api_return_code_t cps_api_wait_for_event(cps_api_event_service_handle_t hand
     return m_method.wait_for_event_function(handle,msg);
 }
 
-
 typedef struct {
-    cps_api_key_t key;
+    cps_api_object_t obj;
     cps_api_event_thread_callback_t cb;
     void * context;
-    cps_api_event_reg_prio_t prio;
 } cps_api_event_thread_cbs_t;
 
 static std_rw_lock_t rw_lock;
+
 static bool initied = false;
 static bool is_running = false;
 static cps_api_event_service_handle_t _thread_handle;
@@ -101,13 +114,19 @@ static  void * _thread_function_(void * param) {
     while (is_running) {
         if (cps_api_wait_for_event(_thread_handle,obj)==cps_api_ret_code_OK) {
             std_rw_lock_read_guard rg(&rw_lock);
-            key_list_t::iterator it = cb_map.begin();
-            key_list_t::iterator end = cb_map.end();
-            for ( ; it != end ; ++it ) {
+            size_t ix = 0;
+            size_t mx = cb_map.size();
+
+            for ( ; ix < mx ; ++ix ) {
                 cps_api_key_t * obj_key = cps_api_object_key(obj);
-                cps_api_key_t * pref = &it->key;
+                cps_api_key_t * pref = cps_api_object_key(cb_map[ix].obj);
                 if (cps_api_key_matches(obj_key,pref,false)==0) {
-                    if (!it->cb(obj,it->context)) break;
+                    auto cb = cb_map[ix].cb;
+                    auto param = cb_map[ix].context;
+                    std_rw_unlock(&rw_lock);
+                    if (!cb(obj,param)) break;
+                    std_rw_rlock(&rw_lock);
+                    mx = cb_map.size();
                 }
             }
         } else {
@@ -121,54 +140,76 @@ static  void * _thread_function_(void * param) {
 }
 
 cps_api_return_code_t cps_api_event_thread_init(void) {
-    if (!init_event_thread_func()) return cps_api_ret_code_ERR;
+    return cps_api_ret_code_OK;
+}
 
-    {
-        std_mutex_simple_lock_guard l(&mutex);
-        if (is_running) return cps_api_ret_code_OK;
-        if (cps_api_event_client_connect(&_thread_handle)!=cps_api_ret_code_OK) {
-            return cps_api_ret_code_ERR;
-        }
-        is_running=true;
+static pthread_once_t _once_control = PTHREAD_ONCE_INIT;
+
+void one_time_init() {
+    init_event_thread_func();
+    while (true) {
+        if (cps_api_event_client_connect(&_thread_handle)==cps_api_ret_code_OK) break;
+        EV_LOG(ERR,DSAPI,0,"CPS-EVT-THR","Failed to create thread event handle");
+        std_usleep(1000*1000*1);
     }
 
-
+    is_running = true;
     std_thread_init_struct(&params);
     params.name = "local-event-thread";
     params.thread_function = _thread_function_;
     params.param = NULL;
 
-    if (std_thread_create(&params)!=STD_ERR_OK) {
-        cps_api_event_client_disconnect(_thread_handle);
-        std_thread_destroy_struct(&params);
-        is_running = false;
-        return cps_api_ret_code_ERR;
-    }
-
-    return cps_api_ret_code_OK;
+    STD_ASSERT(std_thread_create(&params)==STD_ERR_OK);
 }
 
-cps_api_return_code_t cps_api_event_thread_reg(cps_api_event_reg_t * reg,
+cps_api_return_code_t cps_api_event_thread_reg_object(cps_api_object_list_t objects,
         cps_api_event_thread_callback_t cb, void * context ) {
+    pthread_once(&_once_control,one_time_init);
 
-    if (cps_api_event_client_register(_thread_handle,reg)!=cps_api_ret_code_OK) {
+    if (cps_api_event_client_register_object(_thread_handle,objects)!=cps_api_ret_code_OK) {
         return cps_api_ret_code_ERR;
     }
+
     cps_api_event_thread_cbs_t p ;
     p.cb = cb;
-    p.prio = reg->priority;
     p.context = context;
     size_t ix = 0;
-    size_t mx = reg->number_of_objects;
+    size_t mx = cps_api_object_list_size(objects);
+
     for ( ; ix < mx ; ++ix ) {
-        cps_api_key_copy(&p.key,reg->objects+ix);
+        p.obj = cps_api_object_create();
+        if (p.obj==nullptr) {
+            //memory allocation failure
+            return cps_api_ret_code_ERR;
+        }
+        if (!cps_api_object_clone(p.obj,cps_api_object_list_get(objects,ix))) {
+            cps_api_object_delete(p.obj);
+            return cps_api_ret_code_ERR;
+        }
         std_rw_lock_write_guard wg(&rw_lock);
         cb_map.push_back(p);
     }
+
     return cps_api_ret_code_OK;
 }
 
+
+cps_api_return_code_t cps_api_event_thread_reg(cps_api_event_reg_t * reg,
+        cps_api_event_thread_callback_t cb, void * context ) {
+    pthread_once(&_once_control,one_time_init);
+
+    cps_api_object_list_guard lg(cps_api_object_list_create());
+    for ( size_t ix = 0, mx = reg->number_of_objects ; ix < mx ; ++ix ) {
+        cps_api_object_t o = cps_api_object_list_create_obj_and_append(lg.get());
+        if (o==nullptr) return cps_api_ret_code_ERR;
+        cps_api_key_copy(cps_api_object_key(o),&reg->objects[ix]);
+    }
+
+    return cps_api_event_thread_reg_object(lg.get(),cb,context);
+}
+
 cps_api_return_code_t cps_api_event_thread_publish(cps_api_object_t object) {
+    pthread_once(&_once_control,one_time_init);
     std_mutex_simple_lock_guard l(&mutex);
     return cps_api_event_publish(_thread_handle,object);
 }

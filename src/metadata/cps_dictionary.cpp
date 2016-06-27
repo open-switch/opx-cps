@@ -25,9 +25,12 @@
 #include "cps_api_key_cache.h"
 #include "cps_api_key.h"
 #include "cps_api_object_attr.h"
+
+
 #include "std_mutex_lock.h"
+#include "event_log.h"
+
 #include <unordered_map>
-#include <map>
 #include <memory>
 
 
@@ -64,7 +67,8 @@ using cps_class_map_string_t = std::unordered_map<std::string,cps_class_map_node
 using cps_class_map_enums_t = std::unordered_map<std::string,CPSEnum>;
 using cps_class_map_id_to_enum_t = std::unordered_map<cps_api_attr_id_t,std::string>;
 using cps_class_map_key_to_map_element = cps_api_key_cache<cps_class_map_node_details_int_t*>;
-using cps_class_map_qual_to_string = std::map<cps_api_qualifier_t,std::string>;
+using cps_class_map_key_to_type = cps_api_key_cache<CPS_API_OBJECT_OWNER_TYPE_t>;
+
 
 
 static std_mutex_lock_create_static_init_rec(lock);
@@ -73,14 +77,8 @@ static cps_class_map_string_t _str_map;
 static cps_class_map_enums_t _enum_map;
 static cps_class_map_id_to_enum_t _attr_id_to_enum;
 static cps_class_map_key_to_map_element _key_to_map_element;
+static cps_class_map_key_to_type _key_storage_type;
 const static size_t NO_OFFSET=0;
-static const cps_class_map_qual_to_string _qual_to_string = {
-        {cps_api_qualifier_TARGET, "target"}, 
-        {cps_api_qualifier_OBSERVED, "observed"}, 
-        {cps_api_qualifier_PROPOSED, "proposed"}, 
-        {cps_api_qualifier_REALTIME, "realtime"}, 
-        {cps_api_qualifier_REGISTRATION, "registration"}
-};
 
 
 
@@ -112,8 +110,9 @@ static void cps_class_data_has_been_loaded(void) {
     std_mutex_simple_lock_guard lg(&lock);
     static bool _map_init=false;
     if (!_map_init) {
-        cps_api_class_map_init();
         _map_init = true;
+        cps_api_class_map_init();
+
     }
 }
 
@@ -141,9 +140,6 @@ void cps_dict_walk(void *context, cps_dict_walk_fun fun) {
     }
 }
 
-
-extern "C" {
-
 cps_api_return_code_t cps_class_map_init(cps_api_attr_id_t id, const cps_api_attr_id_t *ids, size_t ids_len,
         cps_class_map_node_details *details) {
     std_mutex_simple_lock_guard lg(&lock);
@@ -152,6 +148,7 @@ cps_api_return_code_t cps_class_map_init(cps_api_attr_id_t id, const cps_api_att
     if(ids_len==0) return cps_api_ret_code_ERR;
 
     if (_class_def.find(id)!=_class_def.end()) {
+        EV_LOG(ERR,DSAPI,0,"CPS-META","ID %d is already used by another component - %s failed",id,details->name);
         return cps_api_ret_code_ERR;
     }
 
@@ -183,10 +180,15 @@ cps_api_return_code_t cps_class_map_init(cps_api_attr_id_t id, const cps_api_att
 }
 
 bool cps_api_key_from_attr(cps_api_key_t *key,cps_api_attr_id_t id, size_t key_start_pos) {
+    cps_api_key_set_len(key,0);
+    cps_api_key_set_attr(key,0);
+
     std_mutex_simple_lock_guard lg(&lock);
 
     const cps_class_map_node_details_int_t * it = cps_dict_find_by_id(id);
     if (it==nullptr) return false;
+
+    cps_api_key_set_attr(key,0);
     cps_api_key_init_from_attr_array(key,(cps_api_attr_id_t *)&(it->ids[0]),it->ids.size(),key_start_pos);
     return true;
 }
@@ -274,19 +276,6 @@ const char * cps_class_string_from_key(cps_api_key_t *key, size_t offset) {
     return ref->full_path.c_str();
 }
 
-//Assumption: The first field of the key is the qualifier
-const char * cps_class_qual_from_key(cps_api_key_t *key) {
-    static const int QUAL_POS=0;
-
-    cps_api_key_element_t qual = cps_api_key_element_at(key, QUAL_POS);
-    auto it = _qual_to_string.find((cps_api_qualifier_t)qual);
-    
-    if (it!=_qual_to_string.end()) {
-        return (it->second.c_str());
-    }
-
-    return nullptr;
-}
 
 cps_api_return_code_t cps_class_map_enum_reg(const char *enum_name, const char *field, int value, const char * descr) {
     auto it = _enum_map.find(enum_name);
@@ -316,6 +305,13 @@ const char *cps_class_enum_id(cps_api_attr_id_t id, int val) {
     return eit->second.name(val);
 }
 
+cps_api_attr_id_t *cps_api_attr_name_to_id(const char *name) {
+    std_mutex_simple_lock_guard lg(&lock);
+    auto it = _str_map.find(name);
+    if (it==_str_map.end()) return nullptr;
+    return &it->second->id;
+}
+
 int    cps_api_enum_value(cps_api_attr_id_t id, const char *tag) {
     auto it = _attr_id_to_enum.find(id);
     if (it==_attr_id_to_enum.end()) return -1;
@@ -332,4 +328,14 @@ bool cps_class_map_attr_type(cps_api_attr_id_t id, CPS_CLASS_DATA_TYPE_t *t) {
     return true;
 }
 
+CPS_API_OBJECT_OWNER_TYPE_t cps_api_obj_get_ownership_type(cps_api_object_t obj) {
+    std_mutex_simple_lock_guard lg(&lock);
+    CPS_API_OBJECT_OWNER_TYPE_t *p = _key_storage_type.at(cps_api_object_key(obj),true);
+    if (p==nullptr) return CPS_API_OBJECT_SERVICE;
+    return *p;
+}
+
+void cps_api_obj_set_ownership_type(cps_api_key_t *key, CPS_API_OBJECT_OWNER_TYPE_t type) {
+    std_mutex_simple_lock_guard lg(&lock);
+    _key_storage_type.insert(key,type);
 }

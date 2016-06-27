@@ -325,6 +325,34 @@ cps_api_object_attr_t cps_api_object_e_get(cps_api_object_t obj, cps_api_attr_id
     return std_tlv_efind(tlv,&len,id,id_size);
 }
 
+void* cps_api_object_e_get_data(cps_api_object_t obj, cps_api_attr_id_t *id,
+        size_t id_size) {
+	cps_api_object_attr_t attr = cps_api_object_e_get(obj,id,id_size);
+	if (attr!=nullptr) {
+		return std_tlv_data(attr);
+	}
+	return nullptr;
+}
+
+size_t cps_api_object_e_get_list_data(cps_api_object_t obj, cps_api_attr_id_t *ids, size_t len,
+		void ** attr_data, size_t attr_max) {
+
+	cps_api_object_it_t it;
+	if (!cps_api_object_it(obj,ids,len,&it)) {
+		return 0;
+	}
+
+	size_t ix = 0;
+
+	do {
+		if (ix >= attr_max) break;
+		attr_data[ix++] = cps_api_object_attr_data_bin(it.attr);
+		cps_api_object_it_next(&it);
+		it.attr = std_tlv_find_next(it.attr,&it.len,ids[len-1]);
+	} while (cps_api_object_it_valid(&it));
+	return ix;
+}
+
 bool cps_api_object_it(cps_api_object_t obj, cps_api_attr_id_t *id,
         size_t id_size, cps_api_object_it_t *it) {
     it->attr =  obj_data((cps_api_object_internal_t*)obj);
@@ -403,6 +431,15 @@ static bool add_embedded(cps_api_object_internal_t * obj, cps_api_attr_id_t *id,
 
     return true;
 
+}
+
+bool cps_api_object_e_add_object(cps_api_object_t obj,cps_api_attr_id_t *id,
+        size_t id_size,cps_api_object_t emb_object) {
+
+	cps_api_object_it_t it;
+	cps_api_object_it_begin(emb_object,&it);
+
+	return cps_api_object_e_add(obj,id,id_size,cps_api_object_ATTR_T_BIN,it.attr,it.len);
 }
 
 bool cps_api_object_e_add(cps_api_object_t obj, cps_api_attr_id_t *id,

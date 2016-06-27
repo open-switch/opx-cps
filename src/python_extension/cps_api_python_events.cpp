@@ -68,6 +68,36 @@ PyObject * py_cps_event_reg(PyObject *self, PyObject *args) {
     Py_RETURN_FALSE;
 }
 
+PyObject * py_cps_event_reg_object(PyObject *self, PyObject *args) {
+    cps_api_event_service_handle_t *handle=NULL;
+    PyObject *o, *dict;
+
+    if (! PyArg_ParseTuple( args, "O!O!",  &PyByteArray_Type, &o,&PyDict_Type, &dict)) return NULL;
+
+    handle = (cps_api_event_service_handle_t*)PyByteArray_AsString(o);
+    if (PyByteArray_Size(o)!=sizeof(*handle)) {
+        return nullptr;
+    }
+    cps_api_object_list_guard lg(cps_api_object_list_create());
+
+    cps_api_object_t obj = dict_to_cps_obj(dict);
+    if (!cps_api_object_list_append(lg.get(),obj)) {
+        cps_api_object_delete(obj);
+        return nullptr;
+    }
+    cps_api_return_code_t rc;
+
+    {
+        NonBlockingPythonContext l;
+        rc = cps_api_event_client_register_object(*handle,lg.get());
+    }
+
+    if (rc==cps_api_ret_code_OK) {
+        Py_RETURN_TRUE;
+    }
+    Py_RETURN_FALSE;
+}
+
 PyObject * py_cps_event_close(PyObject *self, PyObject *args) {
     cps_api_event_service_handle_t *handle=NULL;
     PyObject *o;

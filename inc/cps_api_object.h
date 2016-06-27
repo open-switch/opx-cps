@@ -261,6 +261,41 @@ void cps_api_object_attr_delete(cps_api_object_t obj, cps_api_attr_id_t attr);
 cps_api_object_attr_t cps_api_object_e_get(cps_api_object_t obj, cps_api_attr_id_t *id,
         size_t id_size);
 
+
+/**
+ * This API is meant for getting the value of an attribute.  The pointer returned will be to the data itself
+ *
+ * @param obj object that contains the attribute
+ * @param id a list of attribute ids (for embedded objects)
+ * @param id_size the length of ids in the attribute
+ * @return the void pointer to the data of the attribute
+ */
+void* cps_api_object_e_get_data(cps_api_object_t obj, cps_api_attr_id_t *id,
+        size_t id_size);
+
+static inline void *cps_api_object_get_data(cps_api_object_t obj, cps_api_attr_id_t id) {
+	return cps_api_object_e_get_data(obj,&id,1);
+}
+
+/**
+ * This API will get a list of the same attribute value into a array.  This can be though of (in yang) as a leaf-list.
+ * Pass in an object, a attribute ID (or list for embedded attributes) and this API will find it and return the pointer
+ * to the TLV's data in the attr_data void * list.  The number of attributes found will be returned.
+ *
+ * @param obj the object containing the attributes
+ * @param ids the list of attibutes
+ * @param len the length of the attribute list
+ * @param attr_data the list of void *
+ * @param attr_data_max  the number of elements in attr_data for storing void *
+ * @return the number of found attributes
+ */
+size_t cps_api_object_e_get_list_data(cps_api_object_t obj, cps_api_attr_id_t *ids, size_t len,
+		void ** attr_data, size_t attr_data_max);
+
+static inline size_t cps_api_object_get_list_data(cps_api_object_t obj, cps_api_attr_id_t id,
+		void ** attr_data, size_t attr_data_max) {
+	return cps_api_object_e_get_list_data(obj,&id,1,attr_data,attr_data_max);
+}
 /**
  * This API is meant for getting iterators on for any attribute within the object.
  * If you query a single attribute, it will only create an iterator that point to the existing attribute.
@@ -291,6 +326,18 @@ bool cps_api_object_it(cps_api_object_t obj, cps_api_attr_id_t *id,
  */
 bool cps_api_object_e_add(cps_api_object_t obj, cps_api_attr_id_t *id,
         size_t id_size, cps_api_object_ATTR_TYPE_t type, const void *data, size_t len);
+
+/**
+ * Take an object's attributes and add it to another object at the attribute path specified.
+ *
+ * @param obj the object that will contain the other object's attributes
+ * @param id the attribute ID list where we will store the attributes
+ * @param id_size the size of the attribute list
+ * @param emb_object the object to embed
+ * @return true if successful otherwise a failure
+ */
+bool cps_api_object_e_add_object(cps_api_object_t obj,cps_api_attr_id_t *id,
+        size_t id_size,cps_api_object_t emb_object);
 
 /**
  * A helper function to add a int type to an object.  The int type can be 1, 2, 4, 8 bytes long
@@ -377,8 +424,6 @@ static inline bool cps_api_object_attr_add_u64(cps_api_object_t obj, cps_api_att
  */
 void cps_api_object_it_begin(cps_api_object_t obj, cps_api_object_it_t *it);
 
-
-
 /**
  * Print the object into a string buffer.  Debug function only
  * @param obj the object to be printed.
@@ -387,7 +432,6 @@ void cps_api_object_it_begin(cps_api_object_t obj, cps_api_object_it_t *it);
  * @return the pointer to buff
  */
 const char * cps_api_object_to_string(cps_api_object_t obj, char *buff, size_t len);
-
 
 /**
  * Get the current object's key

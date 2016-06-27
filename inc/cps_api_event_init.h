@@ -101,6 +101,9 @@ typedef cps_api_return_code_t (*cps_api_event_service_client_disconnect_t)(cps_a
 typedef cps_api_return_code_t (*cps_api_wait_for_event_t)(cps_api_event_service_handle_t handle,
         cps_api_object_t msg);
 
+typedef cps_api_return_code_t (*cps_api_event_service_register_objs_function_t)(cps_api_event_service_handle_t handle,
+        cps_api_object_list_t objects);
+
 /**
  * The registration method to handle the sending and receiving of events.
  */
@@ -112,6 +115,7 @@ typedef struct {
     cps_api_event_service_publish_event_t publish_function;
     cps_api_event_service_client_disconnect_t deregister_function;
     cps_api_wait_for_event_t wait_for_event_function;
+    cps_api_event_service_register_objs_function_t register_function_objs;
 }cps_api_event_methods_reg_t;
 
 /**
