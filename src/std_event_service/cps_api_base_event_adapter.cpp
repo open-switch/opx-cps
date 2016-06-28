@@ -15,9 +15,10 @@
  */
 
 /*
- * filename: hal_event_service.c
- */
-
+ *
+ * \TODO Currently depreciated due to switch to REDIS - may remove in the near future or bring back to life
+ *
+ * */
 
 #include "cps_api_event_init.h"
 #include "private/cps_api_client_utils.h"
@@ -32,7 +33,6 @@
 #include "event_log.h"
 
 #include "std_time_tools.h"
-
 
 #include <stdlib.h>
 #include <vector>

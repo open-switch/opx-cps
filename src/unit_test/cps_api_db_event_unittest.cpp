@@ -14,20 +14,9 @@
  * permissions and limitations under the License.
  */
 
-/*
- * cps_api_events_unittest.cpp
- */
-
 
 #include "cps_api_events.h"
 #include "private/db/cps_api_db.h"
-
-#include <stdio.h>
-#include <stdlib.h>
-
-
-#include "gtest/gtest.h"
-
 
 #include "cps_api_operation.h"
 #include "cps_api_events.h"
@@ -44,6 +33,11 @@
 #include <sys/select.h>
 #include <thread>
 #include <mutex>
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "gtest/gtest.h"
 
 
 static size_t cnt=0;
@@ -89,19 +83,18 @@ void fire_event(cps_api_attr_id_t id, size_t cnt) {
 }
 
 TEST(cps_api_events,event_thread) {
-#if 0
-    //cps_api_attr_id_t ids[] = {BASE_IP_IPV4, BASE_IP_IPV6, BASE_IP_IPV6_ADDRESS, BASE_IP_IPV4_ADDRESS};
+
+    cps_api_attr_id_t ids[] = {BASE_IP_IPV6, BASE_IP_IPV4};
     cps_api_object_list_guard lg(cps_api_object_list_create());
     size_t ix = 0;
-    //size_t mx = sizeof(ids)/sizeof(*ids);
-    size_t mx = 5;
+    size_t mx = sizeof(ids)/sizeof(*ids);
+
     for ( ; ix < mx ; ++ix ) {
         cps_api_object_t o = cps_api_object_list_create_obj_and_append(lg.get());
         ASSERT_TRUE(o!=nullptr);
         cps_api_key_set_len(cps_api_object_key(o),1);
         cps_api_key_set(cps_api_object_key(o),0,ix);
-        //cps_api_key_from_attr_with_qual(cps_api_object_key(o),ids[ix],cps_api_qualifier_TARGET);
-        cps_api_key_set_group(o,"A");
+        cps_api_key_from_attr_with_qual(cps_api_object_key(o),ids[ix],cps_api_qualifier_TARGET);
     }
 
     cps_api_event_thread_reg_object(lg.get(),_cps_api_event_term1,nullptr);
@@ -109,17 +102,14 @@ TEST(cps_api_events,event_thread) {
 
     sleep(1);
 
-    size_t cbs = 2;
-
-    ix = 0;
-    mx = 10;
+    static const size_t CALLBACKS = 2;
 
     size_t _mx =1;
     for ( ; ix < mx ; ++ix ) {
         cps_api_attr_id_t ids[] = {BASE_IP_IPV4, BASE_IP_IPV6};
 
         size_t _ix = 0;
-        //size_t _mx = sizeof(ids)/sizeof(*ids);
+        size_t _mx = sizeof(ids)/sizeof(*ids);
         for ( ; _ix < _mx ; ++_ix ) {
             cps_api_object_guard og(cps_api_object_create());
             ASSERT_TRUE(og.valid());
@@ -129,14 +119,12 @@ TEST(cps_api_events,event_thread) {
         }
     }
     time_t now = time(NULL);
-    while (cnt < (mx*_mx*cbs)) {
+    while (cnt < (mx*CALLBACKS)) {
         sleep(1);
-        if ((time(NULL) - now)> 1000) break;
+        if ((time(NULL) - now)> 30) break;
     }
-    ASSERT_EQ(cnt,(mx*_mx*cbs));
+    ASSERT_EQ(cnt,(mx*_mx*CALLBACKS));
 
-    while (true) sleep(1);
-#endif
 }
 
 

@@ -289,7 +289,6 @@ cps_api_object_t dict_to_cps_obj(PyObject *dict) {
     }
 
     cps_api_object_guard og(dict_to_cps_obj(PyString_AsString(key),d));
-
     cps_api_object_set_type_operation(cps_api_object_key(og.get()),_op);
 
     return og.release();

@@ -14,11 +14,6 @@
  * permissions and limitations under the License.
  */
 
-/*
- * cps_class_map_query.cpp
- *
- *  Created on: Aug 5, 2015
- */
 
 
 #include "cps_class_map.h"
@@ -88,7 +83,6 @@ std::string cps_class_ids_to_string(const std::vector<cps_api_attr_id_t> &v) {
     }
     return std::move(s);
 }
-
 
 std::string cps_key_to_string(const cps_api_key_t * key) {
     const static size_t BUFF_LEN=1024;

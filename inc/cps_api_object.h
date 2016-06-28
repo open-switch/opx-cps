@@ -424,8 +424,6 @@ static inline bool cps_api_object_attr_add_u64(cps_api_object_t obj, cps_api_att
  */
 void cps_api_object_it_begin(cps_api_object_t obj, cps_api_object_it_t *it);
 
-
-
 /**
  * Print the object into a string buffer.  Debug function only
  * @param obj the object to be printed.
@@ -434,7 +432,6 @@ void cps_api_object_it_begin(cps_api_object_t obj, cps_api_object_it_t *it);
  * @return the pointer to buff
  */
 const char * cps_api_object_to_string(cps_api_object_t obj, char *buff, size_t len);
-
 
 /**
  * Get the current object's key

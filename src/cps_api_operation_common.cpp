@@ -169,7 +169,6 @@ cps_api_return_code_t cps_api_commit(cps_api_transaction_params_t * param) {
     size_t ix = 0;
     size_t mx = cps_api_object_list_size(param->change_list);
     for ( ; ix < mx ; ++ix ) {
-
         cps_api_object_t o = cps_api_object_list_get(param->change_list,ix);
         cps_api_object_attr_delete(o,CPS_OBJECT_GROUP_FAILED_NODES);
         STD_ASSERT(o!=nullptr);
@@ -178,7 +177,10 @@ cps_api_return_code_t cps_api_commit(cps_api_transaction_params_t * param) {
         } else {
             rc=cps_api_process_commit_request(param,ix);
         }
-        if (rc!=cps_api_ret_code_OK) break;
+        if (rc!=cps_api_ret_code_OK) {
+        EV_LOG(ERR,DSAPI,0,"COMMIT","Failed to commit request at %d out of %d",ix, (int)mx);
+        break;
+    }
     }
     if (rc!=cps_api_ret_code_OK) {
         while (mx > 0) {

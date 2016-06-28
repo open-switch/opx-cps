@@ -1,3 +1,18 @@
+/*
+ * Copyright (c) 2016 Dell Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License. You may obtain
+ * a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * THIS CODE IS PROVIDED ON AN  *AS IS* BASIS, WITHOUT WARRANTIES OR
+ * CONDITIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT
+ *  LIMITATION ANY IMPLIED WARRANTIES OR CONDITIONS OF TITLE, FITNESS
+ * FOR A PARTICULAR PURPOSE, MERCHANTABLITY OR NON-INFRINGEMENT.
+ *
+ * See the Apache Version 2.0 License for specific language governing
+ * permissions and limitations under the License.
+ */
 
 #include "cps_api_metadata_import.h"
 #include "cps_class_map.h"
@@ -251,14 +266,20 @@ bool __cb(const char *name, std_dir_file_TYPE_t type,void *context) {
     //if no position.. then starting is at 0
     auto filename_elements = cps_string::split(_filename,"-");
 
+    //for the actual.. 1.1.1
     double _position = 0.0;
+    size_t iteration = 0;
 
     if (filename_elements.size()>2) {
         const static int VER_POS = 0;
         auto _version_elements = cps_string::split(filename_elements[VER_POS],".");
         for (auto & num : _version_elements) {
-            _position *= 1000;
-            _position += strtoll(num.c_str(),nullptr,0);
+            double _elem = (double)strtoll(num.c_str(),nullptr,0);
+            if (iteration>0) {
+                _elem /= (iteration*10);
+            }
+            _position+=_elem;
+            iteration+=4;//decimal places to shift each time
         }
     }
 

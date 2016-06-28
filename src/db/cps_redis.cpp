@@ -66,7 +66,7 @@ bool cps_db::fetch_all_keys(cps_db::connection &conn, const void *filt, size_t f
         e[2].from_string("MATCH");
         e[3].from_string((const char *)filt,flen);
         e[4].from_string("COUNT");
-        e[5].from_string("1000");
+        e[5].from_string(CPS_DB_MAX_ITEMS_PER_SCAN);
 
         response_set resp;
         if (!conn.command(e,sizeof(e)/sizeof(*e),resp)) {
@@ -359,6 +359,58 @@ bool cps_db::get_object(cps_db::connection &conn, cps_api_object_t obj) {
 #include <iostream>
 #include "cps_string_utils.h"
 
+namespace {
+bool __get_objs(cps_db::connection &conn, std::vector<std::vector<char>> &all_keys, size_t start, size_t mx , cps_api_object_list_t obj_list) {
+    cps_db::connection::db_operation_atom_t multi;
+    multi.from_string("MULTI");
+    if (!conn.operation(&multi,1,false)) return false;
+
+    for ( size_t ix = start; ix < mx ; ++ix  ) {
+        cps_db::connection::db_operation_atom_t e[3];
+        e[0].from_string("HGET");
+        e[1].from_string(&all_keys[ix][0],all_keys[ix].size());
+        e[2].from_string("object");
+        if (!conn.operation(e,3,false)) return false;
+    }
+
+    multi.from_string("EXEC");
+    if (!conn.operation(&multi,1,false)) return false;
+
+    {    //start of multi
+        cps_db::response_set multi;
+        if (!conn.response(multi,1)) return false;
+        cps_db::response _multi(multi.get()[0]);
+        if (!_multi.is_str() || strcmp(_multi.get_str(),"OK")!=0) return false;
+    }
+
+    for ( size_t ix = start; ix < mx ; ++ix  ) {
+        cps_db::response_set queue;
+        if (!conn.response(queue,1)) return false;
+        cps_db::response _queue(queue.get()[0]);
+        if (!_queue.is_str() || strcmp(_queue.get_str(),"QUEUED")!=0) return false;
+    }
+
+    cps_db::response_set resp;
+    if (!conn.response(resp,1)) return false;
+    if (resp.get()[0]==nullptr) return false;
+
+    //load the respose for the exec - all responses in array
+    cps_db::response _exec(resp.get()[0]);
+    for ( size_t ix = 0, _end_elem = _exec.elements(); ix < _end_elem; ++ix  ) {
+        cps_db::response _resp(_exec.element_at(ix));
+        cps_api_object_guard og(cps_api_object_create());
+        if (_resp.is_str() && _resp.get_str()!=nullptr &&
+                cps_api_array_to_object(_resp.get_str(),_resp.get_str_len(),og.get())) {
+            if (!cps_api_object_list_append(obj_list,og.get())) {
+                return false;
+            }
+            og.release();
+        }
+    }
+    return true;
+}
+}
+
 bool cps_db::get_objects(cps_db::connection &conn,std::vector<char> &key,cps_api_object_list_t obj_list) {
     cps_utils::cps_api_vector_util_append(key,"*",1);
 
@@ -370,17 +422,18 @@ bool cps_db::get_objects(cps_db::connection &conn,std::vector<char> &key,cps_api
     });
     (void)rc;  //if (!rc) return false;
 
-    size_t ix =0;
-    size_t mx = all_keys.size();
-    for ( ; ix < mx ; ++ix ) {
-        cps_api_object_guard og (cps_api_object_create());
+    size_t _processed_len = 0;
+    const static int CHUNK_SIZE = CPS_DB_MAX_ITEMS_PER_PIPELINE;
 
-        if (get_object(conn,all_keys[ix],og.get())) {
-            if (cps_api_object_list_append(obj_list,og.get())) {
-                og.release();
-            }
+    do {
+        size_t _start = _processed_len;
+        _processed_len = _start + CHUNK_SIZE;
+        if (_processed_len > all_keys.size()) _processed_len = all_keys.size();
+        if (!__get_objs(conn,all_keys,_start,_processed_len,obj_list)) {
+            return false;
         }
-    }
+    } while (_processed_len < all_keys.size());
+
     return true;
 }
 

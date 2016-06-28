@@ -27,6 +27,8 @@
 #include <functional>
 #include <stddef.h>
 
+#define CPS_DB_MAX_ITEMS_PER_SCAN "1000"
+#define CPS_DB_MAX_ITEMS_PER_PIPELINE 200
 
 namespace cps_db {
 
