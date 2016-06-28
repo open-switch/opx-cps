@@ -103,10 +103,6 @@ cps_api_return_code_t cps_api_create_global_instance(cps_api_node_group_t *group
     const char * db_port = (const char*) cps_api_object_get_data(ret_obj,CPS_DB_INSTANCE_PORT);
     std::string _db_port = db_port;
 
-    if(cps_api_transaction_close(&tr) != cps_api_ret_code_OK ){
-        return cps_api_ret_code_ERR;
-    }
-
     /*
      * Push the group name local node id and its port to local/remote DB.
      */
@@ -122,14 +118,11 @@ cps_api_return_code_t cps_api_create_global_instance(cps_api_node_group_t *group
     cps_api_set_key_data(db_node.get(),CPS_DB_INSTANCE_NODE_ID,cps_api_object_ATTR_T_BIN,node.node_name,strlen(node.node_name)+1);
     cps_api_object_attr_add(db_node.get(),CPS_DB_INSTANCE_PORT,_db_port.c_str(),strlen(_db_port.c_str())+1);
 
-    std::string _failed_nodes = "";
-    bool result = false;
 
-    if (!cps_api_node_set_iterate(group->id,[&db_node,&result,&_failed_nodes](const std::string &name,void *c){
+    if (!cps_api_node_set_iterate(group->id,[&db_node](const std::string &name,void *c){
             cps_db::connection_request r(cps_db::ProcessDBCache(),name.c_str());
 
-                result |= cps_db::store_object(r.get(),db_node.get());
-                if (!result) _failed_nodes+=name+",";
+                cps_db::store_object(r.get(),db_node.get());
                 return;
 
         },nullptr)) {
@@ -363,8 +356,10 @@ bool cps_api_nodes::load_groups() {
                     db_node._addr = lst[0] + ':'+ db_node._addr;
                     v.push_back(std::move(db_node));
                 }
-                EV_LOGGING(DSAPI,ERR,"CPS-DB","Failed to get port info for group %s and node %s",
+                else{
+                    EV_LOGGING(DSAPI,ERR,"CPS-DB","Failed to get port info for group %s and node %s",
                                        name,__name);
+                }
 
             }
 

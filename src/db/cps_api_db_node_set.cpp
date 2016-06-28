@@ -69,9 +69,6 @@ static bool cps_api_clean_db_instance(const char *group){
         return false;
     }
 
-    if(cps_api_transaction_close(&tr) != cps_api_ret_code_OK ){
-        return false;
-    }
     return true;
 }
 
