@@ -372,6 +372,25 @@ static PyObject * py_cps_node_set_master(PyObject *self, PyObject *args) {
 }
 
 
+static PyObject * py_cps_node_set_ownership_type(PyObject *self, PyObject *args) {
+    const char *key=NULL;
+    const char *o_type=NULL;
+    if (! PyArg_ParseTuple( args, "ss", &key,&o_type)) Py_RETURN_FALSE;
+
+    auto _o_type = cps_class_owner_type_from_string(o_type);
+    if (_o_type==nullptr) {
+        Py_RETURN_FALSE;
+    }
+
+    cps_api_key_t k;
+    cps_api_key_from_string(&k, key);
+
+
+    cps_api_obj_set_ownership_type(&k,*_o_type);
+    Py_RETURN_TRUE;
+}
+
+
 static PyObject * py_cps_name_from_key(PyObject *self, PyObject *args) {
     const char * key=NULL;
     int offset = 0;
@@ -566,6 +585,13 @@ PyDoc_STRVAR(CPS_FN_DOC(py_cps_node_set_master), "node_set_master(group_name,nod
     "@return - True if successful otherwise False");
 
 
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_node_set_ownership_type), "set_ownership_type(key,type)\n\n"
+    "Sets the object owership of the given key.\n"
+    "@key - key for the obejct\n"
+    "@type - ownership type(service,service-cache,db)\n"
+    "@return - True if successful otherwise False");
+
+
 /* A list of all the methods defined by this module. */
 /* "METH_VARGS" tells Python how to call the handler */
 static PyMethodDef cps_methods[] = {
@@ -607,6 +633,7 @@ static PyMethodDef cps_methods[] = {
     {"node_set_update",  py_cps_node_set_update, METH_VARARGS, CPS_FN_DOC(py_cps_node_set_update)},
     {"node_delete_group",  py_cps_node_delete_group, METH_VARARGS, CPS_FN_DOC(py_cps_node_delete_group)},
     {"node_set_master",  py_cps_node_set_master, METH_VARARGS, CPS_FN_DOC(py_cps_node_set_master)},
+    {"set_ownership_type",  py_cps_node_set_ownership_type, METH_VARARGS, CPS_FN_DOC(py_cps_node_set_ownership_type)},
 
     {NULL, NULL}      /* sentinel */
 };

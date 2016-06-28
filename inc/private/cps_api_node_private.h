@@ -59,7 +59,7 @@ class cps_api_nodes {
     using group_data_t = std::unordered_map<std::string,_node_data>;
     using group_master_data_t = std::unordered_map<std::string,std::string>;
     using db_node_data_t = std::unordered_map<std::string,std::vector<_db_node_data>>;
-
+    std::unordered_set<std::string> _master_set;
     group_data_t _groups;
     size_t _hash;
 
@@ -72,6 +72,9 @@ public:
     db_node_data_t _db_node_map;
     group_master_data_t _master;
 
+    bool is_master_set(std::string group);
+    void mark_master_set(std::string group){ _master_set.insert(group); }
+    void remove_master_set(std::string group) { _master_set.erase(group);}
     bool get_port_info(const char *name,_db_node_data *nd);
     const char * addr(const char *addr);
     const char * addr(const std::string &str) { return addr(str.c_str()); }

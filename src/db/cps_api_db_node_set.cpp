@@ -114,6 +114,7 @@ bool cps_api_db_del_node_group(const char *group){
 
      _nodes->_master.erase(std::string(group));
      _nodes->_db_node_map.erase(std::string(group));
+     _nodes->remove_master_set(std::string(group));
 
      return cps_api_clean_db_instance(group);
 
@@ -134,10 +135,11 @@ bool cps_api_db_get_node_group(const std::string &group,std::vector<std::string>
         return false;
     }
 
-    if(type == cps_api_node_data_1_PLUS_1_REDUNDENCY){
+    if((type == cps_api_node_data_1_PLUS_1_REDUNDENCY) && (_nodes->is_master_set(group))){
+
         auto it = _nodes->_master.find(group);
         if(it == _nodes->_master.end()){
-             EV_LOGGING(DSAPI,ERR,"GET-NODE-GRUOP","Failed to find master for group %s",group.c_str());
+             EV_LOGGING(DSAPI,ERR,"GET-NODE-GRUOP","Master not set for %s",group.c_str());
              return false;
         }
         lst.push_back(it->second);
@@ -205,6 +207,7 @@ cps_api_return_code_t cps_api_set_master_node(const char *group,const char * nod
 
             }
             _nodes->_master[group]=node_it._addr;
+            _nodes->mark_master_set(std::string(group));
             master_node = node_it._addr;
             if(strncmp(node_it._addr.c_str(),"127.0.0.1",strlen("127.0.0.1"))==0){
                 EV_LOGGING(DSAPI,DEBUG,"SET-MASTER","Setting local node %s master for group %s",node_name,group);

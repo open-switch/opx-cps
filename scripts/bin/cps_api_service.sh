@@ -41,4 +41,4 @@ if [ ! $HAS_USER = 0 ] ; then
 	useradd -g $GROUPNAME $USERNAME
 fi
 
-$(dirname $0)/cps_api_service
+$(dirname $0)/cps_api_service & /usr/bin/python /opt/dell/os10/lib/cps_db_instance_manager.py

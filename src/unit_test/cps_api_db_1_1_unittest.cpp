@@ -64,6 +64,19 @@ TEST(cps_api_db,db_node_list) {
 
     ASSERT_EQ(cps_api_set_node_group(&_g),cps_api_ret_code_OK);
     ASSERT_EQ(cps_api_set_master_node("A","NODE1"),cps_api_ret_code_OK);
+
+    cps_api_object_guard og(cps_api_object_create());
+    ASSERT_TRUE(og.get()!=nullptr);
+    cps_api_object_t obj = og.get();
+
+    cps_api_key_from_attr_with_qual(cps_api_object_key(obj),BASE_IP_IPV6,cps_api_qualifier_TARGET);
+    cps_api_object_attr_add_u32(obj,BASE_IP_IPV6_VRF_ID,0);
+    cps_api_object_attr_add_u32(obj,BASE_IP_IPV6_IFINDEX,1);
+    cps_api_object_attr_add(obj,BASE_IP_IPV6_NAME,"Clifford",9);
+
+    cps_api_key_set_group(obj,"A");
+
+    ASSERT_TRUE(cps_api_commit_one(cps_api_oper_CREATE, obj, 0, 200)==cps_api_ret_code_OK);
     ASSERT_EQ(cps_api_delete_node_group("A"),cps_api_ret_code_OK);
 
 }
