@@ -45,7 +45,7 @@ cps_api_return_code_t cps_api_create_global_instance(cps_api_node_group_t *group
 
     size_t local_node_ix;
     if(!cps_api_find_local_node(group,local_node_ix)){
-        /*@TODO add an error log */
+        EV_LOGGING(DSAPI,ERR,"SET-GLOBAL","Failed to find local node in group %s",group);
         return cps_api_ret_code_ERR;
     }
 
@@ -55,7 +55,7 @@ cps_api_return_code_t cps_api_create_global_instance(cps_api_node_group_t *group
 
     cps_api_transaction_params_t tr;
     if (cps_api_transaction_init(&tr)!=cps_api_ret_code_OK) {
-        /*@TODO add an error log */
+        EV_LOGGING(DSAPI,ERR,"SET-GLOBAL","Failed to init transaction");
         return cps_api_ret_code_ERR;
     }
 
@@ -70,18 +70,17 @@ cps_api_return_code_t cps_api_create_global_instance(cps_api_node_group_t *group
     cps_api_object_attr_add(db_obj,CPS_DB_INSTANCE_GROUP,group->id,strlen(group->id)+1);
 
     if(cps_api_create(&tr,db_obj) != cps_api_ret_code_OK ){
-        /*@TODO add an error log */
         return cps_api_ret_code_ERR;
     }
 
     if(cps_api_commit(&tr) != cps_api_ret_code_OK ) {
-        /*@TODO add an error log */
+        EV_LOGGING(DSAPI,ERR,"SET-GLOBAL","Failed to create new global instance for %s",group);
         return cps_api_ret_code_ERR;
     }
 
     cps_api_object_t ret_obj = cps_api_object_list_get(tr.change_list,0);
     if (ret_obj == nullptr ){
-        /*@TODO add an error log */
+        EV_LOGGING(DSAPI,ERR,"SET-GLOBAL","Failed to find db instance port info for %s",group);
         return cps_api_ret_code_ERR;
     }
 
@@ -90,7 +89,6 @@ cps_api_return_code_t cps_api_create_global_instance(cps_api_node_group_t *group
     std::string _db_port = db_port;
 
     if(cps_api_transaction_close(&tr) != cps_api_ret_code_OK ){
-        /*@TODO add an error log */
         return cps_api_ret_code_ERR;
     }
 

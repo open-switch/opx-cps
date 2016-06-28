@@ -58,13 +58,17 @@ class CPSDbProcessManager():
         return True
 
 db_group_mapping = {}
-
+group_port_mapping = {}
 
 def handle_create(obj,group):
+    if group in db_group_mapping:
+        return group_port_mapping[group]
+
     port = get_free_port()
     p = CPSDbProcessManager(port)
-    if(p.is_valid()) and group not in db_group_mapping:
+    if p.is_valid():
         db_group_mapping[group]=p
+        group_port_mapping[group]=port
         return port
 
     return False
@@ -74,6 +78,7 @@ def handle_delete(obj,group):
         p = db_group_mapping[group]
         if p.close():
             del db_group_mapping[group]
+            del group_port_mapping[group]
             return True
 
     return False
