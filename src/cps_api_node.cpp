@@ -243,6 +243,47 @@ bool cps_api_nodes::get_port_info(const char *group, _db_node_data *nd){
     return false;
 }
 
+bool cps_api_nodes::update_slaves(const char *group) {
+
+    // Check if master exist, if not then return as master is not set
+    auto master_it = _master.find(group);
+    if( master_it == _master.end()){
+        return true;
+    }
+
+
+    auto it = _db_node_map.find(group);
+    if( it == _db_node_map.end()){
+        return false;
+    }
+
+    std::string master_node = master_it->second;
+
+    // If master is local node, no need to update
+    if(strncmp(master_node.c_str(),"127.0.0.1",strlen("127.0.0.1"))==0){
+        return true;
+    }
+
+    // Iterate through the other nodes of the group and make them slave of master
+    for ( auto node_it : it->second){
+        if (strncmp(node_it._addr.c_str(),master_node.c_str(),strlen(master_node.c_str()))){
+            cps_db::connection_request b(cps_db::ProcessDBCache(),node_it._addr.c_str());
+            if (!b.valid()) {
+                return false;
+            }
+
+            if (!cps_db::make_slave(b.get(),master_node)) {
+                EV_LOGGING(DSAPI,ERR,"SET-MASTER","Failed to make %s slave of %s",
+                        node_it._name.c_str(),master_node.c_str());
+                return false;
+            }
+
+        }
+    }
+
+    return true;
+}
+
 
 bool cps_api_nodes::load_groups() {
     cps_api_object_guard og(cps_api_object_create());
@@ -257,17 +298,16 @@ bool cps_api_nodes::load_groups() {
     }
 
     group_data_t cpy;
-    std::vector<_db_node_data> v;
 
     cps_api_object_list_guard lg(cps_api_object_list_create());
     if (!cps_db::get_objects(b.get(),og.get(),lg.get())) return false;
 
     for (size_t ix = 0,mx = cps_api_object_list_size(lg.get()); ix < mx ; ++ix ) {
         cps_api_object_t o = cps_api_object_list_get(lg.get(),ix);
-
+        std::vector<_db_node_data> v;
         const char *name = (const char*) cps_api_object_get_data(o,CPS_NODE_GROUP_NAME);
         _node_data nd;
-        _db_node_data db_node;
+
 
 
         cps_api_node_data_type_t *_type = (cps_api_node_data_type_t*)cps_api_object_get_data(o,CPS_NODE_GROUP_TYPE);
@@ -291,6 +331,7 @@ bool cps_api_nodes::load_groups() {
             cps_api_object_it_inside(&elem);
 
             if (!cps_api_object_it_valid(&elem)) continue;
+            _db_node_data db_node;
             cps_api_object_attr_t _ip =cps_api_object_it_find(&elem,CPS_NODE_GROUP_NODE_IP);
             cps_api_object_attr_t _name =cps_api_object_it_find(&elem,CPS_NODE_GROUP_NODE_NAME);
             if (_ip==nullptr || _name==nullptr) continue;
@@ -314,6 +355,7 @@ bool cps_api_nodes::load_groups() {
 
             if(v.size()>0){
                 _db_node_map[name] = v;
+                update_slaves(name);
             }
 
             _alias_map[__name] = __ip;
