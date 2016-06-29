@@ -31,6 +31,7 @@ pack_type_map = {
     'uint64_t': '<Q',
     'enum': '<I',
     'bool': '<I',
+    'double': '<d',
 }
 
 pack_type_map_from_len = {
@@ -56,6 +57,7 @@ pack_len_map = {
         'int64_t': 8,
         'enum': 4,
         'bool': 4,
+        'double': 8,
     }
 
 
@@ -91,10 +93,11 @@ def from_ba(ba, datatype):
         return
 
     length = pack_len_map[datatype]
-    if len(ba) < length:
+    if len(ba) != length:
         length = len(ba)
-
-    s = struct.unpack(pack_type_map_from_len[length], ba[0:length])[0]
+        s = struct.unpack(pack_type_map_from_len[length], ba[0:length])[0]
+    else:
+        s = struct.unpack(pack_type_map[datatype], ba[0:length])[0]
     return s
 
 
@@ -217,6 +220,9 @@ def ba_to_int_type(t, val):
     return from_ba(val, t)
 
 
+def ba_to_double_type(t, val):
+    return from_ba(val, t)
+
 def ba_to_ba(t, val):
     return val
 
@@ -243,7 +249,8 @@ ba_to_type = {
     'ip': hex_from_data,
     'hex': hex_from_data,
     'mac': ba_to_macstr,
-    'key': ba_to_key
+    'key': ba_to_key,
+    'double': ba_to_double_type,
 }
 
 
