@@ -50,9 +50,7 @@ TEST(cps_api_db,db_node_list) {
 
     cps_api_object_t obj = cps_api_object_create();
     cps_api_object_guard og(obj);
-
-    cps_api_object_list_t list =cps_api_object_list_create();
-    cps_api_object_list_guard lg(list);
+    ASSERT_TRUE(og.get()!=nullptr);
 
     cps_api_node_ident ids[2] = { {"NODE1", "10.11.56.37:6379"}, {"NODE2","127.0.0.1:6379"} };
     cps_api_node_group_t _g;
@@ -65,9 +63,6 @@ TEST(cps_api_db,db_node_list) {
     ASSERT_EQ(cps_api_set_node_group(&_g),cps_api_ret_code_OK);
     ASSERT_EQ(cps_api_set_master_node("A","NODE1"),cps_api_ret_code_OK);
 
-    cps_api_object_guard og(cps_api_object_create());
-    ASSERT_TRUE(og.get()!=nullptr);
-    cps_api_object_t obj = og.get();
 
     cps_api_key_from_attr_with_qual(cps_api_object_key(obj),BASE_IP_IPV6,cps_api_qualifier_TARGET);
     cps_api_object_attr_add_u32(obj,BASE_IP_IPV6_VRF_ID,0);

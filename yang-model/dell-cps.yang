@@ -91,7 +91,7 @@ module dell-base-cps {
         description "Group name";
     }
 
-    leaf ndoe-id{
+    leaf node-id{
         type string;
         description "Node name";
     }
