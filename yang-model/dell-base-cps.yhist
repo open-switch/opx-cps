@@ -25,5 +25,5 @@ CPS_OBJECT_GROUP_OBJ=21
 CPS_OBJECT_GROUP_TRANSACTION=14
 --obj cps_api_obj_CAT_CPS end
 ++obj global
-cps_api_obj_CAT_CPS=258
+cps_api_obj_CAT_CPS=2
 --obj global end
