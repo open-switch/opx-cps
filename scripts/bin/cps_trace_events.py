@@ -31,21 +31,22 @@ def cps_trace_usage():
 
 if __name__ == '__main__':
 
-    _qual = {"target":"1", "observed":"2", "proposed":"3", "realtime":"4"}
+    _qual = ["target", "observed", "proposed", "realtime"]
 
     if (len(sys.argv) < 2) or (len(sys.argv) > 3):
          cps_trace_usage()
          exit(1)
 
-    if sys.argv[1] not in _qual:
+    in_qual = sys.argv[1].lower();
+    if in_qual not in _qual:
          print "\nCheck the qualifier, not a valid qualifier "
          cps_trace_usage()
          exit(1)
 
     if len(sys.argv) > 2:
-       _key = cps.key_from_name(sys.argv[1], sys.argv[2])
+       _key = cps.key_from_name(in_qual, sys.argv[2])
     else:
-        _key = _qual[sys.argv[1]]
+       _key = cps.key_from_qual(in_qual)
 
     print "Key : " + _key
 
@@ -54,9 +55,9 @@ if __name__ == '__main__':
         exit(1)
 
     if len(sys.argv) > 2:
-        print " Registering for " + sys.argv[1] + " " + sys.argv[2]
+        print " Registering for " + in_qual + " " + sys.argv[2]
     else:
-        print " Registering for " + sys.argv[1]
+        print " Registering for " + in_qual
 
     handle = cps.event_connect()
 
