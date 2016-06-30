@@ -63,7 +63,7 @@ pack_len_map = {
 
 def to_ba(val, datatype):
     """
-    Converts a numeric value(uint8_t, uint16_t, uint32_t, uint64_t) to a byte array of
+    Converts a numeric value(uint8_t, uint16_t, uint32_t, uint64_t, double) to a byte array of
     appropriate data type.
 
     val is the numeric value
@@ -268,6 +268,10 @@ def wr_int_type_to_ba(t, val):
     return to_ba(val, t)
 
 
+def wr_double_type_to_ba(t, val):
+    return to_ba(val, t)
+
+
 def hex_to_ba(t, val):
     return binascii.unhexlify(val)
 
@@ -290,6 +294,7 @@ type_to_ba = {
     'ipv4': ipv4str_to_ba,
     'ipv6': ipv6str_to_ba,
     'ip': hex_to_ba,
+    'double': wr_double_type_to_ba,
 }
 
 
