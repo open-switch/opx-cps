@@ -172,7 +172,7 @@ TEST(cps_api_db,db_set_list_obj) {
 
     ASSERT_TRUE(cps_db::get_objects(b.get(),obj,newl));
 
-    ASSERT_TRUE(cps_api_object_list_size(newl)==cps_api_object_list_size(list));
+    ASSERT_EQ(cps_api_object_list_size(newl),cps_api_object_list_size(list));
 }
 
 TEST(cps_api_db,db_node_list) {
@@ -252,6 +252,12 @@ TEST(cps_api_db,db_node_get_set) {
 
     ASSERT_TRUE(cps_api_commit_one(cps_api_oper_CREATE, obj, 0, 200)==cps_api_ret_code_OK);
 
+    cps_api_object_attr_delete(obj,BASE_IP_IPV6_NAME);
+    cps_api_object_attr_delete(obj,BASE_IP_IPV6_IFINDEX);
+    cps_api_object_attr_add_u32(obj,BASE_IP_IPV6_VRF_ID,3);
+    cps_api_object_attr_add_u32(obj,BASE_IP_IPV6_IFINDEX,2);
+    cps_api_object_attr_add(obj,BASE_IP_IPV6_NAME,"----",strlen("----")+1);
+    ASSERT_TRUE(cps_api_commit_one(cps_api_oper_CREATE, obj, 0, 200)==cps_api_ret_code_OK);
 
     cps_api_object_attr_delete(obj,BASE_IP_IPV6_NAME);
     cps_api_object_attr_delete(obj,BASE_IP_IPV6_IFINDEX);
@@ -274,11 +280,11 @@ TEST(cps_api_db,db_node_get_set) {
     cps_api_key_from_attr_with_qual(cps_api_object_key(obj),BASE_IP_IPV6,cps_api_qualifier_TARGET);
     cps_api_object_attr_add_u32(obj,BASE_IP_IPV6_VRF_ID,0);    //filter all objects to get the VRF 0 only
     cps_api_object_attr_add_u32(obj,BASE_IP_IPV6_IFINDEX,1);    //filter all objects to get the IFINDEX 1 only
-    cps_api_key_set_group(obj,"NODE2");    //get from this node only
+    cps_api_key_set_group(obj,"A");    //get from this node only
 
     ASSERT_TRUE(cps_api_get_objs(og.get(), lg.get(),0,100)==cps_api_ret_code_OK);
 
-    ASSERT_TRUE(cps_api_object_list_size(lg.get())==1);
+    ASSERT_TRUE(cps_api_object_list_size(lg.get())==2);
 
     og.set(cps_api_object_create());
     ASSERT_TRUE(og.get()!=nullptr);

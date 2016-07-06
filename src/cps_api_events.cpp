@@ -22,10 +22,12 @@
 #include "cps_api_event_init.h"
 #include "std_mutex_lock.h"
 #include "cps_api_events.h"
+#include "cps_class_map.h"
 
 #include "std_rw_lock.h"
 #include "std_thread_tools.h"
 #include "std_error_codes.h"
+
 
 #include "event_log.h"
 #include "std_time_tools.h"
@@ -71,7 +73,14 @@ cps_api_return_code_t cps_api_event_client_register_object(cps_api_event_service
 
 cps_api_return_code_t cps_api_event_publish(cps_api_event_service_handle_t handle,
         cps_api_object_t msg) {
-    return m_method.publish_function(handle,msg);
+    cps_api_return_code_t rc = m_method.publish_function(handle,msg);
+    if (rc!=cps_api_ret_code_OK) {
+        const char *_qua = cps_class_qual_from_key(cps_api_object_key(msg));
+        const char *_name = cps_class_string_from_key(cps_api_object_key(msg),1);
+        EV_LOG(ERR,DSAPI,0,"CPS-PUB","Failed to publish messages %s:%s",_qua!=nullptr?_qua:"unk",
+                _name!=nullptr ? _name :"unk");
+    }
+    return rc;
 }
 
 cps_api_return_code_t cps_api_event_client_disconnect(cps_api_event_service_handle_t handle) {
@@ -80,7 +89,12 @@ cps_api_return_code_t cps_api_event_client_disconnect(cps_api_event_service_hand
 
 cps_api_return_code_t cps_api_wait_for_event(cps_api_event_service_handle_t handle,
         cps_api_object_t msg) {
-    return m_method.wait_for_event_function(handle,msg);
+    return m_method.wait_for_event_function(handle,msg,CPS_API_TIMEDWAIT_NO_TIMEOUT);
+}
+
+cps_api_return_code_t cps_api_timedwait_for_event(cps_api_event_service_handle_t handle,
+        cps_api_object_t msg, ssize_t timeout) {
+    return m_method.wait_for_event_function(handle,msg,timeout);
 }
 
 typedef struct {

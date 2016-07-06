@@ -65,21 +65,37 @@ int cps_db::connection::get_fd() {
 pthread_once_t __thread_init = PTHREAD_ONCE_INIT;
 
 bool cps_db::connection::connect(const std::string &s_, const std::string &db_instance_, bool async_) {
-    auto lst = cps_string::split(s_,":");
-    if (lst.size()!=2) {
+    size_t _port_pos = s_.rfind(":");
+    if (_port_pos==std::string::npos) {
         EV_LOG(ERR,DSAPI,0,"RED-CON","Failed to connect to server... bad address (%s)",s_.c_str());
         return false;
+    }
+
+    int _port = atoi(s_.c_str()+_port_pos+1);
+
+    size_t _end_ip = _port_pos;
+    size_t _start_ip = 0;
+
+    std::string _ip;
+
+    if (s_[0]=='[') {
+        ++_start_ip;    //first spot is [
+        _end_ip = s_.rfind("]:");
+        if (_end_ip==std::string::npos) {
+            EV_LOG(ERR,DSAPI,0,"RED-CON","Failed to connect to server... bad address (%s)",s_.c_str());
+            return false;
+        }
     }
     _addr = s_;
     _async = async_;
 
-    size_t port = std::atoi(lst[1].c_str());
+    _ip = s_.substr(_start_ip,_end_ip);
 
     if (_async) {
-        _ctx = redisAsyncConnect(lst[0].c_str(), port);
+        _ctx = redisAsyncConnect(_ip.c_str(), _port);
     } else {
         timeval tv = { 2 /*Second */ , 0 };
-        _ctx = redisConnectWithTimeout(lst[0].c_str(), port,tv);
+        _ctx = redisConnectWithTimeout(_ip.c_str(), _port,tv);
     }
 
     if (db_instance_.size()!=0) {

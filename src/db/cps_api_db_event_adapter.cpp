@@ -265,7 +265,7 @@ static cps_api_return_code_t _cps_api_event_service_publish_msg(cps_api_event_se
     bool sent = true;
     cps_api_node_set_iterate(_group,[&msg,&sent](const std::string &name,void *context){
         cps_db::connection_request r(cps_db::ProcessDBCache(),name.c_str());
-        sent &= cps_db::publish(r.get(),msg);
+        sent = sent && cps_db::publish(r.get(),msg);
     },nullptr);
 
     return sent? cps_api_ret_code_OK : cps_api_ret_code_ERR;
@@ -301,10 +301,13 @@ static bool get_event(cps_db::connection *conn, cps_api_object_t obj) {
     return false;
 }
 
+
 static cps_api_return_code_t _cps_api_wait_for_event(
         cps_api_event_service_handle_t handle,
-        cps_api_object_t msg) {
+        cps_api_object_t msg,
+        ssize_t timeout_ms) {
 
+    const static int DEF_SELECT_TIMEOUT_SEC = (10);
     __db_event_handle_t *nh = handle_to_data(handle);
 
     uint64_t last_checked = 0;
@@ -313,7 +316,22 @@ static cps_api_return_code_t _cps_api_wait_for_event(
     fd_set _r_set ;
     ssize_t rc = 0;
 
-    while (true) {
+    uint64_t __started_time = std_get_uptime(nullptr);
+    size_t _max_wait_time = 0;
+    bool _waiting_for_event = true;
+
+    cps_api_return_code_t __rc = cps_api_ret_code_TIMEOUT;
+    while (_waiting_for_event) {
+
+           if (timeout_ms==CPS_API_TIMEDWAIT_NO_TIMEOUT) {
+            _max_wait_time = DEF_SELECT_TIMEOUT_SEC*1000;
+        } else {
+            _max_wait_time = timeout_ms - ((std_get_uptime(nullptr) - __started_time)/1000);
+             if (std_time_is_expired(__started_time,MILLI_TO_MICRO(timeout_ms))) {
+                 _waiting_for_event = false;
+                 _max_wait_time = 0;
+             }
+        }
 
         //allow insertion of node loss messages
         std::lock_guard<std::recursive_mutex> lock (nh->_mutex);
@@ -335,7 +353,6 @@ static cps_api_return_code_t _cps_api_wait_for_event(
             continue;
         }
 
-
         bool pending_event = false;
         for (auto &it : nh->_connections) {
             if (it.second->has_event()) {
@@ -346,12 +363,12 @@ static cps_api_return_code_t _cps_api_wait_for_event(
         if (!pending_event) {
             _r_set = nh->_connection_set;
             fd_max = nh->_max_fd+1;
-            timeval tv={10,0};
+            timeval tv={ static_cast<long int>(_max_wait_time/1000), static_cast<long int>((_max_wait_time%1000)*1000) };
             nh->_mutex.unlock();
             rc = std_select_ignore_intr(fd_max,&_r_set,nullptr,nullptr,&tv,nullptr);
             nh->_mutex.lock();
             if (rc==-1) {
-                last_checked = 0;
+                last_checked = 0;    //trigger reconnect evaluation
                 continue;
             }
             if (rc==0) continue;
@@ -373,7 +390,7 @@ static cps_api_return_code_t _cps_api_wait_for_event(
             }
         }
     }
-    return cps_api_ret_code_OK;
+    return __rc;
 
 }
 

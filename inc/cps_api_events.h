@@ -21,6 +21,8 @@
 #ifndef CPS_API_EVENT_API_H
 #define CPS_API_EVENT_API_H
 
+#include <sys/types.h>
+
 /** @addtogroup CPSAPI
  *  @{
  *
@@ -113,8 +115,8 @@ cps_api_return_code_t cps_api_event_client_register(cps_api_event_service_handle
  * Register for a list of objects.
  *
  * Each object can have in an addition to the static key of an object, the following attributes can also be used:
- * 		* Node Grouping
- * 		* Instance attributes
+ *         * Node Grouping
+ *         * Instance attributes
  *
  * @param handle the handle on which to register
  * @param objects the list that contains object (keys, instance attrs, group attrs) to register for
@@ -142,6 +144,21 @@ cps_api_return_code_t cps_api_event_publish(cps_api_event_service_handle_t handl
  */
 cps_api_return_code_t cps_api_wait_for_event(cps_api_event_service_handle_t handle,
         cps_api_object_t object);
+
+#define CPS_API_TIMEDWAIT_NO_TIMEOUT (-1)
+#define CPS_API_TIMEDWAIT_NO_WAIT (0)
+/**
+ * Wait for an object from the event service
+ * @param handle opened from a previous client registration
+ * @param object the to object to receive.
+ * @param timeout_ms is the timeout in milliseconds to wait before returning (-1 means wait until event arrives while 0 is no wait)
+ * @return cps_api_ret_code_OK if the wait was completed with an event returned
+ *   or a specific return code indicating a failure or retry request is required
+ * @sa cps_api_event_client_connect
+ */
+cps_api_return_code_t cps_api_timedwait_for_event(cps_api_event_service_handle_t handle,
+        cps_api_object_t msg, ssize_t timeout_ms);
+
 
 /** @addtogroup EventThread Event Thread Utilities
  *  This file provides APIs used to publish and subscribe to events.
