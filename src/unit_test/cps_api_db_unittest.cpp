@@ -265,6 +265,11 @@ TEST(cps_api_db,db_node_get_set) {
     cps_api_object_attr_add(obj,BASE_IP_IPV6_NAME,"Shankara/Jana/Joe/Joe",strlen("Shankara/Jana/Joe/Joe")+1);
     ASSERT_TRUE(cps_api_commit_one(cps_api_oper_CREATE, obj, 0, 200)==cps_api_ret_code_OK);
 
+    cps_api_object_attr_delete(obj,BASE_IP_IPV6_NAME);
+    cps_api_object_attr_add(obj,BASE_IP_IPV6_NAME,"Everyone",strlen("Everyone")+1);
+    ASSERT_TRUE(cps_api_commit_one(cps_api_oper_SET, obj, 0, 200)==cps_api_ret_code_OK);
+
+
     og.free();
     og.set(cps_api_object_create());
     cps_api_object_list_guard lg(cps_api_object_list_create());
