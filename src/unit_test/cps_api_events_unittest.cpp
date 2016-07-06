@@ -375,7 +375,6 @@ TEST(cps_api_events,performance_1min) {
         if (cnt==nullptr) {
             printf("No sequence number\n");
         }
-        usleep(10000);
     }
     printf("Received %d events\n",(int)cnt);
 
@@ -442,9 +441,9 @@ TEST(cps_api_events,performance_1min_2_senders) {
     time_t now = time(nullptr);
     size_t cnt = 0;
     for ( ; (time(nullptr) - now) < (60) ; ++cnt) {
-        if (cps_api_timedwait_for_event(handle,og.get(),5000)==cps_api_ret_code_OK) continue;
+        if (cps_api_timedwait_for_event(handle,og.get(),5000)!=cps_api_ret_code_OK) break;
+
         usleep(100000);
-        break;
     }
     printf("Received %d events\n",(int)cnt);
 
