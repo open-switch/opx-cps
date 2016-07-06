@@ -54,7 +54,7 @@ cps_api_return_code_t __cps_api_db_operation_get_first_object(cps_api_object_t o
     bool _found = false;
     cps_api_node_set_iterate(node,[&obj,&_found,node](const std::string &name,void *c){
         cps_db::connection_request r(cps_db::ProcessDBCache(),name.c_str());
-        _found = found || cps_db::get_object(r.get(),obj);
+        _found = _found || cps_db::get_object(r.get(),obj);
     },nullptr);
 
     return _found==true? cps_api_ret_code_OK : cps_api_ret_code_ERR;
