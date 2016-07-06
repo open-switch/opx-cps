@@ -54,7 +54,7 @@ cps_api_return_code_t __cps_api_db_operation_get_first_object(cps_api_object_t o
     bool _found = false;
     cps_api_node_set_iterate(node,[&obj,&_found,node](const std::string &name,void *c){
         cps_db::connection_request r(cps_db::ProcessDBCache(),name.c_str());
-        _found |= cps_db::get_object(r.get(),obj);
+        _found = found || cps_db::get_object(r.get(),obj);
     },nullptr);
 
     return _found==true? cps_api_ret_code_OK : cps_api_ret_code_ERR;
@@ -105,7 +105,7 @@ cps_api_return_code_t cps_api_db_operation_commit(cps_api_transaction_params_t *
         //fastest operation is just store it..
         if (op_type==cps_api_oper_CREATE) {
             ///TODO need to maybe check if object currently exists before allowing create..
-            result |= cps_db::store_object(r.get(),o);
+            result = result || cps_db::store_object(r.get(),o);
             if (!result) _failed_nodes+=name+",";
             return;
         }
@@ -113,7 +113,7 @@ cps_api_return_code_t cps_api_db_operation_commit(cps_api_transaction_params_t *
         if (op_type==cps_api_oper_DELETE) {
             cps_api_object_list_guard lg(cps_api_object_list_create());
             cps_db::get_objects(r.get(),o,lg.get());
-            result |= cps_db::delete_objects(r.get(),lg.get());
+            result = result || cps_db::delete_objects(r.get(),lg.get());
             if (!result) _failed_nodes+=name+",";
             return;
         }
