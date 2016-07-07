@@ -82,7 +82,7 @@ bool cps_api_db_del_node_group(const char *group){
      }
 
      if(type != cps_api_node_data_1_PLUS_1_REDUNDENCY){
-         return false;
+         return true;
      }
 
      auto it = _nodes->_db_node_map.find(group);
