@@ -384,6 +384,7 @@ static cps_api_return_code_t _cps_api_wait_for_event(
 
             if (has_data) {
                 if (get_event(it.second.get(),msg)) {
+                    nh->_connection_mon[it.first].communicated();
                     cps_api_object_attr_add(msg,CPS_OBJECT_GROUP_NODE,it.first.c_str(),it.first.size()+1);
                     return cps_api_ret_code_OK;
                 }

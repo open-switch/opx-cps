@@ -96,7 +96,9 @@ bool cps_db::ping(cps_db::connection &conn) {
     e.from_string("PING");
     response_set resp;
 
-    if (!conn.command(&e,1,resp)) {
+    if (!conn.operation(&e,1,false)) return false;
+
+    if (!conn.response(resp,true)) {
         return false;
     }
 
