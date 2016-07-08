@@ -21,10 +21,13 @@
 #include "cps_api_db.h"
 #include "cps_string_utils.h"
 
+#include "cps_api_object_tools.h"
+
 #include "cps_api_operation_tools.h"
 #include "cps_dictionary.h"
 
 #include "cps_class_ut_data.h"
+#include "dell-cps.h"
 
 #include "gtest/gtest.h"
 
@@ -172,7 +175,7 @@ TEST(cps_api_db,db_set_list_obj) {
 
     ASSERT_TRUE(cps_db::get_objects(b.get(),obj,newl));
 
-    ASSERT_TRUE(cps_api_object_list_size(newl)==cps_api_object_list_size(list));
+    ASSERT_EQ(cps_api_object_list_size(newl),cps_api_object_list_size(list));
 }
 
 TEST(cps_api_db,db_node_list) {
@@ -216,76 +219,135 @@ TEST(cps_api_db,db_node_alias) {
     }
 }
 
-TEST(cps_api_db,db_node_get_set) {
-
-
-    cps_api_node_ident ids[1] = { {"NODE1", "10.11.57.21:6379 "} };
-    cps_api_node_group_t _g;
-
-    _g.id = "A";
-    _g.addrs = ids;
-    _g.addr_len = 1;
-    _g.data_type = cps_api_node_data_NODAL;
-
-    cps_api_set_node_group(&_g);
-
-    {
-        cps_api_object_guard og(cps_api_object_create());
-        ASSERT_TRUE(og.get()!=nullptr);
-        cps_api_object_t obj = og.get();
-        cps_api_key_from_attr_with_qual(cps_api_object_key(obj),BASE_IP_IPV6,cps_api_qualifier_TARGET);
-        cps_api_key_set_group(obj,"A");
-        ASSERT_TRUE(cps_api_commit_one(cps_api_oper_DELETE, obj, 0, 200)==cps_api_ret_code_OK);
-
-    }
-
+TEST(cps_api_db,db_node_cleanup) {
     cps_api_object_guard og(cps_api_object_create());
     ASSERT_TRUE(og.get()!=nullptr);
     cps_api_object_t obj = og.get();
-
     cps_api_key_from_attr_with_qual(cps_api_object_key(obj),BASE_IP_IPV6,cps_api_qualifier_TARGET);
-    cps_api_object_attr_add_u32(obj,BASE_IP_IPV6_VRF_ID,0);
-    cps_api_object_attr_add_u32(obj,BASE_IP_IPV6_IFINDEX,1);
-    cps_api_object_attr_add(obj,BASE_IP_IPV6_NAME,"Clifford",9);
-
     cps_api_key_set_group(obj,"A");
+    ASSERT_TRUE(cps_api_commit_one(cps_api_oper_DELETE, obj, 0, 200)==cps_api_ret_code_OK);
+}
 
-    ASSERT_TRUE(cps_api_commit_one(cps_api_oper_CREATE, obj, 0, 200)==cps_api_ret_code_OK);
+cps_api_object_guard _tempate(cps_api_object_create());
+
+TEST(cps_api_db,db_node_create) {
+    //create one element
+    ASSERT_TRUE(cps_api_key_from_attr_with_qual(cps_api_object_key(_tempate.get()),BASE_IP_IPV6,cps_api_qualifier_TARGET));
+    cps_api_object_attr_add_u32(_tempate.get(),BASE_IP_IPV6_VRF_ID,0);
+    cps_api_object_attr_add_u32(_tempate.get(),BASE_IP_IPV6_IFINDEX,1);
+    cps_api_object_attr_add(_tempate.get(),BASE_IP_IPV6_NAME,"Clifford",9);
+    cps_api_object_attr_add(_tempate.get(),0xc11ff,"Clifford",9);
+    cps_api_key_set_group(_tempate.get(),"A");
+    ASSERT_TRUE(cps_api_commit_one(cps_api_oper_CREATE, _tempate.get(), 0, 200)==cps_api_ret_code_OK);
+}
+
+TEST(cps_api_db,db_node_set) {
+    cps_api_object_guard og(cps_api_object_create());
+
+    cps_api_object_clone(og.get(),_tempate.get());
+    std::string val = "Clifford Wichmann";
+    cps_api_object_attr_delete(og.get(),BASE_IP_IPV6_NAME);
+    cps_api_object_attr_add(og.get(),BASE_IP_IPV6_NAME,val.c_str(),val.size());
+
+    cps_api_object_attr_add(og.get(),3,val.c_str(),val.size());
+
+    cps_api_object_attr_delete(_tempate.get(),BASE_IP_IPV6_NAME);
+    cps_api_object_attr_add(_tempate.get(),BASE_IP_IPV6_NAME,val.c_str(),val.size());
+    cps_api_object_attr_add(_tempate.get(),3,val.c_str(),val.size());
+
+    cps_api_key_set_group(og.get(),"A");
+    ASSERT_TRUE(cps_api_commit_one(cps_api_oper_SET, og.get(), 0, 200)==cps_api_ret_code_OK);
+}
+TEST(cps_api_db,db_node_get) {
+    cps_api_object_list_guard lg(cps_api_object_list_create());
+    cps_api_object_guard og(cps_api_object_create());
+
+    ASSERT_TRUE(cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),BASE_IP_IPV6,cps_api_qualifier_TARGET));
+    cps_api_object_attr_add_u32(og.get(),BASE_IP_IPV6_VRF_ID,0);
+    cps_api_object_attr_add_u32(og.get(),BASE_IP_IPV6_IFINDEX,1);
+    cps_api_key_set_group(og.get(),"A");
+
+    ASSERT_TRUE(cps_api_get_objs(og.get(),lg.get(), 0, 200)==cps_api_ret_code_OK);
+    {
+        size_t ix = 0;
+        size_t mx = cps_api_object_list_size(lg.get());
+        for ( ; ix < mx ; ++ix ) {
+            cps_api_object_t o = cps_api_object_list_get(lg.get(),ix);
+            cps_api_object_attr_delete(o,CPS_OBJECT_GROUP_NODE);
+
+            if (!cps_api_obj_tool_matches_filter(_tempate.get(),o,true)) {
+                char buff[1024];
+                printf("Object A: %s\n",cps_api_object_to_string(o,buff,sizeof(buff)));
+                printf("Object B: %s\n",cps_api_object_to_string(og.get(),buff,sizeof(buff)));
+                ASSERT_TRUE(false);
+            }
+        }
+    }
+}
+
+TEST(cps_api_db,db_nodes) {
+    cps_api_object_list_guard lg(cps_api_object_list_create());
+    cps_api_object_guard og(cps_api_object_create());
+
+    const char *_name = "----";
+    //create another element
+    cps_api_object_attr_delete(og.get(),BASE_IP_IPV6_NAME);
+    cps_api_object_attr_delete(og.get(),BASE_IP_IPV6_IFINDEX);
+    cps_api_object_attr_add_u32(og.get(),BASE_IP_IPV6_VRF_ID,3);
+    cps_api_object_attr_add_u32(og.get(),BASE_IP_IPV6_IFINDEX,2);
+    cps_api_object_attr_add(og.get(),BASE_IP_IPV6_NAME,_name,strlen(_name)+1);
+    ASSERT_TRUE(cps_api_commit_one(cps_api_oper_CREATE, og.get(), 0, 200)==cps_api_ret_code_OK);
 
 
-    cps_api_object_attr_delete(obj,BASE_IP_IPV6_NAME);
-    cps_api_object_attr_delete(obj,BASE_IP_IPV6_IFINDEX);
-    cps_api_object_attr_add_u32(obj,BASE_IP_IPV6_IFINDEX,2);
-    cps_api_object_attr_add(obj,BASE_IP_IPV6_NAME,"Shankara/Jana/Joe/Joe",strlen("Shankara/Jana/Joe/Joe")+1);
-    ASSERT_TRUE(cps_api_commit_one(cps_api_oper_CREATE, obj, 0, 200)==cps_api_ret_code_OK);
+    cps_api_object_attr_delete(og.get(),BASE_IP_IPV6_NAME);
+    cps_api_object_attr_delete(og.get(),BASE_IP_IPV6_IFINDEX);
+    cps_api_object_attr_add_u32(og.get(),BASE_IP_IPV6_IFINDEX,2);
+    _name = "Shankara/Jana/Joe/Joe";
+
+    cps_api_object_attr_add(og.get(),BASE_IP_IPV6_NAME,_name,strlen(_name)+1);
+    ASSERT_TRUE(cps_api_commit_one(cps_api_oper_CREATE, og.get(), 0, 200)==cps_api_ret_code_OK);
+
+    lg.set(cps_api_object_list_create());
+    og.set(cps_api_object_create());
+
+    cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),BASE_IP_IPV6,cps_api_qualifier_TARGET);
+    cps_api_object_attr_add_u32(og.get(),BASE_IP_IPV6_VRF_ID,0);    //filter all objects to get the VRF 0 only
+    cps_api_object_attr_add_u32(og.get(),BASE_IP_IPV6_IFINDEX,2);    //filter all objects to get the IFINDEX 1 only
+    cps_api_key_set_group(og.get(),"A");    //get from this node only
+
+    ASSERT_TRUE(cps_api_get_objs(og.get(), lg.get(),0,100)==cps_api_ret_code_OK);
+
+    cps_api_object_attr_delete(og.get(),BASE_IP_IPV6_NAME);
+    cps_api_object_attr_add(og.get(),BASE_IP_IPV6_NAME,"Everyone",strlen("Everyone")+1);
+    ASSERT_TRUE(cps_api_commit_one(cps_api_oper_SET, og.get(), 0, 200)==cps_api_ret_code_OK);
+
 
     og.free();
     og.set(cps_api_object_create());
-    cps_api_object_list_guard lg(cps_api_object_list_create());
+    lg.set(cps_api_object_list_create());
 
-    cps_api_key_from_attr_with_qual(cps_api_object_key(obj),BASE_IP_IPV6,cps_api_qualifier_TARGET);
-    cps_api_key_set_group(obj,"A");
+    cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),BASE_IP_IPV6,cps_api_qualifier_TARGET);
+    cps_api_key_set_group(og.get(),"A");
     ASSERT_TRUE(cps_api_get_objs(og.get(), lg.get(),0,100)==cps_api_ret_code_OK);
-    ASSERT_EQ(cps_api_object_list_size(lg.get()),_g.addr_len*2);
+    ASSERT_EQ(cps_api_object_list_size(lg.get()),2);
 
     lg.set(cps_api_object_list_create());
     og.free();
     og.set(cps_api_object_create());
-    cps_api_key_from_attr_with_qual(cps_api_object_key(obj),BASE_IP_IPV6,cps_api_qualifier_TARGET);
-    cps_api_object_attr_add_u32(obj,BASE_IP_IPV6_VRF_ID,0);    //filter all objects to get the VRF 0 only
-    cps_api_object_attr_add_u32(obj,BASE_IP_IPV6_IFINDEX,1);    //filter all objects to get the IFINDEX 1 only
-    cps_api_key_set_group(obj,"NODE2");    //get from this node only
+    cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),BASE_IP_IPV6,cps_api_qualifier_TARGET);
+    cps_api_object_attr_add_u32(og.get(),BASE_IP_IPV6_VRF_ID,0);    //filter all objects to get the VRF 0 only
+    cps_api_object_attr_add_u32(og.get(),BASE_IP_IPV6_IFINDEX,1);    //filter all objects to get the IFINDEX 1 only
+    cps_api_key_set_group(og.get(),"A");    //get from this node only
 
     ASSERT_TRUE(cps_api_get_objs(og.get(), lg.get(),0,100)==cps_api_ret_code_OK);
 
-    ASSERT_TRUE(cps_api_object_list_size(lg.get())==1);
+    ASSERT_TRUE(cps_api_object_list_size(lg.get())==2);
 
     og.set(cps_api_object_create());
     ASSERT_TRUE(og.get()!=nullptr);
-    obj = og.get();
-    cps_api_key_from_attr_with_qual(cps_api_object_key(obj),BASE_IP_IPV6,cps_api_qualifier_TARGET);
+    cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),BASE_IP_IPV6,cps_api_qualifier_TARGET);
 
-    ASSERT_TRUE(cps_api_commit_one(cps_api_oper_DELETE, obj, 0, 200)==cps_api_ret_code_OK);
+    ASSERT_TRUE(cps_api_commit_one(cps_api_oper_DELETE, og.get(), 0, 200)==cps_api_ret_code_OK);
 
 }
 

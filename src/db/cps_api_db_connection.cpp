@@ -65,21 +65,37 @@ int cps_db::connection::get_fd() {
 pthread_once_t __thread_init = PTHREAD_ONCE_INIT;
 
 bool cps_db::connection::connect(const std::string &s_, const std::string &db_instance_, bool async_) {
-    auto lst = cps_string::split(s_,":");
-    if (lst.size()!=2) {
+    size_t _port_pos = s_.rfind(":");
+    if (_port_pos==std::string::npos) {
         EV_LOG(ERR,DSAPI,0,"RED-CON","Failed to connect to server... bad address (%s)",s_.c_str());
         return false;
+    }
+
+    int _port = atoi(s_.c_str()+_port_pos+1);
+
+    size_t _end_ip = _port_pos;
+    size_t _start_ip = 0;
+
+    std::string _ip;
+
+    if (s_[0]=='[') {
+        ++_start_ip;    //first spot is [
+        _end_ip = s_.rfind("]:");
+        if (_end_ip==std::string::npos) {
+            EV_LOG(ERR,DSAPI,0,"RED-CON","Failed to connect to server... bad address (%s)",s_.c_str());
+            return false;
+        }
     }
     _addr = s_;
     _async = async_;
 
-    size_t port = std::atoi(lst[1].c_str());
+    _ip = s_.substr(_start_ip,_end_ip);
 
     if (_async) {
-        _ctx = redisAsyncConnect(lst[0].c_str(), port);
+        _ctx = redisAsyncConnect(_ip.c_str(), _port);
     } else {
         timeval tv = { 2 /*Second */ , 0 };
-        _ctx = redisConnectWithTimeout(lst[0].c_str(), port,tv);
+        _ctx = redisConnectWithTimeout(_ip.c_str(), _port,tv);
     }
 
     if (db_instance_.size()!=0) {
@@ -245,30 +261,6 @@ bool cps_db::connection::command(db_operation_atom_t * lst,size_t len,response_s
     return true;
 }
 
-bool cps_db::connection::response(response_set &data_, ssize_t at_least_) {
-    size_t _needed = at_least_;
-
-    if (_pending<=0 && _needed<=0) {
-        EV_LOG(ERR,DSAPI,0,"CPS-DB-RESP","response get called with no expected events");
-        return false; //no data to read
-    }
-    if (_needed <=0 ) _needed = _pending;
-
-    while (_needed-- > 0) {
-        void *reply;
-        int rc = redisGetReply(static_cast<redisContext*>(_ctx),&reply);
-        if (rc!=REDIS_OK) {
-            EV_LOG(ERR,DSAPI,0,"DB-RESP","Failed to get reply from %s",_addr.c_str());
-            //clean up response so no partial responses
-            return false;
-        }
-        data_.add(reply);
-        --_pending;
-    }
-    if (_pending <0 ) _pending = 0;
-    return true;
-}
-
 static bool is_event_message(void *resp) {
     cps_db::response r(resp);
     if (r.elements() >=3) {
@@ -280,6 +272,26 @@ static bool is_event_message(void *resp) {
         }
     }
     return false;
+}
+
+bool cps_db::connection::response(response_set &data_, bool expect_events) {
+
+    while (true) {
+        void *reply;
+        int rc = redisGetReply(static_cast<redisContext*>(_ctx),&reply);
+        if (rc!=REDIS_OK) {
+            EV_LOG(ERR,DSAPI,0,"DB-RESP","Failed to get reply from %s",_addr.c_str());
+            //clean up response so no partial responses
+            return false;
+        }
+        if (expect_events && is_event_message(reply)) {
+            _pending_events.push_back(reply);
+            continue;
+        }
+        data_.add(reply);
+        break;
+    }
+    return true;
 }
 
 bool cps_db::connection::has_event() {
@@ -343,14 +355,23 @@ cps_db::connection * cps_db::connection_cache::get(const std::string &name) {
     std::lock_guard<std::mutex> l(_mutex);
     auto it = _pool.find(name);
     if (it==_pool.end()) return nullptr;
-    auto ptr = it->second.release();
-    _pool.erase(it);
-    return ptr;
+
+    if (it->second.size()>0) {
+        auto ptr = it->second[it->second.size()-1].release();
+        it->second.pop_back();
+        return ptr;
+    }
+    return nullptr;
 }
 
 void cps_db::connection_cache::put(const std::string &name, connection* conn) {
     std::lock_guard<std::mutex> l(_mutex);
-    _pool[name] = std::unique_ptr<cps_db::connection>(conn);
+    const static size_t MAX_OPEN_CONN=3;
+    auto _ptr = std::unique_ptr<cps_db::connection>(conn);
+
+    if (_pool[name].size()<MAX_OPEN_CONN) {
+        _pool[name].push_back(std::move(_ptr));
+    }
 }
 void cps_db::connection_cache::remove(const std::string &name) {
     std::lock_guard<std::mutex> l(_mutex);

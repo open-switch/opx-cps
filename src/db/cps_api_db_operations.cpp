@@ -37,16 +37,27 @@ cps_api_return_code_t __cps_api_db_operation_get(cps_api_object_t obj, cps_api_o
         cps_db::connection_request r(cps_db::ProcessDBCache(),name.c_str());
         result |= cps_db::get_objects(r.get(),obj,results);
         if (!result) {
-        	cps_api_object_t o = cps_api_object_list_create_obj_and_append(results);
-        	cps_api_key_from_attr_with_qual(cps_api_object_key(o),CPS_CONNECTION_ENTRY,cps_api_qualifier_OBSERVED);
-        	cps_api_object_attr_add(o,CPS_CONNECTION_ENTRY_NAME,name.c_str(),name.size()+1);
-        	cps_api_object_attr_add(o,CPS_CONNECTION_ENTRY_IP,name.c_str(),name.size()+1);
-        	cps_api_object_attr_add(o,CPS_CONNECTION_ENTRY_GROUP,node,strlen(node)+1);
+            cps_api_object_t o = cps_api_object_list_create_obj_and_append(results);
+            cps_api_key_from_attr_with_qual(cps_api_object_key(o),CPS_CONNECTION_ENTRY,cps_api_qualifier_OBSERVED);
+            cps_api_object_attr_add(o,CPS_CONNECTION_ENTRY_NAME,name.c_str(),name.size()+1);
+            cps_api_object_attr_add(o,CPS_CONNECTION_ENTRY_IP,name.c_str(),name.size()+1);
+            cps_api_object_attr_add(o,CPS_CONNECTION_ENTRY_GROUP,node,strlen(node)+1);
         }
 
     },nullptr);
 
     return result==true? cps_api_ret_code_OK : cps_api_ret_code_ERR;
+}
+
+cps_api_return_code_t __cps_api_db_operation_get_first_object(cps_api_object_t obj) {
+    const char * node = cps_api_key_get_group(obj);
+    bool _found = false;
+    cps_api_node_set_iterate(node,[&obj,&_found,node](const std::string &name,void *c){
+        cps_db::connection_request r(cps_db::ProcessDBCache(),name.c_str());
+        _found = _found || cps_db::get_object(r.get(),obj);
+    },nullptr);
+
+    return _found==true? cps_api_ret_code_OK : cps_api_ret_code_ERR;
 }
 
 }
@@ -58,8 +69,7 @@ cps_api_return_code_t cps_api_db_operation_get(cps_api_get_params_t * param, siz
 }
 
 cps_api_return_code_t cps_api_db_operation_commit(cps_api_transaction_params_t * param, size_t ix) {
-
-	///TODO add watch for data modifications between get and sets
+    ///TODO add watch for data modifications between get and sets
     cps_api_object_t o = cps_api_object_list_get(param->change_list,ix);
     STD_ASSERT(o!=nullptr);
 
@@ -71,25 +81,17 @@ cps_api_return_code_t cps_api_db_operation_commit(cps_api_transaction_params_t *
 
     //fetch the previous object - all should be the same so get the first one
     cps_api_object_t prev = cps_api_object_list_get(param->prev,ix);
+    if (prev==nullptr) prev = cps_api_object_list_create_obj_and_append(param->prev);
 
     std::string _failed_nodes = "";
 
     if (op_type==cps_api_oper_SET || op_type==cps_api_oper_DELETE) {
-        cps_api_object_list_guard lg(cps_api_object_list_create());
-        if (__cps_api_db_operation_get(o,lg.get(),true)==cps_api_ret_code_OK) {
-            cps_api_object_t _exp_prev = cps_api_object_list_get(lg.get(),0);
-            if (cps_api_object_list_size(lg.get()) > 0 ) {
-				if (!cps_api_object_list_append(param->prev,_exp_prev)) {
-					return cps_api_ret_code_ERR;
-				}
-				prev = _exp_prev;
-				cps_api_object_list_remove(lg.get(),0);
-            }
-        }
+        cps_api_object_clone(prev,o);
+        __cps_api_db_operation_get_first_object(prev);
     }
 
     if (op_type==cps_api_oper_SET) {
-        if (!cps_api_obj_tool_merge(o,prev)) {
+        if (!cps_api_obj_tool_merge(prev,o)) {
             return cps_api_ret_code_ERR;
         }
     }
@@ -103,7 +105,7 @@ cps_api_return_code_t cps_api_db_operation_commit(cps_api_transaction_params_t *
         //fastest operation is just store it..
         if (op_type==cps_api_oper_CREATE) {
             ///TODO need to maybe check if object currently exists before allowing create..
-            result |= cps_db::store_object(r.get(),o);
+            result = result || cps_db::store_object(r.get(),o);
             if (!result) _failed_nodes+=name+",";
             return;
         }
@@ -111,7 +113,7 @@ cps_api_return_code_t cps_api_db_operation_commit(cps_api_transaction_params_t *
         if (op_type==cps_api_oper_DELETE) {
             cps_api_object_list_guard lg(cps_api_object_list_create());
             cps_db::get_objects(r.get(),o,lg.get());
-            result |= cps_db::delete_objects(r.get(),lg.get());
+            result = result || cps_db::delete_objects(r.get(),lg.get());
             if (!result) _failed_nodes+=name+",";
             return;
         }
