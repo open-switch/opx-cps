@@ -91,7 +91,7 @@ cps_api_return_code_t cps_api_db_operation_commit(cps_api_transaction_params_t *
     }
 
     if (op_type==cps_api_oper_SET) {
-        if (!cps_api_obj_tool_merge(o,prev)) {
+        if (!cps_api_obj_tool_merge(prev,o)) {
             return cps_api_ret_code_ERR;
         }
     }

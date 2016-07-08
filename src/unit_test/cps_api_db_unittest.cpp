@@ -243,10 +243,18 @@ TEST(cps_api_db,db_node_create) {
 
 TEST(cps_api_db,db_node_set) {
     cps_api_object_guard og(cps_api_object_create());
+
     cps_api_object_clone(og.get(),_tempate.get());
     std::string val = "Clifford Wichmann";
     cps_api_object_attr_delete(og.get(),BASE_IP_IPV6_NAME);
     cps_api_object_attr_add(og.get(),BASE_IP_IPV6_NAME,val.c_str(),val.size());
+
+    cps_api_object_attr_add(og.get(),3,val.c_str(),val.size());
+
+    cps_api_object_attr_delete(_tempate.get(),BASE_IP_IPV6_NAME);
+    cps_api_object_attr_add(_tempate.get(),BASE_IP_IPV6_NAME,val.c_str(),val.size());
+    cps_api_object_attr_add(_tempate.get(),3,val.c_str(),val.size());
+
     cps_api_key_set_group(og.get(),"A");
     ASSERT_TRUE(cps_api_commit_one(cps_api_oper_SET, og.get(), 0, 200)==cps_api_ret_code_OK);
 }
