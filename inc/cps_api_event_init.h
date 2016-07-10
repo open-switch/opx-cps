@@ -101,6 +101,12 @@ typedef cps_api_return_code_t (*cps_api_event_service_client_disconnect_t)(cps_a
 typedef cps_api_return_code_t (*cps_api_timedwait_for_event_t)(cps_api_event_service_handle_t handle,
         cps_api_object_t msg, ssize_t timeout_ms);
 
+/**
+ * Function hook for registering a series of objects with the CPS interface.
+ * @param handle the handle to the event service
+ * @param objects a list of objects that need to be monitored
+ * @return a CPS return code indicating pass or failure - generally cps_api_ret_code_OK or an error
+ */
 typedef cps_api_return_code_t (*cps_api_event_service_register_objs_function_t)(cps_api_event_service_handle_t handle,
         cps_api_object_list_t objects);
 

@@ -335,8 +335,8 @@ static bool  _client_closed_( void *context, int fd ) {
                               cps_api_key_print(&_one_key.key,buff,sizeof(buff)-1));
 
                     _one_key.data.erase(_one_key.data.begin()+_entry);
+                    _entry = 0;
                 }
-                _entry = 0;
 
             }
             if (_one_key.data.size()==0) {
