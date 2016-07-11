@@ -96,7 +96,9 @@ bool cps_db::ping(cps_db::connection &conn) {
     e.from_string("PING");
     response_set resp;
 
-    if (!conn.command(&e,1,resp)) {
+    if (!conn.operation(&e,1,false)) return false;
+
+    if (!conn.response(resp,true)) {
         return false;
     }
 
@@ -439,7 +441,7 @@ bool cps_db::get_objects(cps_db::connection &conn,std::vector<char> &key,cps_api
 
 bool cps_db::get_objects(cps_db::connection &conn, cps_api_object_t obj,cps_api_object_list_t obj_list) {
     std::vector<char> k;
-    if (!cps_db::dbkey_from_class_key(k,cps_api_object_key(obj))) return false;
+    if (!cps_db::dbkey_from_instance_key(k,obj)) return false;
     return get_objects(conn,k,obj_list);
 }
 

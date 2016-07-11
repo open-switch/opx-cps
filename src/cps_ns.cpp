@@ -55,7 +55,7 @@ struct client_reg_t {
     size_t count;
 };
 
-using reg_cache = cps_api_key_cache<client_reg_t>;
+using reg_cache = cps_api_key_cache<std::vector<client_reg_t>>;
 using ns_stats = std::unordered_map<uint64_t,uint64_t>;
 
 static reg_cache registration;
@@ -184,9 +184,18 @@ static bool process_registration(int fd,size_t len) {
     std_mutex_simple_lock_guard lg(&cache_lock);
     ++_stats[cps_api_obj_stat_SET_COUNT];
 
-    registration.insert(&r.details.key,r);
+    std::vector<client_reg_t> *lst = registration.at(&r.details.key,true);
+    if (lst==nullptr) {
+        std::vector<client_reg_t> l;
+        l.push_back(r);
+        registration.insert(&r.details.key,std::move(l));
+    } else {
+        lst->push_back(r);
+    }
+
     reg_created_cache.insert(fd);
     }
+
     char buff[CPS_API_KEY_STR_MAX];
     // The raw key starts at offset 1 ( "0" being the component qualifier)
     const char *str = cps_class_string_from_key(&r.details.key, 1);
@@ -216,10 +225,10 @@ static bool process_query(int fd, size_t len) {
     {
         std_mutex_simple_lock_guard lg(&cache_lock);
         ++_stats[cps_api_obj_stat_GET_COUNT];
-        client_reg_t * c = registration.at(&key,false);
+        std::vector<client_reg_t> * c = registration.at(&key,false);
         if (c!=nullptr) {
-            ++c->count;
-            cpy = c->details;
+            ++((*c)[0].count);
+            cpy = (*c)[0].details;
             found = true;
         }
     }
@@ -264,11 +273,11 @@ static bool process_stats(int fd, size_t len) {
     }
 
     auto fn = [fd,o](reg_cache::cache_data_iterator &it) {
-        auto &v = it->second;
-        size_t mx = v.size();
-        for ( size_t ix = 0 ; ix < mx ; ++ix ) {
-            cps_api_object_attr_add(o,cps_api_obj_stat_KEY,&v[ix].data.details.key,sizeof(v[ix].data.details.key));
-            cps_api_object_attr_add_u64(o,cps_api_obj_stat_GET_COUNT,v[ix].data.count);
+        for ( auto _key_list : it->second ) {
+            for ( auto _reg_list : _key_list.data ) {
+                cps_api_object_attr_add(o,cps_api_obj_stat_KEY,&_reg_list.details.key,sizeof(_reg_list.details.key));
+                cps_api_object_attr_add_u64(o,cps_api_obj_stat_GET_COUNT,_reg_list.count);
+            }
         }
         return true;
     };
@@ -303,27 +312,36 @@ static bool  _client_closed_( void *context, int fd ) {
     ++_stats[cps_api_obj_stat_CLOSE_CLEANUP_RUNS];
 
     auto fn = [fd](reg_cache::cache_data_iterator &it) {
-        char buff[DEF_KEY_PRINT_BUFF];
         auto &v = it->second;
-        size_t mx = v.size();
-        for ( size_t ix = 0 ; ix < mx ; ++ix ) {
-            if (v[ix].data.fd == fd) {
-                send_out_key_event(&v[ix].key,false);
-                // The raw key starts at offset 1 ( "0" being the component qualifier)
-                const char *str = cps_class_string_from_key(&v[ix].key, 1);
-                const char *qual = cps_class_qual_from_key(&v[ix].key);
-                if (str!=nullptr)
-                    EV_LOG(INFO,DSAPI,0,"NS","Added registration removed for %s %s ",
-                           qual,
-                           str);
-               else
-                   EV_LOG(INFO,DSAPI,0,"NS","Added registration removed %s",
-                          cps_api_key_print(&v[ix].key,buff,sizeof(buff)-1));
+        char buff[DEF_KEY_PRINT_BUFF];
+        for ( size_t _keys_ix = 0, _keys_mx = v.size() ; _keys_ix < _keys_mx ; ++_keys_ix ) {
+            auto &_one_key = v[_keys_ix];
+            size_t _entry=0,_entry_max = _one_key.data.size();
+            for ( ; _entry < _entry_max ; ++_entry ) {
+                if (_one_key.data[_entry].fd == fd) {
+                    send_out_key_event(&_one_key.key,false);
+                    if (_one_key.data.size()>0) {
+                        send_out_key_event(&_one_key.key,true);
+                    }
+                    // The raw key starts at offset 1 ( "0" being the component qualifier)
+                    const char *str = cps_class_string_from_key(&_one_key.key, 1);
+                    const char *qual = cps_class_qual_from_key(&_one_key.key);
+                    if (str!=nullptr)
+                        EV_LOG(INFO,DSAPI,0,"NS","Added registration removed for %s %s ",
+                               qual,
+                               str);
+                   else
+                       EV_LOG(INFO,DSAPI,0,"NS","Added registration removed %s",
+                              cps_api_key_print(&_one_key.key,buff,sizeof(buff)-1));
 
-                v.erase(v.begin()+ix);
+                    _one_key.data.erase(_one_key.data.begin()+_entry);
+                }
+                _entry = 0;
 
-                ix = 0;
-                mx = v.size();
+            }
+            if (_one_key.data.size()==0) {
+                v.erase(v.begin()+_keys_ix);
+                _keys_ix = 0;
             }
         }
         return true;

@@ -98,8 +98,8 @@ typedef cps_api_return_code_t (*cps_api_event_service_client_disconnect_t)(cps_a
  * @return cps_api_ret_code_OK if the wait was completed with an event returned
  *   or a specific return code indicating a failure or retry request is requrired
  */
-typedef cps_api_return_code_t (*cps_api_wait_for_event_t)(cps_api_event_service_handle_t handle,
-        cps_api_object_t msg);
+typedef cps_api_return_code_t (*cps_api_timedwait_for_event_t)(cps_api_event_service_handle_t handle,
+        cps_api_object_t msg, ssize_t timeout_ms);
 
 typedef cps_api_return_code_t (*cps_api_event_service_register_objs_function_t)(cps_api_event_service_handle_t handle,
         cps_api_object_list_t objects);
@@ -114,7 +114,7 @@ typedef struct {
     cps_api_event_service_event_register_t register_function;
     cps_api_event_service_publish_event_t publish_function;
     cps_api_event_service_client_disconnect_t deregister_function;
-    cps_api_wait_for_event_t wait_for_event_function;
+    cps_api_timedwait_for_event_t wait_for_event_function;
     cps_api_event_service_register_objs_function_t register_function_objs;
 }cps_api_event_methods_reg_t;
 

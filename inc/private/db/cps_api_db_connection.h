@@ -74,7 +74,7 @@ public:
 
     bool command(db_operation_atom_t * lst,size_t len,response_set &set);
 
-    bool response(response_set &data, ssize_t at_least=0);
+    bool response(response_set &data, bool expect_events = false);
 
     bool operation(db_operation_atom_t * lst,size_t len, bool no_reponse=false);
 
@@ -98,7 +98,7 @@ class connection_cache {
             return std::hash<std::string>()(std::get<0>(key)) ^ std::hash<std::string>()(std::get<1>(key));
         }
     };
-    using _conn_map = std::unordered_map<std::string,std::unique_ptr<connection>>;
+    using _conn_map = std::unordered_map<std::string,std::vector<std::unique_ptr<connection>>>;
 
     _conn_map _pool;
 public:
