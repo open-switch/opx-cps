@@ -81,21 +81,21 @@ extern "C" char * cps_api_key_print(cps_api_key_t *key, char *buff, size_t len) 
 extern "C" char *cps_api_key_name_print(cps_api_key_t *key, char *buff, size_t len) {
 
     STD_ASSERT(buff!=NULL);
-    
+
     const char *qual = nullptr;
     const char *path = nullptr;
-    
+
     qual = cps_class_qual_from_key(key);
     path = cps_class_string_from_key(key, 1);
-        
+
     if (qual != nullptr && path != nullptr) { strncpy(buff,qual,len-1); strncat(buff,"/",len-1);  }
     else *buff = '\0';
-      
+
     if (path != nullptr) strncat(buff,path,len-1);
     else cps_api_key_print(key,buff,len);
 
     buff[len-1] = '\0';
-        
+
     return buff;
 }
 

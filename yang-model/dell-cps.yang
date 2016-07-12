@@ -1,14 +1,14 @@
 module dell-base-cps {
     namespace "http://www.dell.com/esg/networking/os10/dell-cps";
   prefix "cps";
-  
+
   list node-details {
-    description "This object contains a list of aliases for a node.  Any one of the aliases will be converted 
-              into the name.  
-              
-              For instance lets asume that there was a node with an IP address of 10.11.11.11 and 
-              there was a port 443 that contained a service. The name would be 10.11.11.11:443 while on that node, 
-              lets say we wanted a user friendly name and therefore called the entity joe or jane but when you see 
+    description "This object contains a list of aliases for a node.  Any one of the aliases will be converted
+              into the name.
+
+              For instance lets asume that there was a node with an IP address of 10.11.11.11 and
+              there was a port 443 that contained a service. The name would be 10.11.11.11:443 while on that node,
+              lets say we wanted a user friendly name and therefore called the entity joe or jane but when you see
               joe or jain, you want to convert these aliases for the node back to 10.11.11.11:443.";
     key "name";
     leaf name {
@@ -24,8 +24,8 @@ module dell-base-cps {
   list node-group {
     description "This object is used to describe the mapping of a group ID to a list of node IP/port combinations.";
     key "name";
-    
-    leaf name { 
+
+    leaf name {
       description "The name of the group.";
       type string;
     }
@@ -35,7 +35,7 @@ module dell-base-cps {
         type string;
       }
       leaf ip {
-        description "The IP address and port of the element.  Valid IP address/port 
+        description "The IP address and port of the element.  Valid IP address/port
                     combinations are IPv4:port or [IPv6]:port";
         type string;
       }
@@ -44,7 +44,7 @@ module dell-base-cps {
       type uint32;
     }
   }
-  
+
   container object-group {
     description "These attributes are placed in objects by CPS infrastructure.";
     leaf group {
@@ -56,18 +56,18 @@ module dell-base-cps {
       type string;
     }
     leaf transaction {
-      description "In the case of commit operations (and the object is cacheable and doesn't exist at the time 
+      description "In the case of commit operations (and the object is cacheable and doesn't exist at the time
               due to a restart, then an Inprogress return code will be provided and this transaction ID
               can be used to monitor the state of the transaction.";
       type uint64;
     }
     leaf failed-nodes {
-      description "This attribute is used in an object to indicate which nodes did not process the request due to 
+      description "This attribute is used in an object to indicate which nodes did not process the request due to
               connectivity reasons. Nodes are in a single string separated by comma (,).";
       type string;
     }
   }
-  
+
   list connection-entry {
     key "name";
     leaf name {
@@ -79,6 +79,26 @@ module dell-base-cps {
     leaf group {
       type string;
     }
+    leaf connection-state {
+      type boolean;
+    }
+  }
+
+  list db-instance{
+    key "group node-id";
+    leaf group{
+        type string;
+        description "Group name";
+    }
+
+    leaf node-id{
+        type string;
+        description "Node name";
+    }
+
+    leaf port{
+        type string;
+        description "System port where DB Instance was started for given group";
+    }
   }
 }
-

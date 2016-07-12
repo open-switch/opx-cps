@@ -178,9 +178,9 @@ cps_api_return_code_t cps_api_commit(cps_api_transaction_params_t * param) {
             rc=cps_api_process_commit_request(param,ix);
         }
         if (rc!=cps_api_ret_code_OK) {
-	    EV_LOG(ERR,DSAPI,0,"COMMIT","Failed to commit request at %d out of %d",ix, (int)mx);    
-	    break;
-	}
+        EV_LOG(ERR,DSAPI,0,"COMMIT","Failed to commit request at %d out of %d",ix, (int)mx);
+        break;
+    }
     }
     if (rc!=cps_api_ret_code_OK) {
         while (mx > 0) {

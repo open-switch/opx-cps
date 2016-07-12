@@ -342,7 +342,7 @@ cps_api_return_code_t cps_api_process_commit_request(cps_api_transaction_params_
         EV_LOG(ERR,DSAPI,0,"CPS IPC","No Service");
         return cps_api_ret_code_NO_SERVICE;
     }
- 
+
 
     rc = cps_api_ret_code_ERR;
 
@@ -355,12 +355,12 @@ cps_api_return_code_t cps_api_process_commit_request(cps_api_transaction_params_
             EV_LOG(ERR,DSAPI,0,"CPS IPC","Could not send COMMIT CHANGE ");
             break;
         }
- 
+
         if (!cps_api_send_one_object(handle,cps_api_msg_o_COMMIT_PREV,pre)) {
             EV_LOG(ERR,DSAPI,0,"CPS IPC","Could not send COMMIT PREV ");
             break;
         }
- 
+
 
         uint32_t op;
         size_t len;
@@ -376,7 +376,7 @@ cps_api_return_code_t cps_api_process_commit_request(cps_api_transaction_params_
             EV_LOG(ERR,DSAPI,0,"CPS IPC","Failed to read the receive header ");
             break;
         }
- 
+
 
         if (op == cps_api_msg_o_COMMIT_OBJECT) {
             cps_api_object_guard og(cps_api_receive_object(handle,len));
@@ -390,7 +390,7 @@ cps_api_return_code_t cps_api_process_commit_request(cps_api_transaction_params_
                 EV_LOG(ERR,DSAPI,0,"CPS IPC","Failed to read the receive header for prev object ");
                 break;
             }
- 
+
             if (op!=cps_api_msg_o_COMMIT_OBJECT) {
                 EV_LOG(ERR,DSAPI,0,"CPS IPC","Transaction response header incorrect for prev object" );
                 break;

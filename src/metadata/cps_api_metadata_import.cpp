@@ -274,12 +274,12 @@ bool __cb(const char *name, std_dir_file_TYPE_t type,void *context) {
         const static int VER_POS = 0;
         auto _version_elements = cps_string::split(filename_elements[VER_POS],".");
         for (auto & num : _version_elements) {
-        	double _elem = (double)strtoll(num.c_str(),nullptr,0);
-        	if (iteration>0) {
-        		_elem /= (iteration*10);
-        	}
-        	_position+=_elem;
-        	iteration+=4;//decimal places to shift each time
+            double _elem = (double)strtoll(num.c_str(),nullptr,0);
+            if (iteration>0) {
+                _elem /= (iteration*10);
+            }
+            _position+=_elem;
+            iteration+=4;//decimal places to shift each time
         }
     }
 

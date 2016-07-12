@@ -112,6 +112,46 @@ bool cps_db::ping(cps_db::connection &conn) {
             false;
 }
 
+
+bool cps_db::make_slave(cps_db::connection &conn,std::string ip) {
+    cps_db::connection::db_operation_atom_t e[3];
+    e[0].from_string("SLAVEOF");
+    auto lst = cps_string::split(ip,":");
+    if (lst.size()!=2) {
+        EV_LOGGING(DSAPI,ERR,"CPS-DB","Failed to connect to server... bad address (%s)",ip.c_str());
+        return false;
+    }
+
+    e[1].from_string(lst[0].c_str());
+    e[2].from_string(lst[1].c_str());
+
+    response_set resp;
+
+    if (!conn.command(e,3,resp)) {
+        return false;
+    }
+
+    cps_db::response r = resp.get_response(0);
+    return  (r.is_status() && strcmp("OK",r.get_str())==0);
+}
+
+bool cps_db::remove_slave(cps_db::connection &conn) {
+    cps_db::connection::db_operation_atom_t e[3];
+    e[0].from_string("SLAVEOF");
+    e[1].from_string("NO");
+    e[2].from_string("ONE");
+
+    response_set resp;
+
+    if (!conn.command(e,3,resp)) {
+        return false;
+    }
+
+    cps_db::response r = resp.get_response(0);
+    return  (r.is_status() && strcmp("OK",r.get_str())==0);
+
+}
+
 bool cps_db::select_db(cps_db::connection &conn,const std::string &db_id) {
     cps_db::connection::db_operation_atom_t e[2];
     e[0].from_string("SELECT");

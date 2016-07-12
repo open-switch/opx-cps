@@ -147,11 +147,11 @@ static struct {
 static const size_t lst_len = sizeof(lst)/sizeof(*lst);
 
 static inline void __init_class_map() {
-	std::vector<cps_api_attr_id_t> ids ;
-	size_t ix = 0;
-	for ( ; ix < lst_len ; ++ix ) {
-		cps_class_map_init(lst[ix].id,&(lst[ix]._ids[0]),lst[ix]._ids.size(),&lst[ix].details);
-	}
+    std::vector<cps_api_attr_id_t> ids ;
+    size_t ix = 0;
+    for ( ; ix < lst_len ; ++ix ) {
+        cps_class_map_init(lst[ix].id,&(lst[ix]._ids[0]),lst[ix]._ids.size(),&lst[ix].details);
+    }
 }
 
 #endif /* CPS_API_SRC_UNIT_TEST_CPS_CLASS_UT_DATA_H_ */

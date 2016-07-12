@@ -269,10 +269,10 @@ static bool cps_api_handle_commit(cps_api_operation_data_t *op, int fd, size_t l
         if ((p->_write_function!=NULL) &&
                 (cps_api_key_matches(cps_api_object_key(l),&p->key,false)==0)) {
 
-        	tm.start();
+            tm.start();
 
-        	rc = p->_write_function(p->context,&param,0);
-        	if (op->enable_logging) cps_api_commit_request_log(&param);
+            rc = p->_write_function(p->context,&param,0);
+            if (op->enable_logging) cps_api_commit_request_log(&param);
 
             break;
         }
@@ -475,7 +475,7 @@ cps_api_return_code_t cps_api_operation_subsystem_init(
 
     const char * enable_log = std_getenv("CPS_TRACE_ENABLE");
     if (enable_log!=nullptr && strcasecmp("true",enable_log)==0) {
-    	p->enable_logging = true;
+        p->enable_logging = true;
     }
 
     p->handle = NULL;

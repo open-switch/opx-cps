@@ -274,7 +274,7 @@ void* cps_api_object_e_get_data(cps_api_object_t obj, cps_api_attr_id_t *id,
         size_t id_size);
 
 static inline void *cps_api_object_get_data(cps_api_object_t obj, cps_api_attr_id_t id) {
-	return cps_api_object_e_get_data(obj,&id,1);
+    return cps_api_object_e_get_data(obj,&id,1);
 }
 
 /**
@@ -290,11 +290,11 @@ static inline void *cps_api_object_get_data(cps_api_object_t obj, cps_api_attr_i
  * @return the number of found attributes
  */
 size_t cps_api_object_e_get_list_data(cps_api_object_t obj, cps_api_attr_id_t *ids, size_t len,
-		void ** attr_data, size_t attr_data_max);
+        void ** attr_data, size_t attr_data_max);
 
 static inline size_t cps_api_object_get_list_data(cps_api_object_t obj, cps_api_attr_id_t id,
-		void ** attr_data, size_t attr_data_max) {
-	return cps_api_object_e_get_list_data(obj,&id,1,attr_data,attr_data_max);
+        void ** attr_data, size_t attr_data_max) {
+    return cps_api_object_e_get_list_data(obj,&id,1,attr_data,attr_data_max);
 }
 /**
  * This API is meant for getting iterators on for any attribute within the object.

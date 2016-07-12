@@ -24,5 +24,6 @@
 bool cps_api_node_set_iterate(const std::string &group_name,const std::function<void (const std::string &node, void*context)> &operation,
         void *context);
 
+bool cps_api_db_del_node_group(const char *group);
 
 #endif /* CPS_API_INC_PRIVATE_DB_CPS_API_NODE_SET_H_ */

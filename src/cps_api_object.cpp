@@ -192,7 +192,7 @@ bool cps_api_list_debug() {
 cps_api_object_t cps_api_object_create_int(const char *desc, unsigned int line, const char *file) {
     cps_api_object_t obj = obj_alloc(DEF_OBJECT_SIZE);
     if (obj==nullptr) {
-    	EV_LOG(ERR,DSAPI,0,"CPS-OBJ","Failed to allocate memory for object.. expect sytem issues.");
+        EV_LOG(ERR,DSAPI,0,"CPS-OBJ","Failed to allocate memory for object.. expect sytem issues.");
     }
     db_list_tracker_add(obj, desc, line,file);
     return obj;
@@ -327,30 +327,30 @@ cps_api_object_attr_t cps_api_object_e_get(cps_api_object_t obj, cps_api_attr_id
 
 void* cps_api_object_e_get_data(cps_api_object_t obj, cps_api_attr_id_t *id,
         size_t id_size) {
-	cps_api_object_attr_t attr = cps_api_object_e_get(obj,id,id_size);
-	if (attr!=nullptr) {
-		return std_tlv_data(attr);
-	}
-	return nullptr;
+    cps_api_object_attr_t attr = cps_api_object_e_get(obj,id,id_size);
+    if (attr!=nullptr) {
+        return std_tlv_data(attr);
+    }
+    return nullptr;
 }
 
 size_t cps_api_object_e_get_list_data(cps_api_object_t obj, cps_api_attr_id_t *ids, size_t len,
-		void ** attr_data, size_t attr_max) {
+        void ** attr_data, size_t attr_max) {
 
-	cps_api_object_it_t it;
-	if (!cps_api_object_it(obj,ids,len,&it)) {
-		return 0;
-	}
+    cps_api_object_it_t it;
+    if (!cps_api_object_it(obj,ids,len,&it)) {
+        return 0;
+    }
 
-	size_t ix = 0;
+    size_t ix = 0;
 
-	do {
-		if (ix >= attr_max) break;
-		attr_data[ix++] = cps_api_object_attr_data_bin(it.attr);
-		cps_api_object_it_next(&it);
-		it.attr = std_tlv_find_next(it.attr,&it.len,ids[len-1]);
-	} while (cps_api_object_it_valid(&it));
-	return ix;
+    do {
+        if (ix >= attr_max) break;
+        attr_data[ix++] = cps_api_object_attr_data_bin(it.attr);
+        cps_api_object_it_next(&it);
+        it.attr = std_tlv_find_next(it.attr,&it.len,ids[len-1]);
+    } while (cps_api_object_it_valid(&it));
+    return ix;
 }
 
 bool cps_api_object_it(cps_api_object_t obj, cps_api_attr_id_t *id,
@@ -436,10 +436,10 @@ static bool add_embedded(cps_api_object_internal_t * obj, cps_api_attr_id_t *id,
 bool cps_api_object_e_add_object(cps_api_object_t obj,cps_api_attr_id_t *id,
         size_t id_size,cps_api_object_t emb_object) {
 
-	cps_api_object_it_t it;
-	cps_api_object_it_begin(emb_object,&it);
+    cps_api_object_it_t it;
+    cps_api_object_it_begin(emb_object,&it);
 
-	return cps_api_object_e_add(obj,id,id_size,cps_api_object_ATTR_T_BIN,it.attr,it.len);
+    return cps_api_object_e_add(obj,id,id_size,cps_api_object_ATTR_T_BIN,it.attr,it.len);
 }
 
 bool cps_api_object_e_add(cps_api_object_t obj, cps_api_attr_id_t *id,
@@ -583,10 +583,10 @@ size_t cps_api_object_list_size(cps_api_object_list_t list) {
 
 const char * cps_api_object_to_string(cps_api_object_t obj, char *buff, size_t len) {
 
-	std::string str = "Key (";
-	str += cps_api_key_print(cps_api_object_key(obj),buff,len);
-	str += ")\n";
-	str += cps_string::tostring(cps_api_object_array(obj), cps_api_object_to_array_len(obj));
+    std::string str = "Key (";
+    str += cps_api_key_print(cps_api_object_key(obj),buff,len);
+    str += ")\n";
+    str += cps_string::tostring(cps_api_object_array(obj), cps_api_object_to_array_len(obj));
 
     buff[len-1] = '\0';
     strncpy(buff,str.c_str(),len-1);

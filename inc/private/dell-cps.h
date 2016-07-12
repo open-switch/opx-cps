@@ -27,105 +27,120 @@
 #include <stdbool.h>
 
 
-#define cps_api_obj_CAT_CPS (2) 
+#define cps_api_obj_CAT_CPS (2)
 
 #define DELL_BASE_CPS_MODEL_STR "dell-base-cps"
 
 
 /* Object cps/node-group/node */
 
-typedef enum { 
+typedef enum {
 /*The name of the node entry. (an alias for the ip)*/
-/*type=string*/ 
-  CPS_NODE_GROUP_NODE_NAME = 131092,
-/*The IP address and port of the element.  Valid IP address/port 
+/*type=string*/
+  CPS_NODE_GROUP_NODE_NAME = 131073,
+/*The IP address and port of the element.  Valid IP address/port
 combinations are IPv4:port or [IPv6]:port*/
-/*type=string*/ 
-  CPS_NODE_GROUP_NODE_IP = 131093,
+/*type=string*/
+  CPS_NODE_GROUP_NODE_IP = 131074,
 } CPS_NODE_GROUP_NODE_t;
 /* Object cps/connection-entry */
 
-typedef enum { 
-/*The node ID.*/
-/*type=string*/ 
-  CPS_CONNECTION_ENTRY_NAME = 131086,
-/*The IP address of the node (may be same as node ID*/
-/*type=string*/ 
-  CPS_CONNECTION_ENTRY_IP = 131087,
-/*The name of the group if present*/
-/*type=string*/ 
-  CPS_CONNECTION_ENTRY_GROUP = 131088,
-/*Indicates if the node is in contact or out of contact.*/
-/*type=boolean*/ 
-  CPS_CONNECTION_ENTRY_CONNECTION_STATE = 131096,
+typedef enum {
+
+/*type=string*/
+  CPS_CONNECTION_ENTRY_NAME = 131075,
+
+/*type=string*/
+  CPS_CONNECTION_ENTRY_IP = 131076,
+
+/*type=string*/
+  CPS_CONNECTION_ENTRY_GROUP = 131077,
+
+/*type=boolean*/
+  CPS_CONNECTION_ENTRY_CONNECTION_STATE = 131078,
 } CPS_CONNECTION_ENTRY_t;
+/* Object cps/db-instance */
+
+typedef enum {
+/*Group name*/
+/*type=string*/
+  CPS_DB_INSTANCE_GROUP = 131079,
+/*Node name*/
+/*type=string*/
+  CPS_DB_INSTANCE_NODE_ID = 131097,
+/*System port where DB Instance was started for given group*/
+/*type=string*/
+  CPS_DB_INSTANCE_PORT = 131081,
+} CPS_DB_INSTANCE_t;
 /* Object cps/node-details */
 
-typedef enum { 
+typedef enum {
 /*The name to use as a replacement for any of the alias attributes.*/
-/*type=string*/ 
-  CPS_NODE_DETAILS_NAME = 131073,
+/*type=string*/
+  CPS_NODE_DETAILS_NAME = 131082,
 /*A list of alias that can be convered back to the name.*/
-/*type=string*/ 
-  CPS_NODE_DETAILS_ALIAS = 131081,
+/*type=string*/
+  CPS_NODE_DETAILS_ALIAS = 131083,
 } CPS_NODE_DETAILS_t;
 /* Object cps/object-group */
 
-typedef enum { 
+typedef enum {
 /*This attribute holds the group ID if specified.*/
-/*type=string*/ 
-  CPS_OBJECT_GROUP_GROUP = 131077,
+/*type=string*/
+  CPS_OBJECT_GROUP_GROUP = 131084,
 /*This attribute contains the node id.*/
-/*type=string*/ 
-  CPS_OBJECT_GROUP_NODE = 131080,
-/*In the case of commit operations (and the object is cacheable and doesn't exist at the time 
+/*type=string*/
+  CPS_OBJECT_GROUP_NODE = 131085,
+/*In the case of commit operations (and the object is cacheable and doesn't exist at the time
 due to a restart, then an Inprogress return code will be provided and this transaction ID
 can be used to monitor the state of the transaction.*/
-/*type=uint64*/ 
-  CPS_OBJECT_GROUP_TRANSACTION = 131079,
-/*This attribute is used in an object to indicate which nodes did not process the request due to 
+/*type=uint64*/
+  CPS_OBJECT_GROUP_TRANSACTION = 131086,
+/*This attribute is used in an object to indicate which nodes did not process the request due to
 connectivity reasons. Nodes are in a single string separated by comma (,).*/
-/*type=string*/ 
-  CPS_OBJECT_GROUP_FAILED_NODES = 131095,
+/*type=string*/
+  CPS_OBJECT_GROUP_FAILED_NODES = 131087,
 } CPS_OBJECT_GROUP_t;
 /* Object cps/node-group */
 
-typedef enum { 
+typedef enum {
 /*The name of the group.*/
-/*type=string*/ 
-  CPS_NODE_GROUP_NAME = 131082,
+/*type=string*/
+  CPS_NODE_GROUP_NAME = 131088,
 
-/*type=binary*/ 
-  CPS_NODE_GROUP_NODE = 131094,
+/*type=binary*/
+  CPS_NODE_GROUP_NODE = 131089,
 
-/*type=uint32*/ 
-  CPS_NODE_GROUP_TYPE = 131084,
+/*type=uint32*/
+  CPS_NODE_GROUP_TYPE = 131090,
 } CPS_NODE_GROUP_t;
 
 /* Object's continued */
 
 typedef enum{
-/*This object contains a list of aliases for a node.  Any one of the aliases will be converted 
-into the name.  
-              
-For instance lets asume that there was a node with an IP address of 10.11.11.11 and 
-there was a port 443 that contained a service. The name would be 10.11.11.11:443 while on that node, 
-lets say we wanted a user friendly name and therefore called the entity joe or jane but when you see 
+/*This object contains a list of aliases for a node.  Any one of the aliases will be converted
+into the name.
+
+For instance lets asume that there was a node with an IP address of 10.11.11.11 and
+there was a port 443 that contained a service. The name would be 10.11.11.11:443 while on that node,
+lets say we wanted a user friendly name and therefore called the entity joe or jane but when you see
 joe or jain, you want to convert these aliases for the node back to 10.11.11.11:443.*/
-  CPS_NODE_DETAILS = 131075,
-  CPS_NODE_DETAILS_OBJ = 131075,
+  CPS_NODE_DETAILS = 131091,
+  CPS_NODE_DETAILS_OBJ = 131091,
 
 /*This object is used to describe the mapping of a group ID to a list of node IP/port combinations.*/
-  CPS_NODE_GROUP = 131085,
-  CPS_NODE_GROUP_OBJ = 131085,
+  CPS_NODE_GROUP = 131092,
+  CPS_NODE_GROUP_OBJ = 131092,
 
 /*These attributes are placed in objects by CPS infrastructure.*/
-  CPS_OBJECT_GROUP = 131078,
-  CPS_OBJECT_GROUP_OBJ = 131078,
+  CPS_OBJECT_GROUP = 131093,
+  CPS_OBJECT_GROUP_OBJ = 131093,
 
-/*The event that is generated from the system when a DB connection is received or lost.*/
-  CPS_CONNECTION_ENTRY = 131090,
-  CPS_CONNECTION_ENTRY_OBJ = 131090,
+  CPS_CONNECTION_ENTRY = 131094,
+  CPS_CONNECTION_ENTRY_OBJ = 131094,
+
+  CPS_DB_INSTANCE = 131095,
+  CPS_DB_INSTANCE_OBJ = 131095,
 
 } CPS_OBJECTS_t;
 
