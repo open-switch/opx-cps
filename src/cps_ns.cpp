@@ -336,6 +336,7 @@ static bool  _client_closed_( void *context, int fd ) {
 
                     _one_key.data.erase(_one_key.data.begin()+_entry);
                     _entry = 0;
+                    continue; //avoid ++ at end of loop
                 }
 
             }
