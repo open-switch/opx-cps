@@ -100,6 +100,10 @@ can be used to monitor the state of the transaction.*/
 connectivity reasons. Nodes are in a single string separated by comma (,).*/
 /*type=string*/
   CPS_OBJECT_GROUP_FAILED_NODES = 131087,
+/*If this attribute is present in an event registration, only events matching the exact object
+key or attributes in the object will be provided to the application.*/
+/*type=boolean*/
+  CPS_OBJECT_GROUP_EXACT_MATCH = 131098,
 } CPS_OBJECT_GROUP_t;
 /* Object cps/node-group */
 
@@ -132,7 +136,8 @@ joe or jain, you want to convert these aliases for the node back to 10.11.11.11:
   CPS_NODE_GROUP = 131092,
   CPS_NODE_GROUP_OBJ = 131092,
 
-/*These attributes are placed in objects by CPS infrastructure.*/
+/*These attributes are placed in objects by CPS infrastructure and provide additional information or change
+behaviour as needed.*/
   CPS_OBJECT_GROUP = 131093,
   CPS_OBJECT_GROUP_OBJ = 131093,
 

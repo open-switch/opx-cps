@@ -46,7 +46,8 @@ module dell-base-cps {
   }
 
   container object-group {
-    description "These attributes are placed in objects by CPS infrastructure.";
+    description "These attributes are placed in objects by CPS infrastructure and provide additional information or change
+                behaviour as needed.";
     leaf group {
       description "This attribute holds the group ID if specified.";
       type string;
@@ -65,6 +66,11 @@ module dell-base-cps {
       description "This attribute is used in an object to indicate which nodes did not process the request due to
               connectivity reasons. Nodes are in a single string separated by comma (,).";
       type string;
+    }
+    leaf exact-match {
+      description "If this attribute is present in an event registration, only events matching the exact object
+                  key or attributes in the object will be provided to the application.";
+      type boolean;
     }
   }
 
