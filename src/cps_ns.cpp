@@ -314,15 +314,14 @@ static bool  _client_closed_( void *context, int fd ) {
     auto fn = [fd](reg_cache::cache_data_iterator &it) {
         auto &v = it->second;
         char buff[DEF_KEY_PRINT_BUFF];
-        for ( size_t _keys_ix = 0, _keys_mx = v.size() ; _keys_ix < _keys_mx ; ++_keys_ix ) {
+        size_t _keys_ix = 0, _keys_mx = v.size();
+        while ( _keys_ix < _keys_mx ) {
             auto &_one_key = v[_keys_ix];
             size_t _entry=0,_entry_max = _one_key.data.size();
-            for ( ; _entry < _entry_max ; ++_entry ) {
+            while ( _entry < _entry_max ) {
                 if (_one_key.data[_entry].fd == fd) {
                     send_out_key_event(&_one_key.key,false);
-                    if (_one_key.data.size()>0) {
-                        send_out_key_event(&_one_key.key,true);
-                    }
+
                     // The raw key starts at offset 1 ( "0" being the component qualifier)
                     const char *str = cps_class_string_from_key(&_one_key.key, 1);
                     const char *qual = cps_class_qual_from_key(&_one_key.key);
@@ -335,15 +334,20 @@ static bool  _client_closed_( void *context, int fd ) {
                               cps_api_key_print(&_one_key.key,buff,sizeof(buff)-1));
 
                     _one_key.data.erase(_one_key.data.begin()+_entry);
+
+                    if (_one_key.data.size()>0) {
+                        send_out_key_event(&_one_key.key,true);
+                    }
                     _entry = 0;
                     continue; //avoid ++ at end of loop
                 }
-
+                ++_entry;
             }
             if (_one_key.data.size()==0) {
                 v.erase(v.begin()+_keys_ix);
                 _keys_ix = 0;
             }
+            ++_keys_ix;
         }
         return true;
     };
