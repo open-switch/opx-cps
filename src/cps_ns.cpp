@@ -339,6 +339,7 @@ static bool  _client_closed_( void *context, int fd ) {
                         send_out_key_event(&_one_key.key,true);
                     }
                     _entry = 0;
+                    --_entry_max;
                     continue; //avoid ++ at end of loop
                 }
                 ++_entry;
@@ -346,6 +347,7 @@ static bool  _client_closed_( void *context, int fd ) {
             if (_one_key.data.size()==0) {
                 v.erase(v.begin()+_keys_ix);
                 _keys_ix = 0;
+                --_keys_mx;
             }
             ++_keys_ix;
         }
