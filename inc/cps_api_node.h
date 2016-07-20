@@ -16,6 +16,10 @@
 #ifndef CPS_API_NODE_H_
 #define CPS_API_NODE_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "cps_api_object.h"
 #include "cps_api_errors.h"
 
@@ -31,12 +35,12 @@ typedef struct {
     const char * addr;
 } cps_api_node_ident;
 
-struct cps_api_node_group_t {
+typedef struct {
     const char * id;                 /// the group ID string.
     cps_api_node_ident *addrs;     /// the list of addresses for the nodes
     size_t addr_len;                ///the length of the addresses in this node
     cps_api_node_data_type_t data_type;        ///in the case of database clustering, determine if it will be 1+1 or nodal
-};
+} cps_api_node_group_t;
 
 /**
  * Create a node grouping which allowing access to fanout requests to all of the addresses specified
@@ -95,5 +99,9 @@ const char * cps_api_key_get_node(cps_api_object_t obj);
  * @return on success the call returns cps_api_ret_code_OK otherwise there will be a specific cps return code
  */
 cps_api_return_code_t cps_api_set_master_node(const char *group,const char * node_name);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* CPS_API_NODE_H_ */
