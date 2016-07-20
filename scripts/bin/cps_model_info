@@ -15,7 +15,75 @@
 # permissions and limitations under the License.
 #
 import sys
+import subprocess
 import cps
+import cps_utils
+
+def run_cmd_get_output(cmdline) :
+    """
+    Execute any command from python file
+    @params[in] cmdline - command line to execute
+    @returns Output from the command line execution
+    """
+
+    try:
+        p = subprocess.Popen(cmdline,stdout=subprocess.PIPE)
+
+        result = p.wait();
+        details = p.stdout.read()
+
+        if result != 0:
+            exit(1)
+
+        return details.split('\n')
+    except :
+        #print( sys.exc_info())
+        pass
+    return [""]
+
+
+def find_process_names():
+    #Construct a dictionary of pid to process names
+    #ps = {pid: process name}
+    ps = {}
+
+    #Get all running processes from the system
+    ret = run_cmd_get_output(['ps', '-ef'])
+    for proc in ret:
+        pr = proc.split()
+        if len(pr) > 1:
+            pid = pr[1]
+            if pr[7] == "/usr/bin/python":
+                proc_name = pr[8].split('/')[-1]
+            else:
+                proc_name = pr[7].split('/')[-1]
+
+            ps[pid] = proc_name
+
+    return ps
+
+
+def registered(path):
+
+     qual = ["target", "observed", "proposed", "realtime"]
+     # Check to see Object Registration
+     for q in qual:
+        key = cps.key_from_name(q, path)
+        if (cps.enabled(key)):
+            print "\nRegistered to CPS with qualifier: ", q
+
+            # Find Ownership
+            stats = cps.obj_stats(key)
+            if bool(stats) != False:
+                if 'cps/object/operations/process_id' in stats['data']:
+                    pid = cps_utils.cps_attr_types_map.from_data('cps/object/operations/process_id' , stats['data']['cps/object/operations/process_id'])
+
+                    ps = find_process_names()
+                    if str(pid) in ps.keys():
+                        process_owner = ps[str(pid)]
+                        print "\nProcess Owner: ", process_owner, "\n"
+
+
 
 def yangwalk(yangpath):
     """
@@ -35,6 +103,7 @@ def yangwalk(yangpath):
     if cps.type(yangpath)['attribute_type'] == "leaf":
         #Print YANG leaf attributes
         print "Name = ", cps.type(yangpath)['name'], "\nAttribute Type = ", cps.type(yangpath)['attribute_type'], "\nData Type = ", cps.type(yangpath)['data_type'], "\nDescription = ", cps.type(yangpath)['description']
+        registered(yangpath)
         return
 
 
@@ -49,6 +118,7 @@ def yangwalk(yangpath):
             if cps.type(elem)['attribute_type'] == "leaf":
                 print "\tData Type = ", cps.type(elem)['data_type']
             print "\tDescription = ", cps.type(elem)['description']
+            registered(elem)
 
 
 if __name__ == "__main__":
