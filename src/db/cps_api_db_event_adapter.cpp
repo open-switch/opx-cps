@@ -124,6 +124,8 @@ bool __db_event_handle_t::object_add_filter(cps_api_object_t obj) {
     if (og.get()==nullptr) return false;
     if (!cps_api_object_clone(og.get(),obj)) return false;
 
+    cps_api_object_attr_delete(og.get(),CPS_OBJECT_GROUP_EXACT_MATCH);
+
     cps_api_key_t *key = cps_api_object_key(og.get());
     std::vector<cps_api_object_t> *filt = _filters.at(key,true);
     if (filt==nullptr) {
