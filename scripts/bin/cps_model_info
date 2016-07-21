@@ -28,55 +28,27 @@ python cps_model_info base-port/interface
 """
 
 import sys
-import subprocess
+import os
 import cps
 import cps_utils
 
-def run_cmd_get_output(cmdline) :
+def find_process_name(pid):
     """
-    Execute any command from python file
-    @params[in] cmdline - command line to execute
-    @returns Output from the command line execution
+    Get the process name from proc filesystem
+    @params pid - pid of which the process name is required
+    @returns ps - process name if found else an empty string
     """
-
+ 
     try:
-        p = subprocess.Popen(cmdline,stdout=subprocess.PIPE)
-
-        result = p.wait();
-        details = p.stdout.read()
-
-        if result != 0:
-            exit(1)
-
-        return details.split('\n')
-    except :
-        #print( sys.exc_info())
-        pass
-    return [""]
-
-
-def find_process_names():
-    """
-    Get all running process from the system
-    @params None
-    @returns ps - dictionary of pid to process names {pid: process name}
-    """
-    ps = {}
-
-    #Get all running processes from the system
-    ret = run_cmd_get_output(['ps', '-ef'])
-    for proc in ret:
-        pr = proc.split()
-        if len(pr) > 1:
-            pid = pr[1]
-            if pr[7] == "/usr/bin/python":
-                proc_name = pr[8].split('/')[-1]
-            else:
-                proc_name = pr[7].split('/')[-1]
-
-            ps[pid] = proc_name
+        with open(os.path.join('/proc/' + str(pid) + '/cmdline'), 'rb') as fd:
+            ps = fd.read()
+        # Skip the absolute path
+        ps = ps.split("/")[-1]
+    except Exception: 
+        ps = ""
 
     return ps
+
 
 
 def registered(path):
@@ -86,9 +58,9 @@ def registered(path):
     @returns None
     """
 
-     qual = ["target", "observed", "proposed", "realtime"]
-     # Check to see Object Registration
-     for q in qual:
+    qual = ["target", "observed", "proposed", "realtime"]
+    # Check to see Object Registration
+    for q in qual:
         key = cps.key_from_name(q, path)
         if (cps.enabled(key)):
             print "\nRegistered to CPS with qualifier: ", q
@@ -99,10 +71,10 @@ def registered(path):
                 if 'cps/object/operations/process_id' in stats['data']:
                     pid = cps_utils.cps_attr_types_map.from_data('cps/object/operations/process_id' , stats['data']['cps/object/operations/process_id'])
 
-                    ps = find_process_names()
-                    if str(pid) in ps.keys():
-                        process_owner = ps[str(pid)]
-                        print "\nProcess Owner: ", process_owner, "\n"
+                    ps = find_process_name(pid)
+                    if ps != "":
+                        print "\nProcess Owner: ", ps, "\n"
+
 
 
 
