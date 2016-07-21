@@ -14,6 +14,19 @@
 # See the Apache Version 2.0 License for specific language governing
 # permissions and limitations under the License.
 #
+
+"""
+This tool is used to get the first-level contents of a given YANG path with their registration information
+
+Usage: python cps_model_info [yang path]
+
+Examples:
+python cps_model_info
+python cps_model_info base-port
+python cps_model_info base-port/interface
+
+"""
+
 import sys
 import subprocess
 import cps
@@ -43,8 +56,11 @@ def run_cmd_get_output(cmdline) :
 
 
 def find_process_names():
-    #Construct a dictionary of pid to process names
-    #ps = {pid: process name}
+    """
+    Get all running process from the system
+    @params None
+    @returns ps - dictionary of pid to process names {pid: process name}
+    """
     ps = {}
 
     #Get all running processes from the system
@@ -64,6 +80,11 @@ def find_process_names():
 
 
 def registered(path):
+    """
+    Check for CPS Object registrations
+    @params[in] path - yang path of the object to check for CPS registration
+    @returns None
+    """
 
      qual = ["target", "observed", "proposed", "realtime"]
      # Check to see Object Registration
