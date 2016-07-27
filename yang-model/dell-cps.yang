@@ -107,4 +107,28 @@ module dell-base-cps {
         description "System port where DB Instance was started for given group";
     }
   }
+
+   list tunnel{
+    key "group node-id";
+    leaf group{
+        type string;
+        description "Group name";
+    }
+
+    leaf node-id{
+        type string;
+        description "Node name";
+    }
+
+    leaf ip{
+        type string;
+        description "Ip address of the node.";
+    }
+
+    leaf port{
+        type string;
+        config false;
+        description "System port where tunneling from DB to other node occurs.";
+    }
+  }
 }

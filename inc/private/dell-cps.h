@@ -82,6 +82,22 @@ typedef enum {
 /*type=string*/
   CPS_NODE_DETAILS_ALIAS = 131083,
 } CPS_NODE_DETAILS_t;
+/* Object cps/tunnel */
+
+typedef enum {
+/*Group name*/
+/*type=string*/
+  CPS_TUNNEL_GROUP = 131099,
+/*Node name*/
+/*type=string*/
+  CPS_TUNNEL_NODE_ID = 131100,
+/*Ip address of the node.*/
+/*type=string*/
+  CPS_TUNNEL_IP = 131101,
+/*System port where tunneling from DB to other node occurs.*/
+/*type=string*/
+  CPS_TUNNEL_PORT = 131102,
+} CPS_TUNNEL_t;
 /* Object cps/object-group */
 
 typedef enum {
@@ -146,6 +162,9 @@ behaviour as needed.*/
 
   CPS_DB_INSTANCE = 131095,
   CPS_DB_INSTANCE_OBJ = 131095,
+
+  CPS_TUNNEL = 131103,
+  CPS_TUNNEL_OBJ = 131103,
 
 } CPS_OBJECTS_t;
 

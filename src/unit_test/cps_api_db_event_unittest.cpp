@@ -114,7 +114,7 @@ TEST(cps_api_events,event_thread) {
             cps_api_object_guard og(cps_api_object_create());
             ASSERT_TRUE(og.valid());
             cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),ids[_ix],cps_api_qualifier_TARGET);
-            cps_api_object_attr_add_u32(og.get(),1,ix);cps_api_key_set_group(og.get(),"a");
+            cps_api_object_attr_add_u32(og.get(),1,ix);cps_api_key_set_group(og.get(),"A");
             cps_api_event_thread_publish(og.get());
         }
     }
