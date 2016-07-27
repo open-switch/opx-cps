@@ -124,6 +124,24 @@ cps_api_return_code_t cps_api_event_client_register(cps_api_event_service_handle
  */
 cps_api_return_code_t cps_api_event_client_register_object(cps_api_event_service_handle_t handle,
         cps_api_object_list_t objects);
+
+
+/**
+ * This API allows users to ensure that the object that they receive match the key or key and attributes of the object exactly.
+ *
+ * For example, if a user wants to register for objects from a specific instance only, the user can create the instance that they want to
+ * receive and set the exact match flag on the object using this API and the CPS will ensure that the component receives only
+ * events matching the exact object instance specified.
+ *
+ * Another example is to register for only a specific object only and no other child objects.
+ *
+ * @param obj the object on which the flag will be set
+ * @param should_match_attributes this should be true the application wants to filter all events based on exact key and optional attributes or
+ *        false if they want to clear the flag.
+ * @return true if the change was applied to the object or false if there was a memory related issue
+ */
+bool cps_api_event_object_exact_match(cps_api_object_t obj, bool should_match_attributes);
+
 /**
  * Send an object to the event service for publishing using a previously registered handle
  * @param handle the handle to the CPS event service

@@ -1,18 +1,6 @@
 /*
- * Copyright (c) 2016 Dell Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may
- * not use this file except in compliance with the License. You may obtain
- * a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
- *
- * THIS CODE IS PROVIDED ON AN  *AS IS* BASIS, WITHOUT WARRANTIES OR
- * CONDITIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT
- *  LIMITATION ANY IMPLIED WARRANTIES OR CONDITIONS OF TITLE, FITNESS
- * FOR A PARTICULAR PURPOSE, MERCHANTABLITY OR NON-INFRINGEMENT.
- *
- * See the Apache Version 2.0 License for specific language governing
- * permissions and limitations under the License.
- */
+dell-cps
+*/
 #include "dell-cps.h"
 #include "cps_class_map.h"
 
@@ -37,11 +25,12 @@ static struct {
 { { cps_api_obj_CAT_CPS,CPS_DB_INSTANCE,CPS_DB_INSTANCE_GROUP,CPS_DB_INSTANCE_NODE_ID }, CPS_DB_INSTANCE, { "cps/db-instance", "", true, CPS_CLASS_ATTR_T_LIST, CPS_CLASS_DATA_TYPE_T_BIN }},
 { { cps_api_obj_CAT_CPS,CPS_NODE_DETAILS,CPS_NODE_DETAILS_NAME }, CPS_NODE_DETAILS, { "cps/node-details", "This object contains a list of aliases for a node.  Any one of the aliases will be convertedinto the name.For instance lets asume that there was a node with an IP address of 10.11.11.11 andthere was a port 443 that contained a service. The name would be 10.11.11.11:443 while on that node,lets say we wanted a user friendly name and therefore called the entity joe or jane but when you seejoe or jain, you want to convert these aliases for the node back to 10.11.11.11:443.", true, CPS_CLASS_ATTR_T_LIST, CPS_CLASS_DATA_TYPE_T_BIN }},
 { { cps_api_obj_CAT_CPS,CPS_DB_INSTANCE,CPS_DB_INSTANCE_GROUP,CPS_DB_INSTANCE_NODE_ID,CPS_DB_INSTANCE_NODE_ID }, CPS_DB_INSTANCE_NODE_ID, { "cps/db-instance/node-id", "Node name", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_STRING }},
-{ { cps_api_obj_CAT_CPS,CPS_OBJECT_GROUP }, CPS_OBJECT_GROUP, { "cps/object-group", "These attributes are placed in objects by CPS infrastructure.", true, CPS_CLASS_ATTR_T_CONTAINER, CPS_CLASS_DATA_TYPE_T_BIN }},
+{ { cps_api_obj_CAT_CPS,CPS_OBJECT_GROUP }, CPS_OBJECT_GROUP, { "cps/object-group", "These attributes are placed in objects by CPS infrastructure and provide additional information or changebehaviour as needed.", true, CPS_CLASS_ATTR_T_CONTAINER, CPS_CLASS_DATA_TYPE_T_BIN }},
 { { cps_api_obj_CAT_CPS,CPS_OBJECT_GROUP,CPS_OBJECT_GROUP_NODE }, CPS_OBJECT_GROUP_NODE, { "cps/object-group/node", "This attribute contains the node id.", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_STRING }},
 { { cps_api_obj_CAT_CPS,CPS_CONNECTION_ENTRY,CPS_CONNECTION_ENTRY_NAME }, CPS_CONNECTION_ENTRY, { "cps/connection-entry", "", true, CPS_CLASS_ATTR_T_LIST, CPS_CLASS_DATA_TYPE_T_BIN }},
 { { cps_api_obj_CAT_CPS,CPS_CONNECTION_ENTRY,CPS_CONNECTION_ENTRY_NAME,CPS_CONNECTION_ENTRY_CONNECTION_STATE }, CPS_CONNECTION_ENTRY_CONNECTION_STATE, { "cps/connection-entry/connection-state", "", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_BOOL }},
 { { cps_api_obj_CAT_CPS,CPS_DB_INSTANCE,CPS_DB_INSTANCE_GROUP,CPS_DB_INSTANCE_NODE_ID,CPS_DB_INSTANCE_PORT }, CPS_DB_INSTANCE_PORT, { "cps/db-instance/port", "System port where DB Instance was started for given group", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_STRING }},
+{ { cps_api_obj_CAT_CPS,CPS_OBJECT_GROUP,CPS_OBJECT_GROUP_EXACT_MATCH }, CPS_OBJECT_GROUP_EXACT_MATCH, { "cps/object-group/exact-match", "If this attribute is present in an event registration, only events matching the exact object key or attributes in the object will be provided to the application.", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_BOOL }},
 { { cps_api_obj_CAT_CPS,CPS_NODE_GROUP,CPS_NODE_GROUP_NAME,CPS_NODE_GROUP_NODE,CPS_NODE_GROUP_NODE_NAME }, CPS_NODE_GROUP_NODE_NAME, { "cps/node-group/node/name", "The name of the node entry. (an alias for the ip)", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_STRING }},
 { { cps_api_obj_CAT_CPS,CPS_NODE_GROUP,CPS_NODE_GROUP_NAME,CPS_NODE_GROUP_NAME }, CPS_NODE_GROUP_NAME, { "cps/node-group/name", "The name of the group.", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_STRING }},
 { { cps_api_obj_CAT_CPS,CPS_NODE_GROUP,CPS_NODE_GROUP_NAME,CPS_NODE_GROUP_NODE,CPS_NODE_GROUP_NODE_IP }, CPS_NODE_GROUP_NODE_IP, { "cps/node-group/node/ip", "The IP address and port of the element.  Valid IP address/portcombinations are IPv4:port or IPv6:port", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_STRING }},
@@ -50,13 +39,11 @@ static struct {
 };
 
 
-
-
 static const size_t lst_len = sizeof(lst)/sizeof(*lst);
-  t_std_error cps_api_yang_module_init(void) {
+t_std_error cps_api_yang_module_init(void) {
     size_t ix = 0;
     for ( ; ix < lst_len ; ++ix ) {
         cps_class_map_init(lst[ix].id,&(lst[ix]._ids[0]),lst[ix]._ids.size(),&lst[ix].details);
     }
     return STD_ERR_OK;
-  }
+}

@@ -23,11 +23,11 @@
 #include "std_mutex_lock.h"
 #include "cps_api_events.h"
 #include "cps_class_map.h"
+#include "dell-cps.h"
 
 #include "std_rw_lock.h"
 #include "std_thread_tools.h"
 #include "std_error_codes.h"
-
 
 #include "event_log.h"
 #include "std_time_tools.h"
@@ -38,7 +38,12 @@
 static std_mutex_lock_create_static_init_rec(mutex);
 static cps_api_event_methods_reg_t m_method;
 
-extern "C" {
+
+bool cps_api_event_object_exact_match(cps_api_object_t obj, bool match_flag) {
+    if (match_flag) return cps_api_object_attr_add(obj,CPS_OBJECT_GROUP_EXACT_MATCH,&match_flag,sizeof(match_flag));
+    cps_api_object_attr_delete(obj,CPS_OBJECT_GROUP_EXACT_MATCH);
+    return true;
+}
 
 cps_api_return_code_t cps_api_event_method_register( cps_api_event_methods_reg_t * what )  {
     std_mutex_simple_lock_guard l(&mutex);
@@ -235,6 +240,4 @@ cps_api_return_code_t cps_api_event_thread_shutdown(void) {
     std_rw_lock_write_guard wg(&rw_lock);
     cb_map.clear();
     return cps_api_ret_code_OK;
-}
-
 }
