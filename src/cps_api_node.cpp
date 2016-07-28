@@ -181,7 +181,7 @@ cps_api_return_code_t cps_api_set_node_group(cps_api_node_group_t *group) {
                 group->addrs[ix].node_name,strlen(group->addrs[ix].node_name)+1);
 
         cps_api_attr_id_t _tunnel_ip[]={CPS_NODE_GROUP_NODE,ix,CPS_NODE_GROUP_NODE_TUNNEL_IP};
-        if (strstr(group->addrs[ix].addr, ".") )
+        if (strstr(group->addrs[ix].addr, "127.0.0.1") )
             cps_api_object_e_add(og.get(),_tunnel_ip,sizeof(_tunnel_ip)/sizeof(*_tunnel_ip),
                                  cps_api_object_ATTR_T_BIN,
                                  group->addrs[ix].addr,strlen(group->addrs[ix].addr)+1);
