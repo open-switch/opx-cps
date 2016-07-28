@@ -88,7 +88,7 @@ class CPSTunnelProcessManager():
             return
 
         try:
-            self.p = subprocess.Popen(['/usr/bin/stunnel4', self.obj.get_config_file()])
+            self.p = subprocess.Popen('/usr/bin/stunnel4 '+ self.obj.get_config_file(),shell=True)
         except Exception as e:
             log_msg(4,str(e))
             log_msg(4,"Failed to create new Stunnel Instance for group "+group+" and node "+node)
@@ -112,7 +112,9 @@ class CPSTunnelProcessManager():
         try:
             self.p.terminate()
             self.p.wait()
+            subprocess.call(["pkill","-f",self.obj.get_config_file()])
             self.obj.close()
+
         except Exception as e:
             log_msg(4,str(e))
             return False
@@ -124,33 +126,32 @@ class CPSTunnelProcessManager():
 
 def handle_create(group,node,ip):
     instance_key = group+"_"+node
-    if instance_key in instance_group_mapping:
+    if instance_key in tunnel_group_mapping:
         log_msg(4, "Already a tunnel instance for group "+group+" and node "+node+" is running")
         return False
 
     p = CPSTunnelProcessManager(group,node,ip)
     if p.is_valid():
-        instance_group_mapping[instance_key]=p
+        tunnel_group_mapping[instance_key]=p
         return p.get_port()
 
     return False
 
 def handle_delete(group,node):
     instance_key = group+"_"+node
-    if instance_key in db_group_mapping:
+    if instance_key in tunnel_group_mapping:
         p = tunnel_group_mapping[instance_key]
         if p.close():
-            del tunnel_group_mapping[group]
+            del tunnel_group_mapping[instance_key]
             del p
             return True
-
     return False
 
 def set_tunnel_cb(methods, params):
     obj = cps_object.CPSObject(obj=params['change'])
     try:
         group_name = obj.get_attr_data('group')
-        node = obj.get_attr_data('node')
+        node = obj.get_attr_data('node-id')
         ip = obj.get_attr_data('ip')
     except Exception as e:
         log_msg(4,str(e))
