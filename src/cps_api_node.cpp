@@ -394,7 +394,7 @@ bool cps_api_nodes::load_groups() {
 
             if (!cps_api_object_it_valid(&elem)) continue;
             _db_node_data db_node;
-            cps_api_object_attr_t _ip =cps_api_object_it_find(&elem,CPS_NODE_GROUP_NODE_IP);
+            cps_api_object_attr_t _ip =cps_api_object_it_find(&elem,CPS_NODE_GROUP_NODE_TUNNEL_IP);
             cps_api_object_attr_t _name =cps_api_object_it_find(&elem,CPS_NODE_GROUP_NODE_NAME);
             if (_ip==nullptr || _name==nullptr) continue;
             const char *__ip = (const char*)cps_api_object_attr_data_bin(_ip);
