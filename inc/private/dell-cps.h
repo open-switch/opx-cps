@@ -42,6 +42,10 @@ typedef enum {
 combinations are IPv4:port or [IPv6]:port*/
 /*type=string*/
   CPS_NODE_GROUP_NODE_IP = 131074,
+/*The IP addres and port of the stunnel client. Valid IP address/port
+combinations are IPv4:port or [IPv6]:port*/
+/*type=string*/
+  CPS_NODE_GROUP_NODE_TUNNEL_IP = 131104,
 } CPS_NODE_GROUP_NODE_t;
 /* Object cps/connection-entry */
 

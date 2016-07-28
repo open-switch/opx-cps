@@ -25,6 +25,8 @@ extern "C" {
 
 #include <stddef.h>
 
+#define STUNNEL_IP_MAX 64
+
 typedef enum {
     cps_api_node_data_NODAL,                 /// Data resides on each node and is not duplicated by node group
     cps_api_node_data_1_PLUS_1_REDUNDENCY    /// Data is stored in a global database and replicated to a backup node
@@ -41,6 +43,8 @@ typedef struct {
     size_t addr_len;                ///the length of the addresses in this node
     cps_api_node_data_type_t data_type;        ///in the case of database clustering, determine if it will be 1+1 or nodal
 } cps_api_node_group_t;
+
+cps_api_return_code_t cps_api_get_tunnel_port(cps_api_node_group_t *group, size_t ix, char *tunnel_port, size_t len);
 
 /**
  * Create a node grouping which allowing access to fanout requests to all of the addresses specified

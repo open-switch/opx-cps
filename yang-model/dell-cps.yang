@@ -39,6 +39,11 @@ module dell-base-cps {
                     combinations are IPv4:port or [IPv6]:port";
         type string;
       }
+      leaf tunnel-ip {
+        description "The IP addres and port of the stunnel client. Valid IP address/port
+                    combinations are IPv4:port or [IPv6]:port";
+        type string;
+      }
     }
     leaf type {
       type uint32;

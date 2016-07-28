@@ -27,7 +27,7 @@
 #include "dell-cps.h"
 
 #include "event_log.h"
-
+#include <string.h>
 #include <iostream>
 
 
@@ -131,6 +131,39 @@ cps_api_return_code_t cps_api_create_global_instance(cps_api_node_group_t *group
     return cps_api_ret_code_OK;
 }
 
+cps_api_return_code_t cps_api_get_tunnel_port(cps_api_node_group_t *group, size_t ix, char *tunnel_port, size_t len) {
+    cps_api_transaction_params_t trans;
+    cps_api_key_t keys;
+
+    if (cps_api_transaction_init(&trans) != cps_api_ret_code_OK)
+        return cps_api_ret_code_ERR;
+    
+    cps_api_object_t p_trans_obj = cps_api_object_create();
+    cps_api_transaction_guard tgd(&trans);
+
+    cps_api_key_from_attr_with_qual(&keys, CPS_TUNNEL_OBJ, cps_api_qualifier_TARGET);
+    cps_api_object_set_type_operation(&keys, cps_api_oper_CREATE);
+    cps_api_object_set_key(p_trans_obj, &keys);
+	
+    // Add attributes
+    cps_api_object_attr_add(p_trans_obj, CPS_TUNNEL_GROUP, group->id,strlen(group->id)+1);
+    cps_api_object_attr_add(p_trans_obj, CPS_TUNNEL_NODE_ID, group->addrs[ix].node_name,strlen(group->addrs[ix].node_name)+1);
+    cps_api_object_attr_add(p_trans_obj, CPS_TUNNEL_IP,  group->addrs[ix].addr,strlen(group->addrs[ix].addr)+1);
+ 
+    cps_api_object_list_append(trans.change_list, p_trans_obj);
+    if (cps_api_commit(&trans) != cps_api_ret_code_OK)
+        return cps_api_ret_code_ERR;
+
+    cps_api_object_t p_ret_obj = cps_api_object_list_get(trans.change_list,0);
+    if (p_ret_obj==nullptr)
+        return cps_api_ret_code_ERR;
+    
+    const char *port = (const char *)cps_api_object_get_data(p_ret_obj, CPS_TUNNEL_PORT);
+    strncpy(tunnel_port,port,len-1);
+
+    return cps_api_ret_code_OK;
+}
+
 cps_api_return_code_t cps_api_set_node_group(cps_api_node_group_t *group) {
 
     cps_api_object_guard og(cps_api_object_create());
@@ -146,6 +179,27 @@ cps_api_return_code_t cps_api_set_node_group(cps_api_node_group_t *group) {
         cps_api_attr_id_t _alias[]={CPS_NODE_GROUP_NODE,ix,CPS_NODE_GROUP_NODE_NAME};
         cps_api_object_e_add(og.get(),_alias,sizeof(_alias)/sizeof(*_alias),cps_api_object_ATTR_T_BIN,
                 group->addrs[ix].node_name,strlen(group->addrs[ix].node_name)+1);
+
+        cps_api_attr_id_t _tunnel_ip[]={CPS_NODE_GROUP_NODE,ix,CPS_NODE_GROUP_NODE_TUNNEL_IP};
+        if (strstr(group->addrs[ix].addr, ".") )
+            cps_api_object_e_add(og.get(),_tunnel_ip,sizeof(_tunnel_ip)/sizeof(*_tunnel_ip),
+                                 cps_api_object_ATTR_T_BIN,
+                                 group->addrs[ix].addr,strlen(group->addrs[ix].addr)+1);
+        else {
+           // Do a transaction on cps/tunnel object and get the stunnel port
+           cps_api_return_code_t ret;
+           char tunnel_port[STUNNEL_IP_MAX], tunnel_addr[STUNNEL_IP_MAX];
+
+           ret = cps_api_get_tunnel_port(group, ix, tunnel_port, sizeof(tunnel_port));
+           if (ret !=  cps_api_ret_code_OK)
+               return cps_api_ret_code_ERR;
+
+           // Stunnel IP address will be "loopback:tunnel_port"
+           strncpy(tunnel_addr,"127.0.0.1:", STUNNEL_IP_MAX-1);
+           strncat(tunnel_addr, tunnel_port, STUNNEL_IP_MAX-1);
+           cps_api_object_e_add(og.get(),_tunnel_ip,sizeof(_tunnel_ip)/sizeof(*_tunnel_ip),
+                            cps_api_object_ATTR_T_BIN, tunnel_addr, strlen(tunnel_addr)+1);
+        }
     }
 
     cps_api_object_attr_add(og.get(),CPS_NODE_GROUP_TYPE,&group->data_type,sizeof(group->data_type));
