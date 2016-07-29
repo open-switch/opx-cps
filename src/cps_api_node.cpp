@@ -131,25 +131,52 @@ cps_api_return_code_t cps_api_create_global_instance(cps_api_node_group_t *group
     return cps_api_ret_code_OK;
 }
 
+
+static cps_api_return_code_t cps_api_del_node_tunnel(const char * group, const char * node) {
+    cps_api_transaction_params_t trans;
+    cps_api_key_t keys;
+
+    if (cps_api_transaction_init(&trans) != cps_api_ret_code_OK)
+        return cps_api_ret_code_ERR;
+
+    cps_api_object_t p_trans_obj = cps_api_object_create();
+    cps_api_transaction_guard tgd(&trans);
+
+    cps_api_key_from_attr_with_qual(&keys, CPS_TUNNEL_OBJ, cps_api_qualifier_TARGET);
+    cps_api_object_set_type_operation(&keys, cps_api_oper_DELETE);
+    cps_api_object_set_key(p_trans_obj, &keys);
+
+    // Add attributes
+    cps_api_object_attr_add(p_trans_obj, CPS_TUNNEL_GROUP, group,strlen(group)+1);
+    cps_api_object_attr_add(p_trans_obj, CPS_TUNNEL_NODE_ID, node,strlen(node)+1);
+
+    cps_api_object_list_append(trans.change_list, p_trans_obj);
+    if (cps_api_commit(&trans) != cps_api_ret_code_OK) // Add logs
+        return cps_api_ret_code_ERR;
+
+    return cps_api_ret_code_OK;
+}
+
+
 cps_api_return_code_t cps_api_get_tunnel_port(cps_api_node_group_t *group, size_t ix, char *tunnel_port, size_t len) {
     cps_api_transaction_params_t trans;
     cps_api_key_t keys;
 
     if (cps_api_transaction_init(&trans) != cps_api_ret_code_OK)
         return cps_api_ret_code_ERR;
-    
+
     cps_api_object_t p_trans_obj = cps_api_object_create();
     cps_api_transaction_guard tgd(&trans);
 
     cps_api_key_from_attr_with_qual(&keys, CPS_TUNNEL_OBJ, cps_api_qualifier_TARGET);
     cps_api_object_set_type_operation(&keys, cps_api_oper_CREATE);
     cps_api_object_set_key(p_trans_obj, &keys);
-	
+
     // Add attributes
     cps_api_object_attr_add(p_trans_obj, CPS_TUNNEL_GROUP, group->id,strlen(group->id)+1);
     cps_api_object_attr_add(p_trans_obj, CPS_TUNNEL_NODE_ID, group->addrs[ix].node_name,strlen(group->addrs[ix].node_name)+1);
     cps_api_object_attr_add(p_trans_obj, CPS_TUNNEL_IP,  group->addrs[ix].addr,strlen(group->addrs[ix].addr)+1);
- 
+
     cps_api_object_list_append(trans.change_list, p_trans_obj);
     if (cps_api_commit(&trans) != cps_api_ret_code_OK)
         return cps_api_ret_code_ERR;
@@ -157,16 +184,51 @@ cps_api_return_code_t cps_api_get_tunnel_port(cps_api_node_group_t *group, size_
     cps_api_object_t p_ret_obj = cps_api_object_list_get(trans.change_list,0);
     if (p_ret_obj==nullptr)
         return cps_api_ret_code_ERR;
-    
+
     const char *port = (const char *)cps_api_object_get_data(p_ret_obj, CPS_TUNNEL_PORT);
     strncpy(tunnel_port,port,len-1);
 
     return cps_api_ret_code_OK;
 }
 
+
+
+static bool cps_api_set_compare_group(cps_api_node_group_t *new_grp, cps_api_node_group_t *cur_grp){
+    if (memcmp(new_grp,cur_grp,sizeof(cps_api_node_group_t))==0){
+        return true;
+    }
+    std::unordered_set<std::string>del_nodes;
+    for(unsigned int cur_grp_ix=0 ; cur_grp_ix < cur_grp->addr_len; ++cur_grp_ix){
+        bool exsist = false;
+        for(unsigned int new_grp_ix = 0 ; new_grp_ix < new_grp->addr_len ; ++ new_grp_ix){
+            if(strncmp(cur_grp->addrs[cur_grp_ix].node_name,new_grp->addrs[new_grp_ix].node_name,
+                    strlen(cur_grp->addrs[cur_grp_ix].node_name))==0){
+                exsist = true;
+                break;
+            }
+        }
+        if(!exsist){
+            del_nodes.insert(std::string(cur_grp->addrs[cur_grp_ix].node_name));
+        }
+    }
+
+    for(auto node_it : del_nodes){
+        cps_api_del_node_tunnel(new_grp->id,node_it.c_str());
+    }
+
+    return true;
+}
+
 cps_api_return_code_t cps_api_set_node_group(cps_api_node_group_t *group) {
 
     cps_api_object_guard og(cps_api_object_create());
+
+    cps_api_node_group_t g;
+
+    if(cps_api_db_get_group_config(group->id,&g)){
+        cps_api_set_compare_group(group,&g);
+    }
+    cps_api_db_set_group_config(group->id,group);
 
     cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),CPS_NODE_GROUP, cps_api_qualifier_TARGET);
 
@@ -426,7 +488,6 @@ bool cps_api_nodes::load_groups() {
 
             const char * _alias = this->addr(__ip);
             if (_alias!=nullptr) __ip = _alias;
-
             nd._addrs.push_back(__ip);
             cps_api_object_it_next(&it);
         }
@@ -524,5 +585,20 @@ bool cps_api_nodes::is_master_set(std::string group){
     if(it != _master_set.end()){
         return true;
     }
+    return false;
+}
+
+bool cps_api_nodes::add_group_info(std::string group,cps_api_node_group_t *g){
+    _group_node_map[group] = *g;
+    return true;
+}
+
+bool cps_api_nodes::get_group_info(std::string group,cps_api_node_group_t *g){
+    auto it = _group_node_map.find(group);
+    if(it != _group_node_map.end()){
+        memcpy(g,&(it->second),sizeof(cps_api_node_group_t));
+        return true;
+    }
+
     return false;
 }

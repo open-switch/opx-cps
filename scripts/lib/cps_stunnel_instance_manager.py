@@ -13,6 +13,7 @@ default_server_port = "41000"
 config_file_map = {}
 tunnel_config_map = {}
 tunnel_group_mapping = {}
+group_node_ip_map = {}
 
 def get_free_port():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -126,13 +127,18 @@ class CPSTunnelProcessManager():
 
 def handle_create(group,node,ip):
     instance_key = group+"_"+node
+    if instance_key in group_node_ip_map:
+        if group_node_ip_map[instance_key] != ip.split(":6379"):
+            handle_delete(group, node)
+
     if instance_key in tunnel_group_mapping:
-        log_msg(4, "Already a tunnel instance for group "+group+" and node "+node+" is running")
-        return False
+        log_msg(6, "Already a tunnel instance for group "+group+" and node "+node+" is running")
+        return tunnel_group_mapping[instance_key].get_port()
 
     p = CPSTunnelProcessManager(group,node,ip)
     if p.is_valid():
         tunnel_group_mapping[instance_key]=p
+        group_node_ip_map[instance_key] = ip.split(":6379")
         return p.get_port()
 
     return False
@@ -152,11 +158,15 @@ def set_tunnel_cb(methods, params):
     try:
         group_name = obj.get_attr_data('group')
         node = obj.get_attr_data('node-id')
-        ip = obj.get_attr_data('ip')
     except Exception as e:
         log_msg(4,str(e))
         return False
     if params['operation'] == 'create':
+        try:
+            ip = obj.get_attr_data('ip')
+        except Exception as e:
+            log_msg(4,str(e))
+            return False
         port = handle_create(group_name,node,ip)
         if port:
             params['change']['data']['cps/tunnel/port'] = ba.str_to_ba(port,len(port))
