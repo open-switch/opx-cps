@@ -59,14 +59,15 @@ static cps_api_return_code_t cps_api_del_node_tunnel(const char * group, const c
 cps_api_return_code_t cps_api_delete_node_group(const char *grp) {
     cps_api_db_del_node_group(grp);
 
-    cps_api_node_group_t group;
-    if(cps_api_db_get_group_config(grp,&group)){
+    std::unordered_set<std::string>  node_list;
+    if(cps_api_db_get_group_config(grp,node_list)){
         EV_LOGGING(DSAPI,ERR,"DELETE-GLOBAL","Failed to get group information %s",grp);
         return cps_api_ret_code_ERR;
-    }    
-    
-    for ( size_t ix = 0; ix < group.addr_len ; ++ix )
-        cps_api_del_node_tunnel(group.id, group.addrs[ix].node_name);
+    }
+
+    for ( auto it : node_list ){
+        cps_api_del_node_tunnel(grp, it.c_str());
+    }
 
     cps_api_object_guard og(cps_api_object_create());
     cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),CPS_NODE_GROUP, cps_api_qualifier_TARGET);
@@ -202,22 +203,20 @@ static bool cps_api_get_tunnel_port(cps_api_node_group_t *group, size_t ix, char
 
 
 
-static bool cps_api_set_compare_group(cps_api_node_group_t *new_grp, cps_api_node_group_t *cur_grp){
-    if (memcmp(new_grp,cur_grp,sizeof(cps_api_node_group_t))==0){
-        return true;
-    }
+static bool cps_api_set_compare_group(cps_api_node_group_t *new_grp,  std::unordered_set<std::string> & node_list){
+
     std::unordered_set<std::string>del_nodes;
-    for(unsigned int cur_grp_ix=0 ; cur_grp_ix < cur_grp->addr_len; ++cur_grp_ix){
+    for(auto it : node_list){
         bool exsist = false;
         for(unsigned int new_grp_ix = 0 ; new_grp_ix < new_grp->addr_len ; ++ new_grp_ix){
-            if(strncmp(cur_grp->addrs[cur_grp_ix].node_name,new_grp->addrs[new_grp_ix].node_name,
-                    strlen(cur_grp->addrs[cur_grp_ix].node_name))==0){
+            if(strncmp(it.c_str(),new_grp->addrs[new_grp_ix].node_name,
+                    strlen(it.c_str()))==0){
                 exsist = true;
                 break;
             }
         }
         if(!exsist){
-            del_nodes.insert(std::string(cur_grp->addrs[cur_grp_ix].node_name));
+            del_nodes.insert(it);
         }
     }
 
@@ -232,12 +231,16 @@ cps_api_return_code_t cps_api_set_node_group(cps_api_node_group_t *group) {
 
     cps_api_object_guard og(cps_api_object_create());
 
-    cps_api_node_group_t g;
-
-    if(cps_api_db_get_group_config(group->id,&g)){
-        cps_api_set_compare_group(group,&g);
+    std::unordered_set<std::string>  node_list;
+    if(cps_api_db_get_group_config(group->id,node_list)){
+        cps_api_set_compare_group(group,node_list);
     }
-    cps_api_db_set_group_config(group->id,group);
+
+    for(unsigned int ix = 0 ; ix < group->addr_len ; ++ix){
+        node_list.insert(std::string(group->addrs[ix].node_name));
+    }
+
+    cps_api_db_set_group_config(group->id,node_list);
 
     cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),CPS_NODE_GROUP, cps_api_qualifier_TARGET);
 
@@ -595,15 +598,15 @@ bool cps_api_nodes::is_master_set(std::string group){
     return false;
 }
 
-bool cps_api_nodes::add_group_info(std::string group,cps_api_node_group_t *g){
-    _group_node_map[group] = *g;
+bool cps_api_nodes::add_group_info(std::string group,std::unordered_set<std::string> & node_list){
+    _group_node_map[group] = std::move(node_list);
     return true;
 }
 
-bool cps_api_nodes::get_group_info(std::string group,cps_api_node_group_t *g){
+bool cps_api_nodes::get_group_info(std::string group,std::unordered_set<std::string> & node_list){
     auto it = _group_node_map.find(group);
     if(it != _group_node_map.end()){
-        memcpy(g,&(it->second),sizeof(cps_api_node_group_t));
+        node_list = it->second;
         return true;
     }
 

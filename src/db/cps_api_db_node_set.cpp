@@ -73,10 +73,10 @@ static bool cps_api_clean_db_instance(const char *group){
 }
 
 
-bool cps_api_db_get_group_config(const char * group, cps_api_node_group_t *g){
+bool cps_api_db_get_group_config(const char * group,  std::unordered_set<std::string> & node_list){
     std::lock_guard<std::recursive_mutex> lg(_mutex);
 
-    if(_nodes->get_group_info(std::string(group),g)){
+    if(_nodes->get_group_info(std::string(group),node_list)){
         return true;
     }
     EV_LOGGING(DSAPI,INFO,"GET-GROUP","Group %s does not exist",group);
@@ -84,10 +84,9 @@ bool cps_api_db_get_group_config(const char * group, cps_api_node_group_t *g){
 }
 
 
-bool cps_api_db_set_group_config(const char * group, cps_api_node_group_t *g){
+bool cps_api_db_set_group_config(const char * group,  std::unordered_set<std::string> & node_list){
     std::lock_guard<std::recursive_mutex> lg(_mutex);
-
-    _nodes->add_group_info(std::string(group),g);
+    _nodes->add_group_info(std::string(group),node_list);
     return true;
 }
 

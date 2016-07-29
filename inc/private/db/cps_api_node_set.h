@@ -26,8 +26,8 @@ bool cps_api_node_set_iterate(const std::string &group_name,const std::function<
 
 bool cps_api_db_del_node_group(const char *group);
 
-bool cps_api_db_set_group_config(const char * group, cps_api_node_group_t *g);
+bool cps_api_db_set_group_config(const char * group,std::unordered_set<std::string> & node_list);
 
-bool cps_api_db_get_group_config(const char * group, cps_api_node_group_t *g);
+bool cps_api_db_get_group_config(const char * group, std::unordered_set<std::string> & node_list);
 
 #endif /* CPS_API_INC_PRIVATE_DB_CPS_API_NODE_SET_H_ */
