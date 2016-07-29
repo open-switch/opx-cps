@@ -39,7 +39,7 @@ class TunnelConfigManager():
             f.write("[redis - "+group+" - "+node+" ]\n")
             f.write("client = yes \n")
             f.write("accept = :::"+port+" \n")
-            f.write("connect = "+ip.split(":")[0]+":"+default_server_port+" \n")
+            f.write("connect = "+ip.split(":6379")[0]+":"+default_server_port+" \n")
             f.write("cert = "+default_cert+"\n")
         except Exception as e:
             if os.path.exists(self.fname):
