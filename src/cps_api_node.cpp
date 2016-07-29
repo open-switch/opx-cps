@@ -30,6 +30,31 @@
 #include <string.h>
 #include <iostream>
 
+static cps_api_return_code_t cps_api_del_node_tunnel(const char * group, const char * node) {
+    cps_api_transaction_params_t trans;
+    cps_api_key_t keys;
+
+    if (cps_api_transaction_init(&trans) != cps_api_ret_code_OK)
+        return cps_api_ret_code_ERR;
+
+    cps_api_object_t p_trans_obj = cps_api_object_create();
+    cps_api_transaction_guard tgd(&trans);
+
+    cps_api_key_from_attr_with_qual(&keys, CPS_TUNNEL_OBJ, cps_api_qualifier_TARGET);
+    cps_api_object_set_type_operation(&keys, cps_api_oper_DELETE);
+    cps_api_object_set_key(p_trans_obj, &keys);
+
+    // Add attributes
+    cps_api_object_attr_add(p_trans_obj, CPS_TUNNEL_GROUP, group,strlen(group)+1);
+    cps_api_object_attr_add(p_trans_obj, CPS_TUNNEL_NODE_ID, node,strlen(node)+1);
+
+    cps_api_object_list_append(trans.change_list, p_trans_obj);
+    if (cps_api_commit(&trans) != cps_api_ret_code_OK) // Add logs
+        return cps_api_ret_code_ERR;
+
+    return cps_api_ret_code_OK;
+}
+
 
 cps_api_return_code_t cps_api_delete_node_group(const char *grp) {
     cps_api_db_del_node_group(grp);
@@ -40,7 +65,7 @@ cps_api_return_code_t cps_api_delete_node_group(const char *grp) {
         return cps_api_ret_code_ERR;
     }    
     
-    for ( size_t ix = 0, ix < group.addr_len ; ++ix )
+    for ( size_t ix = 0; ix < group.addr_len ; ++ix )
         cps_api_del_node_tunnel(group.id, group.addrs[ix].node_name);
 
     cps_api_object_guard og(cps_api_object_create());
@@ -142,33 +167,7 @@ cps_api_return_code_t cps_api_create_global_instance(cps_api_node_group_t *group
 }
 
 
-static cps_api_return_code_t cps_api_del_node_tunnel(const char * group, const char * node) {
-    cps_api_transaction_params_t trans;
-    cps_api_key_t keys;
-
-    if (cps_api_transaction_init(&trans) != cps_api_ret_code_OK)
-        return cps_api_ret_code_ERR;
-
-    cps_api_object_t p_trans_obj = cps_api_object_create();
-    cps_api_transaction_guard tgd(&trans);
-
-    cps_api_key_from_attr_with_qual(&keys, CPS_TUNNEL_OBJ, cps_api_qualifier_TARGET);
-    cps_api_object_set_type_operation(&keys, cps_api_oper_DELETE);
-    cps_api_object_set_key(p_trans_obj, &keys);
-
-    // Add attributes
-    cps_api_object_attr_add(p_trans_obj, CPS_TUNNEL_GROUP, group,strlen(group)+1);
-    cps_api_object_attr_add(p_trans_obj, CPS_TUNNEL_NODE_ID, node,strlen(node)+1);
-
-    cps_api_object_list_append(trans.change_list, p_trans_obj);
-    if (cps_api_commit(&trans) != cps_api_ret_code_OK) // Add logs
-        return cps_api_ret_code_ERR;
-
-    return cps_api_ret_code_OK;
-}
-
-
-bool cps_api_get_tunnel_port(cps_api_node_group_t *group, size_t ix, char *tunnel_port, size_t len) {
+static bool cps_api_get_tunnel_port(cps_api_node_group_t *group, size_t ix, char *tunnel_port, size_t len) {
     cps_api_transaction_params_t trans;
     cps_api_key_t keys;
 
@@ -259,7 +258,6 @@ cps_api_return_code_t cps_api_set_node_group(cps_api_node_group_t *group) {
                                  group->addrs[ix].addr,strlen(group->addrs[ix].addr)+1);
         else {
            // Do a transaction on cps/tunnel object and get the stunnel port
-           cps_api_return_code_t ret;
            char tunnel_port[STUNNEL_IP_MAX], tunnel_addr[STUNNEL_IP_MAX];
 
            if(! cps_api_get_tunnel_port(group, ix, tunnel_port, sizeof(tunnel_port)))
