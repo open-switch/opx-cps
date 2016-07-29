@@ -44,7 +44,6 @@ typedef struct {
     cps_api_node_data_type_t data_type;        ///in the case of database clustering, determine if it will be 1+1 or nodal
 } cps_api_node_group_t;
 
-cps_api_return_code_t cps_api_get_tunnel_port(cps_api_node_group_t *group, size_t ix, char *tunnel_port, size_t len);
 
 /**
  * Create a node grouping which allowing access to fanout requests to all of the addresses specified

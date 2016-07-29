@@ -94,8 +94,8 @@ class CPSTunnelProcessManager():
             log_msg(4,str(e))
             log_msg(4,"Failed to create new Stunnel Instance for group "+group+" and node "+node)
             self.valid = False
-            slef.obj.close()
-            del slef.obj
+            self.obj.close()
+            del self.obj
             return
 
         self.process_id = self.p.pid

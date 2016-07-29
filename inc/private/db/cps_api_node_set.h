@@ -24,6 +24,8 @@
 bool cps_api_node_set_iterate(const std::string &group_name,const std::function<void (const std::string &node, void*context)> &operation,
         void *context);
 
+bool cps_api_get_tunnel_port(cps_api_node_group_t *group, size_t ix, char *tunnel_port, size_t len);
+
 bool cps_api_db_del_node_group(const char *group);
 
 bool cps_api_db_set_group_config(const char * group, cps_api_node_group_t *g);

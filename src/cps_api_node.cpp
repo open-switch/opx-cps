@@ -33,6 +33,16 @@
 
 cps_api_return_code_t cps_api_delete_node_group(const char *grp) {
     cps_api_db_del_node_group(grp);
+
+    cps_api_node_group_t group;
+    if(cps_api_db_get_group_config(grp,&group)){
+        EV_LOGGING(DSAPI,ERR,"DELETE-GLOBAL","Failed to get group information %s",grp);
+        return cps_api_ret_code_ERR;
+    }    
+    
+    for ( size_t ix = 0, ix < group.addr_len ; ++ix )
+        cps_api_del_node_tunnel(group.id, group.addrs[ix].node_name);
+
     cps_api_object_guard og(cps_api_object_create());
     cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),CPS_NODE_GROUP, cps_api_qualifier_TARGET);
 
@@ -158,12 +168,12 @@ static cps_api_return_code_t cps_api_del_node_tunnel(const char * group, const c
 }
 
 
-cps_api_return_code_t cps_api_get_tunnel_port(cps_api_node_group_t *group, size_t ix, char *tunnel_port, size_t len) {
+bool cps_api_get_tunnel_port(cps_api_node_group_t *group, size_t ix, char *tunnel_port, size_t len) {
     cps_api_transaction_params_t trans;
     cps_api_key_t keys;
 
     if (cps_api_transaction_init(&trans) != cps_api_ret_code_OK)
-        return cps_api_ret_code_ERR;
+        return false;
 
     cps_api_object_t p_trans_obj = cps_api_object_create();
     cps_api_transaction_guard tgd(&trans);
@@ -179,16 +189,16 @@ cps_api_return_code_t cps_api_get_tunnel_port(cps_api_node_group_t *group, size_
 
     cps_api_object_list_append(trans.change_list, p_trans_obj);
     if (cps_api_commit(&trans) != cps_api_ret_code_OK)
-        return cps_api_ret_code_ERR;
+        return false;
 
     cps_api_object_t p_ret_obj = cps_api_object_list_get(trans.change_list,0);
     if (p_ret_obj==nullptr)
-        return cps_api_ret_code_ERR;
+        return false;
 
     const char *port = (const char *)cps_api_object_get_data(p_ret_obj, CPS_TUNNEL_PORT);
     strncpy(tunnel_port,port,len-1);
 
-    return cps_api_ret_code_OK;
+    return true;
 }
 
 
@@ -252,8 +262,7 @@ cps_api_return_code_t cps_api_set_node_group(cps_api_node_group_t *group) {
            cps_api_return_code_t ret;
            char tunnel_port[STUNNEL_IP_MAX], tunnel_addr[STUNNEL_IP_MAX];
 
-           ret = cps_api_get_tunnel_port(group, ix, tunnel_port, sizeof(tunnel_port));
-           if (ret !=  cps_api_ret_code_OK)
+           if(! cps_api_get_tunnel_port(group, ix, tunnel_port, sizeof(tunnel_port)))
                return cps_api_ret_code_ERR;
 
            // Stunnel IP address will be "loopback:tunnel_port"
