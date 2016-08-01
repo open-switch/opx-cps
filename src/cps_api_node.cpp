@@ -60,7 +60,7 @@ cps_api_return_code_t cps_api_delete_node_group(const char *grp) {
     cps_api_db_del_node_group(grp);
 
     std::unordered_set<std::string>  node_list;
-    if(cps_api_db_get_group_config(grp,node_list)){
+    if(!cps_api_db_get_group_config(grp,node_list)){
         EV_LOGGING(DSAPI,ERR,"DELETE-GLOBAL","Failed to get group information %s",grp);
         return cps_api_ret_code_ERR;
     }

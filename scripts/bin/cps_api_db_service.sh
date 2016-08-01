@@ -14,4 +14,4 @@
 # permissions and limitations under the License.
 
 export PYTHONPATH=/opt/dell/os10/lib:/opt/dell/os10/lib/python
-/usr/bin/python /opt/dell/os10/lib/cps_stunnel_instance_manager.py & /usr/bin/python /opt/dell/os10/lib/cps_db_instance_manager.py
+/usr/bin/python /opt/dell/os10/lib/cps_db_stunnel_manager.py

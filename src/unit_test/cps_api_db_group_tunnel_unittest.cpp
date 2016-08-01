@@ -64,6 +64,7 @@ TEST(cps_api_db,db_node_list) {
 
     new_ids[1] = {"NODE2","11.10.5.6:6379"};
     cps_api_set_node_group(&_g);
+    cps_api_delete_node_group(_g.id);
 
 
 }
