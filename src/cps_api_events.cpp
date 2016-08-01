@@ -147,7 +147,7 @@ static  void * _thread_function_(void * param) {
                     std_rw_rlock(&rw_lock);
                     if (_stop)  {
                         char _buff[1024];
-                        EV_LOGGING(DSAPI,ERR,"CPS-EVNT-THREAD","Event processing filtered out for %s",
+                        EV_LOGGING(DSAPI,ERR,"CPS-EVNT-THREAD","Event processing has been stopped due to negative return from CB %s",
                                 cps_api_object_to_string(obj,_buff,sizeof(_buff)));
                         break;
                     }
