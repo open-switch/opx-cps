@@ -22,6 +22,19 @@ def get_free_port():
     sock.close()
     return port
 
+def get_ip_from_string(ip):
+    count = 0
+    index = 0
+    for i in ip:
+        if i == ":":
+            index = count
+        count +=1
+
+    if index:
+        return ip[0:index]
+    else:
+        return ip
+
 def log_msg(level,msg):
     ev.logging("DSAPI",level,"TUNNEL-INSTANCE-MANAGER","","",0,msg)
 
@@ -40,7 +53,7 @@ class TunnelConfigManager():
             f.write("[redis - "+group+" - "+node+" ]\n")
             f.write("client = yes \n")
             f.write("accept = :::"+port+" \n")
-            f.write("connect = "+ip.split(":6379")[0]+":"+default_server_port+" \n")
+            f.write("connect = "+get_ip_from_string(ip)+":"+default_server_port+" \n")
             f.write("cert = "+default_cert+"\n")
         except Exception as e:
             if os.path.exists(self.fname):
