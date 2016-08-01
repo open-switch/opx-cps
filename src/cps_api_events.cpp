@@ -145,7 +145,13 @@ static  void * _thread_function_(void * param) {
                     std_rw_unlock(&rw_lock);
                     bool _stop = (!cb(obj,param));
                     std_rw_rlock(&rw_lock);
-                    if (_stop)  break;
+                    if (_stop)  {
+                        char _buff[1024];
+                        EV_LOGGING(DSAPI,ERR,"CPS-EVNT-THREAD","Event processing filtered out for %s",
+                                cps_api_object_to_string(obj,_buff,sizeof(_buff)));
+                        break;
+                    }
+
                     mx = cb_map.size();
                 }
             }
