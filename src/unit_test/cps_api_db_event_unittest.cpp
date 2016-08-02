@@ -68,10 +68,7 @@ TEST(cps_api_events,init) {
 
 TEST(cps_api_events,seed_meta_data) {
     std::vector<cps_api_attr_id_t> ids ;
-    size_t ix = 0;
-    for ( ; ix < lst_len ; ++ix ) {
-        cps_class_map_init(lst[ix].id,&(lst[ix]._ids[0]),lst[ix]._ids.size(),&lst[ix].details);
-    }
+    __init_class_map();
 }
 
 void fire_event(cps_api_attr_id_t id, size_t cnt) {

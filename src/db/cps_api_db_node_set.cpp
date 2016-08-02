@@ -151,6 +151,11 @@ bool cps_api_db_get_node_group(const std::string &group,std::vector<std::string>
 
     cps_api_node_data_type_t type;
     if(!_nodes->get_group_type(group,type)){
+        const char * _alias = _nodes->addr(group);
+        if (_alias!=nullptr) {
+            lst.push_back(_alias);
+            return true;
+        }
         EV_LOGGING(DSAPI,ERR,"GET-NODE-GRUOP","Failed to get group type for %s",group.c_str());
         return false;
     }
