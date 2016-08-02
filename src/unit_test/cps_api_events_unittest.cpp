@@ -36,6 +36,7 @@
 #include "cps_api_service.h"
 #include "cps_class_map.h"
 #include "cps_api_node.h"
+#include "cps_api_object_tools.h"
 
 //IP Meta data
 #include "cps_class_ut_data.h"
@@ -45,6 +46,7 @@
 #include <thread>
 #include <mutex>
 #include <inttypes.h>
+#include <memory>
 
 cps_api_event_service_handle_t handle;
 
@@ -202,25 +204,74 @@ bool full_reg() {
     return true;
 }
 
-bool test_init() {
-    static std_event_server_handle_t _handle=NULL;
-    std_event_server_init(&_handle,CPS_API_EVENT_CHANNEL_NAME,CPS_API_EVENT_THREADS );
-    return (cps_api_event_service_init()==cps_api_ret_code_OK);
-}
-
 TEST(cps_api_events,seed_meta_data) {
-    std::vector<cps_api_attr_id_t> ids ;
-
-    size_t ix = 0;
-    for ( ; ix < lst_len ; ++ix ) {
-        cps_class_map_init(lst[ix].id,&(lst[ix]._ids[0]),lst[ix]._ids.size(),&lst[ix].details);
-    }
+    __init_class_map();
 }
 
-TEST(cps_api_events,init) {
-    ASSERT_TRUE(test_init());
+struct _event_reg_handler {
+	cps_api_event_reg_t _reg;
+	std::unique_ptr<cps_api_key_t[]> _keys;
+};
+
+std::unique_ptr<_event_reg_handler> _setup_key_reg(cps_api_attr_id_t *attr, cps_api_qualifier_t*quals,size_t len, bool use_defaults) {
+	auto reg = std::unique_ptr<_event_reg_handler>(new _event_reg_handler);
+	reg->_keys = std::unique_ptr<cps_api_key_t[]>(new cps_api_key_t[len]);
+	for (size_t ix =0; ix  < len ; ++ix ) {
+		auto &it = reg->_keys[ix];
+		if (!cps_api_key_from_attr_with_qual(&it,attr[ix],quals[ix])) {
+			return nullptr;
+		}
+	}
+	reg->_reg.number_of_objects = len;
+	reg->_reg.objects = reg->_keys.get();
+	return reg;
+}
+
+std::unique_ptr<_event_reg_handler> _setup_key_reg(cps_api_attr_id_t attr, cps_api_qualifier_t qual=cps_api_qualifier_TARGET, bool use_defaults=true) {
+	return _setup_key_reg(&attr,&qual,1,use_defaults);
+}
+
+
+
+TEST(cps_api_events,initialize_event_system) {
+    ASSERT_TRUE(cps_api_event_service_init()==cps_api_ret_code_OK);
     ASSERT_TRUE(cps_db::cps_api_db_init()==cps_api_ret_code_OK);
+    ASSERT_TRUE(cps_api_event_thread_init()==cps_api_ret_code_OK);
+    ASSERT_TRUE(cps_api_event_thread_init()==cps_api_ret_code_OK);	//testing to ensure that multiple calls to init succeed
 }
+
+size_t _cnt_test_1=0;
+std::mutex m;
+
+bool __cps_api_event_thread_callback_t_test_1(cps_api_object_t object,void * context) {
+	char buff[2000];
+	static bool _first_time=true;
+    printf("Test 1 - cnt:(%d) - Obj %s\n",(int)_cnt_test_1++,cps_api_object_to_string(object,buff,sizeof(buff)));
+    if (_first_time) {
+		auto reg = _setup_key_reg(BASE_IP_IPV6_ADDRESS_PREFIX_LENGTH);
+		printf("Registering again... = %d\n",cps_api_event_thread_reg(&reg->_reg,&__cps_api_event_thread_callback_t_test_1,nullptr)==cps_api_ret_code_OK);
+		_first_time = false;
+    }
+    m.unlock();
+    return true;
+}
+
+TEST(cps_api_events,event_thread_tests) {
+	auto reg = _setup_key_reg(BASE_IP_IPV4_ADDRESS_PREFIX_LENGTH);
+	ASSERT_TRUE(cps_api_event_thread_reg(&reg->_reg,&__cps_api_event_thread_callback_t_test_1,nullptr)==cps_api_ret_code_OK);
+
+	m.lock();
+	cps_api_object_guard og(cps_api_obj_tool_create(cps_api_qualifier_TARGET,BASE_IP_IPV4_ADDRESS_PREFIX_LENGTH,true));
+
+	cps_api_event_thread_publish(og.get());
+	m.lock();
+
+	og.set(cps_api_obj_tool_create(cps_api_qualifier_TARGET,BASE_IP_IPV6_ADDRESS_PREFIX_LENGTH,true));
+
+	cps_api_event_thread_publish(og.get());
+	m.lock();
+}
+
 
 TEST(cps_api_events,basic_clients) {
     cps_api_event_service_handle_t handle;

@@ -143,8 +143,15 @@ static  void * _thread_function_(void * param) {
                     auto cb = cb_map[ix].cb;
                     auto param = cb_map[ix].context;
                     std_rw_unlock(&rw_lock);
-                    if (!cb(obj,param)) break;
+                    bool _stop = (!cb(obj,param));
                     std_rw_rlock(&rw_lock);
+                    if (_stop)  {
+                        char _buff[1024];
+                        EV_LOGGING(DSAPI,ERR,"CPS-EVNT-THREAD","Event processing has been stopped due to negative return from CB %s",
+                                cps_api_object_to_string(obj,_buff,sizeof(_buff)));
+                        break;
+                    }
+
                     mx = cb_map.size();
                 }
             }
