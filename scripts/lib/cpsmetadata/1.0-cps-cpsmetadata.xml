@@ -30,7 +30,7 @@
 <metadata_entry key="[cps].[cps/object].[cps/object/stat]" id="0x80000" name="cps/object/stat" desc="Contains the CPS internal statisics for this object." embedded="true" node-type="container" data-type="bin" />
 
 <metadata_entry key="[cps].[cps/object].[cps/object/stat].[cps/object/operations/set_min_time]" id="0x80001" name="cps/object/operations/set_min_time" desc="the fastest response to a set request." embedded="false" node-type="leaf" data-type="uint64_t" />
-<metadata_entry key="[cps].[cps/object].[cps/object/stat].[cps/object/operations/set_man_time]" id="0x80002" name="cps/object/operations/set_max_time" desc="the longest time it took to process a set request." embedded="false" node-type="leaf" data-type="uint64_t" />
+<metadata_entry key="[cps].[cps/object].[cps/object/stat].[cps/object/operations/set_max_time]" id="0x80002" name="cps/object/operations/set_max_time" desc="the longest time it took to process a set request." embedded="false" node-type="leaf" data-type="uint64_t" />
 <metadata_entry key="[cps].[cps/object].[cps/object/stat].[cps/object/operations/set_ave_time]" id="0x80003" name="cps/object/operations/set_ave_time" desc="the average time it takes to process a set request." embedded="false" node-type="leaf" data-type="uint64_t" />
 <metadata_entry key="[cps].[cps/object].[cps/object/stat].[cps/object/operations/set_requests]" id="0x80004" name="cps/object/operations/set_requests" desc="the number of set requests." embedded="false" node-type="leaf" data-type="uint64_t" />
 
