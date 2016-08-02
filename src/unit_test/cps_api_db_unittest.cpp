@@ -44,10 +44,7 @@
 TEST(cps_api_db,init) {
     std::vector<cps_api_attr_id_t> ids ;
 
-    size_t ix = 0;
-    for ( ; ix < lst_len ; ++ix ) {
-        cps_class_map_init(lst[ix].id,&(lst[ix]._ids[0]),lst[ix]._ids.size(),&lst[ix].details);
-    }
+    __init_class_map();
     cps_api_object_guard og(cps_api_object_create());
     cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),BASE_IP_IPV6,cps_api_qualifier_TARGET);
     cps_api_obj_set_ownership_type(cps_api_object_key(og.get()),CPS_API_OBJECT_DB);

@@ -37,12 +37,9 @@
 
 TEST(cps_class_map,load) {
     std::vector<cps_api_attr_id_t> ids ;
+    __init_class_map();
 
-    size_t ix = 0;
-    for ( ; ix < lst_len ; ++ix ) {
-        cps_class_map_init(lst[ix].id,&(lst[ix]._ids[0]),lst[ix]._ids.size(),&lst[ix].details);
-    }
-     for ( auto it : lst) {
+    for ( auto it : __get_class_map()) {
          std::cout << "Searching " << it.details.name << std::endl;
          std::cout << "Found matching.. " << cps_attr_id_to_name(it.id) << " --- "  << cps_class_attr_name(&it._ids[0],it._ids.size()) << std::endl;
          char buff[1024];
