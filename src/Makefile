@@ -52,10 +52,15 @@ CPS_UT_SRC =  unit_test/cps_class_ut_data.cpp
 cps_api_db_unittest_CXXFLAGS+=-I$(TOP_SRCDIR)/inc/private/db -I$(TOP_SRCDIR)/inc/private
 cps_api_db_unittest_SRCS=unit_test/cps_api_db_unittest.cpp ${CPS_UT_SRC}
 cps_api_db_unittest_LDFLAGS=-lcps-api-common
-UNIT_TEST+= cps_api_db_unittest
+UNIT_TEST+= cps_api_db_unittest cps_api_db_group_tunnel_unittest
+
 
 cps_api_key_unittest_SRCS=unit_test/cps_api_key_unittest.cpp ${CPS_UT_SRC}
 cps_api_key_unittest_LDFLAGS=-lcps-api-common
+
+cps_api_db_group_tunnel_unittest_CXXFLAGS+=-I$(TOP_SRCDIR)/inc/private/db -I$(TOP_SRCDIR)/inc/private
+cps_api_db_group_tunnel_unittest_SRCS=unit_test/cps_api_db_group_tunnel_unittest.cpp
+cps_api_db_group_tunnel_unittest_LDFLAGS=-lcps-api-common
 
 cps_api_object_unittest_SRCS=unit_test/cps_api_object_unittest.cpp ${CPS_UT_SRC}
 cps_api_object_unittest_LDFLAGS=-lcps-api-common

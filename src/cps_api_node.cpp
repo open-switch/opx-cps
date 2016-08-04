@@ -27,12 +27,51 @@
 #include "dell-cps.h"
 
 #include "event_log.h"
-
+#include <string.h>
 #include <iostream>
+
+#define local_ip "127.0.0.1"
+#define MAX_IP_LEN 64
+
+static cps_api_return_code_t cps_api_del_node_tunnel(const char * group, const char * node) {
+    cps_api_transaction_params_t trans;
+    cps_api_key_t keys;
+
+    if (cps_api_transaction_init(&trans) != cps_api_ret_code_OK)
+        return cps_api_ret_code_ERR;
+
+    cps_api_object_t p_trans_obj = cps_api_object_create();
+    cps_api_transaction_guard tgd(&trans);
+
+    cps_api_key_from_attr_with_qual(&keys, CPS_TUNNEL_OBJ, cps_api_qualifier_TARGET);
+    cps_api_object_set_type_operation(&keys, cps_api_oper_DELETE);
+    cps_api_object_set_key(p_trans_obj, &keys);
+
+    // Add attributes
+    cps_api_object_attr_add(p_trans_obj, CPS_TUNNEL_GROUP, group,strlen(group)+1);
+    cps_api_object_attr_add(p_trans_obj, CPS_TUNNEL_NODE_ID, node,strlen(node)+1);
+
+    cps_api_object_list_append(trans.change_list, p_trans_obj);
+    if (cps_api_commit(&trans) != cps_api_ret_code_OK) // Add logs
+        return cps_api_ret_code_ERR;
+
+    return cps_api_ret_code_OK;
+}
 
 
 cps_api_return_code_t cps_api_delete_node_group(const char *grp) {
     cps_api_db_del_node_group(grp);
+
+    std::unordered_set<std::string>  node_list;
+    if(!cps_api_db_get_group_config(grp,node_list)){
+        EV_LOGGING(DSAPI,ERR,"DELETE-GLOBAL","Failed to get group information %s",grp);
+        return cps_api_ret_code_ERR;
+    }
+
+    for ( auto it : node_list ){
+        cps_api_del_node_tunnel(grp, it.c_str());
+    }
+
     cps_api_object_guard og(cps_api_object_create());
     cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),CPS_NODE_GROUP, cps_api_qualifier_TARGET);
 
@@ -46,7 +85,7 @@ cps_api_return_code_t cps_api_delete_node_group(const char *grp) {
 
 static bool cps_api_find_local_node(cps_api_node_group_t *group,size_t &node_ix){
     for(size_t ix = 0 ; ix < group->addr_len ; ++ix){
-        if(strncmp(group->addrs[ix].addr,"127.0.0.1",strlen("127.0.0.1"))==0){
+        if(strncmp(group->addrs[ix].addr,local_ip,strlen(local_ip))==0){
             node_ix = ix;
             return true;
         }
@@ -131,9 +170,80 @@ cps_api_return_code_t cps_api_create_global_instance(cps_api_node_group_t *group
     return cps_api_ret_code_OK;
 }
 
+
+static bool cps_api_get_tunnel_port(cps_api_node_group_t *group, size_t ix, char *tunnel_port, size_t len) {
+    cps_api_transaction_params_t trans;
+    cps_api_key_t keys;
+
+    if (cps_api_transaction_init(&trans) != cps_api_ret_code_OK)
+        return false;
+
+    cps_api_object_t p_trans_obj = cps_api_object_create();
+    cps_api_transaction_guard tgd(&trans);
+
+    cps_api_key_from_attr_with_qual(&keys, CPS_TUNNEL_OBJ, cps_api_qualifier_TARGET);
+    cps_api_object_set_type_operation(&keys, cps_api_oper_CREATE);
+    cps_api_object_set_key(p_trans_obj, &keys);
+
+    // Add attributes
+    cps_api_object_attr_add(p_trans_obj, CPS_TUNNEL_GROUP, group->id,strlen(group->id)+1);
+    cps_api_object_attr_add(p_trans_obj, CPS_TUNNEL_NODE_ID, group->addrs[ix].node_name,strlen(group->addrs[ix].node_name)+1);
+    cps_api_object_attr_add(p_trans_obj, CPS_TUNNEL_IP,  group->addrs[ix].addr,strlen(group->addrs[ix].addr)+1);
+
+    cps_api_object_list_append(trans.change_list, p_trans_obj);
+    if (cps_api_commit(&trans) != cps_api_ret_code_OK)
+        return false;
+
+    cps_api_object_t p_ret_obj = cps_api_object_list_get(trans.change_list,0);
+    if (p_ret_obj==nullptr)
+        return false;
+
+    const char *port = (const char *)cps_api_object_get_data(p_ret_obj, CPS_TUNNEL_PORT);
+    strncpy(tunnel_port,port,len-1);
+
+    return true;
+}
+
+
+
+static bool cps_api_set_compare_group(cps_api_node_group_t *new_grp,  std::unordered_set<std::string> & node_list){
+
+    std::unordered_set<std::string>del_nodes;
+    for(auto it : node_list){
+        bool exist = false;
+        for(unsigned int new_grp_ix = 0 ; new_grp_ix < new_grp->addr_len ; ++ new_grp_ix){
+            if(strncmp(it.c_str(),new_grp->addrs[new_grp_ix].node_name,
+                    strlen(it.c_str()))==0){
+                exist = true;
+                break;
+            }
+        }
+        if(!exist){
+            del_nodes.insert(it);
+        }
+    }
+
+    for(auto node_it : del_nodes){
+        cps_api_del_node_tunnel(new_grp->id,node_it.c_str());
+    }
+
+    return true;
+}
+
 cps_api_return_code_t cps_api_set_node_group(cps_api_node_group_t *group) {
 
     cps_api_object_guard og(cps_api_object_create());
+
+    std::unordered_set<std::string>  node_list;
+    if(cps_api_db_get_group_config(group->id,node_list)){
+        cps_api_set_compare_group(group,node_list);
+    }
+
+    for(unsigned int ix = 0 ; ix < group->addr_len ; ++ix){
+        node_list.insert(std::string(group->addrs[ix].node_name));
+    }
+
+    cps_api_db_set_group_config(group->id,node_list);
 
     cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),CPS_NODE_GROUP, cps_api_qualifier_TARGET);
 
@@ -146,6 +256,25 @@ cps_api_return_code_t cps_api_set_node_group(cps_api_node_group_t *group) {
         cps_api_attr_id_t _alias[]={CPS_NODE_GROUP_NODE,ix,CPS_NODE_GROUP_NODE_NAME};
         cps_api_object_e_add(og.get(),_alias,sizeof(_alias)/sizeof(*_alias),cps_api_object_ATTR_T_BIN,
                 group->addrs[ix].node_name,strlen(group->addrs[ix].node_name)+1);
+
+        cps_api_attr_id_t _tunnel_ip[]={CPS_NODE_GROUP_NODE,ix,CPS_NODE_GROUP_NODE_TUNNEL_IP};
+        if (strstr(group->addrs[ix].addr, local_ip) )
+            cps_api_object_e_add(og.get(),_tunnel_ip,sizeof(_tunnel_ip)/sizeof(*_tunnel_ip),
+                                 cps_api_object_ATTR_T_BIN,
+                                 group->addrs[ix].addr,strlen(group->addrs[ix].addr)+1);
+        else {
+           // Do a transaction on cps/tunnel object and get the stunnel port
+           char tunnel_port[MAX_IP_LEN], tunnel_addr[MAX_IP_LEN];
+
+           if(! cps_api_get_tunnel_port(group, ix, tunnel_port, sizeof(tunnel_port)))
+               return cps_api_ret_code_ERR;
+
+           // Stunnel IP address will be "loopback:tunnel_port"
+           strncpy(tunnel_addr,"127.0.0.1:", MAX_IP_LEN-1);
+           strncat(tunnel_addr, tunnel_port, MAX_IP_LEN-1);
+           cps_api_object_e_add(og.get(),_tunnel_ip,sizeof(_tunnel_ip)/sizeof(*_tunnel_ip),
+                            cps_api_object_ATTR_T_BIN, tunnel_addr, strlen(tunnel_addr)+1);
+        }
     }
 
     cps_api_object_attr_add(og.get(),CPS_NODE_GROUP_TYPE,&group->data_type,sizeof(group->data_type));
@@ -340,7 +469,7 @@ bool cps_api_nodes::load_groups() {
 
             if (!cps_api_object_it_valid(&elem)) continue;
             _db_node_data db_node;
-            cps_api_object_attr_t _ip =cps_api_object_it_find(&elem,CPS_NODE_GROUP_NODE_IP);
+            cps_api_object_attr_t _ip =cps_api_object_it_find(&elem,CPS_NODE_GROUP_NODE_TUNNEL_IP);
             cps_api_object_attr_t _name =cps_api_object_it_find(&elem,CPS_NODE_GROUP_NODE_NAME);
             if (_ip==nullptr || _name==nullptr) continue;
             const char *__ip = (const char*)cps_api_object_attr_data_bin(_ip);
@@ -372,7 +501,6 @@ bool cps_api_nodes::load_groups() {
 
             const char * _alias = this->addr(__ip);
             if (_alias!=nullptr) __ip = _alias;
-
             nd._addrs.push_back(__ip);
             cps_api_object_it_next(&it);
         }
@@ -470,5 +598,20 @@ bool cps_api_nodes::is_master_set(std::string group){
     if(it != _master_set.end()){
         return true;
     }
+    return false;
+}
+
+bool cps_api_nodes::add_group_info(std::string group,std::unordered_set<std::string> & node_list){
+    _group_node_map[group] = std::move(node_list);
+    return true;
+}
+
+bool cps_api_nodes::get_group_info(std::string group,std::unordered_set<std::string> & node_list){
+    auto it = _group_node_map.find(group);
+    if(it != _group_node_map.end()){
+        node_list = it->second;
+        return true;
+    }
+
     return false;
 }

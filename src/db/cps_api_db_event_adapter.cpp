@@ -178,9 +178,9 @@ static void __resync_regs(cps_api_event_service_handle_t handle) {
 
     for (auto it : nd->_group_keys) {
         cps_api_node_set_iterate(it.first,[nd,&it,&handle,&_connections_changed](const std::string &node,void *context) {
-        	//occurs one for each node in the group
+            //occurs one for each node in the group
             auto con_it = nd->_connections.find(node);
-            if (con_it==nd->_connections.end()) {	//if the connection is good
+            if (con_it==nd->_connections.end()) {    //if the connection is good
                 return;
             }
 
@@ -214,7 +214,7 @@ static bool __check_connections(cps_api_event_service_handle_t handle) {
     std::set<std::string> nodes;
 
     for ( auto &it : nd->_connections ) {
-    	nodes.insert(it.first);
+        nodes.insert(it.first);
     }
 
     for (auto it : nd->_group_keys) {
@@ -251,7 +251,7 @@ static bool __check_connections(cps_api_event_service_handle_t handle) {
     changed = changed || (nodes.size()>0);
 
     for ( auto & it : nodes ) {
-    	nd->_connections.erase(it);
+        nd->_connections.erase(it);
     }
 
     if (changed) {
@@ -293,9 +293,9 @@ static cps_api_return_code_t _register_one_object(cps_api_event_service_handle_t
     }
 
     try {
-    	nh->_group_keys[_group].push_back(std::move(_key));	//add this key to the group
+        nh->_group_keys[_group].push_back(std::move(_key));    //add this key to the group
     } catch(std::exception &e) {
-    	return cps_api_ret_code_ERR;
+        return cps_api_ret_code_ERR;
     }
 
     //for each node in the group say need to be audited

@@ -38,13 +38,13 @@ def find_process_name(pid):
     @params pid - pid of which the process name is required
     @returns ps - process name if found else an empty string
     """
- 
+
     try:
         with open(os.path.join('/proc/' + str(pid) + '/cmdline'), 'rb') as fd:
             ps = fd.read()
         # Skip the absolute path
         ps = ps.split("/")[-1]
-    except Exception: 
+    except Exception:
         ps = ""
 
     return ps
@@ -84,7 +84,7 @@ def yangwalk(yangpath):
     @params[in] yangpath - Input yang path to fetch its first level contents
     @returns None
     """
-        
+
     if yangpath == '':
         # Find the modules
         i = cps.info("")['names'].keys()

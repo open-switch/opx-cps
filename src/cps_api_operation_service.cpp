@@ -475,7 +475,7 @@ cps_api_return_code_t cps_api_operation_subsystem_init(
 
     const char * enable_log = std_getenv("CPS_TRACE_ENABLE");
     if (enable_log!=nullptr && strcasecmp("true",enable_log)==0) {
-        p->enable_logging = true;		///TODO allow setting of this at run time...
+        p->enable_logging = true;        ///TODO allow setting of this at run time...
     }
 
     p->handle = NULL;

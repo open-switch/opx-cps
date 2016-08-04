@@ -72,6 +72,26 @@ static bool cps_api_clean_db_instance(const char *group){
     return true;
 }
 
+
+bool cps_api_db_get_group_config(const char * group,  std::unordered_set<std::string> & node_list){
+    std::lock_guard<std::recursive_mutex> lg(_mutex);
+
+    if(_nodes->get_group_info(std::string(group),node_list)){
+        return true;
+    }
+    EV_LOGGING(DSAPI,INFO,"GET-GROUP","Group %s does not exist",group);
+    return false;
+}
+
+
+bool cps_api_db_set_group_config(const char * group,  std::unordered_set<std::string> & node_list){
+    std::lock_guard<std::recursive_mutex> lg(_mutex);
+    _nodes->add_group_info(std::string(group),node_list);
+    return true;
+}
+
+
+
 bool cps_api_db_del_node_group(const char *group){
      std::lock_guard<std::recursive_mutex> lg(_mutex);
 
@@ -132,11 +152,11 @@ bool cps_api_db_get_node_group(const std::string &group,std::vector<std::string>
     cps_api_node_data_type_t type;
     if(!_nodes->get_group_type(group,type)){
         const char * _alias = _nodes->addr(group);
-    	if (_alias!=nullptr) {
-        	lst.push_back(_alias);
-        	return true;
+        if (_alias!=nullptr) {
+            lst.push_back(_alias);
+            return true;
         }
-    	EV_LOGGING(DSAPI,ERR,"GET-NODE-GRUOP","Failed to get group type for %s",group.c_str());
+        EV_LOGGING(DSAPI,ERR,"GET-NODE-GRUOP","Failed to get group type for %s",group.c_str());
         return false;
     }
 

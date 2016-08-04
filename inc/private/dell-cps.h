@@ -42,6 +42,10 @@ typedef enum {
 combinations are IPv4:port or [IPv6]:port*/
 /*type=string*/
   CPS_NODE_GROUP_NODE_IP = 131074,
+/*The IP addres and port of the stunnel client. Valid IP address/port
+combinations are IPv4:port or [IPv6]:port*/
+/*type=string*/
+  CPS_NODE_GROUP_NODE_TUNNEL_IP = 131104,
 } CPS_NODE_GROUP_NODE_t;
 /* Object cps/connection-entry */
 
@@ -82,6 +86,22 @@ typedef enum {
 /*type=string*/
   CPS_NODE_DETAILS_ALIAS = 131083,
 } CPS_NODE_DETAILS_t;
+/* Object cps/tunnel */
+
+typedef enum {
+/*Group name*/
+/*type=string*/
+  CPS_TUNNEL_GROUP = 131099,
+/*Node name*/
+/*type=string*/
+  CPS_TUNNEL_NODE_ID = 131100,
+/*Ip address of the node.*/
+/*type=string*/
+  CPS_TUNNEL_IP = 131101,
+/*System port where tunneling from DB to other node occurs.*/
+/*type=string*/
+  CPS_TUNNEL_PORT = 131102,
+} CPS_TUNNEL_t;
 /* Object cps/object-group */
 
 typedef enum {
@@ -146,6 +166,9 @@ behaviour as needed.*/
 
   CPS_DB_INSTANCE = 131095,
   CPS_DB_INSTANCE_OBJ = 131095,
+
+  CPS_TUNNEL = 131103,
+  CPS_TUNNEL_OBJ = 131103,
 
 } CPS_OBJECTS_t;
 
