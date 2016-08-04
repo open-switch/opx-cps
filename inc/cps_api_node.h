@@ -25,8 +25,6 @@ extern "C" {
 
 #include <stddef.h>
 
-#define STUNNEL_IP_MAX 64
-
 typedef enum {
     cps_api_node_data_NODAL,                 /// Data resides on each node and is not duplicated by node group
     cps_api_node_data_1_PLUS_1_REDUNDENCY    /// Data is stored in a global database and replicated to a backup node

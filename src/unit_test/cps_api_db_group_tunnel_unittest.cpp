@@ -1,11 +1,4 @@
 /*
- * cps_api_db_group_tunnel_unittest.cpp
- *
- *  Created on: Jul 29, 2016
- *      Author: vraiyani
- */
-
-/*
  * Copyright (c) 2016 Dell Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may

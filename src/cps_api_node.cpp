@@ -30,6 +30,9 @@
 #include <string.h>
 #include <iostream>
 
+#define local_ip "127.0.0.1"
+#define MAX_IP_LEN 64
+
 static cps_api_return_code_t cps_api_del_node_tunnel(const char * group, const char * node) {
     cps_api_transaction_params_t trans;
     cps_api_key_t keys;
@@ -82,7 +85,7 @@ cps_api_return_code_t cps_api_delete_node_group(const char *grp) {
 
 static bool cps_api_find_local_node(cps_api_node_group_t *group,size_t &node_ix){
     for(size_t ix = 0 ; ix < group->addr_len ; ++ix){
-        if(strncmp(group->addrs[ix].addr,"127.0.0.1",strlen("127.0.0.1"))==0){
+        if(strncmp(group->addrs[ix].addr,local_ip,strlen(local_ip))==0){
             node_ix = ix;
             return true;
         }
@@ -207,15 +210,15 @@ static bool cps_api_set_compare_group(cps_api_node_group_t *new_grp,  std::unord
 
     std::unordered_set<std::string>del_nodes;
     for(auto it : node_list){
-        bool exsist = false;
+        bool exist = false;
         for(unsigned int new_grp_ix = 0 ; new_grp_ix < new_grp->addr_len ; ++ new_grp_ix){
             if(strncmp(it.c_str(),new_grp->addrs[new_grp_ix].node_name,
                     strlen(it.c_str()))==0){
-                exsist = true;
+                exist = true;
                 break;
             }
         }
-        if(!exsist){
+        if(!exist){
             del_nodes.insert(it);
         }
     }
@@ -255,20 +258,20 @@ cps_api_return_code_t cps_api_set_node_group(cps_api_node_group_t *group) {
                 group->addrs[ix].node_name,strlen(group->addrs[ix].node_name)+1);
 
         cps_api_attr_id_t _tunnel_ip[]={CPS_NODE_GROUP_NODE,ix,CPS_NODE_GROUP_NODE_TUNNEL_IP};
-        if (strstr(group->addrs[ix].addr, "127.0.0.1") )
+        if (strstr(group->addrs[ix].addr, local_ip) )
             cps_api_object_e_add(og.get(),_tunnel_ip,sizeof(_tunnel_ip)/sizeof(*_tunnel_ip),
                                  cps_api_object_ATTR_T_BIN,
                                  group->addrs[ix].addr,strlen(group->addrs[ix].addr)+1);
         else {
            // Do a transaction on cps/tunnel object and get the stunnel port
-           char tunnel_port[STUNNEL_IP_MAX], tunnel_addr[STUNNEL_IP_MAX];
+           char tunnel_port[MAX_IP_LEN], tunnel_addr[MAX_IP_LEN];
 
            if(! cps_api_get_tunnel_port(group, ix, tunnel_port, sizeof(tunnel_port)))
                return cps_api_ret_code_ERR;
 
            // Stunnel IP address will be "loopback:tunnel_port"
-           strncpy(tunnel_addr,"127.0.0.1:", STUNNEL_IP_MAX-1);
-           strncat(tunnel_addr, tunnel_port, STUNNEL_IP_MAX-1);
+           strncpy(tunnel_addr,"127.0.0.1:", MAX_IP_LEN-1);
+           strncat(tunnel_addr, tunnel_port, MAX_IP_LEN-1);
            cps_api_object_e_add(og.get(),_tunnel_ip,sizeof(_tunnel_ip)/sizeof(*_tunnel_ip),
                             cps_api_object_ATTR_T_BIN, tunnel_addr, strlen(tunnel_addr)+1);
         }

@@ -17,6 +17,9 @@ group_node_ip_map = {}
 db_group_mapping = {}
 group_port_mapping = {}
 default_ip = "0.0.0.0"
+redis_server_path = "/usr/bin/redis-server"
+stunnel_config_path = "/etc/stunnel/"
+stunnel_path = '/usr/bin/stunnel4 '
 
 def get_free_port():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -57,7 +60,7 @@ class CPSDbProcessManager():
         """
 
         try:
-            self.p = subprocess.Popen(['/usr/bin/redis-server', '--port',str(port),'--bind',ip])
+            self.p = subprocess.Popen([redis_server_path, '--port',str(port),'--bind',ip])
         except Exception as e:
             log_msg(4,str(e))
             log_msg(4,"Failed to create new DB Instance for port "+str(port)+" and ip "+str(ip))
@@ -134,7 +137,7 @@ class TunnelConfigManager():
     def __init__(self,port,group,node,ip,client = True):
         self.group = group
         self.node = node
-        self.fname = "/etc/stunnel/"+group +"_"+ node + ".conf"
+        self.fname = stunnel_config_path+group +"_"+ node + ".conf"
         if os.path.exists(self.fname):
             log_msg(4,"File "+self.fname+" Already exists")
             self.valid = False
@@ -193,7 +196,7 @@ class CPSTunnelProcessManager():
             return
 
         try:
-            self.p = subprocess.Popen('/usr/bin/stunnel4 '+ self.obj.get_config_file(),shell=True)
+            self.p = subprocess.Popen(stunnel_path+ self.obj.get_config_file(),shell=True)
         except Exception as e:
             log_msg(4,str(e))
             log_msg(4,"Failed to create new Stunnel Instance for group "+group+" and node "+node)
