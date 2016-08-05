@@ -44,11 +44,6 @@ def get_ip_from_string(ip):
 def log_msg(level,msg):
     ev.logging("DSAPI",level,"DB-TUNNEL-MANAGER","","",0,msg)
 
-
-
-def log_msg(level,msg):
-    ev.logging("DSAPI",level,"DB-INSTANCE-MANAGER","","",0,msg)
-
 class CPSDbProcessManager():
 
     def __init__(self,port,ip=default_ip):
@@ -291,6 +286,16 @@ def get_tunnel_cb(methods, params):
 
 if __name__ == '__main__':
 
+    import signal
+    def sigterm_handler(signo, frame):
+        SIGNALS_TO_NAMES_DICT = dict((getattr(signal, n), n) \
+                                     for n in dir(signal) if n.startswith('SIG') and '_' not in n )
+        strsignal = lambda signo: SIGNALS_TO_NAMES_DICT.get(signo, "Unnamed signal: %s" % str(signo))
+        sys.stdout.write("sigterm_handler(signo=%s) - Shutting down now!\n" % strsignal(signo))
+        sys.exit(0)
+
+    signal.signal(signal.SIGTERM, sigterm_handler)
+
     handle = cps.obj_init()
 
     tun_cb = {}
@@ -305,5 +310,9 @@ if __name__ == '__main__':
 
     cps.obj_register(handle, cps.key_from_name("target","cps/db-instance"), db_cb)
 
-    while True:
-        time.sleep(1)
+    # WARNING systemd module not currently installed!!!
+    #import systemd
+    #systemd.daemon.notify("READY=1")
+
+    signal.pause()
+
