@@ -27,18 +27,17 @@
 #include "event_log.h"
 #include "std_assert.h"
 
-#include <string.h>             /* strsignal() */
 #include <unistd.h>             /* pause() */
 #include <signal.h>             /* signal(), SIGTERM */
 #include <systemd/sd-daemon.h>  /* sd_notify() */
 #include <systemd/sd-journal.h> /* sd_journal_print() */
 #include <sys/resource.h>       /* setrlimit() */
 #include <stdio.h>              /* setvbuf() */
+#include <stdlib.h>             /* EXIT_SUCCESS */
 
+static int signo_caught = -1;
 static void sigterm_handler(int signo) {
-    /* ADD SHUTDOWN CODE HERE (IF NEEDED) */
-    sd_journal_print(LOG_DEBUG, "sigterm_handler(signo=%s) - Shutting down now!", strsignal(signo));
-    exit(0);
+    signo_caught = signo;
 }
 
 int main(int argc, char**argv) {
@@ -75,7 +74,23 @@ int main(int argc, char**argv) {
     sd_notify(0, "READY=1");
 
     sd_journal_print(LOG_DEBUG, "Entering main loop (i.e. wait forever for signals)");
-    pause(); // Wait for signals to be caught by sig_handler()
+    (void)pause(); // Wait for signals to be caught by sig_handler()
 
-    return 0;
+    /* Per manual pages:
+
+       pause() only returns when a signal was caught and the signal-catching
+       function returned. In this case pause() returns -1, and errno is set
+       to EINTR.
+
+       So if we reached this point it means that that SIGTERM has been issued
+       since that's the only signal this daemon will catch the signal-catching
+       function.
+    */
+
+    /* ADD SHUTDOWN CODE HERE (IF NEEDED) */
+
+    sd_journal_print(LOG_DEBUG, "Signal %d received - Shutting down now!",
+                     signo_caught);
+
+    exit(EXIT_SUCCESS);
 }
