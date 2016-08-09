@@ -82,10 +82,8 @@ cps_api_return_code_t cps_api_event_publish(cps_api_event_service_handle_t handl
     if (rc!=cps_api_ret_code_OK) {
         const char *_qua = cps_class_qual_from_key(cps_api_object_key(msg));
         const char *_name = cps_class_string_from_key(cps_api_object_key(msg),1);
-        char buff[1024];
-
         EV_LOG(ERR,DSAPI,0,"CPS-PUB","Failed to publish messages %s:%s",_qua!=nullptr?_qua:"unk",
-                _name!=nullptr ? _name :cps_api_key_print(cps_api_object_key(msg),buff,sizeof(buff)-1));
+                _name!=nullptr ? _name :"unk");
     }
     return rc;
 }
@@ -173,7 +171,7 @@ cps_api_return_code_t cps_api_event_thread_init(void) {
 
 static pthread_once_t _once_control = PTHREAD_ONCE_INIT;
 
-static void one_time_init() {
+void one_time_init() {
     init_event_thread_func();
     while (true) {
         if (cps_api_event_client_connect(&_thread_handle)==cps_api_ret_code_OK) break;
