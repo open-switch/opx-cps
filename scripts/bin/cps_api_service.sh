@@ -41,4 +41,3 @@ if [ ! $HAS_USER = 0 ] ; then
 	useradd -g $GROUPNAME $USERNAME
 fi
 
-$(dirname $0)/cps_api_service
