@@ -18,7 +18,7 @@ db_group_mapping = {}
 group_port_mapping = {}
 default_ip = "0.0.0.0"
 redis_server_path = "/usr/bin/redis-server"
-stunnel_config_path = "/etc/stunnel/"
+stunnel_config_path = "/tmp/"
 stunnel_path = '/usr/bin/stunnel4 '
 
 def get_free_port():
