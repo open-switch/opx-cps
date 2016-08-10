@@ -284,17 +284,15 @@ def set_tunnel_cb(methods, params):
 def get_tunnel_cb(methods, params):
     return False
 
+signum_caught = -1
+def sig_handler(signum, frame):
+    global signum_caught
+    signum_caught = signum
+
 if __name__ == '__main__':
 
     import signal
-    def sigterm_handler(signo, frame):
-        SIGNALS_TO_NAMES_DICT = dict((getattr(signal, n), n) \
-                                     for n in dir(signal) if n.startswith('SIG') and '_' not in n )
-        strsignal = lambda signo: SIGNALS_TO_NAMES_DICT.get(signo, "Unnamed signal: %s" % str(signo))
-        sys.stdout.write("sigterm_handler(signo=%s) - Shutting down now!\n" % strsignal(signo))
-        sys.exit(0)
-
-    signal.signal(signal.SIGTERM, sigterm_handler)
+    signal.signal(signal.SIGTERM, sig_handler)
 
     handle = cps.obj_init()
 
@@ -311,8 +309,12 @@ if __name__ == '__main__':
     cps.obj_register(handle, cps.key_from_name("target","cps/db-instance"), db_cb)
 
     # WARNING systemd module not currently installed!!!
-    #import systemd
+    #         Waiting for legal approval to bring systemd module into OS10.
+    #import systemd.daemon
     #systemd.daemon.notify("READY=1")
 
     signal.pause()
+
+    sys.stdout.write("Signal %d received - Shutting down daemon" % (signum_caught,))
+    sys.exit(0)
 
