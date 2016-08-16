@@ -183,20 +183,19 @@ cps_api_return_code_t cps_api_commit(cps_api_transaction_params_t * param) {
     }
     }
     if (rc!=cps_api_ret_code_OK) {
+        cps_api_return_code_t _revert_rc = cps_api_ret_code_OK;
         mx = ix-1 ;
         while (mx > 0) {
-            ix = mx-1;
-
             cps_api_object_t o = cps_api_object_list_get(param->change_list,ix);
             STD_ASSERT(o!=nullptr);
             if (cps_api_obj_get_ownership_type(o)!=CPS_API_OBJECT_SERVICE) {
-                rc = cps_api_db_operation_rollback(param,ix);
+                _revert_rc = cps_api_db_operation_rollback(param,ix);
             } else {
-                rc=cps_api_process_rollback_request(param,ix);
+                _revert_rc=cps_api_process_rollback_request(param,ix);
             }
 
-            if (rc!=cps_api_ret_code_OK) {
-                EV_LOG(ERR,DSAPI,0,"ROLLBACK","Failed to rollback request at %d",ix);
+            if (_revert_rc!=cps_api_ret_code_OK) {
+                EV_LOG(ERR,DSAPI,0,"ROLLBACK","Failed to rollback request at %d (rc:%d)",ix,_revert_rc);
             }
             --mx;
         }

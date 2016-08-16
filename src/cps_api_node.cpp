@@ -204,8 +204,6 @@ static bool cps_api_get_tunnel_port(cps_api_node_group_t *group, size_t ix, char
     return true;
 }
 
-
-
 static bool cps_api_set_compare_group(cps_api_node_group_t *new_grp,  std::unordered_set<std::string> & node_list){
 
     std::unordered_set<std::string>del_nodes;
