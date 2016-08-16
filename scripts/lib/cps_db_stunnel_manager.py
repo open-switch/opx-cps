@@ -18,7 +18,7 @@ db_group_mapping = {}
 group_port_mapping = {}
 default_ip = "0.0.0.0"
 redis_server_path = "/usr/bin/redis-server"
-stunnel_config_path = "/etc/stunnel/"
+stunnel_config_path = "/tmp/"
 stunnel_path = '/usr/bin/stunnel4 '
 
 def get_free_port():
@@ -43,11 +43,6 @@ def get_ip_from_string(ip):
 
 def log_msg(level,msg):
     ev.logging("DSAPI",level,"DB-TUNNEL-MANAGER","","",0,msg)
-
-
-
-def log_msg(level,msg):
-    ev.logging("DSAPI",level,"DB-INSTANCE-MANAGER","","",0,msg)
 
 class CPSDbProcessManager():
 
@@ -289,7 +284,15 @@ def set_tunnel_cb(methods, params):
 def get_tunnel_cb(methods, params):
     return False
 
+signum_caught = -1
+def sig_handler(signum, frame):
+    global signum_caught
+    signum_caught = signum
+
 if __name__ == '__main__':
+
+    import signal
+    signal.signal(signal.SIGTERM, sig_handler)
 
     handle = cps.obj_init()
 
@@ -305,5 +308,13 @@ if __name__ == '__main__':
 
     cps.obj_register(handle, cps.key_from_name("target","cps/db-instance"), db_cb)
 
-    while True:
-        time.sleep(1)
+    # WARNING systemd module not currently installed!!!
+    #         Waiting for legal approval to bring systemd module into OS10.
+    #import systemd.daemon
+    #systemd.daemon.notify("READY=1")
+
+    signal.pause()
+
+    sys.stdout.write("Signal %d received - Shutting down daemon" % (signum_caught,))
+    sys.exit(0)
+

@@ -438,10 +438,6 @@ cps_api_return_code_t cps_api_process_rollback_request(cps_api_transaction_param
         EV_LOG(ERR,DSAPI,0,"CPS IPC","No Revert Object");
         return rc;
     }
-    if (cps_api_key_get_len(cps_api_object_key(obj))==0) {
-        EV_LOG(ERR,DSAPI,0,"CPS IPC","Empty object");
-        return rc;
-    }
 
     cps_api_channel_t handle;
     cps_api_key_t *key = cps_api_object_key(obj);

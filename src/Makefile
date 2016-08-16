@@ -43,7 +43,7 @@ cps-api-common_SRCS+=db/cps_api_db_event_adapter.cpp db/cps_api_db_operations.cp
 cps-api-common_LDFLAGS = -levent_log -ldn_common -lpthread -lhiredis
 
 cps_api_service_SRCS=cps_api_service.cpp
-cps_api_service_LDFLAGS = -lcps-api-common -ldn_common -levent_log
+cps_api_service_LDFLAGS = -lcps-api-common -ldn_common -levent_log -lsystemd
 
 
 #CPS Class UT Data Alias
