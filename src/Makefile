@@ -16,18 +16,20 @@ cps-api-common_SRCS+=cps_api_events.cpp
 cps-api-common_SRCS+=cps_api_operation_common.cpp
 cps-api-common_SRCS+=cps_api_key.cpp
 cps-api-common_SRCS+=cps_api_object_attr.cpp
-cps-api-common_SRCS+= cps_ns.cpp
+cps-api-common_SRCS+=cps_ns.cpp
 cps-api-common_SRCS+=cps_api_operation_service.cpp
 cps-api-common_SRCS+=cps_api_client_ipc.cpp
-cps-api-common_SRCS+=cps_api_object_tools.cpp
-cps-api-common_SRCS+=cps_api_operation_tools.cpp
 cps-api-common_SRCS+=cps_api_utils.cpp
 cps-api-common_SRCS+=cps_string_utils.cpp
 cps-api-common_SRCS+=cps_api_operation_debug.cpp
 cps-api-common_SRCS+=cps_api_vector_utils.cpp
 cps-api-common_SRCS+=cps_comm_utils.cpp
-cps-api-common_SRCS+=dell-cps.cpp
 
+cps-api-common_SRCS+=non-core/cps_api_object_tools.cpp
+cps-api-common_SRCS+=non-core/cps_api_operation_tools.cpp
+cps-api-common_SRCS+=non-core/cps_api_node.cpp
+
+cps-api-common_SRCS+=metadata/dell-cps.cpp
 cps-api-common_SRCS+=metadata/cps_api_string_mapping.cpp
 cps-api-common_SRCS+=metadata/cps_dictionary.cpp
 cps-api-common_SRCS+=metadata/cps_dictionary_loader.cpp
@@ -37,7 +39,7 @@ cps-api-common_SRCS+=db/cps_redis.cpp
 cps-api-common_SRCS+=db/cps_api_db_connection.cpp
 cps-api-common_SRCS+=db/cps_api_db_response.cpp
 cps-api-common_SRCS+=db/cps_api_db_object_key.cpp
-cps-api-common_SRCS+=cps_api_node.cpp db/cps_api_db_init.cpp db/cps_api_db_node_set.cpp
+cps-api-common_SRCS+=db/cps_api_db_init.cpp db/cps_api_db_node_set.cpp
 cps-api-common_SRCS+=db/cps_api_db_event_adapter.cpp db/cps_api_db_operations.cpp
 
 cps-api-common_LDFLAGS = -levent_log -ldn_common -lpthread -lhiredis

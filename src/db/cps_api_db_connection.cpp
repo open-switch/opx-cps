@@ -373,6 +373,7 @@ void cps_db::connection_cache::put(const std::string &name, connection* conn) {
         _pool[name].push_back(std::move(_ptr));
     }
 }
+
 void cps_db::connection_cache::remove(const std::string &name) {
     std::lock_guard<std::mutex> l(_mutex);
     _pool.erase(name);

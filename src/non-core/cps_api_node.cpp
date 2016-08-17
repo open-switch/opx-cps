@@ -65,7 +65,7 @@ cps_api_return_code_t cps_api_delete_node_group(const char *grp) {
     std::unordered_set<std::string>  node_list;
     if(!cps_api_db_get_group_config(grp,node_list)){
         EV_LOGGING(DSAPI,ERR,"DELETE-GLOBAL","Failed to get group information %s",grp);
-        return cps_api_ret_code_ERR;
+        return cps_api_ret_code_OK;
     }
 
     for ( auto it : node_list ){
@@ -78,8 +78,17 @@ cps_api_return_code_t cps_api_delete_node_group(const char *grp) {
     cps_api_object_attr_add(og.get(),CPS_NODE_GROUP_NAME,grp,strlen(grp)+1);
 
     cps_db::connection_request b(cps_db::ProcessDBCache(),DEFAULT_REDIS_ADDR);
-    cps_db::delete_object(b.get(),og.get());
-    return cps_api_ret_code_OK;
+
+    bool rc = false;
+    if ((rc=cps_db::delete_object(b.get(),og.get()))) {
+        cps_api_object_set_type_operation(cps_api_object_key(og.get()),cps_api_oper_DELETE);
+        rc = cps_db::publish(b.get(),og.get());
+    }
+    if (!rc) {
+        EV_LOGGING(DSAPI,ERR,"CPS-NODE-GROUP","Delete or publish failed for %s due to db connection issue",grp);
+    }
+
+    return rc ? cps_api_ret_code_OK : cps_api_ret_code_OK;
 }
 
 
@@ -235,7 +244,10 @@ cps_api_return_code_t cps_api_set_node_group(cps_api_node_group_t *group) {
     cps_api_object_guard og(cps_api_object_create());
 
     std::unordered_set<std::string>  node_list;
-    if(cps_api_db_get_group_config(group->id,node_list)){
+
+    bool created = !cps_api_db_get_group_config(group->id,node_list);
+
+    if(!created){
         cps_api_set_compare_group(group,node_list);
     }
 
@@ -302,7 +314,9 @@ cps_api_return_code_t cps_api_set_node_group(cps_api_node_group_t *group) {
     if(group->data_type == cps_api_node_data_1_PLUS_1_REDUNDENCY){
         return cps_api_create_global_instance(group);
     }
-    ///TODO send out changed...
+
+    cps_api_object_set_type_operation(cps_api_object_key(og.get()),created? cps_api_oper_CREATE : cps_api_oper_SET);
+    cps_db::publish(b.get(),og.get());
 
     return cps_api_ret_code_OK;
 }

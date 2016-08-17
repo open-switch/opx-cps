@@ -417,12 +417,13 @@ bool cps_db::get_objects(cps_db::connection &conn,std::vector<char> &key,cps_api
     cps_utils::cps_api_vector_util_append(key,"*",1);
 
     std::vector<std::vector<char>> all_keys;
-    bool rc = fetch_all_keys(conn, &key[0],key.size(),[&conn,&all_keys](const void *key, size_t len){
+    (void) fetch_all_keys(conn, &key[0],key.size(),[&conn,&all_keys](const void *key, size_t len){
         std::vector<char> c;
         cps_utils::cps_api_vector_util_append(c,key,len);
         all_keys.push_back(std::move(c));
     });
-    (void)rc;  //if (!rc) return false;
+
+    if (all_keys.size()==0) return true;
 
     size_t _processed_len = 0;
     const static int CHUNK_SIZE = CPS_DB_MAX_ITEMS_PER_PIPELINE;
