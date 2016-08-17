@@ -20,49 +20,47 @@
 #include <cstdarg>
 #include <memory>
 
-#include <regex>
-
 namespace cps_string{
 
 std::string sprintf(const char *fmt, ...) {
-	std::va_list args_len;
-	va_start(args_len,fmt);
-	std::va_list args_real;
-	va_copy(args_real,args_len);
+    std::va_list args_len;
+    va_start(args_len,fmt);
+    std::va_list args_real;
+    va_copy(args_real,args_len);
 
-	size_t len = std::vsnprintf(nullptr,0,fmt,args_len)+1;
-	va_end(args_len);
+    size_t len = std::vsnprintf(nullptr,0,fmt,args_len)+1;
+    va_end(args_len);
 
-	std::unique_ptr<char[]> buf( new char[ len ] );
-	std::vsnprintf(buf.get(),len,fmt,args_real);
-	va_end(args_real);
+    std::unique_ptr<char[]> buf( new char[ len ] );
+    std::vsnprintf(buf.get(),len,fmt,args_real);
+    va_end(args_real);
 
-	return std::string(buf.get());
+    return std::string(buf.get());
 }
 
 std::vector<std::string> split(const std::string &str, const std::string &reg) {
-	//@todo replace with regex once we switch to gcc 4.9
-	std_parsed_string_t parsed=nullptr;
-	std_parse_string(&parsed,str.c_str(),reg.c_str());
-	size_t ix = 0;
-	std::vector<std::string> _lst;
-	const char * head = nullptr;
-	while ((head=std_parse_string_next(parsed,&ix))!=nullptr) {
-		_lst.push_back(head);
-	}
+    //@todo replace with regex once we switch to gcc 4.9
+    std_parsed_string_t parsed=nullptr;
+    std_parse_string(&parsed,str.c_str(),reg.c_str());
+    size_t ix = 0;
+    std::vector<std::string> _lst;
+    const char * head = nullptr;
+    while ((head=std_parse_string_next(parsed,&ix))!=nullptr) {
+        _lst.push_back(head);
+    }
 
-	std_parse_string_free(parsed);
-	return std::move(_lst);
+    std_parse_string_free(parsed);
+    return std::move(_lst);
 }
 
 std::string tostring(const void *data, size_t len) {
-	std::string s;
-	for (size_t ix =0; ix<len ; ++ix ) {
-		if ((ix%16==0) && (ix!=0)) s+="\n";
-		s+=cps_string::sprintf("%02x ",((unsigned char*)data)[ix]);
-	}
-	s+="\n";
-	return s;
+    std::string s;
+    for (size_t ix =0; ix<len ; ++ix ) {
+        if ((ix%16==0) && (ix!=0)) s+="\n";
+        s+=cps_string::sprintf("%02x ",((unsigned char*)data)[ix]);
+    }
+    s+="\n";
+    return s;
 }
 
 }
