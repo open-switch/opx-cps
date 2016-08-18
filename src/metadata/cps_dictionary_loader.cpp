@@ -102,6 +102,9 @@ void cps_api_class_map_init(void) {
        const char * p = std_parse_string_at(handle,ix);
        cps_class_objs_load(p,CPS_DEF_CLASS_FILE_NAME);
     }
+
+    std_parse_string_free(handle);
+
     cps_api_yang_module_init();
 
     cps_api_metadata_import();
