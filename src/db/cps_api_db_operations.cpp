@@ -42,8 +42,15 @@ cps_api_return_code_t __cps_api_db_operation_get(cps_api_object_t obj, cps_api_o
             cps_api_object_attr_add(o,CPS_CONNECTION_ENTRY_NAME,name.c_str(),name.size()+1);
             cps_api_object_attr_add(o,CPS_CONNECTION_ENTRY_IP,name.c_str(),name.size()+1);
             cps_api_object_attr_add(o,CPS_CONNECTION_ENTRY_GROUP,node,strlen(node)+1);
+        } else {
+            size_t ix = 0;
+            size_t mx = cps_api_object_list_size(results);
+            for ( ; ix < mx ; ++ix ) {
+                cps_api_object_t o = cps_api_object_list_get(results,ix);
+                STD_ASSERT(o==nullptr);
+                cps_api_key_set_group(o,name.c_str());
+            }
         }
-
     },nullptr);
 
     return result==true? cps_api_ret_code_OK : cps_api_ret_code_ERR;
@@ -54,7 +61,8 @@ cps_api_return_code_t __cps_api_db_operation_get_first_object(cps_api_object_t o
     bool _found = false;
     cps_api_node_set_iterate(node,[&obj,&_found,node](const std::string &name,void *c){
         cps_db::connection_request r(cps_db::ProcessDBCache(),name.c_str());
-        _found = _found || cps_db::get_object(r.get(),obj);
+        if (_found) return;
+        _found = cps_db::get_object(r.get(),obj);
     },nullptr);
 
     return _found==true? cps_api_ret_code_OK : cps_api_ret_code_ERR;
@@ -107,6 +115,7 @@ cps_api_return_code_t cps_api_db_operation_commit(cps_api_transaction_params_t *
             ///TODO need to maybe check if object currently exists before allowing create..
             result = result || cps_db::store_object(r.get(),o);
             if (!result) _failed_nodes+=name+",";
+            if (result) cps_db::publish(r.get(),o);
             return;
         }
 
@@ -115,12 +124,14 @@ cps_api_return_code_t cps_api_db_operation_commit(cps_api_transaction_params_t *
             cps_db::get_objects(r.get(),o,lg.get());
             result = result || cps_db::delete_objects(r.get(),lg.get());
             if (!result) _failed_nodes+=name+",";
+            if (result) cps_db::publish(r.get(),o);
             return;
         }
 
         ///TODO need to remove the group details or node details
         result |= cps_db::store_object(r.get(),o);
         if (!result) _failed_nodes+=name+",";
+        if (result) cps_db::publish(r.get(),o);
     },nullptr)) {
         return cps_api_ret_code_ERR;
     }
@@ -142,9 +153,22 @@ cps_api_return_code_t cps_api_db_operation_rollback(cps_api_transaction_params_t
 
     cps_api_node_set_iterate(node,[&o,&prev,op_type,&ix](const std::string &name,void *c){
         cps_db::connection_request r(cps_db::ProcessDBCache(),name.c_str());
-        if (op_type==cps_api_oper_CREATE) cps_db::delete_object(r.get(),o);
-        if (op_type==cps_api_oper_SET) cps_db::store_object(r.get(),prev);
-        if (op_type==cps_api_oper_DELETE && prev!=nullptr) cps_db::store_object(r.get(),prev);
+        if (op_type==cps_api_oper_CREATE) {
+            cps_db::delete_object(r.get(),o);
+            cps_api_object_set_type_operation(cps_api_object_key(o),cps_api_oper_DELETE);
+            cps_db::publish(r.get(),o);
+            cps_api_object_set_type_operation(cps_api_object_key(o),cps_api_oper_CREATE);
+        }
+        if (op_type==cps_api_oper_SET) {
+            cps_db::store_object(r.get(),prev);
+            cps_db::publish(r.get(),o);
+        }
+        if (op_type==cps_api_oper_DELETE && prev!=nullptr) {
+            cps_db::store_object(r.get(),prev);
+            cps_api_object_set_type_operation(cps_api_object_key(o),cps_api_oper_CREATE);
+            cps_db::publish(r.get(),o);
+            cps_api_object_set_type_operation(cps_api_object_key(o),cps_api_oper_DELETE);
+        }
     },nullptr);
     ///TODO should log failure conditions even if not returned
     return cps_api_ret_code_OK ;

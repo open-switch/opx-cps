@@ -88,7 +88,7 @@ cps_api_return_code_t cps_api_delete_node_group(const char *grp) {
         EV_LOGGING(DSAPI,ERR,"CPS-NODE-GROUP","Delete or publish failed for %s due to db connection issue",grp);
     }
 
-    return rc ? cps_api_ret_code_OK : cps_api_ret_code_OK;
+    return rc ? cps_api_ret_code_OK : cps_api_ret_code_ERR;
 }
 
 

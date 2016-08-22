@@ -109,9 +109,9 @@ const char *CPSEnum::name(int value) const  {
 static bool _map_init=false;
 
 static void cps_class_data_has_been_loaded(void) {
-    if (_map_init) return;
 
     std_mutex_simple_lock_guard lg(&lock);
+    if (_map_init) return;
     if (!_map_init) {
         _map_init = true;
         cps_api_class_map_init();
