@@ -26,6 +26,10 @@ bool cps_api_node_set_iterate(const std::string &group_name,const std::function<
 
 bool cps_api_db_del_node_group(const char *group);
 
+bool cps_api_db_get_node_from_ip(const std::string & ip, std::string & name);
+
+bool cps_api_db_set_ip_for_node(const std::string & ip, const std::string &name);
+
 bool cps_api_db_set_group_config(const char * group,std::unordered_set<std::string> & node_list);
 
 bool cps_api_db_get_group_config(const char * group, std::unordered_set<std::string> & node_list);

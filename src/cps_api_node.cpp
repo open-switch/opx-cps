@@ -496,6 +496,7 @@ bool cps_api_nodes::load_groups() {
             }
 
             _alias_map[__name] = __ip;
+            cps_api_db_set_ip_for_node(__ip,__name);
 
             const char * _alias = this->addr(__ip);
             if (_alias!=nullptr) __ip = _alias;
