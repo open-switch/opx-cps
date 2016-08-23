@@ -390,7 +390,9 @@ static cps_api_return_code_t _cps_api_wait_for_event(
         cps_api_object_t msg,
         ssize_t timeout_ms) {
 
-    // 10 seconds is too long of time, if there are no events in that case group update takes
+    /* 10 seconds is too long for timeout, if there are no events in that case group update takes
+     * longer time so reducing it to 3
+     */
     const static int DEF_SELECT_TIMEOUT_SEC = (3);
     __db_event_handle_t *nh = handle_to_data(handle);
 
