@@ -34,7 +34,7 @@ inline bool cps_api_vector_util_set(std::vector<char> &lst,const void *data, siz
 template <typename T>
 struct vector_hash {
     std::size_t operator() (const std::vector<T> &c) const {
-        int64_t rc;
+        int64_t rc = 0;
         for ( auto it : c ) {
             int64_t _cur = std::hash<T>()(it);
             rc =  rc ^ (_cur << 3);
