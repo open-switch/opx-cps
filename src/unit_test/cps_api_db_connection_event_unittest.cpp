@@ -47,6 +47,60 @@
 #include <memory>
 
 
+static bool print_event_object(cps_api_object_t rec){
+    cps_api_object_attr_t ip = cps_api_object_attr_get(rec,CPS_CONNECTION_ENTRY_IP);
+    cps_api_object_attr_t name = cps_api_object_attr_get(rec,CPS_CONNECTION_ENTRY_NAME);
+    cps_api_object_attr_t state = cps_api_object_attr_get(rec,CPS_CONNECTION_ENTRY_CONNECTION_STATE);
+    cps_api_object_attr_t group = cps_api_object_attr_get(rec,CPS_CONNECTION_ENTRY_GROUP);
+
+    const char *_ip, *_name, *_group;
+
+    bool _state;
+    if(group){
+        _group = (const char *)cps_api_object_attr_data_bin(group);
+        printf(" Group %s\n",_group);
+    }
+    if(ip){
+        _ip =  (const char *) cps_api_object_attr_data_bin(ip);
+        printf(" IP %s\n",_ip);
+    }
+    if(name){
+        _name = (const char *) cps_api_object_attr_data_bin(name);
+        printf(" Name %s\n",_name);
+    }
+    if(state){
+        _state = cps_api_object_attr_data_u32(state);
+        printf(" State %d\n",_state);
+    }
+    return true;
+}
+
+static bool db_ev_cb(cps_api_object_t rec,void * context){
+    print_event_object(rec);
+    return true;
+}
+
+bool call_bk_test() {
+      cps_api_object_list_guard lg(cps_api_object_list_create());
+      cps_api_object_guard obj(cps_api_object_create());
+      cps_api_key_from_attr_with_qual(cps_api_object_key(obj.get()), CPS_CONNECTION_ENTRY,
+                                           cps_api_qualifier_TARGET);
+      cps_api_object_attr_add(obj.get(),CPS_OBJECT_GROUP_GROUP, "A",strlen("A")+1);
+
+      if (!cps_api_object_list_append(lg.get(),obj.get())) {
+          return false;
+      }
+
+      if (cps_api_event_thread_reg_object (lg.get(), db_ev_cb, nullptr) != cps_api_ret_code_OK) {
+          return false;
+      }
+
+      while(1){
+          sleep(1);
+      }
+
+      return true;
+}
 
 bool connection_event_test() {
 
@@ -73,36 +127,13 @@ bool connection_event_test() {
         cps_api_object_t rec = cps_api_object_create();
 
         while(true) {
-               if (cps_api_wait_for_event(handle,rec)!=cps_api_ret_code_OK) {
-                   cps_api_object_delete(rec);
-                   return false;
-               }
-               cps_api_object_attr_t ip = cps_api_object_attr_get(rec,CPS_CONNECTION_ENTRY_IP);
-               cps_api_object_attr_t name = cps_api_object_attr_get(rec,CPS_CONNECTION_ENTRY_NAME);
-               cps_api_object_attr_t state = cps_api_object_attr_get(rec,CPS_CONNECTION_ENTRY_CONNECTION_STATE);
-               cps_api_object_attr_t group = cps_api_object_attr_get(rec,CPS_CONNECTION_ENTRY_GROUP);
-
-               const char *_ip, *_name, *_group;
-
-               bool _state;
-               if(group){
-                   _group = (const char *)cps_api_object_attr_data_bin(group);
-                   printf(" Group %s\n",_group);
-                                           }
-               if(ip){
-                   _ip =  (const char *) cps_api_object_attr_data_bin(ip);
-                   printf(" IP %s\n",_ip);
-               }
-               if(name){
-                   _name = (const char *) cps_api_object_attr_data_bin(name);
-                   printf(" Name %s\n",_name);
-               }
-               if(state){
-                   _state = cps_api_object_attr_data_u32(state);
-                   printf(" State %d\n",_state);
-               }
-
+            if (cps_api_wait_for_event(handle,rec)!=cps_api_ret_code_OK) {
+                cps_api_object_delete(rec);
+                return false;
+            }
+            print_event_object(rec);
         }
+
         cps_api_object_delete(rec);
         return true;
 }
@@ -119,6 +150,7 @@ TEST(cps_api_events,initialize_event_system) {
 
 TEST(cps_api_events,full_test) {
    ASSERT_TRUE(connection_event_test());
+   ASSERT_TRUE(call_bk_test());
 
 }
 int main(int argc, char **argv) {
