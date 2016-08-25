@@ -28,11 +28,13 @@
 #include "event_log.h"
 
 #include <mutex>
+#include <unordered_map>
 
 static std::recursive_mutex _mutex;
 
 static cps_api_nodes *_nodes = new cps_api_nodes;
 static uint64_t _last_loaded = 0;
+static std::unordered_map<std::string,std::string> _ip_to_node_map;
 
 
 static bool load_groups() {
@@ -90,6 +92,25 @@ bool cps_api_db_set_group_config(const char * group,  std::unordered_set<std::st
     return true;
 }
 
+
+bool cps_api_db_set_ip_for_node(const std::string & ip, const std::string &name){
+    std::lock_guard<std::recursive_mutex> lg(_mutex);
+    _ip_to_node_map[ip]= name;
+    return true;
+
+}
+
+
+bool cps_api_db_get_node_from_ip(const std::string & ip, std::string &name){
+    std::lock_guard<std::recursive_mutex> lg(_mutex);
+    auto it = _ip_to_node_map.find(ip);
+    if(it == _ip_to_node_map.end()){
+        return false;
+    }
+
+    name = it->second;
+    return true;
+}
 
 
 bool cps_api_db_del_node_group(const char *group){

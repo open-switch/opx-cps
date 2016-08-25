@@ -150,9 +150,13 @@ void __db_event_handle_t::disconnect_node(const std::string &node, bool update_f
 void __db_event_handle_t::add_connection_state_event(const char *node, const char *group, bool state) {
     cps_api_object_t o = cps_api_object_list_create_obj_and_append(_pending_events);
     if (o!=nullptr) {
+        std::string node_name;
+        if(cps_api_db_get_node_from_ip(std::string(node),node_name)){
+            cps_api_object_attr_add(o,CPS_CONNECTION_ENTRY_NAME, node_name.c_str(),strlen(node_name.c_str())+1);
+        }
         cps_api_key_from_attr_with_qual(cps_api_object_key(o),CPS_CONNECTION_ENTRY, cps_api_qualifier_TARGET);
         cps_api_object_attr_add(o,CPS_CONNECTION_ENTRY_IP, node,strlen(node)+1);
-        cps_api_object_attr_add(o,CPS_CONNECTION_ENTRY_NAME, node,strlen(node)+1);
+
         cps_api_object_attr_add(o,CPS_CONNECTION_ENTRY_GROUP, group,strlen(group)+1);
         cps_api_object_attr_add_u32(o,CPS_CONNECTION_ENTRY_CONNECTION_STATE, state);
     }
@@ -386,7 +390,10 @@ static cps_api_return_code_t _cps_api_wait_for_event(
         cps_api_object_t msg,
         ssize_t timeout_ms) {
 
-    const static int DEF_SELECT_TIMEOUT_SEC = (10);
+    /* 10 seconds is too long for timeout, if there are no events in that case group update takes
+     * longer time so reducing it to 3
+     */
+    const static int DEF_SELECT_TIMEOUT_SEC = (3);
     __db_event_handle_t *nh = handle_to_data(handle);
 
     uint64_t last_checked = 0;
@@ -421,7 +428,7 @@ static cps_api_return_code_t _cps_api_wait_for_event(
             cps_api_object_clone(msg,og.get());
             return cps_api_ret_code_OK;
         }
-        if (std_time_is_expired(last_checked,MILLI_TO_MICRO(1000*15))) {    //wait for 5 seconds before scanning again
+        if (std_time_is_expired(last_checked,MILLI_TO_MICRO(1000*3))) {    //wait for 3 seconds before scanning again
             last_checked = std_get_uptime(nullptr);
             __maintain_connections(nh);
         }
