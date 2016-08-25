@@ -63,10 +63,19 @@ bool __process_key(std::vector<cps_api_attr_id_t> &ids, const char * str_key, cp
 
     return true;
 }
+
 void __process_ownership(std_config_node_t node, void *user_data) {
     const char * id = std_config_attr_get(node,"id");
+
     const char * qualifiers = std_config_attr_get(node,"qualifiers");
     const char * owner_type = std_config_attr_get(node,"owner-type");
+
+    const char * events = std_config_attr_get(node,"automated-events");
+
+    bool _automated_event = false;
+    if (events!=nullptr || strcasecmp(events,"true")==0) {
+        _automated_event = true;
+    }
 
     if (id == nullptr || owner_type==nullptr || qualifiers==nullptr) {
         EV_LOG(ERR,DSAPI,0,"CPS-META","Can't parse entry - missing data %s",id!=nullptr ? id : "nullptr",owner_type!=nullptr?owner_type:"nullptr");
@@ -97,6 +106,9 @@ void __process_ownership(std_config_node_t node, void *user_data) {
             return ;
         }
         cps_api_obj_set_ownership_type(&key,*_owner_type);
+        if (events==nullptr) {
+            cps_api_obj_set_auto_event(&key,_automated_event);
+        }
     }
 
 }

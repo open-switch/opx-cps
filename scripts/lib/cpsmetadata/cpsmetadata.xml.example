@@ -81,7 +81,7 @@ Examples...
 
 Class Ownership
 
-<class_ownership id="attribute ID" qualifiers="valid qualifier" owner-type="ownership type" />
+<class_ownership id="attribute ID" qualifiers="valid qualifier" automated-events="flag" owner-type="ownership type" />
 
 Where...
 Attribute ID:
@@ -98,6 +98,10 @@ proposed - the proposed state of an object
 realtime - realtime data from the object
 registration - registration related inforamtion for the object (object registrations, and de-registrations)
 
+Automated Events:
+This should be set to "true" if the object wants events to be handled by the CPS infrastructure otherwise, if false,
+the application will handle all of its own events.
+
 Ownership Type:
 servce - this means that a active service is running on the system handling the object requests/responses
 		all data is stored (if needed) and managed by the application
@@ -107,7 +111,7 @@ db - the data is stored in a db and not validated by CPS before storing/retrievi
 
 Example...
 
-<class_ownership id="cps/node-group" qualifiers="target,observed" owner-type="db" />
+<class_ownership id="cps/node-group" qualifiers="target,observed" automated-events="true" owner-type="db" />
 
 =========================================================================================
 

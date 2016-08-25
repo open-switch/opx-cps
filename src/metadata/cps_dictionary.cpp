@@ -67,8 +67,13 @@ using cps_class_map_string_t = std::unordered_map<std::string,cps_class_map_node
 using cps_class_map_enums_t = std::unordered_map<std::string,CPSEnum>;
 using cps_class_map_id_to_enum_t = std::unordered_map<cps_api_attr_id_t,std::string>;
 using cps_class_map_key_to_map_element = cps_api_key_cache<cps_class_map_node_details_int_t*>;
-using cps_class_map_key_to_type = cps_api_key_cache<CPS_API_OBJECT_OWNER_TYPE_t>;
 
+struct _key_characteristics {
+    CPS_API_OBJECT_OWNER_TYPE_t _owner_type=CPS_API_OBJECT_SERVICE;
+    bool _automated_event=false;
+};
+
+using cps_class_map_key_to_type = cps_api_key_cache<_key_characteristics>;
 
 
 static std_mutex_lock_create_static_init_rec(lock);
@@ -79,7 +84,6 @@ static cps_class_map_id_to_enum_t _attr_id_to_enum;
 static cps_class_map_key_to_map_element _key_to_map_element;
 static cps_class_map_key_to_type _key_storage_type;
 const static size_t NO_OFFSET=0;
-
 
 
 void CPSEnum::reg(const char *name, int id, const char *desc) {
@@ -332,12 +336,38 @@ bool cps_class_map_attr_type(cps_api_attr_id_t id, CPS_CLASS_DATA_TYPE_t *t) {
 
 CPS_API_OBJECT_OWNER_TYPE_t cps_api_obj_get_ownership_type(cps_api_object_t obj) {
     std_mutex_simple_lock_guard lg(&lock);
-    CPS_API_OBJECT_OWNER_TYPE_t *p = _key_storage_type.at(cps_api_object_key(obj),true);
+    _key_characteristics *p = _key_storage_type.at(cps_api_object_key(obj),true);
     if (p==nullptr) return CPS_API_OBJECT_SERVICE;
-    return *p;
+    return p->_owner_type;
+}
+
+bool cps_api_obj_has_auto_events(cps_api_object_t obj) {
+    std_mutex_simple_lock_guard lg(&lock);
+    _key_characteristics *p = _key_storage_type.at(cps_api_object_key(obj),true);
+    if (p==nullptr) return false;
+    return p->_automated_event;
 }
 
 void cps_api_obj_set_ownership_type(cps_api_key_t *key, CPS_API_OBJECT_OWNER_TYPE_t type) {
     std_mutex_simple_lock_guard lg(&lock);
-    _key_storage_type.insert(key,type);
+    _key_characteristics *p = _key_storage_type.at(key,true);
+    if (p==nullptr) {
+        _key_characteristics s;
+        s._owner_type = type;
+        _key_storage_type.insert(key,s);
+    } else {
+        p->_owner_type = type;
+    }
+}
+
+void cps_api_obj_set_auto_event(cps_api_key_t *key, bool automated_events) {
+    std_mutex_simple_lock_guard lg(&lock);
+    _key_characteristics *p = _key_storage_type.at(key,true);
+    if (p==nullptr) {
+        _key_characteristics s;
+        s._automated_event = automated_events;
+        _key_storage_type.insert(key,s);
+    } else {
+        p->_automated_event = automated_events;
+    }
 }

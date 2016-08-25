@@ -48,6 +48,7 @@ namespace cps_db {
  * The following functions are performed on an existing connection
  */
 namespace cps_db {
+
     bool get_sequence(cps_db::connection &conn, std::vector<char> &key, ssize_t &cntr);
 
     bool fetch_all_keys(cps_db::connection &conn, const void *filt, size_t flen,
@@ -81,10 +82,6 @@ namespace cps_db {
     bool make_slave(cps_db::connection &conn, std::string slave_ip);
     bool remove_slave(cps_db::connection &conn);
 
-}
-
-
-namespace cps_db {
     cps_api_return_code_t cps_api_db_init();
 }
 
