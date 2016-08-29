@@ -73,7 +73,7 @@ void __process_ownership(std_config_node_t node, void *user_data) {
     const char * events = std_config_attr_get(node,"automated-events");
 
     bool _automated_event = false;
-    if (events!=nullptr || strcasecmp(events,"true")==0) {
+    if (events!=nullptr && strcasecmp(events,"true")==0) {
         _automated_event = true;
     }
 
