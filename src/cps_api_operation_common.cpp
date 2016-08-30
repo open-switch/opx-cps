@@ -27,6 +27,7 @@
 #include "event_log.h"
 #include "cps_api_event_init.h"
 #include "cps_dictionary.h"
+#include "cps_api_core_utils.h"
 #include "dell-cps.h"
 
 #include "cps_api_db_operations.h"
@@ -177,10 +178,14 @@ cps_api_return_code_t cps_api_commit(cps_api_transaction_params_t * param) {
         } else {
             rc=cps_api_process_commit_request(param,ix);
         }
+
         if (rc!=cps_api_ret_code_OK) {
-        EV_LOG(ERR,DSAPI,0,"COMMIT","Failed to commit request at %d out of %d",ix, (int)mx);
-        break;
-    }
+            EV_LOG(ERR,DSAPI,0,"COMMIT","Failed to commit request at %d out of %d",ix, (int)mx);
+            break;
+        }
+        if (cps_api_obj_has_auto_events(o) && cps_api_object_type_operation(cps_api_object_key(o))!=cps_api_oper_ACTION) {
+            cps_api_core_publish(o);
+        }
     }
     if (rc!=cps_api_ret_code_OK) {
         cps_api_return_code_t _revert_rc = cps_api_ret_code_OK;
@@ -198,6 +203,16 @@ cps_api_return_code_t cps_api_commit(cps_api_transaction_params_t * param) {
 
             if (_revert_rc!=cps_api_ret_code_OK) {
                 EV_LOG(ERR,DSAPI,0,"ROLLBACK","Failed to rollback request at %d (rc:%d)",ix,_revert_rc);
+            }
+            cps_api_operation_types_t op_type = cps_api_object_type_operation(cps_api_object_key(o));
+
+            if (rc==cps_api_ret_code_OK && op_type!=cps_api_oper_ACTION) {
+                cps_api_operation_types_t tmp_op_type = cps_api_oper_SET;
+                if (op_type==cps_api_oper_CREATE) tmp_op_type=cps_api_oper_DELETE;
+                if (op_type==cps_api_oper_DELETE) tmp_op_type = cps_api_oper_CREATE;
+                cps_api_object_set_type_operation(cps_api_object_key(o),tmp_op_type);
+                cps_api_core_publish(o);
+                cps_api_object_set_type_operation(cps_api_object_key(o),op_type);
             }
             --mx;
         }

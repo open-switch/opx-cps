@@ -287,6 +287,23 @@ CPS_API_OBJECT_OWNER_TYPE_t cps_api_obj_get_ownership_type(cps_api_object_t obj)
  */
 void cps_api_obj_set_ownership_type(cps_api_key_t *key, CPS_API_OBJECT_OWNER_TYPE_t type);
 
+
+/**
+ * Set or clear the automated event flag for a given object.
+ * @param key the key of the object
+ * @param automated_events true if automated events are required false if the owner of the object will generate their own
+ * events.
+ */
+void cps_api_obj_set_auto_event(cps_api_key_t *key, bool automated_events);
+
+/**
+ * This will return true if the object in question will automatically generate events based on successful operations
+ * for sets, delete, creates
+ * @param obj the object to check
+ * @return true if enabled false, if the events are handled by the applicaiton.
+ */
+bool cps_api_obj_has_auto_events(cps_api_object_t obj);
+
 #ifdef __cplusplus
 }
 #endif

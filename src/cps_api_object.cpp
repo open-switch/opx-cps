@@ -121,7 +121,7 @@ struct tracker_detail {
     const char *file;
 };
 
-typedef std::unordered_map<cps_api_object_t,tracker_detail> tTrackerList;
+typedef std::unordered_map<ssize_t,tracker_detail> tTrackerList;
 
 static std_mutex_lock_create_static_init_rec(db_tracker_lock);
 static tTrackerList trackers;
@@ -162,16 +162,14 @@ cps_api_object_t cps_api_object_init(void *data, size_t bufflen) {
 void db_list_tracker_add(cps_api_object_t obj, const char * label, unsigned int line,const char *file) {
     std_mutex_simple_lock_guard g(&db_tracker_lock);
     if (obj==NULL) return ;
-    try {
-        if (file==nullptr) file = "";
-        trackers[obj] = {label,line,file};
-    } catch (...) {}
+    if (file==nullptr) file = "";
+    trackers[(ssize_t)obj] = {label,line,file};
 }
 
 void db_list_tracker_rm(cps_api_object_t obj) {
     std_mutex_simple_lock_guard g(&db_tracker_lock);
     size_t before = trackers.size();
-    trackers.erase(obj);
+    trackers.erase((ssize_t)obj);
     size_t after = trackers.size();
     if (before <= after ) {
         EV_LOG(ERR,DSAPI,0,"SWERR","Invalid object delete found.");
