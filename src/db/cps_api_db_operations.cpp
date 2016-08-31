@@ -47,7 +47,7 @@ cps_api_return_code_t __cps_api_db_operation_get(cps_api_object_t obj, cps_api_o
             size_t mx = cps_api_object_list_size(results);
             for ( ; ix < mx ; ++ix ) {
                 cps_api_object_t o = cps_api_object_list_get(results,ix);
-                STD_ASSERT(o==nullptr);
+                STD_ASSERT(o!=nullptr);
                 cps_api_key_set_group(o,name.c_str());
             }
         }
