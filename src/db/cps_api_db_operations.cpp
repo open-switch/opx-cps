@@ -121,7 +121,9 @@ cps_api_return_code_t cps_api_db_operation_commit(cps_api_transaction_params_t *
 
         if (op_type==cps_api_oper_DELETE) {
             cps_api_object_list_guard lg(cps_api_object_list_create());
-            cps_db::get_objects(r.get(),o,lg.get());
+            cps_api_object_t obj = cps_api_object_create();
+            cps_api_object_clone(obj,o);
+            cps_api_object_list_append(lg.get(),obj);
             result = result || cps_db::delete_objects(r.get(),lg.get());
             if (!result) _failed_nodes+=name+",";
             if (result) cps_db::publish(r.get(),o);
