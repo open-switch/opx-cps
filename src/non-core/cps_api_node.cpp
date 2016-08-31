@@ -356,7 +356,7 @@ size_t cps_api_nodes::gen_hash(group_data_t &src) {
     for ( auto group_elem : src ) {
         rc = std::hash<std::string>()(group_elem.first) ^ ( rc << 8 );
         for ( auto node_elem : group_elem.second._addrs ) {
-            rc = std::hash<std::string>()(group_elem.first) ^ ( rc << 8 );
+            rc = std::hash<std::string>()(node_elem) ^ ( rc << 8 );
         }
     }
     return rc;
