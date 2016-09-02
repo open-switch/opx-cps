@@ -27,28 +27,40 @@
 
 #include "cps_api_node_set.h"
 
+#include "cps_api_key_utils.h"
+
+#include "event_log.h"
+
+
 namespace {
 
 cps_api_return_code_t __cps_api_db_operation_get(cps_api_object_t obj, cps_api_object_list_t results, bool stop_at_first) {
-    const char * node = cps_api_key_get_group(obj);
+    const char * group = cps_api_key_get_group(obj);
     bool result = false;
-    cps_api_node_set_iterate(node,[&obj,&results,&result,stop_at_first,node](const std::string &name,void *c){
+    cps_api_node_set_iterate(group,[&obj,&results,&result,stop_at_first,group](const std::string &name,void *c){
         if (result==true && stop_at_first==true) return;
         cps_db::connection_request r(cps_db::ProcessDBCache(),name.c_str());
         result |= cps_db::get_objects(r.get(),obj,results);
+
+        std::string node_name;
+        if(!cps_api_db_get_node_from_ip(name,node_name)) {
+        	node_name = name;
+        }
+
         if (!result) {
             cps_api_object_t o = cps_api_object_list_create_obj_and_append(results);
             cps_api_key_from_attr_with_qual(cps_api_object_key(o),CPS_CONNECTION_ENTRY,cps_api_qualifier_OBSERVED);
-            cps_api_object_attr_add(o,CPS_CONNECTION_ENTRY_NAME,name.c_str(),name.size()+1);
+            cps_api_object_attr_add(o,CPS_CONNECTION_ENTRY_NAME,node_name.c_str(),node_name.size()+1);
             cps_api_object_attr_add(o,CPS_CONNECTION_ENTRY_IP,name.c_str(),name.size()+1);
-            cps_api_object_attr_add(o,CPS_CONNECTION_ENTRY_GROUP,node,strlen(node)+1);
+            cps_api_key_set_group(o,group);
+            cps_api_key_set_node(o,node_name.c_str());
         } else {
             size_t ix = 0;
             size_t mx = cps_api_object_list_size(results);
             for ( ; ix < mx ; ++ix ) {
                 cps_api_object_t o = cps_api_object_list_get(results,ix);
                 STD_ASSERT(o!=nullptr);
-                cps_api_key_set_group(o,name.c_str());
+                cps_api_key_set_node(o,node_name.c_str());
             }
         }
     },nullptr);
@@ -81,6 +93,19 @@ cps_api_return_code_t cps_api_db_operation_commit(cps_api_transaction_params_t *
     cps_api_object_t o = cps_api_object_list_get(param->change_list,ix);
     STD_ASSERT(o!=nullptr);
 
+    const char * node = cps_api_key_get_group(o);
+
+    cps_api_object_guard og(cps_api_object_create());
+
+    if (og.get()==nullptr || !cps_api_object_clone(og.get(),o)) {
+    	EV_LOGGING(DSAPI,ERR,"CPS-DB","Memory allocation issue - blocked set operation");
+    	return cps_api_ret_code_ERR;
+    }
+
+    o = og.get();
+
+    cps_api_key_del_node_attrs(o);
+
     CPS_API_OBJECT_OWNER_TYPE_t t = (cps_api_obj_get_ownership_type(o));
     if (t!=CPS_API_OBJECT_DB) return cps_api_ret_code_ERR;
 
@@ -104,40 +129,42 @@ cps_api_return_code_t cps_api_db_operation_commit(cps_api_transaction_params_t *
         }
     }
 
-    const char * node = cps_api_key_get_group(o);
     bool result = false;
 
     if (!cps_api_node_set_iterate(node,[&o,&param,&result,&ix,&op_type,&_failed_nodes](const std::string &name,void *c){
         cps_db::connection_request r(cps_db::ProcessDBCache(),name.c_str());
+        std::string node_name;
+		if(!cps_api_db_get_node_from_ip(name,node_name)) {
+			node_name = name;
+		}
 
         //fastest operation is just store it..
         if (op_type==cps_api_oper_CREATE) {
             ///TODO need to maybe check if object currently exists before allowing create..
             result = result || cps_db::store_object(r.get(),o);
-            if (!result) _failed_nodes+=name+",";
+            if (!result) _failed_nodes+=node_name+",";
             if (result) cps_db::publish(r.get(),o);
             return;
         }
 
         if (op_type==cps_api_oper_DELETE) {
             cps_api_object_list_guard lg(cps_api_object_list_create());
-            cps_api_object_t obj = cps_api_object_create();
-            if(obj == nullptr){
-                _failed_nodes+=name+",";
-                result = false;
-                return;
+
+            if (cps_api_object_count_key_attrs(o)==0) {
+                cps_db::get_objects(r.get(),o,lg.get());
+                result = result || cps_db::delete_objects(r.get(),lg.get());
+            } else {
+            	result = result || cps_db::delete_object(r.get(),o);
             }
-            cps_api_object_clone(obj,o);
-            cps_api_object_list_append(lg.get(),obj);
-            result = result || cps_db::delete_objects(r.get(),lg.get());
-            if (!result) _failed_nodes+=name+",";
+
+            if (!result) _failed_nodes+=node_name+",";
             if (result) cps_db::publish(r.get(),o);
             return;
         }
 
         ///TODO need to remove the group details or node details
         result |= cps_db::store_object(r.get(),o);
-        if (!result) _failed_nodes+=name+",";
+        if (!result) _failed_nodes+=node_name+",";
         if (result) cps_db::publish(r.get(),o);
     },nullptr)) {
         return cps_api_ret_code_ERR;
@@ -158,25 +185,47 @@ cps_api_return_code_t cps_api_db_operation_rollback(cps_api_transaction_params_t
 
     const char * node = cps_api_key_get_group(o);
 
-    cps_api_node_set_iterate(node,[&o,&prev,op_type,&ix](const std::string &name,void *c){
+    cps_api_return_code_t rc = cps_api_ret_code_OK;
+
+    cps_api_node_set_iterate(node,[&rc,&o,&prev,op_type,&ix](const std::string &name,void *c){
         cps_db::connection_request r(cps_db::ProcessDBCache(),name.c_str());
+        std::string node_name;
+		if(!cps_api_db_get_node_from_ip(name,node_name)) {
+			node_name = name;
+		}
         if (op_type==cps_api_oper_CREATE) {
-            cps_db::delete_object(r.get(),o);
+            if (!cps_db::delete_object(r.get(),o)) {
+            	EV_LOGGING(DSAPI,ERR,"CPS-DB","Failed to revert create- db update failed for %s",node_name.c_str());
+            	rc = cps_api_ret_code_ERR;
+            	return;
+            }
             cps_api_object_set_type_operation(cps_api_object_key(o),cps_api_oper_DELETE);
             cps_db::publish(r.get(),o);
             cps_api_object_set_type_operation(cps_api_object_key(o),cps_api_oper_CREATE);
         }
         if (op_type==cps_api_oper_SET) {
-            cps_db::store_object(r.get(),prev);
+            if (!cps_db::store_object(r.get(),prev)) {
+            	EV_LOGGING(DSAPI,ERR,"CPS-DB","Failed to revert set- db update failed for %s",node_name.c_str());
+            	rc = cps_api_ret_code_ERR;
+            	return;
+            }
             cps_db::publish(r.get(),o);
         }
         if (op_type==cps_api_oper_DELETE && prev!=nullptr) {
-            cps_db::store_object(r.get(),prev);
+        	if (cps_api_object_count_key_attrs(o)==0) {
+        		EV_LOGGING(DSAPI,ERR,"CPS-DB","Failed to revert delete - can't revert a \"delete all\"");
+        		rc = cps_api_ret_code_ERR;
+        	}
+            if (!cps_db::store_object(r.get(),prev)) {
+            	EV_LOGGING(DSAPI,ERR,"CPS-DB","Failed to revert delete - db update failed for %s",node_name.c_str());
+            	rc = cps_api_ret_code_ERR;
+            	return;
+            }
             cps_api_object_set_type_operation(cps_api_object_key(o),cps_api_oper_CREATE);
             cps_db::publish(r.get(),o);
             cps_api_object_set_type_operation(cps_api_object_key(o),cps_api_oper_DELETE);
         }
     },nullptr);
-    ///TODO should log failure conditions even if not returned
-    return cps_api_ret_code_OK ;
+
+    return rc;
 }
