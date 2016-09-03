@@ -229,16 +229,17 @@ bool cps_db::connection::operation(db_operation_atom_t * lst_,size_t len_, bool 
         return false;
     }
 
+    bool _success = false;
     ssize_t retry = MAX_RETRY;
     do {
         if (!_async) {
             if (redisAppendCommandArgv(static_cast<redisContext*>(_ctx),ctx.cmds_ptr - ctx.cmds,ctx.cmds,ctx.cmds_lens)==REDIS_OK) {
-                break;
+                _success = true; break;
             }
         } else {
             if (redisAsyncCommandArgv(static_cast<redisAsyncContext*>(_ctx),__redisCallbackFn__,nullptr,
                     ctx.cmds_ptr - ctx.cmds,ctx.cmds,ctx.cmds_lens)==REDIS_OK) {
-                break;
+                _success = true; break;
             }
         }
         EV_LOG(ERR,DSAPI,0,"CPS-RED-CON-OP","Seems to be an issue with the REDIS request - (first entry: %s)",ctx.cmds[0]);
@@ -246,12 +247,9 @@ bool cps_db::connection::operation(db_operation_atom_t * lst_,size_t len_, bool 
         reconnect();
     } while (retry-->0);
 
-    if (retry < 0) {
-        return false;
-    }
+    if (!_success) return false;
 
     if (!no_response_) ++_pending;
-
     return true;
 }
 
@@ -267,14 +265,13 @@ bool cps_db::connection::command(db_operation_atom_t * lst,size_t len,response_s
         redisReply *r = (redisReply*)redisCommandArgv(static_cast<redisContext*>(_ctx),ctx.cmds_ptr - ctx.cmds,ctx.cmds,ctx.cmds_lens);
         if (r!=nullptr) {
             set.add(r);
-            break;
+            return true;
         }
         EV_LOG(ERR,DSAPI,0,"CPS-DB-CMD","Redis error reponse.. will try to reconnect and reattempt");
         reconnect();
-
     } while (retry-- > 0);
 
-    return retry > 0;
+    return false;
 }
 
 static bool is_event_message(void *resp) {
