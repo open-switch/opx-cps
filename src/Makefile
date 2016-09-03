@@ -25,6 +25,7 @@ cps-api-common_SRCS+=cps_api_operation_debug.cpp
 cps-api-common_SRCS+=cps_api_vector_utils.cpp
 cps-api-common_SRCS+=cps_comm_utils.cpp
 cps-api-common_SRCS+=cps_api_core_utils.cpp
+cps-api-common_SRCS+=cps_api_key_utils.cpp
 
 cps-api-common_SRCS+=non-core/cps_api_object_tools.cpp
 cps-api-common_SRCS+=non-core/cps_api_operation_tools.cpp

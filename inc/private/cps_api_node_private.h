@@ -23,7 +23,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-
+#include <mutex>
 
 namespace cps_db {
 /**
@@ -60,11 +60,16 @@ class cps_api_nodes {
     using group_master_data_t = std::unordered_map<std::string,std::string>;
     using db_node_data_t = std::unordered_map<std::string,std::vector<_db_node_data>>;
     using group_members_t = std::unordered_map<std::string,std::unordered_set<std::string>>;
+
+    std::recursive_mutex _mutex;
+    std::unordered_map<std::string,std::string> _ip_to_name_map;
     std::unordered_set<std::string> _master_set;
     group_data_t _groups;
     size_t _hash;
 
     alias_map_t _alias_map;
+
+
     static size_t gen_hash(group_data_t &src);
     bool load_groups();
     bool load_aliases();
@@ -88,6 +93,12 @@ public:
     bool load();
 
     bool part_of(const char *group, const char *addr);
+
+
+    bool ip_to_name(const char *ip, std::string &name);
+    std::recursive_mutex &get_lock() {
+    	return _mutex;
+    }
 };
 
 

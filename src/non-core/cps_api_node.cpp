@@ -20,6 +20,7 @@
 #include "cps_api_db.h"
 
 #include "cps_api_object.h"
+#include "cps_api_operation_tools.h"
 #include "cps_class_map.h"
 #include "cps_api_object_key.h"
 #include "cps_api_node_set.h"
@@ -27,10 +28,18 @@
 #include "dell-cps.h"
 
 #include "event_log.h"
+
+#include <mutex>
 #include <string.h>
 #include <iostream>
 
-#define local_ip "127.0.0.1"
+constexpr static const char * __get_local_ip() {
+	return "127.0.0.1";
+}
+constexpr static size_t __get_local_ip_len() {
+	return strlen(__get_local_ip());
+}
+
 #define MAX_IP_LEN 64
 
 static cps_api_return_code_t cps_api_del_node_tunnel(const char * group, const char * node) {
@@ -93,8 +102,10 @@ cps_api_return_code_t cps_api_delete_node_group(const char *grp) {
 
 
 static bool cps_api_find_local_node(cps_api_node_group_t *group,size_t &node_ix){
-    for(size_t ix = 0 ; ix < group->addr_len ; ++ix){
-        if(strncmp(group->addrs[ix].addr,local_ip,strlen(local_ip))==0){
+    const size_t _len = __get_local_ip_len();
+    const char * _name = __get_local_ip();
+	for(size_t ix = 0 ; ix < group->addr_len ; ++ix){
+        if(strncmp(group->addrs[ix].addr,_name,_len)==0){
             node_ix = ix;
             return true;
         }
@@ -108,6 +119,8 @@ cps_api_return_code_t cps_api_create_global_instance(cps_api_node_group_t *group
 
     size_t local_node_ix;
     if(!cps_api_find_local_node(group,local_node_ix)){
+    	///TODO this is a little stange - should see about removing this check - it is not likely to be needed but
+    	/// it would be better not to maintain "local" ip addresses
         EV_LOGGING(DSAPI,ERR,"SET-GLOBAL","Failed to find local node in group %s",group);
         return cps_api_ret_code_ERR;
     }
@@ -116,36 +129,18 @@ cps_api_return_code_t cps_api_create_global_instance(cps_api_node_group_t *group
         return cps_api_ret_code_ERR;
     }
 
-    cps_api_transaction_params_t tr;
-    if (cps_api_transaction_init(&tr)!=cps_api_ret_code_OK) {
-        EV_LOGGING(DSAPI,ERR,"SET-GLOBAL","Failed to init transaction");
-        return cps_api_ret_code_ERR;
-    }
+    cps_api_object_guard og(cps_api_object_create());
+    if(og.get()== nullptr ) return cps_api_ret_code_ERR;
 
-    cps_api_transaction_guard tg(&tr);
-    cps_api_object_t  db_obj = cps_api_object_create();
-
-    if(db_obj == nullptr ) return cps_api_ret_code_ERR;
-
-    cps_api_key_from_attr_with_qual(cps_api_object_key(db_obj),CPS_DB_INSTANCE_OBJ,
+    cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),CPS_DB_INSTANCE_OBJ,
                                         cps_api_qualifier_TARGET);
-
-    cps_api_object_attr_add(db_obj,CPS_DB_INSTANCE_GROUP,group->id,strlen(group->id)+1);
-
-    if(cps_api_create(&tr,db_obj) != cps_api_ret_code_OK ){
-        return cps_api_ret_code_ERR;
+    cps_api_object_attr_add(og.get(),CPS_DB_INSTANCE_GROUP,group->id,strlen(group->id)+1);
+    if (cps_api_commit_one(cps_api_oper_CREATE,og.get(),4,200)!=cps_api_ret_code_OK) {
+    	EV_LOGGING(DSAPI,ERR,"CPS-DB-TUN","Failed to create tunnel for group %s",group);
+    	return cps_api_ret_code_ERR;
     }
 
-    if(cps_api_commit(&tr) != cps_api_ret_code_OK ) {
-        EV_LOGGING(DSAPI,ERR,"SET-GLOBAL","Failed to create new global instance for %s",group);
-        return cps_api_ret_code_ERR;
-    }
-
-    cps_api_object_t ret_obj = cps_api_object_list_get(tr.change_list,0);
-    if (ret_obj == nullptr ){
-        EV_LOGGING(DSAPI,ERR,"SET-GLOBAL","Failed to find db instance port info for %s",group);
-        return cps_api_ret_code_ERR;
-    }
+    cps_api_object_t ret_obj = og.get();
 
     // Get the port where new db instance was started
     const char * db_port = (const char*) cps_api_object_get_data(ret_obj,CPS_DB_INSTANCE_PORT);
@@ -166,13 +161,12 @@ cps_api_return_code_t cps_api_create_global_instance(cps_api_node_group_t *group
     cps_api_set_key_data(db_node.get(),CPS_DB_INSTANCE_NODE_ID,cps_api_object_ATTR_T_BIN,node.node_name,strlen(node.node_name)+1);
     cps_api_object_attr_add(db_node.get(),CPS_DB_INSTANCE_PORT,_db_port.c_str(),strlen(_db_port.c_str())+1);
 
-
+///TODO not sure we want a global db created in this way - one node seems to own the provisioning of all nodes
+/// just not sure maybe we should require each node to do its own global db config
     if (!cps_api_node_set_iterate(group->id,[&db_node](const std::string &name,void *c){
             cps_db::connection_request r(cps_db::ProcessDBCache(),name.c_str());
-
                 cps_db::store_object(r.get(),db_node.get());
                 return;
-
         },nullptr)) {
         return cps_api_ret_code_ERR;
     }
@@ -243,9 +237,9 @@ cps_api_return_code_t cps_api_set_node_group(cps_api_node_group_t *group) {
 
     std::unordered_set<std::string>  node_list;
 
-    bool created = !cps_api_db_get_group_config(group->id,node_list);
+    bool created = cps_api_db_get_group_config(group->id,node_list);
 
-    if(!created){
+    if(created){
         cps_api_set_compare_group(group,node_list);
     }
 
@@ -268,7 +262,7 @@ cps_api_return_code_t cps_api_set_node_group(cps_api_node_group_t *group) {
                 group->addrs[ix].node_name,strlen(group->addrs[ix].node_name)+1);
 
         cps_api_attr_id_t _tunnel_ip[]={CPS_NODE_GROUP_NODE,ix,CPS_NODE_GROUP_NODE_TUNNEL_IP};
-        if (strstr(group->addrs[ix].addr, local_ip) )
+        if (strstr(group->addrs[ix].addr, __get_local_ip()) )
             cps_api_object_e_add(og.get(),_tunnel_ip,sizeof(_tunnel_ip)/sizeof(*_tunnel_ip),
                                  cps_api_object_ATTR_T_BIN,
                                  group->addrs[ix].addr,strlen(group->addrs[ix].addr)+1);
@@ -436,6 +430,7 @@ bool cps_api_nodes::update_slaves(const char *group) {
 
 bool cps_api_nodes::load_groups() {
     cps_api_object_guard og(cps_api_object_create());
+
     if (!cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),CPS_NODE_GROUP, cps_api_qualifier_TARGET)) {
         EV_LOG(ERR,DSAPI,0,"CPS-CLS-MAP","Meta data for cluster set is not loaded.");
         return false;
@@ -451,13 +446,13 @@ bool cps_api_nodes::load_groups() {
     cps_api_object_list_guard lg(cps_api_object_list_create());
     if (!cps_db::get_objects(b.get(),og.get(),lg.get())) return false;
 
+    _ip_to_name_map.clear();
+
     for (size_t ix = 0,mx = cps_api_object_list_size(lg.get()); ix < mx ; ++ix ) {
         cps_api_object_t o = cps_api_object_list_get(lg.get(),ix);
         std::vector<_db_node_data> v;
         const char *name = (const char*) cps_api_object_get_data(o,CPS_NODE_GROUP_NAME);
         _node_data nd;
-
-
 
         cps_api_node_data_type_t *_type = (cps_api_node_data_type_t*)cps_api_object_get_data(o,CPS_NODE_GROUP_TYPE);
         if (_type==nullptr){
@@ -480,12 +475,21 @@ bool cps_api_nodes::load_groups() {
             cps_api_object_it_inside(&elem);
 
             if (!cps_api_object_it_valid(&elem)) continue;
+
             _db_node_data db_node;
             cps_api_object_attr_t _ip =cps_api_object_it_find(&elem,CPS_NODE_GROUP_NODE_TUNNEL_IP);
             cps_api_object_attr_t _name =cps_api_object_it_find(&elem,CPS_NODE_GROUP_NODE_NAME);
+
             if (_ip==nullptr || _name==nullptr) continue;
             const char *__ip = (const char*)cps_api_object_attr_data_bin(_ip);
             const char *__name =(const char*)cps_api_object_attr_data_bin(_name);
+
+            //setup reverse mapping
+            /*@TODO need to revist if there is same node with different name but same ip in
+             * different group
+             */
+            _ip_to_name_map[__ip] = __name;
+            _alias_map[__name] = __ip;
 
             if(nd.type == cps_api_node_data_1_PLUS_1_REDUNDENCY){
                 db_node._name = __name;
@@ -501,19 +505,12 @@ bool cps_api_nodes::load_groups() {
                     EV_LOGGING(DSAPI,ERR,"CPS-DB","Failed to get port info for group %s and node %s",
                                        name,__name);
                 }
-
             }
 
             if(v.size()>0){
                 _db_node_map[name] = v;
                 update_slaves(name);
             }
-
-            _alias_map[__name] = __ip;
-            /*@TODO need to revist if there is same node with different name but same ip in
-             * different group
-             */
-            cps_api_db_set_ip_for_node(__ip,__name);
 
             const char * _alias = this->addr(__ip);
             if (_alias!=nullptr) __ip = _alias;
@@ -531,6 +528,17 @@ bool cps_api_nodes::load_groups() {
     _hash = _new_hash;
     return true;
 
+}
+
+bool cps_api_nodes::ip_to_name(const char *ip, std::string &name) {
+    std::lock_guard<std::recursive_mutex> lg(_mutex);
+    auto it = _ip_to_name_map.find(ip);
+    if(it == _ip_to_name_map.end()){
+        return false;
+    }
+
+    name = it->second;
+    return true;
 }
 
 bool cps_api_nodes::load_aliases() {
@@ -586,6 +594,21 @@ const char * cps_api_nodes::addr(const char *addr) {
     return _ret;
 }
 
+void cps_api_key_del_node_attrs(cps_api_object_t obj) {
+	while (true) {
+		cps_api_object_attr_t attr = cps_api_object_get_data(obj,CPS_OBJECT_GROUP_GROUP);
+		if (attr==nullptr) break;
+		cps_api_object_attr_delete(obj,CPS_OBJECT_GROUP_GROUP);
+	}
+
+	while (true) {
+		cps_api_object_attr_t attr = cps_api_object_get_data(obj,CPS_OBJECT_GROUP_NODE);
+		if (attr==nullptr) break;
+		cps_api_object_attr_delete(obj,CPS_OBJECT_GROUP_NODE);
+	}
+
+}
+
 bool cps_api_key_set_group(cps_api_object_t obj,const char *group) {
     return cps_api_object_attr_add(obj,CPS_OBJECT_GROUP_GROUP,group,strlen(group)+1);
 }
@@ -594,6 +617,10 @@ const char * cps_api_key_get_group(cps_api_object_t obj) {
     const char *p = (const char*) cps_api_object_get_data(obj,CPS_OBJECT_GROUP_GROUP);
     if (p==nullptr) return DEFAULT_REDIS_ADDR;
     return p;
+}
+
+bool cps_api_key_set_node(cps_api_object_t obj, const char *node) {
+    return cps_api_object_attr_add(obj,CPS_OBJECT_GROUP_NODE,node,strlen(node)+1);
 }
 
 const char * cps_api_key_get_node(cps_api_object_t obj) {

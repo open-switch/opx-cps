@@ -14,22 +14,18 @@
  * permissions and limitations under the License.
  */
 
-#ifndef CPS_API_INC_PRIVATE_DB_CPS_API_NODE_SET_H_
-#define CPS_API_INC_PRIVATE_DB_CPS_API_NODE_SET_H_
+#ifndef CPS_API_INC_PRIVATE_CPS_API_KEY_UTILS_H_
+#define CPS_API_INC_PRIVATE_CPS_API_KEY_UTILS_H_
 
+#include "cps_api_object.h"
+#include "cps_api_key.h"
 
+#include <stddef.h>
 #include <functional>
-#include <string>
 
-bool cps_api_node_set_iterate(const std::string &group_name,const std::function<void (const std::string &node, void*context)> &operation,
-        void *context);
+size_t cps_api_object_count_key_attrs(cps_api_object_t obj);
 
-bool cps_api_db_del_node_group(const char *group);
+void cps_api_object_iterate_key_attrs(cps_api_object_t obj, std::function<void(cps_api_object_t,
+								cps_api_attr_id_t,void *,size_t)> &iter);
 
-bool cps_api_db_get_node_from_ip(const std::string & ip, std::string &name);
-
-bool cps_api_db_set_group_config(const char * group,std::unordered_set<std::string> & node_list);
-
-bool cps_api_db_get_group_config(const char * group, std::unordered_set<std::string> & node_list);
-
-#endif /* CPS_API_INC_PRIVATE_DB_CPS_API_NODE_SET_H_ */
+#endif /* CPS_API_INC_PRIVATE_CPS_API_KEY_UTILS_H_ */
