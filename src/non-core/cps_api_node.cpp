@@ -598,13 +598,13 @@ void cps_api_key_del_node_attrs(cps_api_object_t obj) {
 	while (true) {
 		cps_api_object_attr_t attr = cps_api_object_get_data(obj,CPS_OBJECT_GROUP_GROUP);
 		if (attr==nullptr) break;
-		if (attr!=nullptr) cps_api_object_attr_delete(obj,CPS_OBJECT_GROUP_GROUP);
+		cps_api_object_attr_delete(obj,CPS_OBJECT_GROUP_GROUP);
 	}
 
 	while (true) {
 		cps_api_object_attr_t attr = cps_api_object_get_data(obj,CPS_OBJECT_GROUP_NODE);
 		if (attr==nullptr) break;
-		if (attr!=nullptr) cps_api_object_attr_delete(obj,CPS_OBJECT_GROUP_NODE);
+		cps_api_object_attr_delete(obj,CPS_OBJECT_GROUP_NODE);
 	}
 
 }
