@@ -80,6 +80,13 @@ cps_api_return_code_t cps_api_set_identity(const char *name, const char **alias,
 bool cps_api_key_set_group(cps_api_object_t obj,const char *group);
 
 /**
+ * Remove the node group and node name attribute on the object.
+ * This will ensure that the object has no node group or node name references
+ * @param obj the object in question
+ */
+void cps_api_key_del_node_attrs(cps_api_object_t obj);
+
+/**
  * Get the string for the group attribute in the object specified.
  * @param obj the object in question
  * @return the string group ID
@@ -92,6 +99,15 @@ const char * cps_api_key_get_group(cps_api_object_t obj);
  * @return the character pointer for the object
  */
 const char * cps_api_key_get_node(cps_api_object_t obj);
+
+
+/**
+ * Set the node identifier on the object
+ * @param obj the object that may contain the node identifier
+ * @param node is the name of the node
+ * @return true if successful otherwise false
+ */
+bool cps_api_key_set_node(cps_api_object_t obj, const char *node);
 
 /**
  * Set the master node of a group for 1+1 type group

@@ -472,7 +472,10 @@ static cps_api_return_code_t _cps_api_wait_for_event(
                 if (get_event(it.second.get(),msg)) {
                     if (!nh->object_matches_filter(msg)) continue;        //throw out if doesn't match
                     nh->_connection_mon[it.first].communicated();
-                    cps_api_object_attr_add(msg,CPS_OBJECT_GROUP_NODE,it.first.c_str(),it.first.size()+1);
+                    std::string node_name;
+                    if(cps_api_db_get_node_from_ip(it.first,node_name)) {
+                    	cps_api_object_attr_add(msg,CPS_OBJECT_GROUP_NODE,node_name.c_str(),node_name.size()+1);
+                    }
                     return cps_api_ret_code_OK;
                 }
             }

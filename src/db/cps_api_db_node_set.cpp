@@ -30,15 +30,13 @@
 #include <mutex>
 #include <unordered_map>
 
-static std::recursive_mutex _mutex;
-
 static cps_api_nodes *_nodes = new cps_api_nodes;
 static uint64_t _last_loaded = 0;
 static std::unordered_map<std::string,std::string> _ip_to_node_map;
 
 
 static bool load_groups() {
-    std::lock_guard<std::recursive_mutex> lg(_mutex);
+    std::lock_guard<std::recursive_mutex> lg(_nodes->get_lock());
        if (std_time_is_expired(_last_loaded,5*1000*1000)) {
            _last_loaded = std_get_uptime(nullptr);
            return _nodes->load();
@@ -76,7 +74,7 @@ static bool cps_api_clean_db_instance(const char *group){
 
 
 bool cps_api_db_get_group_config(const char * group,  std::unordered_set<std::string> & node_list){
-    std::lock_guard<std::recursive_mutex> lg(_mutex);
+    std::lock_guard<std::recursive_mutex> lg(_nodes->get_lock());
 
     if(_nodes->get_group_info(std::string(group),node_list)){
         return true;
@@ -87,34 +85,17 @@ bool cps_api_db_get_group_config(const char * group,  std::unordered_set<std::st
 
 
 bool cps_api_db_set_group_config(const char * group,  std::unordered_set<std::string> & node_list){
-    std::lock_guard<std::recursive_mutex> lg(_mutex);
+    std::lock_guard<std::recursive_mutex> lg(_nodes->get_lock());
     _nodes->add_group_info(std::string(group),node_list);
     return true;
 }
 
-
-bool cps_api_db_set_ip_for_node(const std::string & ip, const std::string &name){
-    std::lock_guard<std::recursive_mutex> lg(_mutex);
-    _ip_to_node_map[ip]= name;
-    return true;
-
-}
-
-
 bool cps_api_db_get_node_from_ip(const std::string & ip, std::string &name){
-    std::lock_guard<std::recursive_mutex> lg(_mutex);
-    auto it = _ip_to_node_map.find(ip);
-    if(it == _ip_to_node_map.end()){
-        return false;
-    }
-
-    name = it->second;
-    return true;
+    return _nodes->ip_to_name(ip.c_str(),name);
 }
-
 
 bool cps_api_db_del_node_group(const char *group){
-     std::lock_guard<std::recursive_mutex> lg(_mutex);
+     std::lock_guard<std::recursive_mutex> lg(_nodes->get_lock());
 
      cps_api_node_data_type_t type;
      if(!_nodes->get_group_type(std::string(group),type)){
@@ -167,7 +148,7 @@ bool cps_api_db_get_node_group(const std::string &group,std::vector<std::string>
         return true;
     }
 
-    std::lock_guard<std::recursive_mutex> lg(_mutex);
+    std::lock_guard<std::recursive_mutex> lg(_nodes->get_lock());
     (void)load_groups();
 
     cps_api_node_data_type_t type;
@@ -218,7 +199,7 @@ static bool cps_api_remove_slave(std::string & addr){
 
 
 cps_api_return_code_t cps_api_set_master_node(const char *group,const char * node_name){
-    std::lock_guard<std::recursive_mutex> lg(_mutex);
+    std::lock_guard<std::recursive_mutex> lg(_nodes->get_lock());
     (void)load_groups();
 
     cps_api_node_data_type_t type;
