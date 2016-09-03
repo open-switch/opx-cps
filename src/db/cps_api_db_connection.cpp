@@ -26,6 +26,9 @@
 #include <hiredis/async.h>
 #include <functional>
 
+
+const static ssize_t MAX_RETRY=1;
+
 static bool __added_logging = true;
 
 void cps_db::connection::db_operation_atom_t::from_string(const char *str, size_t len) {
@@ -221,9 +224,12 @@ static void __redisCallbackFn__(struct redisAsyncContext*c, void *reply, void *a
 bool cps_db::connection::operation(db_operation_atom_t * lst_,size_t len_, bool no_response_) {
     request_walker_contexct_t ctx(lst_,len_);
 
-    if (!ctx.valid()) return false;
+    if (!ctx.valid()) {
+        EV_LOGGING(DSAPI,ERR,"CPS-DB-OP","The DB context is invalid.");
+        return false;
+    }
 
-    size_t MAX_RETRY=3;
+    ssize_t retry = MAX_RETRY;
     do {
         if (!_async) {
             if (redisAppendCommandArgv(static_cast<redisContext*>(_ctx),ctx.cmds_ptr - ctx.cmds,ctx.cmds,ctx.cmds_lens)==REDIS_OK) {
@@ -238,9 +244,9 @@ bool cps_db::connection::operation(db_operation_atom_t * lst_,size_t len_, bool 
         EV_LOG(ERR,DSAPI,0,"CPS-RED-CON-OP","Seems to be an issue with the REDIS request - (first entry: %s)",ctx.cmds[0]);
         _pending = 0;
         reconnect();
-    } while (MAX_RETRY-->0);
+    } while (retry-->0);
 
-    if (MAX_RETRY < 0) {
+    if (retry < 0) {
         return false;
     }
 
@@ -252,13 +258,23 @@ bool cps_db::connection::operation(db_operation_atom_t * lst_,size_t len_, bool 
 bool cps_db::connection::command(db_operation_atom_t * lst,size_t len,response_set &set) {
     request_walker_contexct_t ctx(lst,len);
 
-    if (!ctx.valid()) return false;
-    redisReply *r = (redisReply*)redisCommandArgv(static_cast<redisContext*>(_ctx),ctx.cmds_ptr - ctx.cmds,ctx.cmds,ctx.cmds_lens);
-    if (r==nullptr) {
+    if (!ctx.valid()) {
+        EV_LOGGING(DSAPI,ERR,"CPS-DB-CMD","The DB context is invalid.");
         return false;
     }
-    set.add(r);
-    return true;
+    size_t retry = MAX_RETRY;
+    do {
+        redisReply *r = (redisReply*)redisCommandArgv(static_cast<redisContext*>(_ctx),ctx.cmds_ptr - ctx.cmds,ctx.cmds,ctx.cmds_lens);
+        if (r!=nullptr) {
+            set.add(r);
+            break;
+        }
+        EV_LOG(ERR,DSAPI,0,"CPS-DB-CMD","Redis error reponse.. will try to reconnect and reattempt");
+        reconnect();
+
+    } while (retry-- > 0);
+
+    return retry > 0;
 }
 
 static bool is_event_message(void *resp) {

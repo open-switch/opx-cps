@@ -417,11 +417,13 @@ bool cps_db::get_objects(cps_db::connection &conn,std::vector<char> &key,cps_api
     cps_utils::cps_api_vector_util_append(key,"*",1);
 
     std::vector<std::vector<char>> all_keys;
-    (void) fetch_all_keys(conn, &key[0],key.size(),[&conn,&all_keys](const void *key, size_t len){
+    bool rc = fetch_all_keys(conn, &key[0],key.size(),[&conn,&all_keys](const void *key, size_t len){
         std::vector<char> c;
         cps_utils::cps_api_vector_util_append(c,key,len);
         all_keys.push_back(std::move(c));
     });
+
+    if (rc==false) return false;
 
     if (all_keys.size()==0) return true;
 
