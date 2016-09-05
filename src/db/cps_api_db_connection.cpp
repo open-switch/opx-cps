@@ -21,10 +21,14 @@
 
 #include "event_log.h"
 
+#include <netinet/tcp.h>
 #include <unordered_map>
 #include <hiredis/hiredis.h>
 #include <hiredis/async.h>
 #include <functional>
+
+
+const static ssize_t MAX_RETRY=1;
 
 static bool __added_logging = true;
 
@@ -100,6 +104,29 @@ bool cps_db::connection::connect(const std::string &s_, const std::string &db_in
 
     if (db_instance_.size()!=0) {
         select_db(*this,db_instance_);
+    }
+
+    if (_ctx!=nullptr && ((redisContext*)_ctx)->fd >=0) {
+        auto fd = ((redisContext*)_ctx)->fd;
+        int on = 1;
+
+        if (setsockopt(fd,SOL_SOCKET,SO_KEEPALIVE,&on,sizeof(on))<0) {
+            EV_LOGGING(DSAPI,ERR,"CPS-DB-CONN","Failed to set keepalive option on fd %d",fd);
+        }
+        int retries = 5;
+        if (setsockopt(fd,SOL_SOCKET,TCP_KEEPCNT,&retries,sizeof(retries))<0) {
+            EV_LOGGING(DSAPI,ERR,"CPS-DB-CONN","Failed to set keepcount option on fd %d",fd);
+        }
+
+        int interval = 1;
+        if (setsockopt(fd,SOL_SOCKET,TCP_KEEPINTVL,&interval,sizeof(interval))<0) {
+            EV_LOGGING(DSAPI,ERR,"CPS-DB-CONN","Failed to set interval option on fd %d",fd);
+        }
+
+        int idle = 5;
+        if (setsockopt(fd,SOL_SOCKET,TCP_KEEPIDLE,&idle,sizeof(idle))<0) {
+            EV_LOGGING(DSAPI,ERR,"CPS-DB-CONN","Failed to set idle time option on fd %d",fd);
+        }
     }
 
     return _ctx !=nullptr;
@@ -221,44 +248,54 @@ static void __redisCallbackFn__(struct redisAsyncContext*c, void *reply, void *a
 bool cps_db::connection::operation(db_operation_atom_t * lst_,size_t len_, bool no_response_) {
     request_walker_contexct_t ctx(lst_,len_);
 
-    if (!ctx.valid()) return false;
+    if (!ctx.valid()) {
+        EV_LOGGING(DSAPI,ERR,"CPS-DB-OP","The DB context is invalid.");
+        return false;
+    }
 
-    size_t MAX_RETRY=3;
+    bool _success = false;
+    ssize_t retry = MAX_RETRY;
     do {
         if (!_async) {
             if (redisAppendCommandArgv(static_cast<redisContext*>(_ctx),ctx.cmds_ptr - ctx.cmds,ctx.cmds,ctx.cmds_lens)==REDIS_OK) {
-                break;
+                _success = true; break;
             }
         } else {
             if (redisAsyncCommandArgv(static_cast<redisAsyncContext*>(_ctx),__redisCallbackFn__,nullptr,
                     ctx.cmds_ptr - ctx.cmds,ctx.cmds,ctx.cmds_lens)==REDIS_OK) {
-                break;
+                _success = true; break;
             }
         }
         EV_LOG(ERR,DSAPI,0,"CPS-RED-CON-OP","Seems to be an issue with the REDIS request - (first entry: %s)",ctx.cmds[0]);
         _pending = 0;
         reconnect();
-    } while (MAX_RETRY-->0);
+    } while (retry-->0);
 
-    if (MAX_RETRY < 0) {
-        return false;
-    }
+    if (!_success) return false;
 
     if (!no_response_) ++_pending;
-
     return true;
 }
 
 bool cps_db::connection::command(db_operation_atom_t * lst,size_t len,response_set &set) {
     request_walker_contexct_t ctx(lst,len);
 
-    if (!ctx.valid()) return false;
-    redisReply *r = (redisReply*)redisCommandArgv(static_cast<redisContext*>(_ctx),ctx.cmds_ptr - ctx.cmds,ctx.cmds,ctx.cmds_lens);
-    if (r==nullptr) {
+    if (!ctx.valid()) {
+        EV_LOGGING(DSAPI,ERR,"CPS-DB-CMD","The DB context is invalid.");
         return false;
     }
-    set.add(r);
-    return true;
+    size_t retry = MAX_RETRY;
+    do {
+        redisReply *r = (redisReply*)redisCommandArgv(static_cast<redisContext*>(_ctx),ctx.cmds_ptr - ctx.cmds,ctx.cmds,ctx.cmds_lens);
+        if (r!=nullptr) {
+            set.add(r);
+            return true;
+        }
+        EV_LOG(ERR,DSAPI,0,"CPS-DB-CMD","Redis error reponse.. will try to reconnect and reattempt");
+        reconnect();
+    } while (retry-- > 0);
+
+    return false;
 }
 
 static bool is_event_message(void *resp) {
