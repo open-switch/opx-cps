@@ -27,6 +27,7 @@ from os.path import isfile, join
 import bytearray_utils
 import socket
 import re
+import event_log as ev
 from copy import deepcopy
 
 
@@ -92,6 +93,11 @@ def get_string_type(val):
         if func(val):
             return str_types_map[func]
     return 'string'
+def _log_print(log, msg):
+    if log == None:
+        print msg
+    else:
+        ev.logging("DSAPI", log, "", "", "", 0, msg)
 
 
 class CPSTypes:
@@ -146,7 +152,7 @@ class CPSTypes:
         self.add_type(key, t)
         return bytearray_utils.value_to_ba(t, val)
 
-    def print_list(self, attr_str, list):
+    def print_list(self, attr_str, list, log=None):
         val_str = ""
         for item in list:
             if len(item) == 0:
@@ -154,31 +160,31 @@ class CPSTypes:
             if len(val_str) > 0:
                 val_str += ","
             val_str += str(self.from_data(attr_str, item))
-        print attr_str, " = ", val_str
+        _log_print(log, (attr_str + " = " + val_str))
 
-    def print_dict(self, data):
+    def print_dict(self, data, log=None):
         for k in data:
             if k in print_methods:
                 print_methods[k](data[k])
             elif type(data[k]) in print_methods:
                 print_methods[type(data[k])](data[k])
             elif isinstance(data[k], list):
-                self.print_list(k, data[k])
+                self.print_list(k, data[k], log)
             elif isinstance(data[k], dict):
-                self.print_dict(data[k])
+                self.print_dict(data[k], log)
             else:
-                print k + " = " + str(self.from_data(k, data[k]))
+                _log_print(log, k + " = " + str(self.from_data(k, data[k])))
 
-    def print_object(self, obj):
+    def print_object(self, obj, log=None):
         data = obj['data']
-        print "Key: " + obj['key']
+        _log_print(log, "Key: " + obj['key'])
         if len(data.keys()) == 0:
             return
         module = "/".join(data.keys()[0].split("/")[0:-1])
         if module in print_methods:
             print_methods[module](data)
         else:
-            self.print_dict(data)
+            self.print_dict(data, log)
 
     def printable_list(self, attr_str, data):
         val_str = ""
@@ -280,9 +286,20 @@ def print_obj(obj):
     @obj - cps object to be printed
     """
     if 'change' in obj:
-        cps_attr_types_map.print_object(obj['change'])
+        cps_attr_types_map.print_object(obj['change'], log=None)
     else:
-        cps_attr_types_map.print_object(obj)
+        cps_attr_types_map.print_object(obj, log=None)
+
+def log_obj(obj, log_level):
+    """
+    Log the cps object in a user-friendly format
+    @obj - cps object to be logged
+    @log_level - Log Level
+    """
+    if 'change' in obj:
+        cps_attr_types_map.print_object(obj['change'], log_level)
+    else:
+        cps_attr_types_map.print_object(obj, log_level)
 
 
 def printable(obj):
