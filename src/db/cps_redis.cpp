@@ -200,7 +200,7 @@ bool cps_db::delete_object(cps_db::connection &conn,std::vector<char> &key) {
 
 bool cps_db::delete_object(cps_db::connection &conn,cps_api_object_t obj) {
     std::vector<char> key;
-    if (cps_db::dbkey_from_instance_key(key,obj)) {
+    if (cps_db::dbkey_from_instance_key(key,obj,false)) {
         return delete_object(conn,key);
     }
     return false;
@@ -268,7 +268,7 @@ bool cps_db::store_objects(cps_db::connection &conn,cps_api_object_list_t objs) 
 
 bool cps_db::subscribe(cps_db::connection &conn, cps_api_object_t obj) {
     std::vector<char> key;
-    if (!cps_db::dbkey_from_instance_key(key,obj)) return false;
+    if (!cps_db::dbkey_from_instance_key(key,obj,true)) return false;
     return subscribe(conn,key);
 }
 
@@ -354,7 +354,7 @@ bool cps_db::get_object(cps_db::connection &conn, const std::vector<char> &key, 
 
 bool cps_db::get_object(cps_db::connection &conn, cps_api_object_t obj) {
     std::vector<char> key;
-    if (!cps_db::dbkey_from_instance_key(key,obj)) return false;
+    if (!cps_db::dbkey_from_instance_key(key,obj,false)) return false;
     return get_object(conn,key,obj);
 }
 
@@ -444,7 +444,7 @@ bool cps_db::get_objects(cps_db::connection &conn,std::vector<char> &key,cps_api
 
 bool cps_db::get_objects(cps_db::connection &conn, cps_api_object_t obj,cps_api_object_list_t obj_list) {
     std::vector<char> k;
-    if (!cps_db::dbkey_from_instance_key(k,obj)) return false;
+    if (!cps_db::dbkey_from_instance_key(k,obj,true)) return false;
     return get_objects(conn,k,obj_list);
 }
 

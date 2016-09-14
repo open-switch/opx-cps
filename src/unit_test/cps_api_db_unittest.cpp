@@ -58,25 +58,76 @@ TEST(cps_api_db,db_ping) {
     ASSERT_TRUE(cps_db::ping(b.get()));
 }
 
+namespace {
+size_t get_object_count(cps_db::connection &conn,cps_api_object_t obj) {
+    cps_api_object_list_guard lg(cps_api_object_list_create());
+    cps_db::get_objects(conn,obj,lg.get());
+    return cps_api_object_list_size(lg.get());
+}
+}
 
 TEST(cps_api_db,db_key) {
-    cps_api_object_t obj = cps_api_object_create();
-    cps_api_object_guard og(obj);
 
-    cps_api_key_from_attr_with_qual(cps_api_object_key(obj),BASE_IP_IPV6,cps_api_qualifier_TARGET);
-    cps_api_object_attr_add_u32(obj,BASE_IP_IPV6_VRF_ID,0);
+    cps_db::connection_request b(cps_db::ProcessDBCache(),DEFAULT_REDIS_ADDR);
+
+    STD_ASSERT(b.valid());
+
+    cps_api_object_guard og(cps_api_obj_tool_create(cps_api_qualifier_TARGET,BASE_IP_IPV6,true));
+    cps_api_object_t obj = og.get();
+
+    cps_api_object_list_guard lg(cps_api_object_list_create());
+
+    cps_db::get_objects(b.get(),obj,lg.get());
+    cps_db::delete_objects(b.get(),lg.get());
+
+    //object with 2 key attributes
+    //But... can add another for debugging purposes
+
+    std::string s;
+    size_t c = 0;
+    const static size_t _max = UINT8_MAX;
+    for ( ; c < _max ; ++c ) {
+    	s+=c;
+    	s+=".";
+    }
+    cps_api_object_attr_add(obj,cps_api_obj_CAT_BASE_IP,s.c_str(),s.size());
+    cps_api_object_attr_add_u32(obj,BASE_IP_IPV6_VRF_ID,'[');
+
+    cps_api_object_guard clone(cps_api_object_create());
+    cps_api_object_clone(clone.get(),og.get());
+
+    cps_db::publish(b.get(),obj);
+
+    cps_db::store_object(b.get(),obj);
+
+    ASSERT_TRUE(get_object_count(b.get(),clone.get())==1);
+
+    for ( size_t ix = 0; ix < 1000 ; ++ix ) {
+    	cps_api_object_attr_delete(obj,BASE_IP_IPV6_IFINDEX);
+    	cps_api_object_attr_add_u32(obj,BASE_IP_IPV6_IFINDEX,ix);
+    	cps_db::store_object(b.get(),obj);
+    	ASSERT_EQ(ix+2,get_object_count(b.get(),clone.get()));
+    }
+
+    lg.set(cps_api_object_list_create());
+
+    cps_db::get_objects(b.get(),clone.get(),lg.get());
+    cps_db::delete_objects(b.get(),lg.get());
+
+    ASSERT_TRUE(get_object_count(b.get(),obj)==0);
+
 
     std::vector<char> _buff;
     cps_db::dbkey_from_class_key(_buff,cps_api_object_key(obj));
     std::cout << "DB key data " << cps_string::tostring(&_buff[0],_buff.size());
 
     _buff.clear();
-    cps_db::dbkey_from_instance_key(_buff,(obj));
+    cps_db::dbkey_from_instance_key(_buff,(obj),true);
     std::cout << "DB instance data " << cps_string::tostring(&_buff[0],_buff.size());
 
     _buff.clear();
     cps_api_object_attr_add_u32(obj,BASE_IP_IPV6_IFINDEX,1);
-    cps_db::dbkey_from_instance_key(_buff,obj);
+    cps_db::dbkey_from_instance_key(_buff,obj,true);
     std::cout << "DB instance data " << cps_string::tostring(&_buff[0],_buff.size());
 }
 
@@ -92,7 +143,7 @@ TEST(cps_api_db,db_inc_cntr) {
     cps_api_object_attr_add_u32(obj,BASE_IP_IPV6_VRF_ID,0);
     cps_api_object_attr_add_u32(obj,BASE_IP_IPV6_IFINDEX,1);
 
-    cps_db::dbkey_from_instance_key(_buff,obj);
+    cps_db::dbkey_from_instance_key(_buff,obj,false);
     std::cout << "DB instance data " << cps_string::tostring(&_buff[0],_buff.size());
 
     ASSERT_TRUE(con.connect(DEFAULT_REDIS_ADDR,"0",false));

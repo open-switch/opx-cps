@@ -288,7 +288,7 @@ static cps_api_return_code_t _register_one_object(cps_api_event_service_handle_t
     const char *_group = cps_api_key_get_group(object);
 
     std::vector<char> _key;
-    cps_db::dbkey_from_instance_key(_key,object);
+    cps_db::dbkey_from_instance_key(_key,object,true);
     if (_key.size()==0) {
         static const int CPS_OBJ_STR_LEN = 1000;
         char buff[CPS_OBJ_STR_LEN];
