@@ -20,6 +20,8 @@ default_ip = "0.0.0.0"
 redis_server_path = "/usr/bin/redis-server"
 stunnel_config_path = "/tmp/"
 stunnel_path = '/usr/bin/stunnel4 '
+default_timeout_connect = "2"
+default_timeout_busy = "5"
 
 def get_free_port():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -144,6 +146,8 @@ class TunnelConfigManager():
             f.write("accept = :::"+port+" \n")
             f.write("connect = "+get_ip_from_string(ip)+":"+default_server_port+" \n")
             f.write("cert = "+default_cert+"\n")
+            f.write("TIMEOUTconnect = "+default_timeout_connect+"\n")
+            f.write("TIMEOUTbusy = "+default_timeout_busy+"\n")
         except Exception as e:
             if os.path.exists(self.fname):
                 os.remove(self.fname)
