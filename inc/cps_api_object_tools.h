@@ -73,11 +73,11 @@ bool cps_api_obj_tool_matches_filter(cps_api_object_t filter, cps_api_object_t o
 
 /**
  * Take the contents of the main and copy the attributes from the overlay into main removing any duplicates discovered in main
- * @param main the object that will be updated to have all of the attributes of the overlay
- * @param overlay the object attributes that will be added to the "main"
+ * @param current the object that will be updated to have all of the attributes of the overlay
+ * @param changes the object attributes that will be added to the "main"
  * @return true if successful otherwise false
  */
-bool cps_api_obj_tool_merge(cps_api_object_t main, cps_api_object_t overlay);
+bool cps_api_obj_tool_merge(cps_api_object_t current, cps_api_object_t changes);
 
 
 /**

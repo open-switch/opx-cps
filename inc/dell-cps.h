@@ -124,6 +124,10 @@ connectivity reasons. Nodes are in a single string separated by comma (,).*/
 key or attributes in the object will be provided to the application.*/
 /*type=boolean*/
   CPS_OBJECT_GROUP_EXACT_MATCH = 131098,
+/*In the event that an API needs to store a return code within an object itself, they can use this field.  This field is
+left as an int size.*/
+/*type=uint32*/
+  CPS_OBJECT_GROUP_RETURN_CODE = 131105,
 } CPS_OBJECT_GROUP_t;
 /* Object cps/node-group */
 

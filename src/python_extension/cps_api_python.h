@@ -127,7 +127,20 @@ PyObject * py_cps_obj_init(PyObject *self, PyObject *args);
 PyObject * py_cps_trans(PyObject *self, PyObject *args);
 PyObject * py_cps_get(PyObject *self, PyObject *args);
 
+/**
+ * CPS DB specifc functions
+ */
+PyObject * py_cps_node_set_update(PyObject *self, PyObject *args);
+PyObject * py_cps_node_delete_group(PyObject *self, PyObject *args);
+PyObject * py_cps_node_set_ownership_type(PyObject *self, PyObject *args);
+PyObject * py_cps_node_set_master(PyObject *self, PyObject *args);
+PyObject * py_cps_api_db_commit(PyObject *self, PyObject *args) ;
+PyObject * py_cps_api_db_get(PyObject *self, PyObject *args);
 
+
+/**
+ * Utilities
+ */
 bool py_cps_util_set_item_to_dict(PyObject *d, const char * item, PyObject *o, bool gc=true) ;
 bool py_cps_util_set_item_to_list(PyObject *l, size_t ix , PyObject *o , bool gc=true);
 bool py_cps_util_append_item_to_list(PyObject *l, PyObject *o , bool gc = true);
@@ -141,5 +154,7 @@ PyObject * cps_obj_to_dict(cps_api_object_t obj) ;
 void py_dict_set_from_attr(PyObject *d, cps_api_attr_id_t id, cps_api_object_attr_t attr);
 
 std::string py_str_from_attr_id(cps_api_attr_id_t id);
+
+
 
 #endif /* CPS_API_SRC_PYTHON_EXTENSION_CPS_API_PYTHON_H_ */

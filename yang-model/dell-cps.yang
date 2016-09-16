@@ -77,6 +77,11 @@ module dell-base-cps {
                   key or attributes in the object will be provided to the application.";
       type boolean;
     }
+    leaf return-code {
+      description "In the event that an API needs to store a return code within an object itself, they can use this field.  This field is
+                  left as an int size.";
+      type uint32;
+    }
   }
 
   list connection-entry {

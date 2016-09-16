@@ -26,6 +26,29 @@
 size_t cps_api_object_count_key_attrs(cps_api_object_t obj);
 
 void cps_api_object_iterate_key_attrs(cps_api_object_t obj, std::function<void(cps_api_object_t,
-								cps_api_attr_id_t,void *,size_t)> &iter);
+                                cps_api_attr_id_t,void *,size_t)> &iter);
 
+class cps_api_key_element_raw_value_monitor {
+    cps_api_key_t *_key=nullptr;
+    size_t _loc = 0;
+    cps_api_key_element_t _stored_value;
+public:
+    void set(cps_api_key_element_t temporary_value) {
+        *cps_api_key_elem_raw(_key,_loc) = temporary_value;
+    }
+    void load() { _stored_value = *cps_api_key_elem_raw(_key,_loc); }
+
+    void reset() { set(_stored_value); }
+
+    cps_api_key_element_raw_value_monitor(cps_api_key_t *key, size_t location) : _key(key),_loc(location) {
+        load();
+    }
+    cps_api_key_element_raw_value_monitor(cps_api_key_t *key, size_t location, cps_api_key_element_t new_value) :
+        cps_api_key_element_raw_value_monitor(key,location) {
+        set(new_value);
+    }
+    ~cps_api_key_element_raw_value_monitor() {
+        reset();
+    }
+};
 #endif /* CPS_API_INC_PRIVATE_CPS_API_KEY_UTILS_H_ */

@@ -1,0 +1,163 @@
+
+
+
+//#include <Python.h>
+
+
+#include "cps_api_python.h"
+
+
+#include "cps_api_node.h"
+#include "cps_api_operation_tools.h"
+#include "cps_api_db_interface.h"
+
+#include "private/cps_class_map_query.h"
+
+
+#include "python2.7/Python.h"
+
+#include <vector>
+#include <functional>
+
+
+PyObject * py_cps_api_db_commit(PyObject *self, PyObject *args) {
+    return nullptr;
+}
+
+PyObject * py_cps_api_db_get(PyObject *self, PyObject *args) {
+    PyObject * __obj= nullptr,*__list=nullptr;
+
+    if (! PyArg_ParseTuple( args, "O!O!", &PyDict_Type, &__obj,&PyList_Type,&__list)) {
+        py_set_error_string("Failed to parse input args.");
+        return PyInt_FromLong(cps_api_ret_code_ERR);
+    }
+
+    cps_api_object_guard _filter(nullptr);
+
+    if (PyDict_Check(__obj)) {
+        cps_api_object_t obj = dict_to_cps_obj(__obj);
+
+        _filter.set(obj);
+        if (!_filter.valid()) {
+            return PyInt_FromLong(cps_api_ret_code_ERR);
+        }
+    } else {
+        return PyInt_FromLong(cps_api_ret_code_ERR);
+    }
+
+    if (!PyList_Check(__list)) {
+        ///TODO need nice error handling
+        return PyInt_FromLong(cps_api_ret_code_ERR);
+    }
+
+    cps_api_object_list_guard _lg(cps_api_object_list_create());
+
+    cps_api_return_code_t rc = cps_api_get_objs(_filter.get(),_lg.get(),1,100);
+    if (rc!=cps_api_ret_code_OK) {
+        return PyInt_FromLong(rc);
+    }
+
+    size_t ix = 0;
+    size_t mx = cps_api_object_list_size(_lg.get());
+    for ( ; ix < mx ; ++ix ) {
+        cps_api_object_t obj = cps_api_object_list_get(_lg.get(),ix);
+        PyObject *d = cps_obj_to_dict(obj);
+        PyRef r(d);
+        if (d==NULL) {
+            py_set_error_string("Memory allocation error.");
+            return PyInt_FromLong(cps_api_ret_code_ERR);
+        }
+        if (PyList_Append(__list,d)) {
+            py_set_error_string("Memory allocation error.");
+            return PyInt_FromLong(cps_api_ret_code_ERR);
+        }
+
+    }
+
+    return nullptr;
+}
+
+PyObject * py_cps_node_set_update(PyObject *self, PyObject *args) {
+    const char *id=NULL, *node_type;
+    PyObject *_list=nullptr;
+    if (! PyArg_ParseTuple( args, "ssO!", &id, &node_type, &PyList_Type, &_list)) Py_RETURN_FALSE;
+
+    auto _node_type = cps_node_type_from_string(node_type);
+    if (_node_type==nullptr) {
+        Py_RETURN_FALSE;
+    }
+
+    cps_api_node_group_t _group;
+    _group.id = id;
+    _group.data_type = *_node_type;
+
+    std::vector<cps_api_node_ident> _ids;
+
+    Py_ssize_t str_keys = PyList_Size(_list);
+    {
+        Py_ssize_t ix = 0;
+        for ( ;ix < str_keys ; ++ix ) {
+            PyObject *tupObj = PyList_GetItem(_list, ix);
+            if (tupObj==nullptr) Py_RETURN_FALSE;
+            PyObject *nameObj = PyTuple_GetItem(tupObj,0);
+            PyObject *addrObj = PyTuple_GetItem(tupObj,1);
+            if (nameObj==nullptr || addrObj==nullptr) Py_RETURN_FALSE;
+            if (PyString_Check(nameObj) && PyString_Check(addrObj)) {
+                cps_api_node_ident _id;
+                _id.addr = PyString_AsString(addrObj);
+                _id.node_name = PyString_AsString(nameObj);
+                _ids.push_back(_id);
+            }
+        }
+    }
+    _group.addrs = &_ids[0];
+    _group.addr_len = _ids.size();
+    if (cps_api_set_node_group(&_group)==cps_api_ret_code_OK) {
+        Py_RETURN_TRUE;
+    }
+    Py_RETURN_FALSE;
+}
+
+
+PyObject * py_cps_node_delete_group(PyObject *self, PyObject *args) {
+    const char *id=NULL;
+    if (! PyArg_ParseTuple( args, "s", &id)) Py_RETURN_FALSE;
+
+    if (cps_api_delete_node_group(id)==cps_api_ret_code_OK) {
+        Py_RETURN_TRUE;
+    }
+    Py_RETURN_FALSE;
+}
+
+
+PyObject * py_cps_node_set_master(PyObject *self, PyObject *args) {
+    const char *id=NULL;
+    const char *node_id=NULL;
+    if (! PyArg_ParseTuple( args, "ss", &id,&node_id)) Py_RETURN_FALSE;
+
+    if (cps_api_set_master_node(id,node_id)==cps_api_ret_code_OK) {
+        Py_RETURN_TRUE;
+    }
+    Py_RETURN_FALSE;
+}
+
+
+PyObject * py_cps_node_set_ownership_type(PyObject *self, PyObject *args) {
+    const char *key=NULL;
+    const char *o_type=NULL;
+    if (! PyArg_ParseTuple( args, "ss", &key,&o_type)) Py_RETURN_FALSE;
+
+    auto _o_type = cps_class_owner_type_from_string(o_type);
+    if (_o_type==nullptr) {
+        Py_RETURN_FALSE;
+    }
+
+    cps_api_key_t k;
+    cps_api_key_from_string(&k, key);
+
+
+    cps_api_obj_set_ownership_type(&k,*_o_type);
+    Py_RETURN_TRUE;
+}
+
+

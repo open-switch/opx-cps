@@ -39,9 +39,8 @@ bool cps_db::dbkey_from_instance_key(std::vector<char> &lst,cps_api_object_t obj
         if (attr==nullptr) continue;
         if (!cps_utils::cps_api_vector_util_append(lst,cps_api_object_attr_data_bin(attr),cps_api_object_attr_len(attr))) return false;
     }
+
     return true;
 }
-
-
 
 
