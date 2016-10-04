@@ -51,8 +51,7 @@ extern "C" {
  * Create an object and set the key of the object to the key of the specified attribute ID
  * @param qual the qualifier of the key (target, observed, etc..
  * @param id the object that contains the key that will be set on the object
- * @param use_create_defaults if there is defaults found for the object, also set those attributes in the object
- *             default attributes are only available on objects that support it
+ * @param use_create_defaults - this attribute is reserved and must be set to false
  *
  * @return a cps_api_object_t with the key and attributes set appropriately or a NULL on error
  */
@@ -101,6 +100,80 @@ cps_api_obj_tool_attr_matches(obj,ids,values,lens,sizeof(ids)/sizeof(*ids));
  * @return
  */
 bool cps_api_obj_tool_attr_matches(cps_api_object_t obj, cps_api_attr_id_t *ids, void ** values, size_t *len, size_t attr_id_list_len);
+
+
+/**
+ * This is the callback function for an attribute.  Will be provided
+ * @param context the context that the user passed
+ * @param data the actual attribute's data
+ * @param len the length of the data
+ * @param stop a boolean pointer that if set to false will stop the looking for more attributes
+ */
+typedef void (*cps_api_obj_tool_attr_callback_t)(void * contect, void *attrs[], size_t sizes[],
+		size_t number_of_attrs, bool *stop);
+
+typedef struct {
+	cps_api_attr_id_t id;
+	cps_api_obj_tool_attr_callback_t callback;
+	void * context;
+} cps_api_obj_tool_attr_cb_list_t;
+
+/**
+ * This will call the specified callback each time the attribute is discovered in the object.
+ * This API will provide a list of all instances of the attribute being searched for at one time
+ *
+ * @param obj the object to search for attributes
+ * @param id the attribute ID that when found, the CB will be called
+ * @param cb the callback
+ * @param context the "context" parameter passed to the callback
+ * @return true if successful otherwise false.
+ */
+void cps_api_obj_tool_attr_callback(cps_api_object_t obj, cps_api_attr_id_t id, cps_api_obj_tool_attr_callback_t cb,
+		void *context);
+
+/**
+ * Provide a way for a user to specifiy one or more callback handlers for attributes discovered in an object.
+ * This can be thoguht of as repeatedly calling @cps_api_obj_tool_attr_callback
+ * @param obj the object to search
+ * @param lst the list of callback entries
+ * @param len the length of the list of callbacks
+ */
+void cps_api_obj_tool_attr_callback_list(cps_api_object_t obj, cps_api_obj_tool_attr_cb_list_t *lst, size_t len);
+
+
+typedef enum {
+	cps_api_object_attr_status_fine=0,
+	cps_api_object_attr_status_not_present=0x1,
+	cps_api_object_attr_status_failed_validate_size=0x2,
+	cps_api_object_attr_status_failed_validate_string_not_null_term=0x4,
+	cps_api_object_attr_status_failed_validate_duplicate_entries=0x8,
+}cps_api_object_attr_status_flags_t;
+
+typedef size_t cps_api_object_attr_status_t;	//contains the combination of any of the above flags
+
+
+typedef enum {
+	cps_api_attribute_val_EXACT=1,
+	cps_api_attribute_val_RANGE=2
+}cps_api_attribute_validate_types_t;
+
+typedef struct {
+	cps_api_attr_id_t id;
+	double range_start;
+	double range_end;
+	void *match[];
+	size_t len[];
+	size_t number_of_match_elements;
+} cps_api_validate_attribute_options_t;
+
+/**
+ * Search for an attribute with the ID inside the object
+ * @param obj
+ * @param id
+ * @return
+ */
+cps_api_object_attr_status_t cps_api_validate_attributes(cps_api_object_t obj, cps_api_validate_attribute_options_t *);
+
 
 #ifdef __cplusplus
 }

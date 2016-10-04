@@ -20,8 +20,39 @@
 #include <functional>
 
 
-PyObject * py_cps_api_db_commit(PyObject *self, PyObject *args) {
-    return nullptr;
+PyObject * py_cps_api_db_commit(PyObject *self, PyObject *args, PyObject *_keydict) {
+    PyObject *__obj=nullptr,*__prev=nullptr,*__pub;
+
+    static const char *_keywords[]={"obj","prev","publish" };
+
+    if (! PyArg_ParseTupleAndKeywords( args, _keydict, "O!O!O!", _keywords, &__obj,&__prev,&__pub)) {
+    	PySys_WriteStdout("Failed to parse args.\n");
+    	return PyInt_FromLong(cps_api_ret_code_ERR);
+    }
+
+    cps_api_object_guard _obj(nullptr);
+    cps_api_object_guard _prev(nullptr);
+
+    if (PyDict_Check(__obj)) {
+        _obj.set(dict_to_cps_obj(__obj));
+    }
+
+    if (!_obj.valid()) {
+    	PySys_WriteStdout("Passed in an invalid object.  Missing \'key\' or \'data' elements.\n");
+    	return PyInt_FromLong(cps_api_ret_code_ERR);
+    }
+
+    if (__prev!=Py_None && PyDict_Check(__prev)) {
+    	_prev.set(cps_api_object_create());
+    }
+
+    cps_api_return_code_t rc = cps_api_db_commit(_obj.get(),_prev.get(),__pub==Py_True);
+    if (_prev.valid()) {
+    	PyRef r(cps_obj_to_dict(_prev.get()));
+    	PyDict_Clear(__prev);
+    	PyDict_Merge(__prev,r.get(),1);
+    }
+    return PyInt_FromLong(rc);
 }
 
 PyObject * py_cps_api_db_get(PyObject *self, PyObject *args) {
@@ -35,24 +66,24 @@ PyObject * py_cps_api_db_get(PyObject *self, PyObject *args) {
     cps_api_object_guard _filter(nullptr);
 
     if (PyDict_Check(__obj)) {
-        cps_api_object_t obj = dict_to_cps_obj(__obj);
-
-        _filter.set(obj);
+        _filter.set(dict_to_cps_obj(__obj));
         if (!_filter.valid()) {
+        	PySys_WriteStdout("Invalid filter object (missing key and or data fields).");
             return PyInt_FromLong(cps_api_ret_code_ERR);
         }
     } else {
+    	PySys_WriteStdout("Invalid object type... really should be impossible.");
         return PyInt_FromLong(cps_api_ret_code_ERR);
     }
 
     if (!PyList_Check(__list)) {
-        ///TODO need nice error handling
+    	PySys_WriteStdout("Invalid list object");
         return PyInt_FromLong(cps_api_ret_code_ERR);
     }
 
     cps_api_object_list_guard _lg(cps_api_object_list_create());
 
-    cps_api_return_code_t rc = cps_api_get_objs(_filter.get(),_lg.get(),1,100);
+    cps_api_return_code_t rc = cps_api_db_get(_filter.get(),_lg.get());
     if (rc!=cps_api_ret_code_OK) {
         return PyInt_FromLong(rc);
     }
@@ -64,17 +95,16 @@ PyObject * py_cps_api_db_get(PyObject *self, PyObject *args) {
         PyObject *d = cps_obj_to_dict(obj);
         PyRef r(d);
         if (d==NULL) {
-            py_set_error_string("Memory allocation error.");
+        	PySys_WriteStdout("Memory allocation error.");
             return PyInt_FromLong(cps_api_ret_code_ERR);
         }
         if (PyList_Append(__list,d)) {
             py_set_error_string("Memory allocation error.");
             return PyInt_FromLong(cps_api_ret_code_ERR);
         }
-
     }
 
-    return nullptr;
+    return PyInt_FromLong(rc);
 }
 
 PyObject * py_cps_node_set_update(PyObject *self, PyObject *args) {

@@ -31,7 +31,8 @@ std::string _get_node_name(const std::string &str) {
 }
 
 bool _conn_event_enabled(cps_api_object_t filter) {
-    return *(const bool*)cps_api_object_get_data(filter,CPS_CONNECTION_ENTRY_CONNECTION_STATE);
+	const bool *_p = (const bool*)cps_api_object_get_data(filter,CPS_CONNECTION_ENTRY_CONNECTION_STATE);
+    return _p==nullptr ? false : *_p;
 }
 
 cps_api_return_code_t __cps_api_db_operation_get(cps_api_object_t obj, cps_api_object_list_t results) {
@@ -42,7 +43,9 @@ cps_api_return_code_t __cps_api_db_operation_get(cps_api_object_t obj, cps_api_o
 
         if (!r.valid()) return ;
         size_t _ix = cps_api_object_list_size(results);
-        rc = cps_db::get_objects(r.get(),obj,results);
+        if (cps_db::get_objects(r.get(),obj,results)) {
+        	rc = cps_api_ret_code_OK;
+        }
 
         std::string node_name = _get_node_name(name);
 
@@ -109,21 +112,26 @@ cps_api_return_code_t cps_api_db_commit(cps_api_object_t o, cps_api_object_t pre
         for (auto &it : lst ) {
             cps_db::connection_request r(cps_db::ProcessDBCache(),it.c_str());
 
-            if (op!=cps_api_oper_SET) {
-                cps_db::get_object(r.get(),previous);
-            } else {
-                _present = cps_api_object_list_create_obj_and_append(_lg.get());
-                if (cps_db::get_object(r.get(),_present)==cps_api_ret_code_OK) {
-                    if (previous) cps_api_object_clone(previous,_present);
-
-                    if (cps_api_obj_tool_merge(_present,o)) {
-                        _update = _present;
-                        break;
-                    }
+            if (op!=cps_api_oper_SET && previous!=nullptr) {
+            	cps_api_object_clone(previous,o);
+                if (cps_db::get_object(r.get(),previous)) {
+                	break;
                 }
+                continue;
+            }
+
+            if (op==cps_api_oper_SET) {
+				_present = cps_api_object_list_create_obj_and_append(_lg.get());
+				cps_api_object_clone(_present,o);
+				if (cps_db::get_object(r.get(),_present)) {
+					if (previous) cps_api_object_clone(previous,_present);
+					if (cps_api_obj_tool_merge(_present,o)) {
+						_update = _present;
+						break;
+					}
+				}
             }
         }
-
     }
 
     cps_api_key_element_raw_value_monitor _key_patch(cps_api_object_key(_update),
@@ -148,7 +156,7 @@ cps_api_return_code_t cps_api_db_commit(cps_api_object_t o, cps_api_object_t pre
         cps_db::connection_request r(cps_db::ProcessDBCache(),it.c_str());
 
         if (op==cps_api_oper_CREATE || op ==cps_api_oper_SET) {
-            if (cps_db::store_object(r.get(),_update)!=cps_api_ret_code_OK) {
+            if (!cps_db::store_object(r.get(),_update)) {
                 _handle_failure(it,r);
 
             } else  {    //if stored properly

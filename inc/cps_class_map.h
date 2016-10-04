@@ -235,7 +235,6 @@ const char * cps_attr_id_to_name(cps_api_attr_id_t id);
  */
 bool cps_api_key_from_attr(cps_api_key_t *key,cps_api_attr_id_t id,size_t key_start_pos);
 
-
 /**
  * Create a key from an attribute ID with a qualifier as the first position.
  *
@@ -264,6 +263,15 @@ void cps_api_class_map_init(void);
  * @return true if the attribute type is found otherwise false
  */
 bool cps_class_map_attr_type(cps_api_attr_id_t id, CPS_CLASS_DATA_TYPE_t *t);
+
+
+/**
+ * This function will return the attribute's "class type" - eg leaf list, etc..
+ * @param id the attribute ID
+ * @param type return the type of the attribute if found
+ * @return false if not found otherwise true
+ */
+bool cps_class_map_attr_class(cps_api_attr_id_t id, CPS_CLASS_ATTR_TYPES_t *type);
 
 /****
  * The following API indicate an object's ownership (or also considered as storage location) of an object.

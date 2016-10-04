@@ -560,12 +560,14 @@ static PyMethodDef cps_methods[] = {
 
     {"get",  py_cps_get, METH_VARARGS, cps_get__doc__},
     {"transaction",  py_cps_trans, METH_VARARGS, cps_trans__doc__},
+    {"commit",  py_cps_trans, METH_VARARGS, cps_trans__doc__},
 
     {"node_set_update",  py_cps_node_set_update, METH_VARARGS, CPS_FN_DOC(py_cps_node_set_update)},
     {"node_delete_group",  py_cps_node_delete_group, METH_VARARGS, CPS_FN_DOC(py_cps_node_delete_group)},
     {"node_set_master",  py_cps_node_set_master, METH_VARARGS, CPS_FN_DOC(py_cps_node_set_master)},
     {"set_ownership_type",  py_cps_node_set_ownership_type, METH_VARARGS, CPS_FN_DOC(py_cps_node_set_ownership_type)},
-    {"db_commit",  py_cps_api_db_commit, METH_VARARGS, CPS_FN_DOC(py_cps_api_db_commit)},
+
+    {"db_commit",  (PyCFunction)py_cps_api_db_commit, METH_VARARGS| METH_KEYWORDS, CPS_FN_DOC(py_cps_api_db_commit)},
     {"db_get",  py_cps_api_db_get, METH_VARARGS, CPS_FN_DOC(py_cps_api_db_get)},
 
 

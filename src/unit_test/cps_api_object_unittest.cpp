@@ -18,19 +18,22 @@
  * cps_api_object_unittest.cpp
  */
 
+#include "cps_api_object.h"
+#include "cps_api_object_tools.h"
+#include "std_tlv.h"
 
+
+#include "cps_class_ut_data.h"
+#include "dell-cps.h"
+
+#include "gtest/gtest.h"
+#include "cps_api_object.h"
 
 #include <stdio.h>
 #include <stddef.h>
 #include <string.h>
 #include <stdlib.h>
 
-#include "gtest/gtest.h"
-#include "cps_api_object.h"
-
-
-#include "std_tlv.h"
-#include "cps_api_object.h"
 #include <time.h>
 #include <stdlib.h>
 
@@ -135,6 +138,10 @@ void print_obj(cps_api_object_t obj) {
     }
 }
 
+TEST(cps_api_object,initialize) {
+	__init_class_map();
+}
+
 TEST(cps_api_object,add_delete_test) {
     cps_api_object_t obj = cps_api_object_create();
 
@@ -164,7 +171,7 @@ TEST(cps_api_object,add_delete_test) {
                                 { 1,3,3,4,5,6 },
                                 { 1,2,3,4,5,7 },
                                 { 1,2,3,4,4,6 },
-                                       { 3,2,3,4,5,6 }
+                                { 3,2,3,4,5,6 }
     };
     const char * c = "clifford was here";
 
@@ -183,6 +190,36 @@ TEST(cps_api_object,add_delete_test) {
         }
     }
 }
+
+void __cps_api_obj_tool_attr_callback_ll ( void * contect, void *attrs[], size_t sizes[],
+		size_t number_of_attrs, bool *stop) {
+	printf("Found %d attributes\n",(int)number_of_attrs);
+	for (size_t ix = 0; ix < number_of_attrs ; ++ix ) {
+		printf("Data %s len %d\n",(char*)attrs[ix],(int)sizes[ix]);
+	}
+}
+
+TEST(cps_api_object,object_attr_callback) {
+
+	cps_api_object_guard og(cps_api_obj_tool_create(cps_api_qualifier_TARGET,CPS_NODE_DETAILS,true));
+
+	cps_api_object_attr_add(og.get(),CPS_NODE_DETAILS_ALIAS,"ACliff",7);
+	cps_api_object_attr_add(og.get(),CPS_NODE_DETAILS_ALIAS,"BCliff",7);
+	cps_api_object_attr_add(og.get(),CPS_NODE_DETAILS_ALIAS,"CCliff",7);
+	cps_api_object_attr_add(og.get(),CPS_NODE_DETAILS_ALIAS,"DCliff",7);
+	cps_api_object_attr_add(og.get(),CPS_NODE_DETAILS_ALIAS,"ECliff",7);
+	cps_api_object_attr_add(og.get(),CPS_NODE_DETAILS_ALIAS,"FCliff",7);
+
+	cps_api_object_attr_add(og.get(),CPS_NODE_DETAILS_NAME,"Cliff",6);
+
+	cps_api_object_attr_add(og.get(),0,"Cliff1",7);
+	cps_api_object_attr_add(og.get(),1,"Cliff2",7);
+	cps_api_object_attr_add(og.get(),2,"Cliff3",7);
+
+	cps_api_obj_tool_attr_callback(og.get(),CPS_NODE_DETAILS_ALIAS,__cps_api_obj_tool_attr_callback_ll,nullptr);
+
+}
+
 
 TEST(cps_api_object,create) {
     cps_api_object_list_t list = cps_api_object_list_create();

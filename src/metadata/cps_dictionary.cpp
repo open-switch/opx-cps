@@ -334,6 +334,13 @@ bool cps_class_map_attr_type(cps_api_attr_id_t id, CPS_CLASS_DATA_TYPE_t *t) {
     return true;
 }
 
+bool cps_class_map_attr_class(cps_api_attr_id_t id, CPS_CLASS_ATTR_TYPES_t *type) {
+    const cps_class_map_node_details_int_t * it = cps_dict_find_by_id(id);
+    if (it==nullptr) return false;
+    *type = it->attr_type;
+    return true;
+}
+
 CPS_API_OBJECT_OWNER_TYPE_t cps_api_obj_get_ownership_type(cps_api_object_t obj) {
     std_mutex_simple_lock_guard lg(&lock);
     _key_characteristics *p = _key_storage_type.at(cps_api_object_key(obj),true);
