@@ -48,10 +48,13 @@ struct cps_class_map_node_details_int_t {
     CPS_CLASS_DATA_TYPE_t data_type;
     cps_api_attr_id_t id=0;
     std::vector<cps_api_attr_id_t> ids;
+    std::vector<cps_api_attr_id_t> key_ids;
 };
 
 const cps_class_map_node_details_int_t * cps_dict_find_by_name(const char * name);
 const cps_class_map_node_details_int_t * cps_dict_find_by_id(cps_api_attr_id_t id);
+
+cps_class_map_node_details_int_t * cps_dict_find_by_id(cps_api_attr_id_t id, bool writeable);
 
 typedef bool (*cps_dict_walk_fun)(void * context, const cps_class_map_node_details_int_t *ptr);
 

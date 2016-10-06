@@ -100,7 +100,7 @@ TEST(cps_api_db,db_key) {
 
     cps_db::store_object(b.get(),obj);
 
-    ASSERT_TRUE(get_object_count(b.get(),clone.get())==1);
+    ASSERT_EQ(get_object_count(b.get(),clone.get()),1);
 
     for ( size_t ix = 0; ix < 1000 ; ++ix ) {
     	cps_api_object_attr_delete(obj,BASE_IP_IPV6_IFINDEX);

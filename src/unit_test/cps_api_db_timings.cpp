@@ -82,6 +82,16 @@ TEST(cps_api_db,init) {
     }
 }
 
+TEST(cps_api_db,db_clear_all) {
+    cps_db::connection con;
+    ASSERT_TRUE(con.connect(DEFAULT_REDIS_ADDR,"0",false));
+    cps_api_object_list_guard lg(cps_api_object_list_create());
+    cps_api_object_guard og(cps_api_object_create());
+    cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),BASE_IP_IPV6,cps_api_qualifier_TARGET);
+    ASSERT_TRUE(cps_db::get_objects(con,og.get(),lg.get()));
+    ASSERT_TRUE(cps_db::delete_objects(con,lg.get()));
+}
+
 TEST(cps_api_db,set_100_pieces_of_data) {
     cps_db::connection con;
     ASSERT_TRUE(con.connect(DEFAULT_REDIS_ADDR,"0",false));

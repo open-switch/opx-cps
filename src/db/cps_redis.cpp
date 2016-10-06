@@ -444,8 +444,18 @@ bool cps_db::get_objects(cps_db::connection &conn,std::vector<char> &key,cps_api
 
 bool cps_db::get_objects(cps_db::connection &conn, cps_api_object_t obj,cps_api_object_list_t obj_list) {
     std::vector<char> k;
-    if (!cps_db::dbkey_from_instance_key(k,obj,true)) return false;
-    return get_objects(conn,k,obj_list);
+    bool wildcard = false;
+    if (!cps_db::dbkey_instance_or_wildcard(k,obj,wildcard)) return false;
+    if (wildcard) return get_objects(conn,k,obj_list);
+
+    cps_api_object_guard og(cps_api_object_create());
+    if (cps_db::get_object(conn,k,og.get())) {
+    	if (cps_api_object_list_append(obj_list,og.get())) {
+    		og.release();
+    		return true;
+    	}
+    }
+    return false;
 }
 
 cps_db::response_set::~response_set() {
