@@ -35,7 +35,8 @@ namespace cps_db {
 
 
     bool dbkey_from_class_key(std::vector<char> &lst, const cps_api_key_t *key);
-    bool dbkey_from_instance_key(std::vector<char> &lst, cps_api_object_t obj, bool escape);
+    bool dbkey_from_instance_key(std::vector<char> &lst,cps_api_object_t obj, bool escape);
+    bool dbkey_instance_or_wildcard(std::vector<char> &lst, cps_api_object_t obj, bool &is_wildcard);
 
     static inline cps_api_qualifier_t QUAL(cps_api_key_t *key) { return cps_api_key_get_qual(key); }
 

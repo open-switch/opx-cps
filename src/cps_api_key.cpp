@@ -19,9 +19,10 @@
  * cps_api_key.c
  */
 
-#include "cps_class_map.h"
 #include "cps_api_key.h"
+#include "cps_api_key_utils.h"
 #include "cps_api_object_key.h"
+#include "cps_class_map.h"
 #include "std_utils.h"
 
 #include <limits.h>
@@ -33,21 +34,8 @@
 
 
 extern "C" int cps_api_key_matches( cps_api_key_t *  key, cps_api_key_t * comparison, bool exact) {
-    int src_len = cps_api_key_get_len_in_bytes(key);
-    int comp_len = cps_api_key_get_len_in_bytes(comparison);
-    int match_len = (src_len > comp_len) ? comp_len : src_len;
-    int res = memcmp(cps_api_key_elem_start((cps_api_key_t *)key),
-            cps_api_key_elem_start((cps_api_key_t *)comparison),match_len);
-
-    if (exact && src_len!=comp_len) {
-        return res!=0 ? res : src_len - comp_len;
-    }
-
-    if (comp_len > src_len) {
-        return res!=0 ? res : 1;
-    }
-
-    return res;
+    return cps_api_key_array_matches(cps_api_key_elem_start((cps_api_key_t *)key),cps_api_key_get_len(key),
+            cps_api_key_elem_start((cps_api_key_t *)comparison),cps_api_key_get_len(comparison),exact);
 }
 
 #define REQUIRED_ADDITIONAL_SPACE (12) //10 chars + ws + 1 extra :)
@@ -136,15 +124,7 @@ extern "C" bool cps_api_set_key_data(cps_api_object_t obj,cps_api_attr_id_t id,
 
 extern "C" uint64_t cps_api_key_hash(cps_api_key_t *key) {
     cps_api_key_element_t *ptr = (cps_api_key_element_t *)cps_api_key_elem_start(key);
-    cps_api_key_element_t *end = ptr + cps_api_key_get_len(key);
-
-    uint64_t hash = 0;
-    std::hash<uint64_t> h;
-    while(ptr < end) {
-        hash = (hash << 8) | hash>> ((sizeof(hash)*8)-8);
-        hash ^= h(*(ptr++));
-    }
-    return hash;
+    return cps_api_hash_array(ptr,cps_api_key_get_len(key));
 }
 
 bool cps_api_key_insert_element(cps_api_key_t *key, size_t ix, cps_api_key_element_t elem) {

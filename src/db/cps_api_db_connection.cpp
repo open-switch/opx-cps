@@ -111,21 +111,21 @@ bool cps_db::connection::connect(const std::string &s_, const std::string &db_in
         int on = 1;
 
         if (setsockopt(fd,SOL_SOCKET,SO_KEEPALIVE,&on,sizeof(on))<0) {
-            EV_LOGGING(DSAPI,ERR,"CPS-DB-CONN","Failed to set keepalive option on fd %d",fd);
+            EV_LOGGING(DSAPI,DEBUG,"CPS-DB-CONN","Failed to set keepalive option on fd %d",fd);
         }
         int retries = 5;
         if (setsockopt(fd,SOL_SOCKET,TCP_KEEPCNT,&retries,sizeof(retries))<0) {
-            EV_LOGGING(DSAPI,ERR,"CPS-DB-CONN","Failed to set keepcount option on fd %d",fd);
+            EV_LOGGING(DSAPI,DEBUG,"CPS-DB-CONN","Failed to set keepcount option on fd %d",fd);
         }
 
         int interval = 1;
         if (setsockopt(fd,SOL_SOCKET,TCP_KEEPINTVL,&interval,sizeof(interval))<0) {
-            EV_LOGGING(DSAPI,ERR,"CPS-DB-CONN","Failed to set interval option on fd %d",fd);
+            EV_LOGGING(DSAPI,DEBUG,"CPS-DB-CONN","Failed to set interval option on fd %d",fd);
         }
 
         int idle = 5;
         if (setsockopt(fd,SOL_SOCKET,TCP_KEEPIDLE,&idle,sizeof(idle))<0) {
-            EV_LOGGING(DSAPI,ERR,"CPS-DB-CONN","Failed to set idle time option on fd %d",fd);
+            EV_LOGGING(DSAPI,DEBUG,"CPS-DB-CONN","Failed to set idle time option on fd %d",fd);
         }
     }
 
