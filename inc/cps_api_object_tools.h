@@ -141,40 +141,6 @@ void cps_api_obj_tool_attr_callback(cps_api_object_t obj, cps_api_attr_id_t id, 
 void cps_api_obj_tool_attr_callback_list(cps_api_object_t obj, cps_api_obj_tool_attr_cb_list_t *lst, size_t len);
 
 
-typedef enum {
-	cps_api_object_attr_status_fine=0,
-	cps_api_object_attr_status_not_present=0x1,
-	cps_api_object_attr_status_failed_validate_size=0x2,
-	cps_api_object_attr_status_failed_validate_string_not_null_term=0x4,
-	cps_api_object_attr_status_failed_validate_duplicate_entries=0x8,
-}cps_api_object_attr_status_flags_t;
-
-typedef size_t cps_api_object_attr_status_t;	//contains the combination of any of the above flags
-
-
-typedef enum {
-	cps_api_attribute_val_EXACT=1,
-	cps_api_attribute_val_RANGE=2
-}cps_api_attribute_validate_types_t;
-
-typedef struct {
-	cps_api_attr_id_t id;
-	double range_start;
-	double range_end;
-	void *match[];
-	size_t len[];
-	size_t number_of_match_elements;
-} cps_api_validate_attribute_options_t;
-
-/**
- * Search for an attribute with the ID inside the object
- * @param obj
- * @param id
- * @return
- */
-cps_api_object_attr_status_t cps_api_validate_attributes(cps_api_object_t obj, cps_api_validate_attribute_options_t *);
-
-
 #ifdef __cplusplus
 }
 #endif

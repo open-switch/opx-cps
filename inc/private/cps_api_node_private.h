@@ -25,24 +25,7 @@
 #include <vector>
 #include <mutex>
 
-namespace cps_db {
-/**
- * A simple hash function template that will work for various int types
- */
-template <typename T>
-struct vector_hash {
-    std::size_t operator() (const std::vector<T> &c) const {
-        std::size_t rc;
-        for ( auto it : c ) {
-            size_t _cur = std::hash<size_t>(it);
-            rc =  rc ^ (_cur << 3);
-        }
-        return rc;
-    }
-};
-
-}
-
+///@TODO Refactor this file entirely... simplify caching and decouple db vs master
 class cps_api_nodes {
     struct _node_data {
         //the address and the db instance is selected here

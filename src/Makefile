@@ -38,6 +38,7 @@ cps-api-common_SRCS+=metadata/cps_dictionary_loader.cpp
 cps-api-common_SRCS+=metadata/cps_api_metadata_import.cpp
 
 cps-api-common_SRCS+=db/cps_api_db_direct.cpp
+cps-api-common_SRCS+=db/cps_api_db_fast.cpp
 cps-api-common_SRCS+=db/cps_redis.cpp
 cps-api-common_SRCS+=db/cps_api_db_connection.cpp
 cps-api-common_SRCS+=db/cps_api_db_response.cpp

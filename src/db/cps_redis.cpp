@@ -54,43 +54,6 @@ bool cps_db::get_sequence(cps_db::connection &conn, std::vector<char> &key, ssiz
     return false;
 }
 
-bool cps_db::fetch_all_keys(cps_db::connection &conn, const void *filt, size_t flen,
-        const std::function<void(const void *key, size_t klen)> &fun) {
-
-    std::string start = "0";
-
-    do {
-        cps_db::connection::db_operation_atom_t e[6];
-        e[0].from_string("SCAN");
-        e[1].from_string(start.c_str());
-        e[2].from_string("MATCH");
-        e[3].from_string((const char *)filt,flen);
-        e[4].from_string("COUNT");
-        e[5].from_string(CPS_DB_MAX_ITEMS_PER_SCAN);
-
-        response_set resp;
-        if (!conn.command(e,sizeof(e)/sizeof(*e),resp)) {
-            return false;
-        }
-
-        cps_db::response it(resp.get()[0]);
-        if (it.elements()!=2) {
-            return false;
-        }
-        cps_db::response cursor(it.element_at(0));
-        cps_db::response values(it.element_at(1));
-        start = cursor.get_str();
-
-        for (size_t ix =0,mx=values.elements(); ix < mx ; ++ix ) {
-            redisReply * data = (redisReply *)values.element_at(ix);
-            fun(data->str,data->len);
-        }
-
-        if (start=="0") break;
-    } while(true);
-    return true;
-}
-
 bool cps_db::ping(cps_db::connection &conn) {
     cps_db::connection::db_operation_atom_t e;
     e.from_string("PING");
@@ -171,11 +134,7 @@ bool cps_db::multi_start(cps_db::connection &conn) {
     e.from_string("MULTI");
 
     response_set resp;
-    if (!conn.command(&e,1,resp)) {
-        return false;
-    }
-    cps_db::response r = resp.get_response(0);
-    return  (r.is_status() && strcmp("OK",r.get_str())==0);
+    return conn.command(&e,1,resp);
 }
 
 bool cps_db::multi_end(cps_db::connection &conn, bool commit) {
@@ -188,14 +147,6 @@ bool cps_db::multi_end(cps_db::connection &conn, bool commit) {
     }
     cps_db::response r = resp.get_response(0);
     return  (r.is_status() && strcmp("OK",r.get_str())==0);
-}
-
-bool cps_db::delete_object(cps_db::connection &conn,std::vector<char> &key) {
-    cps_db::connection::db_operation_atom_t e[2];
-    e[0].from_string("DEL");
-    e[1].from_string(&key[0],key.size());
-    response_set resp;
-    return conn.command(e,2,resp);
 }
 
 bool cps_db::delete_object(cps_db::connection &conn,cps_api_object_t obj) {
@@ -258,78 +209,11 @@ bool op_on_objects(const char *op, cps_db::connection &conn,cps_api_object_list_
 }
 }
 
-bool cps_db::delete_objects(cps_db::connection &conn,cps_api_object_list_t objs) {
-    return op_on_objects("DEL",conn,objs);
-}
 
 bool cps_db::store_objects(cps_db::connection &conn,cps_api_object_list_t objs) {
     return op_on_objects("HSET",conn,objs);
 }
 
-bool cps_db::subscribe(cps_db::connection &conn, cps_api_object_t obj) {
-    std::vector<char> key;
-    if (!cps_db::dbkey_from_instance_key(key,obj)) return false;
-    return subscribe(conn,key);
-}
-
-bool cps_db::publish(cps_db::connection &conn, cps_api_object_t obj) {
-    cps_db::connection::db_operation_atom_t e[3];
-    e[0].from_string("PUBLISH");
-    e[1]._atom_type = cps_db::connection::db_operation_atom_t::obj_fields_t::obj_field_OBJ_INSTANCE;
-    e[1]._object = obj;
-    e[2]._atom_type = cps_db::connection::db_operation_atom_t::obj_fields_t::obj_field_OBJ_DATA;
-    e[2]._object = obj;
-
-    response_set resp;
-    if (!conn.command(e,3,resp)) {
-        return false;
-    }
-
-    cps_db::response r = resp.get_response(0);
-    bool rc = r.is_int();
-
-    return rc;
-}
-
-bool cps_db::subscribe(cps_db::connection &conn, std::vector<char> &key) {
-    cps_db::connection::db_operation_atom_t e[2];
-    e[0].from_string("PSUBSCRIBE");
-    if (key[key.size()-1]!='*') cps_utils::cps_api_vector_util_append(key,"*",1);
-    e[1].from_string(&key[0],key.size());
-
-    response_set resp;
-    if (!conn.command(e,2,resp)) {
-        EV_LOG(ERR,DSAPI,0,"CPS-DB-SUB","Subscribe failed to return response");
-        return false;
-    }
-
-    cps_db::response r = resp.get_response(0);
-    if (r.elements()==3) {
-        cps_db::response msg (r.element_at(0));
-        cps_db::response status (r.element_at(2));
-        if (msg.is_str() && strcasecmp(msg.get_str(),"psubscribe")==0) {
-
-            bool rc = (status.is_int() && status.get_int()>0);
-            if (!rc) EV_LOG(ERR,DSAPI,0,"CPS-DB-SUB","Subscribe failed rc %d",status.get_int());
-            return rc;
-        }
-    }
-    return false;
-}
-
-bool cps_db::store_object(cps_db::connection &conn,cps_api_object_t obj) {
-    cps_db::connection::db_operation_atom_t e[2];
-    e[0].from_string("HSET");
-    e[1]._atom_type = cps_db::connection::db_operation_atom_t::obj_fields_t::obj_field_OBJ_KEY_AND_DATA;
-    e[1]._object = obj;
-
-    response_set resp;
-    if (!conn.command(e,2,resp)) {
-        return false;
-    }
-    cps_db::response r = resp.get_response(0);
-    return r.is_int() && (r.get_int()==0 || r.get_int()==1);
-}
 
 bool cps_db::get_object(cps_db::connection &conn, const std::vector<char> &key, cps_api_object_t obj) {
     cps_db::connection::db_operation_atom_t e[3];
@@ -417,7 +301,7 @@ bool cps_db::get_objects(cps_db::connection &conn,std::vector<char> &key,cps_api
     cps_utils::cps_api_vector_util_append(key,"*",1);
 
     std::vector<std::vector<char>> all_keys;
-    bool rc = fetch_all_keys(conn, &key[0],key.size(),[&conn,&all_keys](const void *key, size_t len){
+    bool rc = walk_keys(conn, &key[0],key.size(),[&conn,&all_keys](const void *key, size_t len){
         std::vector<char> c;
         cps_utils::cps_api_vector_util_append(c,key,len);
         all_keys.push_back(std::move(c));
@@ -447,6 +331,7 @@ bool cps_db::get_objects(cps_db::connection &conn, cps_api_object_t obj,cps_api_
     if (!cps_db::dbkey_from_instance_key(k,obj)) return false;
     return get_objects(conn,k,obj_list);
 }
+
 
 cps_db::response_set::~response_set() {
     for ( size_t ix = 0; ix < _used ; ++ix ) {

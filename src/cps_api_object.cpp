@@ -210,12 +210,14 @@ bool cps_api_object_clone(cps_api_object_t d, cps_api_object_t s) {
 }
 
 void __delete_repeated_attributes(cps_api_object_t d, cps_api_object_t s) {
-    cps_api_object_it_t it;
+    register cps_api_object_it_t it;
     cps_api_object_it_begin(s,&it);
 
     while (cps_api_object_it_valid(&it)) {
         cps_api_attr_id_t id = cps_api_object_attr_id(it.attr);
-        cps_api_object_attr_delete(d,id);
+        do {
+        	if (!cps_api_object_attr_delete(d,id)) break;
+        } while (true);
         cps_api_object_it_next(&it);
     }
 }
@@ -301,7 +303,7 @@ bool cps_api_object_attr_get_list(cps_api_object_t obj,
     return true;
 }
 
-void cps_api_object_attr_delete(cps_api_object_t obj, cps_api_attr_id_t attr_id) {
+bool cps_api_object_attr_delete(cps_api_object_t obj, cps_api_attr_id_t attr_id) {
     cps_api_object_internal_t *p = (cps_api_object_internal_t*)obj;
 
     cps_api_object_attr_t  attr = cps_api_object_attr_get(obj, attr_id);
@@ -314,6 +316,7 @@ void cps_api_object_attr_delete(cps_api_object_t obj, cps_api_attr_id_t attr_id)
         memmove(attr, tlv_rm_end, copy_len);
         p->remain += rm_len;
     }
+    return attr!=nullptr;
 }
 
 cps_api_object_attr_t cps_api_object_e_get(cps_api_object_t obj, cps_api_attr_id_t *id,

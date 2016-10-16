@@ -134,7 +134,7 @@ PyObject * py_cps_node_set_update(PyObject *self, PyObject *args);
 PyObject * py_cps_node_delete_group(PyObject *self, PyObject *args);
 PyObject * py_cps_node_set_ownership_type(PyObject *self, PyObject *args);
 PyObject * py_cps_node_set_master(PyObject *self, PyObject *args);
-PyObject * py_cps_api_db_commit(PyObject *self, PyObject *args) ;
+PyObject * py_cps_api_db_commit(PyObject *self, PyObject *args, PyObject *_keydict) ;
 PyObject * py_cps_api_db_get(PyObject *self, PyObject *args);
 
 

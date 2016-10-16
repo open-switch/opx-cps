@@ -21,15 +21,16 @@
 
 
 PyObject * py_cps_api_db_commit(PyObject *self, PyObject *args, PyObject *_keydict) {
-    PyObject *__obj=nullptr,*__prev=nullptr,*__pub;
+    PyObject *__obj=nullptr,*__prev=nullptr,*__pub=nullptr;
 
-    static const char *_keywords[]={"obj","prev","publish" };
+    const char *_keywords[]={"obj","prev","publish",NULL };
 
-    if (! PyArg_ParseTupleAndKeywords( args, _keydict, "O!O!O!", _keywords, &__obj,&__prev,&__pub)) {
+    if (! PyArg_ParseTupleAndKeywords( args, _keydict, "O!|OO!", (char**)_keywords, &PyDict_Type,&__obj,&__prev,&PyBool_Type,&__pub)) {
     	PySys_WriteStdout("Failed to parse args.\n");
     	return PyInt_FromLong(cps_api_ret_code_ERR);
     }
 
+    if (__pub==nullptr) __pub = Py_True;
     cps_api_object_guard _obj(nullptr);
     cps_api_object_guard _prev(nullptr);
 
@@ -42,9 +43,10 @@ PyObject * py_cps_api_db_commit(PyObject *self, PyObject *args, PyObject *_keydi
     	return PyInt_FromLong(cps_api_ret_code_ERR);
     }
 
-    if (__prev!=Py_None && PyDict_Check(__prev)) {
+    if (__prev!=nullptr && __prev!=Py_None && PyDict_Check(__prev)) {
     	_prev.set(cps_api_object_create());
     }
+
 
     cps_api_return_code_t rc = cps_api_db_commit(_obj.get(),_prev.get(),__pub==Py_True);
     if (_prev.valid()) {

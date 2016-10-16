@@ -90,17 +90,7 @@ extern "C" bool cps_api_obj_tool_matches_filter(cps_api_object_t filter, cps_api
 
 
 bool cps_api_obj_tool_merge(cps_api_object_t main, cps_api_object_t overlay) {
-    cps_api_object_it_t it;
-
-    cps_api_object_it_begin(overlay,&it);
-    do {
-        cps_api_object_attr_delete(main,cps_api_object_attr_id(it.attr));
-        if (!cps_api_object_attr_add(main,cps_api_object_attr_id(it.attr),cps_api_object_attr_data_bin(it.attr),
-                cps_api_object_attr_len(it.attr))) {
-            return false;
-        }
-    } while (cps_api_object_it_next(&it));
-    return true;
+	return cps_api_object_attr_merge(main,overlay,true);
 }
 
 bool cps_api_obj_tool_attr_matches(cps_api_object_t obj, cps_api_attr_id_t *ids, void ** values, size_t *len, size_t mx_) {
@@ -179,35 +169,9 @@ void cps_api_obj_tool_attr_callback(cps_api_object_t obj, cps_api_attr_id_t id, 
 }
 
 void cps_api_obj_tool_attr_callback_list(cps_api_object_t obj, cps_api_obj_tool_attr_cb_list_t *lst, size_t len) {
-
-    cps_api_object_it_t it;
-    cps_api_object_it_begin(obj,&it);
-
-    std::unordered_set<cps_api_attr_id_t> _uniq;
-    std::unordered_map<cps_api_attr_id_t,std::vector<cps_api_obj_tool_attr_cb_list_t*>> _cbs;
-    for (size_t ix = 0; ix < len ; ++ix ) {
-    	_cbs[lst[ix].id].push_back(&lst[ix]);
-    }
-
-
-
-
-    bool _cont = true;
-    do {
-    	cps_api_attr_id_t _id = cps_api_object_attr_id(it.attr);
-
-    	CPS_CLASS_ATTR_TYPES_t _type=CPS_CLASS_ATTR_T_LEAF;
-
-    	(void)cps_class_map_attr_class(id,&_type);
-
-
-        void *_data = cps_api_object_attr_data_bin(it.attr);
-        size_t _size = cps_api_object_attr_len(it.attr);
-        func(context,&_data,&_size,1,_cont);
-        cps_api_object_it_next(&it);
-        it.attr = std_tlv_find_next(it.attr,&it.len,id);
-    } while (_cont && cps_api_object_it_valid(&it));
-
+	for (size_t ix = 0; ix < len ; ++ix ) {
+		cps_api_obj_tool_attr_callback(obj,lst[ix].id,lst[ix].callback,lst[ix].context);
+	}
 }
 
 

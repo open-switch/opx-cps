@@ -8,19 +8,24 @@
 #include "cps_api_object.h"
 #include "cps_api_operation.h"
 
+struct cps_api_db_commit_bulk_t {
+	cps_api_operation_types_t op;	//the operation type (set,delete,create)
+	cps_api_object_list_t objects; 	//the list of objects to be modified or deleted/stored
+	bool publish;	//true if the API will be required to publish change via cps event service
+	const char *node_group;
+};
+
 /**
  * This function will take a object and attempt to perform the requested operation.
  * The function will attempt to update all objects.  If the communication to the DB fails or
  * some objects are not committed successfully, a error code will be returned and the objects will have an
  * error status that can be queried
  *
- * @param object the object to be modified or deleted/stored
- * @param previous the object that existed before this operation
- * @param publish true if the API will be required to publish change via cps event service
+ * @param param the db commit params
  * @return a return code that will enther indicate failure in performing the operation or
  *             cps_api_ret_code_OK on success
  */
-cps_api_return_code_t cps_api_db_commit(cps_api_object_t object, cps_api_object_t previous, bool publish);
+cps_api_return_code_t cps_api_db_commit_bulk(cps_api_db_commit_bulk_t *param);
 
 
 /**

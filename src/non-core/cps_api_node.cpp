@@ -33,6 +33,25 @@
 #include <string.h>
 #include <iostream>
 
+namespace cps_db {
+/**
+ * A simple hash function template that will work for various int types
+ */
+template <typename T>
+struct vector_hash {
+    std::size_t operator() (const std::vector<T> &c) const {
+        std::size_t rc;
+        for ( auto it : c ) {
+            size_t _cur = std::hash<size_t>(it);
+            rc =  rc ^ (_cur << 3);
+        }
+        return rc;
+    }
+};
+
+}
+
+
 constexpr static const char * __get_local_ip() {
 	return "127.0.0.1";
 }
@@ -595,18 +614,8 @@ const char * cps_api_nodes::addr(const char *addr) {
 }
 
 void cps_api_key_del_node_attrs(cps_api_object_t obj) {
-	while (true) {
-		cps_api_object_attr_t attr = cps_api_object_get_data(obj,CPS_OBJECT_GROUP_GROUP);
-		if (attr==nullptr) break;
-		cps_api_object_attr_delete(obj,CPS_OBJECT_GROUP_GROUP);
-	}
-
-	while (true) {
-		cps_api_object_attr_t attr = cps_api_object_get_data(obj,CPS_OBJECT_GROUP_NODE);
-		if (attr==nullptr) break;
-		cps_api_object_attr_delete(obj,CPS_OBJECT_GROUP_NODE);
-	}
-
+	while (cps_api_object_attr_delete(obj,CPS_OBJECT_GROUP_GROUP)) ;
+	while (cps_api_object_attr_delete(obj,CPS_OBJECT_GROUP_NODE)) ;
 }
 
 bool cps_api_key_set_group(cps_api_object_t obj,const char *group) {

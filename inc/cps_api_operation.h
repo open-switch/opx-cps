@@ -484,9 +484,14 @@ public:
     cps_api_get_request_guard(cps_api_get_params_t*p) {
         param = p;
     }
+
+    void release() { param=nullptr; }
+    void set(cps_api_get_params_t*p=nullptr) { close(); param = p; }
     ~cps_api_get_request_guard() {
-        cps_api_get_request_close(param);
+    	close();
     }
+
+    void close() { if (param!=nullptr) cps_api_get_request_close(param); }
 };
 
 #endif

@@ -246,7 +246,7 @@ void cps_api_object_attr_fill_list(cps_api_object_t obj, size_t base_attr_id, cp
  * @param obj the object that contains the attribute to be deleted
  * @param attr the attribute of the item to delete
  */
-void cps_api_object_attr_delete(cps_api_object_t obj, cps_api_attr_id_t attr);
+bool cps_api_object_attr_delete(cps_api_object_t obj, cps_api_attr_id_t attr);
 
 /**
  * This API is meant for embedded objects - an object that contains objects itself.
