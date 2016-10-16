@@ -68,6 +68,11 @@ int cps_db::connection::get_fd() {
 
 pthread_once_t __thread_init = PTHREAD_ONCE_INIT;
 
+bool cps_db::connection::clone(connection &conn) {
+	conn.disconnect();
+	return conn.connect(_addr);
+}
+
 bool cps_db::connection::connect(const std::string &s_, const std::string &db_instance_, bool async_) {
     size_t _port_pos = s_.rfind(":");
     if (_port_pos==std::string::npos) {
@@ -194,7 +199,7 @@ bool handle_class_key(request_walker_contexct_t &ctx) {
 bool handle_instance_key(request_walker_contexct_t &ctx) {
     if (!ctx.enough(1)) return false;
     ctx.key_scratch.resize(ctx.key_scratch.size()+1);
-    if (!cps_db::dbkey_from_instance_key(ctx.key_scratch[++ctx.key_scratch_len],ctx._cur->_object)) return false;
+    if (!cps_db::dbkey_from_instance_key(ctx.key_scratch[++ctx.key_scratch_len],ctx._cur->_object,false)) return false;
     ctx.set_current_entry(&ctx.key_scratch[ctx.key_scratch_len][0],ctx.key_scratch[ctx.key_scratch_len].size());
     return true;
 }

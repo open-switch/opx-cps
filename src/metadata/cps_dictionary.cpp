@@ -136,6 +136,30 @@ const cps_class_map_node_details_int_t * cps_dict_find_by_id(cps_api_attr_id_t i
     return it->second.get();
 }
 
+cps_class_map_node_details_int_t * cps_dict_find_by_id(cps_api_attr_id_t id, bool writable) {
+    cps_class_data_has_been_loaded(); (void)writable;
+    auto it = _class_def.find(id);
+    if (it==_class_def.end()) return nullptr;
+    return it->second.get();
+}
+
+cps_class_map_node_details_int_t * cps_dict_find_by_key(const cps_api_key_t *key, size_t offset) {
+    cps_class_data_has_been_loaded();
+
+	cps_class_map_node_details_int_t *ref= nullptr;
+
+	const cps_api_key_element_t *_src = cps_api_key_elem_start((cps_api_key_t*)key);
+	size_t _src_len = cps_api_key_get_len((cps_api_key_t*)key);
+
+	if (_src_len<=offset) return nullptr;
+
+	_key_to_map_element.find(_src+offset,_src_len-offset,ref,true);
+	if (ref==nullptr) return nullptr;
+	return ref;
+}
+
+
+
 void cps_dict_walk(void *context, cps_dict_walk_fun fun) {
     std_mutex_simple_lock_guard lg(&lock);
     cps_class_data_has_been_loaded();
@@ -154,7 +178,7 @@ cps_api_return_code_t cps_class_map_init(cps_api_attr_id_t id, const cps_api_att
     if(ids_len==0) return cps_api_ret_code_ERR;
 
     if (_class_def.find(id)!=_class_def.end()) {
-        EV_LOG(ERR,DSAPI,0,"CPS-META","ID %d is already used by another component - %s failed",id,details->name);
+        EV_LOGGING(DSAPI,WARNING,0,"CPS-META","ID %d is already used by another component - %s failed",id,details->name);
         return cps_api_ret_code_ERR;
     }
 
@@ -266,20 +290,10 @@ bool cps_class_string_to_key(const char *str, cps_api_attr_id_t *ids, size_t *ma
 }
 
 const char * cps_class_string_from_key(cps_api_key_t *key, size_t offset) {
-    cps_api_key_t _key ;
-    //if the offset is !=0... then need to do some additional processing..
-    if (offset > 0) {
-        cps_api_key_copy(&_key,key);
-        for (size_t ix = 0; ix < offset; ++ix)
-            cps_api_key_remove_element(&_key, 0);
-        key = &_key;
-    }
-
-    cps_class_map_node_details_int_t *ref= nullptr;
     std_mutex_simple_lock_guard lg(&lock);
-    _key_to_map_element.find(key,ref,true);
-    if (ref==nullptr) return nullptr;
-    return ref->full_path.c_str();
+	cps_class_map_node_details_int_t * it = cps_dict_find_by_key(key,offset);
+    if (it==nullptr) return nullptr;
+    return it->full_path.c_str();
 }
 
 
@@ -316,6 +330,23 @@ cps_api_attr_id_t *cps_api_attr_name_to_id(const char *name) {
     auto it = _str_map.find(name);
     if (it==_str_map.end()) return nullptr;
     return &it->second->id;
+}
+
+const std::vector<cps_api_attr_id_t> & cps_api_key_attrs(const cps_api_key_t *key, size_t key_offset) {
+	std_mutex_simple_lock_guard lg(&lock);
+	static const std::vector<cps_api_attr_id_t> _fake;
+	cps_class_map_node_details_int_t * it = cps_dict_find_by_key((cps_api_key_t*)key,key_offset);
+
+	if (it==nullptr) return _fake;
+	if (it->key_ids.size()==0) {
+		for (auto &_id : it->ids ) {
+			const cps_class_map_node_details_int_t * _id_entry = cps_dict_find_by_id(_id);
+			if (_id_entry==nullptr) continue;
+			if (_id_entry->attr_type == CPS_CLASS_ATTR_T_LEAF) it->key_ids.push_back(_id_entry->id);
+			if (it->key_ids.size()>=CPS_OBJ_MAX_KEY_LEN) break;	//sane termination - key can't be longer
+		}
+	}
+	return it->key_ids;
 }
 
 int    cps_api_enum_value(cps_api_attr_id_t id, const char *tag) {

@@ -8,6 +8,9 @@
 
 #include "cps_api_db.h"
 
+#include "cps_api_db_response.h"
+
+#include "event_log.h"
 
 namespace {
 
@@ -16,11 +19,11 @@ using _pipeline_function = std::function<bool(cps_db::connection &conn,
 
 bool pipeline_loop(cps_db::connection &conn,cps_api_object_list_t objs,size_t range,
 		const _pipeline_function &request,  const _pipeline_function &response) {
-    size_t list_start = 0;
-    size_t list_end = cps_api_object_list_size(objs);
+    ssize_t list_start = 0;
+    ssize_t list_end = cps_api_object_list_size(objs);
 
-    size_t _fill=0;
-    size_t _click = range;
+    ssize_t _fill=0;
+    ssize_t _click = range;
     for ( ; list_start < list_end ; ++list_start ) {
     	//_fill+=_click;
 
@@ -45,6 +48,7 @@ bool pipeline_loop(cps_db::connection &conn,cps_api_object_list_t objs,size_t ra
     return true;
 }
 
+/**
 bool pipeline_ops(cps_db::connection &conn,cps_api_object_list_t objs) {
 
 
@@ -91,17 +95,81 @@ bool pipeline_ops(cps_db::connection &conn,cps_api_object_list_t objs) {
     }
     return true;
 }
+*/
+}
+
+bool cps_db::store_objects(cps_db::connection &conn, cps_api_object_list_t objs) {
+
+	cps_api_object_guard og(cps_api_object_create());
+
+	return pipeline_loop(conn,objs,1000,
+			[&](cps_db::connection &conn,size_t ix, size_t mx, cps_api_object_list_t objs) -> bool {
+			for ( ; ix < mx ; ++ix ) {
+				cps_db::connection::db_operation_atom_t e[2];
+				e[0].from_string("HSET");
+				e[1].from_object(cps_api_object_list_get(objs,ix),true,true);
+				if (!conn.operation(e,sizeof(e)/sizeof(*e),false)) return false;
+			}
+			return true;
+		},[&](cps_db::connection &conn,	size_t ix, size_t mx, cps_api_object_list_t objs) -> bool {
+		    for ( ; ix < mx ; ++ix ) {
+		    	cps_db::response_set resp;
+		    	if (conn.response(resp,false)) {
+		    		response r = resp.get_response(0);
+		    		if (!r.valid()) {
+		    			EV_LOGGING(DSAPI,ERR,"CPS-DB-PIPE","Failed to HSET");
+		    		}
+		    		continue;
+		    	}
+		    	return false;
+		    }
+			return true;
+		});
+}
 
 
+bool cps_db::merge_objects(cps_db::connection &conn, cps_api_object_list_t objs) {
 
-bool cps_db::delete_objects(cps_db::connection &conn,cps_api_object_list_t objs) {
+	cps_api_object_guard og(cps_api_object_create());
+
+	return pipeline_loop(conn,objs,1000,
+			[&](cps_db::connection &conn,size_t ix, size_t mx, cps_api_object_list_t objs) -> bool {
+			for ( ; ix < mx ; ++ix ) {
+				cps_db::connection::db_operation_atom_t e[3];
+				e[0].from_string("HGET");
+				e[1].from_object(cps_api_object_list_get(objs,ix),true,false);
+				e[2].from_string("object");
+				if (!conn.operation(e,sizeof(e)/sizeof(*e),false)) return false;
+			}
+			return true;
+		},[&](cps_db::connection &conn,	size_t ix, size_t mx, cps_api_object_list_t objs) -> bool {
+		    for ( ; ix < mx ; ++ix ) {
+		    	cps_db::response_set resp;
+		    	cps_api_object_t o = cps_api_object_list_get(objs,ix);
+		    	if (conn.response(resp,false)) {
+		    		response r = resp.get_response(0);
+		    	    if (r.is_str() && cps_api_array_to_object(r.get_str(),r.get_str_len(),og.get())) {
+		    	    	if (cps_api_object_attr_merge(og.get(),o,true)) {
+		    	    		cps_api_object_clone(o,og.get());
+		    	    	}
+		    	    }
+		    		continue;
+		    	}
+		    	return false;
+		    }
+			return true;
+		});
+}
+
+
+bool cps_db::delete_object_list(cps_db::connection &conn,cps_api_object_list_t objs) {
 	return pipeline_loop(conn,objs,1000,
 			[&](cps_db::connection &conn,size_t ix, size_t mx, cps_api_object_list_t objs) -> bool {
 			for ( ; ix < mx ; ++ix ) {
 				cps_db::connection::db_operation_atom_t e[2];
 				e[0].from_string("DEL");
 				e[1].from_object(cps_api_object_list_get(objs,ix),true,false);
-				if (!conn.operation(e,2,false)) return false;
+				if (!conn.operation(e,sizeof(e)/sizeof(*e),false)) return false;
 			}
 			return true;
 		},[&](cps_db::connection &conn,	size_t ix, size_t mx, cps_api_object_list_t objs) -> bool {

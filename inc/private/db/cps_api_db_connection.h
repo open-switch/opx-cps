@@ -62,8 +62,8 @@ public:
 
     void disconnect();
     bool reconnect();
-
     bool connect(const std::string &em, const std::string &db_instance="", bool async=false);
+    bool clone(connection &conn);
 
     int get_fd();
 
@@ -119,6 +119,9 @@ public:
     cps_db::connection &get() { return *_conn; }
 
     connection_request(cps_db::connection_cache & cache, const char *addr);
+    connection_request(cps_db::connection_cache & cache, const std::string &addr) :
+    	connection_request(cache,addr.c_str()) {}
+
     ~connection_request() ;
 };
 

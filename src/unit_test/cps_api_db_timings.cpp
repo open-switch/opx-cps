@@ -82,6 +82,16 @@ TEST(cps_api_db,init) {
     }
 }
 
+TEST(cps_api_db,db_clear_all) {
+    cps_db::connection con;
+    ASSERT_TRUE(con.connect(DEFAULT_REDIS_ADDR,"0",false));
+    cps_api_object_list_guard lg(cps_api_object_list_create());
+    cps_api_object_guard og(cps_api_object_create());
+    cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),BASE_IP_IPV6,cps_api_qualifier_TARGET);
+    ASSERT_TRUE(cps_db::get_objects(con,og.get(),lg.get()));
+    ASSERT_TRUE(cps_db::delete_object_list(con,lg.get()));
+}
+
 TEST(cps_api_db,set_100_pieces_of_data) {
     cps_db::connection con;
     ASSERT_TRUE(con.connect(DEFAULT_REDIS_ADDR,"0",false));
@@ -103,7 +113,7 @@ TEST(cps_api_db,del_100_pieces_of_data) {
     ASSERT_TRUE(con.connect(DEFAULT_REDIS_ADDR,"0",false));
     cps_api_object_guard og(cps_api_object_create());
     cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),BASE_IP_IPV6,cps_api_qualifier_TARGET);
-    ASSERT_TRUE(cps_db::delete_objects(con,_100.get()));
+    ASSERT_TRUE(cps_db::delete_object_list(con,_100.get()));
 }
 
 TEST(cps_api_db,set_1000_pieces_of_data) {
@@ -125,7 +135,7 @@ TEST(cps_api_db,get_1000_pieces_of_data) {
 TEST(cps_api_db,del_1000_pieces_of_data) {
     cps_db::connection con;
     ASSERT_TRUE(con.connect(DEFAULT_REDIS_ADDR,"0",false));
-    ASSERT_TRUE(cps_db::delete_objects(con,_1000.get()));
+    ASSERT_TRUE(cps_db::delete_object_list(con,_1000.get()));
 }
 
 TEST(cps_api_db,set_10000_pieces_of_data) {
@@ -147,7 +157,7 @@ TEST(cps_api_db,get_10000_pieces_of_data) {
 TEST(cps_api_db,del_10000_pieces_of_data) {
     cps_db::connection con;
     ASSERT_TRUE(con.connect(DEFAULT_REDIS_ADDR,"0",false));
-    ASSERT_TRUE(cps_db::delete_objects(con,_10000.get()));
+    ASSERT_TRUE(cps_db::delete_object_list(con,_10000.get()));
 }
 
 TEST(cps_api_db,set_100000_pieces_of_data) {
@@ -169,7 +179,7 @@ TEST(cps_api_db,get_100000_pieces_of_data) {
 TEST(cps_api_db,del_100000_pieces_of_data) {
     cps_db::connection con;
     ASSERT_TRUE(con.connect(DEFAULT_REDIS_ADDR,"0",false));
-    ASSERT_TRUE(cps_db::delete_objects(con,_100000.get()));
+    ASSERT_TRUE(cps_db::delete_object_list(con,_100000.get()));
 }
 
 int main(int argc, char **argv) {

@@ -6,6 +6,9 @@
  */
 
 #include "cps_api_db.h"
+#include "cps_api_db_response.h"
+
+#include <hiredis/hiredis.h>
 
 bool cps_db::delete_object(cps_db::connection &conn,const char *key, size_t key_len) {
 	cps_db::connection::db_operation_atom_t e[2];
@@ -44,7 +47,7 @@ bool cps_db::atomic_count_change(cps_db::connection &conn,bool inc, const char *
     return false;
 }
 
-bool cps_db::fetch_all_keys(cps_db::connection &conn, const void *filt, size_t flen,
+bool cps_db::walk_keys(cps_db::connection &conn, const void *filt, size_t flen,
         const std::function<void(const void *key, size_t klen)> &fun) {
 
     std::string start = "0";
@@ -95,17 +98,31 @@ bool cps_db::store_object(cps_db::connection &conn,cps_api_object_t obj) {
     return r.is_int() && (r.get_int()==0 || r.get_int()==1);
 }
 
+bool cps_db::get_object(cps_db::connection &conn, const std::vector<char> &key, cps_api_object_t obj) {
+    cps_db::connection::db_operation_atom_t e[3];
+    e[0].from_string("HGET");
+    e[1].from_string(&key[0],key.size());
+    e[2].from_string("object");
+    response_set resp;
+    if (!conn.command(e,3,resp)) {
+        return false;
+    }
 
-bool cps_db::get_objects(cps_db::connection &conn, cps_api_object_list_t filters,cps_api_object_list_t objects) {
+    cps_db::response r = resp.get_response(0);
 
+    bool rc = false;
+
+    if (r.is_str() && cps_api_array_to_object(r.get_str(),r.get_str_len(),obj)) {
+        rc = true;
+    }
+
+    return rc;
 }
 
-bool cps_db::merge_objects(cps_db::connection &conn, cps_api_object_list_t obj_list) {
-
-
-
-    std::vector<char> k;
-    if (!cps_db::dbkey_from_instance_key(k,obj)) return false;
-    return get_objects(conn,k,obj_list);
+bool cps_db::get_object(cps_db::connection &conn, cps_api_object_t obj) {
+    std::vector<char> key;
+    if (!cps_db::dbkey_from_instance_key(key,obj,false)) return false;
+    return get_object(conn,key,obj);
 }
+
 

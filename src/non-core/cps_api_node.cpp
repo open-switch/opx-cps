@@ -106,7 +106,7 @@ cps_api_return_code_t cps_api_delete_node_group(const char *grp) {
     cps_api_object_attr_add(og.get(),CPS_NODE_GROUP_NAME,grp,strlen(grp)+1);
 
     cps_db::connection_request b(cps_db::ProcessDBCache(),DEFAULT_REDIS_ADDR);
-
+    if (!b.valid()) return cps_api_ret_code_ERR;
     bool rc = false;
     if ((rc=cps_db::delete_object(b.get(),og.get()))) {
         cps_api_object_set_type_operation(cps_api_object_key(og.get()),cps_api_oper_DELETE);
@@ -184,8 +184,9 @@ cps_api_return_code_t cps_api_create_global_instance(cps_api_node_group_t *group
 /// just not sure maybe we should require each node to do its own global db config
     if (!cps_api_node_set_iterate(group->id,[&db_node](const std::string &name,void *c){
             cps_db::connection_request r(cps_db::ProcessDBCache(),name.c_str());
-                cps_db::store_object(r.get(),db_node.get());
-                return;
+            if (!r.valid()) return;
+            cps_db::store_object(r.get(),db_node.get());
+            return;
         },nullptr)) {
         return cps_api_ret_code_ERR;
     }

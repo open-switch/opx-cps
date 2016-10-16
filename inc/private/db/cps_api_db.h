@@ -30,8 +30,11 @@
 #define CPS_DB_MAX_ITEMS_PER_PIPELINE 200
 
 namespace cps_db {
+
+
     bool dbkey_from_class_key(std::vector<char> &lst, const cps_api_key_t *key);
-    bool dbkey_from_instance_key(std::vector<char> &lst, cps_api_object_t obj);
+    bool dbkey_from_instance_key(std::vector<char> &lst,cps_api_object_t obj, bool escape);
+    bool dbkey_instance_or_wildcard(std::vector<char> &lst, cps_api_object_t obj, bool &is_wildcard);
 
     static inline cps_api_qualifier_t QUAL(cps_api_key_t *key) { return cps_api_key_get_qual(key); }
 
@@ -58,10 +61,10 @@ namespace cps_db {
  * Wrappers to the optimized functions to handle C++ constructs when available
 */
 namespace cps_db {
-	bool delete_object(cps_db::connection &conn,const std::vector<char> &key) {
+	static inline bool delete_object(cps_db::connection &conn,const std::vector<char> &key) {
 		return cps_db::delete_object(conn,&key[0],key.size());
 	}
-    bool get_sequence(cps_db::connection &conn, std::vector<char> &key, int64_t &cntr) {
+	static inline bool get_sequence(cps_db::connection &conn, std::vector<char> &key, int64_t &cntr) {
     	return cps_db::atomic_count_change(conn,true,&key[0],key.size(),cntr);
     }
 }
@@ -70,7 +73,11 @@ namespace cps_db {
 
 	bool delete_object(cps_db::connection &conn,cps_api_object_t obj);
 
-	bool delete_objects(cps_db::connection &conn,cps_api_object_list_t objs);
+	//bool delete_objects(cps_db::connection &conn,cps_api_object_t objs);
+
+	bool delete_object_list(cps_db::connection &conn,cps_api_object_list_t objs);
+
+	bool merge_objects(cps_db::connection &conn, cps_api_object_list_t obj_list);
 
 
 	bool multi_start(cps_db::connection &conn);

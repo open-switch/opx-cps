@@ -288,7 +288,7 @@ static cps_api_return_code_t _register_one_object(cps_api_event_service_handle_t
     const char *_group = cps_api_key_get_group(object);
 
     std::vector<char> _key;
-    cps_db::dbkey_from_instance_key(_key,object);
+    cps_db::dbkey_from_instance_key(_key,object,true);
     if (_key.size()==0) {
         static const int CPS_OBJ_STR_LEN = 1000;
         char buff[CPS_OBJ_STR_LEN];
@@ -348,7 +348,7 @@ static cps_api_return_code_t _cps_api_event_service_publish_msg(cps_api_event_se
     bool sent = true;
     cps_api_node_set_iterate(_group,[&msg,&sent](const std::string &name,void *context){
         cps_db::connection_request r(cps_db::ProcessDBCache(),name.c_str());
-        sent = sent && cps_db::publish(r.get(),msg);
+        sent = sent && r.valid() && cps_db::publish(r.get(),msg);
     },nullptr);
 
     return sent? cps_api_ret_code_OK : cps_api_ret_code_ERR;

@@ -24,7 +24,6 @@ cps-api-common_SRCS+=cps_string_utils.cpp
 cps-api-common_SRCS+=cps_api_operation_debug.cpp
 cps-api-common_SRCS+=cps_api_vector_utils.cpp
 cps-api-common_SRCS+=cps_comm_utils.cpp
-cps-api-common_SRCS+=cps_api_core_utils.cpp
 cps-api-common_SRCS+=cps_api_key_utils.cpp
 
 cps-api-common_SRCS+=non-core/cps_api_object_tools.cpp
@@ -37,7 +36,9 @@ cps-api-common_SRCS+=metadata/cps_dictionary.cpp
 cps-api-common_SRCS+=metadata/cps_dictionary_loader.cpp
 cps-api-common_SRCS+=metadata/cps_api_metadata_import.cpp
 
+cps-api-common_SRCS+=db/cps_api_core_utils.cpp
 cps-api-common_SRCS+=db/cps_api_db_direct.cpp
+cps-api-common_SRCS+=db/cps_api_db_pipeline.cpp
 cps-api-common_SRCS+=db/cps_api_db_fast.cpp
 cps-api-common_SRCS+=db/cps_redis.cpp
 cps-api-common_SRCS+=db/cps_api_db_connection.cpp

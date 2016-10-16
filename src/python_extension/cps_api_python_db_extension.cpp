@@ -47,8 +47,7 @@ PyObject * py_cps_api_db_commit(PyObject *self, PyObject *args, PyObject *_keydi
     	_prev.set(cps_api_object_create());
     }
 
-
-    cps_api_return_code_t rc = cps_api_db_commit(_obj.get(),_prev.get(),__pub==Py_True);
+    cps_api_return_code_t rc = cps_api_db_commit_one(_obj.get(),_prev.get(),__pub==Py_True);
     if (_prev.valid()) {
     	PyRef r(cps_obj_to_dict(_prev.get()));
     	PyDict_Clear(__prev);

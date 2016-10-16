@@ -51,7 +51,8 @@ cps_api_return_code_t cps_api_db_operation_commit(cps_api_transaction_params_t *
     if (prev==nullptr) prev = cps_api_object_list_create_obj_and_append(param->prev);
 
     bool _send_event = cps_api_obj_has_auto_events(o);
-    return cps_api_db_commit(o,prev,_send_event);
+
+    return cps_api_db_commit_one(o,prev,_send_event);
 }
 
 cps_api_return_code_t cps_api_db_operation_rollback(cps_api_transaction_params_t * param, size_t ix) {
@@ -67,5 +68,5 @@ cps_api_return_code_t cps_api_db_operation_rollback(cps_api_transaction_params_t
     if (op==cps_api_oper_DELETE)_key_patch.set(cps_api_oper_CREATE);
     if (op==cps_api_oper_CREATE) _key_patch.set(cps_api_oper_DELETE);
 
-    return cps_api_db_commit(prev,nullptr,_send_event);
+    return cps_api_db_commit_one(prev,nullptr,_send_event);
 }

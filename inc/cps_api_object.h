@@ -103,7 +103,8 @@ typedef void * cps_api_object_t;
 /**
  * The type of a list of objects
  */
-typedef void * cps_api_object_list_t;
+
+typedef void* cps_api_object_list_t;
 
 #define CPS_API_OBJ_OVERHEAD (100)
 #define CPS_API_MIN_OBJ_LEN (sizeof(cps_api_key_t) + CPS_API_OBJ_OVERHEAD + 256)

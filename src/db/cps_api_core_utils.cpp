@@ -6,6 +6,7 @@
 
 bool cps_api_core_publish(cps_api_object_t obj) {
     cps_db::connection_request r(cps_db::ProcessDBCache(),DEFAULT_REDIS_ADDR);
+    if (!r.valid()) return false;
     return cps_db::publish(r.get(),obj);
 }
 

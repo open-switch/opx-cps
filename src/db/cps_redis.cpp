@@ -14,7 +14,6 @@
  * permissions and limitations under the License.
  */
 
-
 #include "cps_api_object.h"
 #include "cps_api_key.h"
 #include "cps_api_object_key.h"
@@ -34,25 +33,6 @@
 
 
 static std::mutex _mutex;
-
-bool cps_db::get_sequence(cps_db::connection &conn, std::vector<char> &key, ssize_t &cntr) {
-    cps_db::connection::db_operation_atom_t e[2];
-    e[0].from_string("INCR");
-    e[1].from_string(&key[0],key.size());
-
-    response_set resp;
-
-    if (!conn.command(e,sizeof(e)/sizeof(*e),resp)) {
-        return false;
-    }
-
-    cps_db::response r = resp.get_response(0);
-    if (r.is_int()) {
-        cntr = (r.get_int());
-        return true;
-    }
-    return false;
-}
 
 bool cps_db::ping(cps_db::connection &conn) {
     cps_db::connection::db_operation_atom_t e;
@@ -151,10 +131,20 @@ bool cps_db::multi_end(cps_db::connection &conn, bool commit) {
 
 bool cps_db::delete_object(cps_db::connection &conn,cps_api_object_t obj) {
     std::vector<char> key;
-    if (cps_db::dbkey_from_instance_key(key,obj)) {
-        return delete_object(conn,key);
+    bool _is_wildcard =false;
+    if (!cps_db::dbkey_instance_or_wildcard(key,obj,_is_wildcard)) {
+        return false;
     }
-    return false;
+    if (!_is_wildcard) {
+    	cps_db::delete_object(conn,&key[0],key.size());
+    } else {
+    	cps_db::connection_request r(cps_db::ProcessDBCache(),conn.addr());
+    	if (!r.valid()) return false;
+    	cps_db::walk_keys(r.get(),&key[0],key.size(),[&](const void *data, size_t len) {
+    		cps_db::delete_object(conn,(const char *)data,len);
+    	});
+    }
+    return true;
 }
 
 namespace {
@@ -209,38 +199,57 @@ bool op_on_objects(const char *op, cps_db::connection &conn,cps_api_object_list_
 }
 }
 
-
-bool cps_db::store_objects(cps_db::connection &conn,cps_api_object_list_t objs) {
-    return op_on_objects("HSET",conn,objs);
+bool cps_db::subscribe(cps_db::connection &conn, cps_api_object_t obj) {
+    std::vector<char> key;
+    if (!cps_db::dbkey_from_instance_key(key,obj,true)) return false;
+    return subscribe(conn,key);
 }
 
-
-bool cps_db::get_object(cps_db::connection &conn, const std::vector<char> &key, cps_api_object_t obj) {
+bool cps_db::publish(cps_db::connection &conn, cps_api_object_t obj) {
     cps_db::connection::db_operation_atom_t e[3];
-    e[0].from_string("HGET");
-    e[1].from_string(&key[0],key.size());
-    e[2].from_string("object");
+    e[0].from_string("PUBLISH");
+    e[1]._atom_type = cps_db::connection::db_operation_atom_t::obj_fields_t::obj_field_OBJ_INSTANCE;
+    e[1]._object = obj;
+    e[2]._atom_type = cps_db::connection::db_operation_atom_t::obj_fields_t::obj_field_OBJ_DATA;
+    e[2]._object = obj;
+
     response_set resp;
     if (!conn.command(e,3,resp)) {
         return false;
     }
 
     cps_db::response r = resp.get_response(0);
-
-    bool rc = false;
-
-    if (r.is_str() && cps_api_array_to_object(r.get_str(),r.get_str_len(),obj)) {
-        rc = true;
-    }
+    bool rc = r.is_int();
 
     return rc;
 }
 
-bool cps_db::get_object(cps_db::connection &conn, cps_api_object_t obj) {
-    std::vector<char> key;
-    if (!cps_db::dbkey_from_instance_key(key,obj)) return false;
-    return get_object(conn,key,obj);
+bool cps_db::subscribe(cps_db::connection &conn, std::vector<char> &key) {
+    cps_db::connection::db_operation_atom_t e[2];
+    e[0].from_string("PSUBSCRIBE");
+    if (key[key.size()-1]!='*') cps_utils::cps_api_vector_util_append(key,"*",1);
+    e[1].from_string(&key[0],key.size());
+
+    response_set resp;
+    if (!conn.command(e,2,resp)) {
+        EV_LOG(ERR,DSAPI,0,"CPS-DB-SUB","Subscribe failed to return response");
+        return false;
+    }
+
+    cps_db::response r = resp.get_response(0);
+    if (r.elements()==3) {
+        cps_db::response msg (r.element_at(0));
+        cps_db::response status (r.element_at(2));
+        if (msg.is_str() && strcasecmp(msg.get_str(),"psubscribe")==0) {
+
+            bool rc = (status.is_int() && status.get_int()>0);
+            if (!rc) EV_LOG(ERR,DSAPI,0,"CPS-DB-SUB","Subscribe failed rc %d",status.get_int());
+            return rc;
+        }
+    }
+    return false;
 }
+
 
 #include <iostream>
 #include "cps_string_utils.h"
@@ -328,8 +337,18 @@ bool cps_db::get_objects(cps_db::connection &conn,std::vector<char> &key,cps_api
 
 bool cps_db::get_objects(cps_db::connection &conn, cps_api_object_t obj,cps_api_object_list_t obj_list) {
     std::vector<char> k;
-    if (!cps_db::dbkey_from_instance_key(k,obj)) return false;
-    return get_objects(conn,k,obj_list);
+    bool wildcard = false;
+    if (!cps_db::dbkey_instance_or_wildcard(k,obj,wildcard)) return false;
+    if (wildcard) return get_objects(conn,k,obj_list);
+
+    cps_api_object_guard og(cps_api_object_create());
+    if (cps_db::get_object(conn,k,og.get())) {
+    	if (cps_api_object_list_append(obj_list,og.get())) {
+    		og.release();
+    		return true;
+    	}
+    }
+    return false;
 }
 
 

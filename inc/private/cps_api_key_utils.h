@@ -28,6 +28,11 @@ size_t cps_api_object_count_key_attrs(cps_api_object_t obj);
 void cps_api_object_iterate_key_attrs(cps_api_object_t obj, std::function<void(cps_api_object_t,
                                 cps_api_attr_id_t,void *,size_t)> &iter);
 
+uint64_t cps_api_hash_array(const cps_api_key_element_t *data, size_t len);
+
+int cps_api_key_array_matches(const cps_api_key_element_t *lhs, size_t lhs_size,
+		const cps_api_key_element_t *rhs, size_t rhs_size, bool exact) ;
+
 class cps_api_key_element_raw_value_monitor {
     cps_api_key_t *_key=nullptr;
     size_t _loc = 0;

@@ -16,6 +16,19 @@ struct cps_api_db_commit_bulk_t {
 };
 
 /**
+ * Initialize the bulk commit structure
+ * @param the structure to initialize
+ * @return true if successful otherwise false if out of memory
+ */
+bool cps_api_db_commit_bulk_init(cps_api_db_commit_bulk_t*);
+
+/**
+ * Clean up the objects contained within the bulk operation including all objects in the object list
+ * @param the strucutre to clean up
+ */
+void cps_api_db_commit_bulk_close(cps_api_db_commit_bulk_t*);
+
+/**
  * This function will take a object and attempt to perform the requested operation.
  * The function will attempt to update all objects.  If the communication to the DB fails or
  * some objects are not committed successfully, a error code will be returned and the objects will have an
@@ -27,6 +40,15 @@ struct cps_api_db_commit_bulk_t {
  */
 cps_api_return_code_t cps_api_db_commit_bulk(cps_api_db_commit_bulk_t *param);
 
+/**
+ * This API will take the existing object, look for the group ID and operation type and then optionally publish
+ * the response.
+ *
+ * @param obj to update/create/delete
+ * @param publish true if the object change should be published
+ * @return cps_api_ret_code_OK on success otherwise an error codition.
+ */
+cps_api_return_code_t cps_api_db_commit_one(cps_api_object_t obj, cps_api_object_t prev, bool publish);
 
 /**
  * This function will take a series of objects and attempt to perform the requested operation on them.
@@ -63,6 +85,13 @@ bool cps_api_db_get_filter_enable_connection(cps_api_object_t obj) ;
  */
 cps_api_return_code_t cps_api_db_get(cps_api_object_t obj,cps_api_object_list_t found);
 
-
+#ifdef __cplusplus
+class cps_api_db_commit_bulk_guard {
+	cps_api_db_commit_bulk_t *_entry;
+public:
+	cps_api_db_commit_bulk_guard(cps_api_db_commit_bulk_t *r) : _entry(r){}
+	~cps_api_db_commit_bulk_guard() { cps_api_db_commit_bulk_close(_entry); }
+};
+#endif
 
 #endif /* CPS_API_INC_CPS_API_DB_INTERFACE_ */

@@ -91,6 +91,12 @@ cps_api_attr_id_t *cps_api_attr_name_to_id(const char *name);
 t_std_error cps_api_yang_module_init(void);
 
 /**
+ * Find the key attribute list for an object.  Default key offset is 1 as we are skipping the qualifier (target/observed/etc..)
+ */
+const std::vector<cps_api_attr_id_t> & cps_api_key_attrs(const cps_api_key_t *key, size_t key_offset=1);
+
+
+/**
  * @}
  * @}
  */
