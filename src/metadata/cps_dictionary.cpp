@@ -26,13 +26,16 @@
 #include "cps_api_key.h"
 #include "cps_api_object_attr.h"
 
+#include "cps_class_map_query.h"
 
+#include "cps_string_utils.h"
 #include "std_mutex_lock.h"
 #include "event_log.h"
 
 #include <unordered_map>
 #include <memory>
-
+#include <functional>
+#include <inttypes.h>
 
 struct enum_field_t {
     std::string name;
@@ -146,16 +149,16 @@ cps_class_map_node_details_int_t * cps_dict_find_by_id(cps_api_attr_id_t id, boo
 cps_class_map_node_details_int_t * cps_dict_find_by_key(const cps_api_key_t *key, size_t offset) {
     cps_class_data_has_been_loaded();
 
-	cps_class_map_node_details_int_t *ref= nullptr;
+    cps_class_map_node_details_int_t *ref= nullptr;
 
-	const cps_api_key_element_t *_src = cps_api_key_elem_start((cps_api_key_t*)key);
-	size_t _src_len = cps_api_key_get_len((cps_api_key_t*)key);
+    const cps_api_key_element_t *_src = cps_api_key_elem_start((cps_api_key_t*)key);
+    size_t _src_len = cps_api_key_get_len((cps_api_key_t*)key);
 
-	if (_src_len<=offset) return nullptr;
+    if (_src_len<=offset) return nullptr;
 
-	_key_to_map_element.find(_src+offset,_src_len-offset,ref,true);
-	if (ref==nullptr) return nullptr;
-	return ref;
+    _key_to_map_element.find(_src+offset,_src_len-offset,ref,true);
+    if (ref==nullptr) return nullptr;
+    return ref;
 }
 
 
@@ -291,7 +294,7 @@ bool cps_class_string_to_key(const char *str, cps_api_attr_id_t *ids, size_t *ma
 
 const char * cps_class_string_from_key(cps_api_key_t *key, size_t offset) {
     std_mutex_simple_lock_guard lg(&lock);
-	cps_class_map_node_details_int_t * it = cps_dict_find_by_key(key,offset);
+    cps_class_map_node_details_int_t * it = cps_dict_find_by_key(key,offset);
     if (it==nullptr) return nullptr;
     return it->full_path.c_str();
 }
@@ -333,20 +336,20 @@ cps_api_attr_id_t *cps_api_attr_name_to_id(const char *name) {
 }
 
 const std::vector<cps_api_attr_id_t> & cps_api_key_attrs(const cps_api_key_t *key, size_t key_offset) {
-	std_mutex_simple_lock_guard lg(&lock);
-	static const std::vector<cps_api_attr_id_t> _fake;
-	cps_class_map_node_details_int_t * it = cps_dict_find_by_key((cps_api_key_t*)key,key_offset);
+    std_mutex_simple_lock_guard lg(&lock);
+    static const std::vector<cps_api_attr_id_t> _fake;
+    cps_class_map_node_details_int_t * it = cps_dict_find_by_key((cps_api_key_t*)key,key_offset);
 
-	if (it==nullptr) return _fake;
-	if (it->key_ids.size()==0) {
-		for (auto &_id : it->ids ) {
-			const cps_class_map_node_details_int_t * _id_entry = cps_dict_find_by_id(_id);
-			if (_id_entry==nullptr) continue;
-			if (_id_entry->attr_type == CPS_CLASS_ATTR_T_LEAF) it->key_ids.push_back(_id_entry->id);
-			if (it->key_ids.size()>=CPS_OBJ_MAX_KEY_LEN) break;	//sane termination - key can't be longer
-		}
-	}
-	return it->key_ids;
+    if (it==nullptr) return _fake;
+    if (it->key_ids.size()==0) {
+        for (auto &_id : it->ids ) {
+            const cps_class_map_node_details_int_t * _id_entry = cps_dict_find_by_id(_id);
+            if (_id_entry==nullptr) continue;
+            if (_id_entry->attr_type == CPS_CLASS_ATTR_T_LEAF) it->key_ids.push_back(_id_entry->id);
+            if (it->key_ids.size()>=CPS_OBJ_MAX_KEY_LEN) break;    //sane termination - key can't be longer
+        }
+    }
+    return it->key_ids;
 }
 
 int    cps_api_enum_value(cps_api_attr_id_t id, const char *tag) {
@@ -408,4 +411,129 @@ void cps_api_obj_set_auto_event(cps_api_key_t *key, bool automated_events) {
     } else {
         p->_automated_event = automated_events;
     }
+}
+
+
+std::string cps_api_object_attr_data_to_string(cps_api_attr_id_t id, const void * data, size_t len ) {
+    CPS_CLASS_DATA_TYPE_t _type = CPS_CLASS_DATA_TYPE_T_BIN;
+    cps_class_map_attr_type(id, &_type);
+
+    switch(_type) {
+    case CPS_CLASS_DATA_TYPE_T_UINT8:
+        return cps_string::sprintf("%x",*(uint8_t*)data);
+    case CPS_CLASS_DATA_TYPE_T_UINT16:
+        return cps_string::sprintf("%x",*(uint16_t*)data);
+    case CPS_CLASS_DATA_TYPE_T_UINT32:
+        return cps_string::sprintf("%x",*(uint32_t*)data);
+    case CPS_CLASS_DATA_TYPE_T_UINT64:
+        return cps_string::sprintf("%" PRIu64 ,*(uint64_t*)data);
+    case CPS_CLASS_DATA_TYPE_T_INT8:
+        return cps_string::sprintf("%d",*(int8_t*)data);
+    case CPS_CLASS_DATA_TYPE_T_INT16:
+        return cps_string::sprintf("%d",*(int16_t*)data);
+    case CPS_CLASS_DATA_TYPE_T_INT32:
+        return cps_string::sprintf("%d",*(int32_t*)data);
+    case CPS_CLASS_DATA_TYPE_T_INT64:
+        return cps_string::sprintf("%" PRId64 ,*(uint64_t*)data);
+    case CPS_CLASS_DATA_TYPE_T_STRING:
+        return std::string((const char*)data,len);
+    case CPS_CLASS_DATA_TYPE_T_ENUM:
+        {
+            const char * _val = cps_class_enum_id(id,*(int*)data);
+            if (_val==nullptr) return _val;
+            return cps_string::sprintf("%d",*(int*)data);
+        }
+    case CPS_CLASS_DATA_TYPE_T_BOOL:
+        return (*(bool*)data) ? "true" : "false";
+    case CPS_CLASS_DATA_TYPE_T_DOUBLE:
+        return cps_string::sprintf("%f",*(double*)data);
+    /* The following cases are handled by the default clause
+        //case CPS_CLASS_DATA_TYPE_T_OBJ_ID:
+        //CPS_CLASS_DATA_TYPE_T_DATE,
+        //CPS_CLASS_DATA_TYPE_T_IPV4,
+        //CPS_CLASS_DATA_TYPE_T_IPV6,
+        //CPS_CLASS_DATA_TYPE_T_IP,
+        //CPS_CLASS_DATA_TYPE_T_BIN,
+        //CPS_CLASS_DATA_TYPE_T_EMBEDDED,
+        //CPS_CLASS_DATA_TYPE_T_KEY,
+    */
+    default:
+        break;
+    }
+    return cps_string::tostring(data,len);
+}
+
+static std::string _escape(std::string data) {
+    size_t ix = 0;
+    while(true) {
+        auto _f = data.find('"',ix);
+        if (_f==std::string::npos) break;
+        data.insert(ix,"\"");
+    }
+    return std::move(data);
+}
+
+std::string cps_api_object_attr_as_string(cps_api_attr_id_t id, const void * data, size_t len) {
+    std::string _ret = cps_attr_id_to_name(id);
+    std::string _data = cps_api_object_attr_data_to_string(id,data,len);
+
+    return _ret + " : " + _escape(_data);
+}
+
+void cps_api_object_print(cps_api_object_t obj) {
+    printf("%s\n",cps_api_object_to_string(obj).c_str());
+}
+
+std::string cps_api_object_to_string(cps_api_object_t obj) {
+    std::vector<char> _buff;
+    const char * _key = cps_class_string_from_key(cps_api_object_key(obj),1);
+    const char * _qual = cps_class_qual_from_key(cps_api_object_key(obj));
+
+    std::string prefix = "";
+
+    if (_key==nullptr) {
+        _buff.resize(1024);
+        cps_api_key_print(cps_api_object_key(obj),&_buff[0],_buff.size());
+        prefix = &_buff[0];
+    } else {
+        prefix = std::string(_qual) +  "/"+ std::string(_key);
+    }
+    prefix += "\n";
+
+    std::function<std::string(const std::string &indent, const std::string &before, cps_api_object_it_t *head)>_handler =
+            [&] (const std::string &indent, const std::string &before, cps_api_object_it_t *head)-> std::string {
+
+        cps_api_object_it_t it = *head;
+
+        std::string current = before;
+
+        do {
+            if (!cps_api_object_it_valid(&it)) break;
+
+            cps_api_attr_id_t _id = cps_api_object_attr_id(it.attr);
+            size_t _len = cps_api_object_attr_len(it.attr);
+            void * _data = cps_api_object_attr_data_bin(it.attr);
+
+            CPS_CLASS_ATTR_TYPES_t _type = CPS_CLASS_ATTR_T_LEAF;
+            (void)cps_class_map_attr_class(_id,&_type);
+
+            if (_type==CPS_CLASS_ATTR_T_CONTAINER || _type==CPS_CLASS_ATTR_T_SUBSYSTEM ||
+                    _type==CPS_CLASS_ATTR_T_LIST) {
+                current += cps_string::sprintf("Container (%s) - length(%d)\n",
+                        cps_class_attr_type_to_string(_type),(int)_len);
+                current += _handler(indent+"  ",current,&it) ;
+            } else {
+                current += indent + cps_api_object_attr_as_string(_id,_data,_len) + "\n";
+            }
+            cps_api_object_it_next(&it);
+        } while (true);
+
+        return std::move(current);
+    };
+
+    cps_api_object_it_t it;
+    cps_api_object_it_begin(obj,&it);
+
+    return prefix + _handler("","",&it) + "\n";
+
 }

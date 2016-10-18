@@ -9,10 +9,10 @@
 #include "cps_api_operation.h"
 
 struct cps_api_db_commit_bulk_t {
-	cps_api_operation_types_t op;	//the operation type (set,delete,create)
-	cps_api_object_list_t objects; 	//the list of objects to be modified or deleted/stored
-	bool publish;	//true if the API will be required to publish change via cps event service
-	const char *node_group;
+    cps_api_operation_types_t op;    //the operation type (set,delete,create)
+    cps_api_object_list_t objects;     //the list of objects to be modified or deleted/stored
+    bool publish;    //true if the API will be required to publish change via cps event service
+    const char *node_group;
 };
 
 /**
@@ -46,22 +46,11 @@ cps_api_return_code_t cps_api_db_commit_bulk(cps_api_db_commit_bulk_t *param);
  *
  * @param obj to update/create/delete
  * @param publish true if the object change should be published
+ * @param prev the previous object that was in the DB before this operation (pass NULL for slightly more optimized)
  * @return cps_api_ret_code_OK on success otherwise an error codition.
  */
-cps_api_return_code_t cps_api_db_commit_one(cps_api_object_t obj, cps_api_object_t prev, bool publish);
+cps_api_return_code_t cps_api_db_commit_one(cps_api_operation_types_t op,cps_api_object_t obj, cps_api_object_t prev, bool publish);
 
-/**
- * This function will take a series of objects and attempt to perform the requested operation on them.
- * This API will attempt the operation specified on all object regardless of the failure of the previous attempt.
- * The return code for the operation will be contained within the returned object.
- * All *attempts* will be made to make this occur symulatniously but no guarentees
- *
- * @param objects the object to be modified or stored
- * @param publish true if an event should be sent after the update otherwise false
- * @return the return code will either indicate that all is well, and all operations passed (cps_api_ret_code_OK)
- *  or an error returned and each object will need to be checked to see which operation failed.
- */
-cps_api_return_code_t cps_api_db_commit_list(cps_api_object_list_t objects, bool publish);
 
 /**
  * On the provided object, set the connection flag on the filter.
@@ -85,12 +74,23 @@ bool cps_api_db_get_filter_enable_connection(cps_api_object_t obj) ;
  */
 cps_api_return_code_t cps_api_db_get(cps_api_object_t obj,cps_api_object_list_t found);
 
+
+/**
+ * Given the list of objects (containing instance keys) query the database for the exact matches.  This API
+ * doesn't support wildcard queries and therefore is able to save some overhead.
+ * @param objs the object list containing elements to query
+ * @param node_group can be left NULL - contains the node group for the get
+ * @return true on success otherwise false
+ */
+cps_api_return_code_t cps_api_db_get_bulk(cps_api_object_list_t objs, const char * node_group);
+
+
 #ifdef __cplusplus
 class cps_api_db_commit_bulk_guard {
-	cps_api_db_commit_bulk_t *_entry;
+    cps_api_db_commit_bulk_t *_entry;
 public:
-	cps_api_db_commit_bulk_guard(cps_api_db_commit_bulk_t *r) : _entry(r){}
-	~cps_api_db_commit_bulk_guard() { cps_api_db_commit_bulk_close(_entry); }
+    cps_api_db_commit_bulk_guard(cps_api_db_commit_bulk_t *r) : _entry(r){}
+    ~cps_api_db_commit_bulk_guard() { cps_api_db_commit_bulk_close(_entry); }
 };
 #endif
 

@@ -312,8 +312,35 @@ void cps_api_obj_set_auto_event(cps_api_key_t *key, bool automated_events);
  */
 bool cps_api_obj_has_auto_events(cps_api_object_t obj);
 
+
+/**
+ * Print the contents of the object to the standard output
+ * @param obj the object to display
+ */
+void cps_api_object_print(cps_api_object_t obj);
+
 #ifdef __cplusplus
 }
+
+#include <string>
+
+/**
+ * Convert the attribute ID and data to a printable string
+ * @param id the attribute ID
+ * @param data the data to display
+ * @param len the length of the data
+ * @return a string representation in the form of:
+ *             attrid : "data"
+ */
+std::string cps_api_object_attr_as_string(cps_api_attr_id_t id, const void * data, size_t len);
+
+/**
+ * Take the object and create a string that has the name (+ key attributes) along with the object
+ * @param obj the object to convert to a string
+ * @return a string containing a ascii representation of the object
+ */
+std::string cps_api_object_to_string(cps_api_object_t obj);
+
 #endif
 
 /**

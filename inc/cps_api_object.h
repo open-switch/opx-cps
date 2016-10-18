@@ -517,6 +517,22 @@ void cps_api_object_list_destroy(cps_api_object_list_t list, bool delete_objects
  */
 bool cps_api_object_list_append(cps_api_object_list_t list,cps_api_object_t obj);
 
+/**
+ * Merge the contents of the two lists into the "dest" list - essentially dest = (dest + add)
+ * @param dest one of the lists to merge
+ * @param add the list that you want to copy the contents from
+ * @return true if the lists have been merged successfully otherwise an error due to likely lack of memory
+ */
+bool cps_api_object_list_merge(cps_api_object_list_t dest, cps_api_object_list_t add) ;
+
+/**
+ * Clone a list into a new list and optionally deep copy all of the CPS objects.
+ *
+ * @param src the list of objects to be queried
+ * @param deep if all objects need to be deep copied
+ * @return the new list or nullptr if a memory issue occured
+ */
+cps_api_object_list_t cps_api_object_list_clone(cps_api_object_list_t src, bool deep) ;
 
 /**
  * Create an object and add it to the list.  If the creation of the object fails
@@ -535,6 +551,14 @@ cps_api_object_t cps_api_object_list_create_obj_and_append(cps_api_object_list_t
  * @param ix the index of the item to remove
  */
 void cps_api_object_list_remove(cps_api_object_list_t list,size_t ix);
+
+/**
+ * Removes all elements of the list but leaves the list intact.
+ * Optionally delete all objects that are contained by the list
+ * @param list the list in question
+ * @param delete_objects true if the user wants all contained objects to also be freed
+ */
+void cps_api_object_list_clear(cps_api_object_list_t list, bool delete_objects);
 
 /**
  * Get an object in the list using an index.

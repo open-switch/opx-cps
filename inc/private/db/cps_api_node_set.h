@@ -23,8 +23,8 @@
 #include <vector>
 #include <unordered_set>
 
-bool cps_api_node_set_iterate(const std::string &group_name,const std::function<void (const std::string &node, void*context)> &operation,
-        void *context);
+bool cps_api_node_set_iterate(const std::string &group_name,
+        const std::function<bool (const std::string &node)> &operation);
 
 bool cps_api_db_del_node_group(const char *group);
 

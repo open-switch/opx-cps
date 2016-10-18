@@ -52,10 +52,17 @@ cps_api_return_code_t cps_api_db_operation_commit(cps_api_transaction_params_t *
 
     bool _send_event = cps_api_obj_has_auto_events(o);
 
-    return cps_api_db_commit_one(o,prev,_send_event);
+    cps_api_object_set_type_operation(cps_api_object_key(o),cps_api_oper_CREATE);
+
+    return cps_api_db_commit_one(
+            cps_api_object_type_operation(cps_api_object_key(o)),
+            o,prev,_send_event);
 }
 
 cps_api_return_code_t cps_api_db_operation_rollback(cps_api_transaction_params_t * param, size_t ix) {
+    cps_api_object_t o = cps_api_object_list_get(param->change_list,ix);
+    STD_ASSERT(o!=nullptr);
+
     cps_api_object_t prev = cps_api_object_list_get(param->prev,ix);
     if (prev==nullptr) return cps_api_ret_code_ERR;
 
@@ -64,9 +71,9 @@ cps_api_return_code_t cps_api_db_operation_rollback(cps_api_transaction_params_t
     cps_api_key_element_raw_value_monitor _key_patch(cps_api_object_key(prev),
             CPS_OBJ_KEY_ATTR_POS);
 
-    cps_api_operation_types_t op = cps_api_object_type_operation(cps_api_object_key(prev));
-    if (op==cps_api_oper_DELETE)_key_patch.set(cps_api_oper_CREATE);
-    if (op==cps_api_oper_CREATE) _key_patch.set(cps_api_oper_DELETE);
+    cps_api_operation_types_t op = cps_api_object_type_operation(cps_api_object_key(o));
+    if (op==cps_api_oper_DELETE)op = cps_api_oper_CREATE;
+    if (op==cps_api_oper_CREATE) op = (cps_api_oper_DELETE);
 
-    return cps_api_db_commit_one(prev,nullptr,_send_event);
+    return cps_api_db_commit_one(op,prev,nullptr,_send_event);
 }

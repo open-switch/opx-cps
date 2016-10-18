@@ -11,11 +11,11 @@
 #include <hiredis/hiredis.h>
 
 bool cps_db::delete_object(cps_db::connection &conn,const char *key, size_t key_len) {
-	cps_db::connection::db_operation_atom_t e[2];
-	e[0].from_string("DEL");
-	e[1].from_string(key,key_len);
-	response_set resp;
-	return conn.command(e,2,resp);
+    cps_db::connection::db_operation_atom_t e[2];
+    e[0].from_string("DEL");
+    e[1].from_string(key,key_len);
+    response_set resp;
+    return conn.command(e,2,resp);
 }
 
 bool cps_db::atomic_count_set(cps_db::connection &conn,const char *key, size_t key_len, int64_t data) {
@@ -28,7 +28,7 @@ bool cps_db::atomic_count_set(cps_db::connection &conn,const char *key, size_t k
 }
 
 bool cps_db::atomic_count_change(cps_db::connection &conn,bool inc, const char *key, size_t key_len,
-		int64_t &data) {
+        int64_t &data) {
     cps_db::connection::db_operation_atom_t e[2];
     e[0].from_string(inc==true? "INCR" : "DECR");
     e[1].from_string(key,key_len);
@@ -84,39 +84,44 @@ bool cps_db::walk_keys(cps_db::connection &conn, const void *filt, size_t flen,
     return true;
 }
 
-bool cps_db::store_object(cps_db::connection &conn,cps_api_object_t obj) {
+bool cps_db::set_object_request(cps_db::connection &conn, cps_api_object_t obj, bool *check_exists, size_t *lifetime) {
     cps_db::connection::db_operation_atom_t e[2];
     e[0].from_string("HSET");
-    e[1]._atom_type = cps_db::connection::db_operation_atom_t::obj_fields_t::obj_field_OBJ_KEY_AND_DATA;
-    e[1]._object = obj;
-
-    response_set resp;
-    if (!conn.command(e,2,resp)) {
-        return false;
-    }
-    cps_db::response r = resp.get_response(0);
-    return r.is_int() && (r.get_int()==0 || r.get_int()==1);
+    e[1].from_object(obj,true,true);
+    return conn.operation(e,sizeof(e)/sizeof(*e));
 }
 
-bool cps_db::get_object(cps_db::connection &conn, const std::vector<char> &key, cps_api_object_t obj) {
+bool cps_db::set_object_response(cps_db::connection &conn) {
+    cps_db::response_set rs;
+    cps_db::response_set resp;
+
+    if (conn.response(resp,false)) {
+        //this level of validation is really not needed since all respnses are valid (no fail besides connection)
+        cps_db::response r = resp.get_response(0);
+        return r.is_int() && (r.get_int()==0 || r.get_int()==1);
+    }
+    return false;
+}
+
+
+bool cps_db::get_object_request(cps_db::connection &conn, const char*key, size_t len) {
     cps_db::connection::db_operation_atom_t e[3];
     e[0].from_string("HGET");
-    e[1].from_string(&key[0],key.size());
+    e[1].from_string(key,len);
     e[2].from_string("object");
-    response_set resp;
-    if (!conn.command(e,3,resp)) {
-        return false;
+    return conn.operation(e,sizeof(e)/sizeof(*e));
+}
+
+bool cps_db::get_object_response(cps_db::connection &conn, cps_api_object_t obj) {
+    cps_db::response_set resp;
+
+    if (conn.response(resp,false)) {
+        response r = resp.get_response(0);
+        if (r.is_str() && cps_api_array_to_object(r.get_str(),r.get_str_len(),obj)) {
+            return true;
+        }
     }
-
-    cps_db::response r = resp.get_response(0);
-
-    bool rc = false;
-
-    if (r.is_str() && cps_api_array_to_object(r.get_str(),r.get_str_len(),obj)) {
-        rc = true;
-    }
-
-    return rc;
+    return false;
 }
 
 bool cps_db::get_object(cps_db::connection &conn, cps_api_object_t obj) {

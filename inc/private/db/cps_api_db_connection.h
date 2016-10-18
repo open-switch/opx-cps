@@ -76,7 +76,7 @@ public:
 
     bool response(response_set &data, bool expect_events = false);
 
-    bool operation(db_operation_atom_t * lst,size_t len, bool no_reponse=false);
+    bool operation(db_operation_atom_t * lst,size_t len);
 
     bool get_event(response_set &data);
     bool has_event();
@@ -85,7 +85,6 @@ private:
     std::string _addr ;
     bool _async=false;
     void * _ctx=nullptr;
-    size_t _pending = 0;
 
     std::list<void*> _pending_events;
 };
@@ -120,7 +119,7 @@ public:
 
     connection_request(cps_db::connection_cache & cache, const char *addr);
     connection_request(cps_db::connection_cache & cache, const std::string &addr) :
-    	connection_request(cache,addr.c_str()) {}
+        connection_request(cache,addr.c_str()) {}
 
     ~connection_request() ;
 };

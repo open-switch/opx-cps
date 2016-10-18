@@ -181,14 +181,15 @@ static void __resync_regs(cps_api_event_service_handle_t handle) {
     bool _connections_changed = false;
 
     for (auto it : nd->_group_keys) {
-        cps_api_node_set_iterate(it.first,[nd,&it,&handle,&_connections_changed](const std::string &node,void *context) {
+        cps_api_node_set_iterate(it.first,
+                [nd,&it,&handle,&_connections_changed](const std::string &node) ->bool {
             //occurs one for each node in the group
             auto con_it = nd->_connections.find(node);
             if (con_it==nd->_connections.end()) {    //if the connection is good
-                return;
+                return true;
             }
 
-            if (nd->_connection_mon[node]._group_reg[it.first]==true) return ;
+            if (nd->_connection_mon[node]._group_reg[it.first]==true) return true;
 
             //for each client key associated with the group
             for ( auto reg_it : it.second) {
@@ -198,14 +199,14 @@ static void __resync_regs(cps_api_event_service_handle_t handle) {
                 if (!cps_db::subscribe(*con_it->second,reg_it)) {
                     nd->disconnect_node(node.c_str());
                     _connections_changed = true;
-                    return;
+                    return true;
                 }
                 nd->_connection_mon[node]._keys.insert(reg_it);
                 nd->_connection_mon[node].communicated();
             }
             nd->_connection_mon[node]._group_reg[it.first] = true;
-
-        },handle);
+            return true;
+        });
     }
     if (_connections_changed) nd->update_connection_set();
 }
@@ -222,16 +223,17 @@ static bool __check_connections(cps_api_event_service_handle_t handle) {
     }
 
     for (auto it : nd->_group_keys) {
-        cps_api_node_set_iterate(it.first,[&nd,&changed,it,&handle,&nodes](const std::string &node,void *context) {
+        cps_api_node_set_iterate(it.first,
+                [&nd,&changed,it,&handle,&nodes](const std::string &node) -> bool {
                 auto con_it = nd->_connections.find(node);
 
                 if (con_it==nd->_connections.end()) {
                     std::unique_ptr<cps_db::connection> c(new cps_db::connection);
                     if (!c->connect(node)) {
                         EV_LOG(TRACE,DSAPI,0,"CPS-EVT-CONN","Failed to connect to the remote node %s",node.c_str());
-                        return;
+                        return true;
                     }
-                    if (!cps_db::ping(*c)) return;
+                    if (!cps_db::ping(*c)) return true;
                     nd->_connection_mon[node].reset();
                     nd->_connection_mon[node].communicated();
                     nd->_connections[node] = std::move(c);
@@ -242,14 +244,15 @@ static bool __check_connections(cps_api_event_service_handle_t handle) {
                 if (nd->_connection_mon[node].expired()) {
                     if (!cps_db::ping(*nd->_connections[node])) {
                         nd->disconnect_node(node.c_str());
-                        return;
+                        return true;
                     }
                 }
                 if (nd->_connection_mon[node]._group_reg.find(it.first)==nd->_connection_mon[node]._group_reg.end()) {
                     nd->_connection_mon[node]._group_reg[it.first] = false;
                 }
                 nodes.erase(node);
-            },handle);
+                return true;
+            });
     }
 
     changed = changed || (nodes.size()>0);
@@ -303,9 +306,10 @@ static cps_api_return_code_t _register_one_object(cps_api_event_service_handle_t
     }
 
     //for each node in the group say need to be audited
-    cps_api_node_set_iterate(_group,[&nh,_group](const std::string &node,void *context) {
+    cps_api_node_set_iterate(_group,[&nh,_group](const std::string &node) {
         nh->_connection_mon[node]._group_reg[_group] = false;
-    },nullptr);
+        return true;
+    });
 
     bool *_is_filt_obj = (bool*)cps_api_object_get_data(object,CPS_OBJECT_GROUP_EXACT_MATCH);
     if (_is_filt_obj!=nullptr && *_is_filt_obj) {
@@ -346,10 +350,11 @@ static cps_api_return_code_t _cps_api_event_service_publish_msg(cps_api_event_se
     const char *_group = cps_api_key_get_group(msg);
 
     bool sent = true;
-    cps_api_node_set_iterate(_group,[&msg,&sent](const std::string &name,void *context){
+    cps_api_node_set_iterate(_group,[&msg,&sent](const std::string &name)->bool{
         cps_db::connection_request r(cps_db::ProcessDBCache(),name.c_str());
         sent = sent && r.valid() && cps_db::publish(r.get(),msg);
-    },nullptr);
+        return true;
+    });
 
     return sent? cps_api_ret_code_OK : cps_api_ret_code_ERR;
 }
@@ -474,7 +479,7 @@ static cps_api_return_code_t _cps_api_wait_for_event(
                     nh->_connection_mon[it.first].communicated();
                     std::string node_name;
                     if(cps_api_db_get_node_from_ip(it.first,node_name)) {
-                    	cps_api_object_attr_add(msg,CPS_OBJECT_GROUP_NODE,node_name.c_str(),node_name.size()+1);
+                        cps_api_object_attr_add(msg,CPS_OBJECT_GROUP_NODE,node_name.c_str(),node_name.size()+1);
                     }
                     return cps_api_ret_code_OK;
                 }

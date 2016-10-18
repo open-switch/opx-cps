@@ -31,6 +31,10 @@ inline bool cps_api_vector_util_set(std::vector<char> &lst,const void *data, siz
     return cps_api_vector_util_append(lst,data,len);
 }
 
+using cps_api_range_split_function = std::function<bool(size_t ix, size_t mx)>;
+
+bool cps_api_range_split(size_t total ,ssize_t step,const cps_api_range_split_function &range);
+
 template <typename T>
 struct vector_hash {
     std::size_t operator() (const std::vector<T> &c) const {

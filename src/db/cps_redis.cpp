@@ -39,7 +39,7 @@ bool cps_db::ping(cps_db::connection &conn) {
     e.from_string("PING");
     response_set resp;
 
-    if (!conn.operation(&e,1,false)) return false;
+    if (!conn.operation(&e,1)) return false;
 
     if (!conn.response(resp,true)) {
         return false;
@@ -136,13 +136,13 @@ bool cps_db::delete_object(cps_db::connection &conn,cps_api_object_t obj) {
         return false;
     }
     if (!_is_wildcard) {
-    	cps_db::delete_object(conn,&key[0],key.size());
+        cps_db::delete_object(conn,&key[0],key.size());
     } else {
-    	cps_db::connection_request r(cps_db::ProcessDBCache(),conn.addr());
-    	if (!r.valid()) return false;
-    	cps_db::walk_keys(r.get(),&key[0],key.size(),[&](const void *data, size_t len) {
-    		cps_db::delete_object(conn,(const char *)data,len);
-    	});
+        cps_db::connection_request r(cps_db::ProcessDBCache(),conn.addr());
+        if (!r.valid()) return false;
+        cps_db::walk_keys(r.get(),&key[0],key.size(),[&](const void *data, size_t len) {
+            cps_db::delete_object(conn,(const char *)data,len);
+        });
     }
     return true;
 }
@@ -152,7 +152,7 @@ bool op_on_objects(const char *op, cps_db::connection &conn,cps_api_object_list_
 
     cps_db::connection::db_operation_atom_t multi;
     multi.from_string("MULTI");
-    if (!conn.operation(&multi,1,false)) return false;
+    if (!conn.operation(&multi,1)) return false;
 
     size_t ix = 0;
     size_t mx = cps_api_object_list_size(objs);
@@ -165,10 +165,10 @@ bool op_on_objects(const char *op, cps_db::connection &conn,cps_api_object_list_
             e[1]._atom_type = cps_db::connection::db_operation_atom_t::obj_fields_t::obj_field_OBJ_KEY_AND_DATA;
         }
         e[1]._object = cps_api_object_list_get(objs,ix);;
-        if (!conn.operation(e,2,false)) return false;
+        if (!conn.operation(e,2)) return false;
     }
     multi.from_string("EXEC");
-    if (!conn.operation(&multi,1,false)) return false;
+    if (!conn.operation(&multi,1)) return false;
 
     {
         cps_db::response_set multi;
@@ -258,18 +258,18 @@ namespace {
 bool __get_objs(cps_db::connection &conn, std::vector<std::vector<char>> &all_keys, size_t start, size_t mx , cps_api_object_list_t obj_list) {
     cps_db::connection::db_operation_atom_t multi;
     multi.from_string("MULTI");
-    if (!conn.operation(&multi,1,false)) return false;
+    if (!conn.operation(&multi,1)) return false;
 
     for ( size_t ix = start; ix < mx ; ++ix  ) {
         cps_db::connection::db_operation_atom_t e[3];
         e[0].from_string("HGET");
         e[1].from_string(&all_keys[ix][0],all_keys[ix].size());
         e[2].from_string("object");
-        if (!conn.operation(e,3,false)) return false;
+        if (!conn.operation(e,3)) return false;
     }
 
     multi.from_string("EXEC");
-    if (!conn.operation(&multi,1,false)) return false;
+    if (!conn.operation(&multi,1)) return false;
 
     {    //start of multi
         cps_db::response_set multi;
@@ -306,35 +306,6 @@ bool __get_objs(cps_db::connection &conn, std::vector<std::vector<char>> &all_ke
 }
 }
 
-bool cps_db::get_objects(cps_db::connection &conn,std::vector<char> &key,cps_api_object_list_t obj_list) {
-    cps_utils::cps_api_vector_util_append(key,"*",1);
-
-    std::vector<std::vector<char>> all_keys;
-    bool rc = walk_keys(conn, &key[0],key.size(),[&conn,&all_keys](const void *key, size_t len){
-        std::vector<char> c;
-        cps_utils::cps_api_vector_util_append(c,key,len);
-        all_keys.push_back(std::move(c));
-    });
-
-    if (rc==false) return false;
-
-    if (all_keys.size()==0) return true;
-
-    size_t _processed_len = 0;
-    const static int CHUNK_SIZE = CPS_DB_MAX_ITEMS_PER_PIPELINE;
-
-    do {
-        size_t _start = _processed_len;
-        _processed_len = _start + CHUNK_SIZE;
-        if (_processed_len > all_keys.size()) _processed_len = all_keys.size();
-        if (!__get_objs(conn,all_keys,_start,_processed_len,obj_list)) {
-            return false;
-        }
-    } while (_processed_len < all_keys.size());
-
-    return true;
-}
-
 bool cps_db::get_objects(cps_db::connection &conn, cps_api_object_t obj,cps_api_object_list_t obj_list) {
     std::vector<char> k;
     bool wildcard = false;
@@ -343,10 +314,10 @@ bool cps_db::get_objects(cps_db::connection &conn, cps_api_object_t obj,cps_api_
 
     cps_api_object_guard og(cps_api_object_create());
     if (cps_db::get_object(conn,k,og.get())) {
-    	if (cps_api_object_list_append(obj_list,og.get())) {
-    		og.release();
-    		return true;
-    	}
+        if (cps_api_object_list_append(obj_list,og.get())) {
+            og.release();
+            return true;
+        }
     }
     return false;
 }

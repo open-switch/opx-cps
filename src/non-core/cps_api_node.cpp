@@ -53,10 +53,10 @@ struct vector_hash {
 
 
 constexpr static const char * __get_local_ip() {
-	return "127.0.0.1";
+    return "127.0.0.1";
 }
 constexpr static size_t __get_local_ip_len() {
-	return strlen(__get_local_ip());
+    return strlen(__get_local_ip());
 }
 
 #define MAX_IP_LEN 64
@@ -123,7 +123,7 @@ cps_api_return_code_t cps_api_delete_node_group(const char *grp) {
 static bool cps_api_find_local_node(cps_api_node_group_t *group,size_t &node_ix){
     const size_t _len = __get_local_ip_len();
     const char * _name = __get_local_ip();
-	for(size_t ix = 0 ; ix < group->addr_len ; ++ix){
+    for(size_t ix = 0 ; ix < group->addr_len ; ++ix){
         if(strncmp(group->addrs[ix].addr,_name,_len)==0){
             node_ix = ix;
             return true;
@@ -138,8 +138,8 @@ cps_api_return_code_t cps_api_create_global_instance(cps_api_node_group_t *group
 
     size_t local_node_ix;
     if(!cps_api_find_local_node(group,local_node_ix)){
-    	///TODO this is a little stange - should see about removing this check - it is not likely to be needed but
-    	/// it would be better not to maintain "local" ip addresses
+        ///TODO this is a little stange - should see about removing this check - it is not likely to be needed but
+        /// it would be better not to maintain "local" ip addresses
         EV_LOGGING(DSAPI,ERR,"SET-GLOBAL","Failed to find local node in group %s",group);
         return cps_api_ret_code_ERR;
     }
@@ -155,8 +155,8 @@ cps_api_return_code_t cps_api_create_global_instance(cps_api_node_group_t *group
                                         cps_api_qualifier_TARGET);
     cps_api_object_attr_add(og.get(),CPS_DB_INSTANCE_GROUP,group->id,strlen(group->id)+1);
     if (cps_api_commit_one(cps_api_oper_CREATE,og.get(),4,200)!=cps_api_ret_code_OK) {
-    	EV_LOGGING(DSAPI,ERR,"CPS-DB-TUN","Failed to create tunnel for group %s",group);
-    	return cps_api_ret_code_ERR;
+        EV_LOGGING(DSAPI,ERR,"CPS-DB-TUN","Failed to create tunnel for group %s",group);
+        return cps_api_ret_code_ERR;
     }
 
     cps_api_object_t ret_obj = og.get();
@@ -182,12 +182,14 @@ cps_api_return_code_t cps_api_create_global_instance(cps_api_node_group_t *group
 
 ///TODO not sure we want a global db created in this way - one node seems to own the provisioning of all nodes
 /// just not sure maybe we should require each node to do its own global db config
-    if (!cps_api_node_set_iterate(group->id,[&db_node](const std::string &name,void *c){
+    if (!cps_api_node_set_iterate(group->id,[&db_node](const std::string &name) -> bool {
             cps_db::connection_request r(cps_db::ProcessDBCache(),name.c_str());
-            if (!r.valid()) return;
-            cps_db::store_object(r.get(),db_node.get());
-            return;
-        },nullptr)) {
+            if (!r.valid()) return true;
+            if (!cps_db::store_object(r.get(),db_node.get())) {
+                EV_LOGGING(DSAPI,ERR,"DB-GROUP-UPATE","Failed to update node %s data",name.c_str());
+            }
+            return true;
+        })) {
         return cps_api_ret_code_ERR;
     }
     return cps_api_ret_code_OK;
@@ -615,12 +617,16 @@ const char * cps_api_nodes::addr(const char *addr) {
 }
 
 void cps_api_key_del_node_attrs(cps_api_object_t obj) {
-	while (cps_api_object_attr_delete(obj,CPS_OBJECT_GROUP_GROUP)) ;
-	while (cps_api_object_attr_delete(obj,CPS_OBJECT_GROUP_NODE)) ;
+    while (cps_api_object_attr_delete(obj,CPS_OBJECT_GROUP_GROUP)) ;
+    while (cps_api_object_attr_delete(obj,CPS_OBJECT_GROUP_NODE)) ;
 }
 
 bool cps_api_key_set_group(cps_api_object_t obj,const char *group) {
     return cps_api_object_attr_add(obj,CPS_OBJECT_GROUP_GROUP,group,strlen(group)+1);
+}
+
+bool cps_api_key_is_local_group(const char *node_name) {
+    return strcmp(DEFAULT_REDIS_ADDR,node_name)==0;
 }
 
 const char * cps_api_key_get_group(cps_api_object_t obj) {

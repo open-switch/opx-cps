@@ -80,9 +80,10 @@ public:
 
     bool ip_to_name(const char *ip, std::string &name);
     std::recursive_mutex &get_lock() {
-    	return _mutex;
+        return _mutex;
     }
 };
 
+bool cps_api_key_is_local_group(const char *node_name);
 
 #endif /* CPS_API_INC_PRIVATE_CPS_API_NODE_PRIVATE_H_ */
