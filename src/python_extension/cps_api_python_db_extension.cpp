@@ -26,8 +26,8 @@ PyObject * py_cps_api_db_commit(PyObject *self, PyObject *args, PyObject *_keydi
     const char *_keywords[]={"obj","prev","publish",NULL };
 
     if (! PyArg_ParseTupleAndKeywords( args, _keydict, "O!|OO!", (char**)_keywords, &PyDict_Type,&__obj,&__prev,&PyBool_Type,&__pub)) {
-    	PySys_WriteStdout("Failed to parse args.\n");
-    	return PyInt_FromLong(cps_api_ret_code_ERR);
+        PySys_WriteStdout("Failed to parse args.\n");
+        return PyInt_FromLong(cps_api_ret_code_ERR);
     }
 
     if (__pub==nullptr) __pub = Py_True;
@@ -39,19 +39,19 @@ PyObject * py_cps_api_db_commit(PyObject *self, PyObject *args, PyObject *_keydi
     }
 
     if (!_obj.valid()) {
-    	PySys_WriteStdout("Passed in an invalid object.  Missing \'key\' or \'data' elements.\n");
-    	return PyInt_FromLong(cps_api_ret_code_ERR);
+        PySys_WriteStdout("Passed in an invalid object.  Missing \'key\' or \'data' elements.\n");
+        return PyInt_FromLong(cps_api_ret_code_ERR);
     }
 
     if (__prev!=nullptr && __prev!=Py_None && PyDict_Check(__prev)) {
-    	_prev.set(cps_api_object_create());
+        _prev.set(cps_api_object_create());
     }
-
-    cps_api_return_code_t rc = cps_api_db_commit_one(_obj.get(),_prev.get(),__pub==Py_True);
+    cps_api_operation_types_t op = cps_api_object_type_operation(cps_api_object_key(_obj.get()));
+    cps_api_return_code_t rc = cps_api_db_commit_one(op,_obj.get(),_prev.get(),__pub==Py_True);
     if (_prev.valid()) {
-    	PyRef r(cps_obj_to_dict(_prev.get()));
-    	PyDict_Clear(__prev);
-    	PyDict_Merge(__prev,r.get(),1);
+        PyRef r(cps_obj_to_dict(_prev.get()));
+        PyDict_Clear(__prev);
+        PyDict_Merge(__prev,r.get(),1);
     }
     return PyInt_FromLong(rc);
 }
@@ -69,16 +69,16 @@ PyObject * py_cps_api_db_get(PyObject *self, PyObject *args) {
     if (PyDict_Check(__obj)) {
         _filter.set(dict_to_cps_obj(__obj));
         if (!_filter.valid()) {
-        	PySys_WriteStdout("Invalid filter object (missing key and or data fields).");
+            PySys_WriteStdout("Invalid filter object (missing key and or data fields).");
             return PyInt_FromLong(cps_api_ret_code_ERR);
         }
     } else {
-    	PySys_WriteStdout("Invalid object type... really should be impossible.");
+        PySys_WriteStdout("Invalid object type... really should be impossible.");
         return PyInt_FromLong(cps_api_ret_code_ERR);
     }
 
     if (!PyList_Check(__list)) {
-    	PySys_WriteStdout("Invalid list object");
+        PySys_WriteStdout("Invalid list object");
         return PyInt_FromLong(cps_api_ret_code_ERR);
     }
 
@@ -96,7 +96,7 @@ PyObject * py_cps_api_db_get(PyObject *self, PyObject *args) {
         PyObject *d = cps_obj_to_dict(obj);
         PyRef r(d);
         if (d==NULL) {
-        	PySys_WriteStdout("Memory allocation error.");
+            PySys_WriteStdout("Memory allocation error.");
             return PyInt_FromLong(cps_api_ret_code_ERR);
         }
         if (PyList_Append(__list,d)) {
@@ -185,7 +185,6 @@ PyObject * py_cps_node_set_ownership_type(PyObject *self, PyObject *args) {
 
     cps_api_key_t k;
     cps_api_key_from_string(&k, key);
-
 
     cps_api_obj_set_ownership_type(&k,*_o_type);
     Py_RETURN_TRUE;

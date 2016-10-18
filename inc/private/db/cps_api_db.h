@@ -56,21 +56,9 @@ namespace cps_db {
 }
 
 namespace cps_db {
-
-
     bool get_object(cps_db::connection &conn, cps_api_object_t obj);
 
     bool delete_object(cps_db::connection &conn,cps_api_object_t obj);
-
-    //bool delete_objects(cps_db::connection &conn,cps_api_object_t objs);
-
-
-
-    bool multi_start(cps_db::connection &conn);
-    bool multi_end(cps_db::connection &conn, bool commit=true);
-
-    bool select_db(cps_db::connection &conn,const std::string &id);
-
 
     bool get_objects_bulk(cps_db::connection &conn, std::vector<std::vector<char>> &keys,
             cps_api_object_list_t objs);
@@ -83,6 +71,8 @@ namespace cps_db {
 
     bool make_slave(cps_db::connection &conn, std::string slave_ip);
     bool remove_slave(cps_db::connection &conn);
+
+    bool select_db(cps_db::connection &conn,const std::string &id);
 
     cps_api_return_code_t cps_api_db_init();
 }
@@ -113,7 +103,6 @@ namespace cps_db {
 namespace cps_db {
     bool subscribe(cps_db::connection &conn, cps_api_object_t obj);
     bool subscribe(cps_db::connection &conn, std::vector<char> &key);
-
     bool publish(cps_db::connection &conn, cps_api_object_t obj);
 }
 
@@ -138,7 +127,6 @@ namespace cps_db {
     static inline bool store_object(cps_db::connection &conn,cps_api_object_t obj) {
         return set_object_request(conn,obj,nullptr,nullptr) && set_object_response(conn);
     }
-
 }
 
 

@@ -165,8 +165,8 @@ namespace {
         }
         return cps_api_ret_code_OK;    //ignore merge issue
     }
-
 }
+
 cps_api_return_code_t cps_api_db_commit_one(cps_api_operation_types_t op,cps_api_object_t obj,cps_api_object_t prev, bool publish) {
 
     if (op>cps_api_oper_SET || op<=cps_api_oper_NULL)
@@ -331,94 +331,5 @@ cps_api_return_code_t cps_api_db_commit_bulk(cps_api_db_commit_bulk_t *param) {
     }
 
     return rc;
-    /*
-    if (param->op==cps_api_oper_DELETE) {
-
-    }
-
-    // if the operation is set, then the _update should be a merge of present and new attributes
-    //if the operation is a create, then the raw object should be stored entirely without any additions
-    //if the operation is a delete, then there is no need to have cache either
-
-    if (previous!=nullptr || op==cps_api_oper_SET) {
-        cps_api_object_t _present = nullptr;
-        for (auto &it : lst ) {
-            cps_db::connection_request r(cps_db::ProcessDBCache(),it.c_str());
-
-            if (op!=cps_api_oper_SET && previous!=nullptr) {
-                cps_api_object_clone(previous,o);
-                if (cps_db::get_object(r.get(),previous)) {
-                    break;
-                }
-                continue;
-            }
-
-            if (op==cps_api_oper_SET) {
-                _present = cps_api_object_list_create_obj_and_append(_lg.get());
-                cps_api_object_clone(_present,o);
-                if (cps_db::get_object(r.get(),_present)) {
-                    if (previous) cps_api_object_clone(previous,_present);
-                    if (cps_api_obj_tool_merge(_present,o)) {
-                        _update = _present;
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    cps_api_key_element_raw_value_monitor _key_patch(cps_api_object_key(_update),
-            CPS_OBJ_KEY_ATTR_POS,cps_api_oper_NULL);
-    std::string _failed_nodes;
-
-    std::function<void(cps_db::connection_request &)> _handle_success = [&](cps_db::connection_request &req) -> void {
-        if (publish) {
-            _key_patch.reset();    //incase the event_obj is equal the object being published
-            cps_db::publish(req.get(),_event_obj);
-            _key_patch.set(cps_api_oper_NULL);
-        }
-        rc = cps_api_ret_code_OK;
-    };
-
-    auto _handle_failure = [&](std::string &ip, cps_db::connection_request &req) -> void {
-        EV_LOGGING(DSAPI,INFO,"CPS-DB","Failed to update db %s with object (no connectivity)",ip.c_str());
-        _failed_nodes+=","+_get_node_name(ip);
-    };
-
-    for (auto &it : lst ) {
-        cps_db::connection_request r(cps_db::ProcessDBCache(),it.c_str());
-
-        if (op==cps_api_oper_CREATE || op ==cps_api_oper_SET) {
-            if (!cps_db::store_object(r.get(),_update)) {
-                _handle_failure(it,r);
-
-            } else  {    //if stored properly
-                _handle_success(r);
-            }
-        }
-        if (op==cps_api_oper_DELETE) {
-            bool _success=false;
-            if (cps_api_object_count_key_attrs(o)==0) {
-                cps_api_object_list_guard lg(cps_api_object_list_create());
-                if (cps_db::get_objects(r.get(),o,lg.get())) {
-                    _success = cps_db::delete_objects(r.get(),lg.get());
-                }
-            } else {
-                _success = cps_db::delete_object(r.get(),o);
-            }
-            if (_success) {
-                _handle_success(r);
-            } else {
-                _handle_failure(it,r);
-            }
-        }
-    }
-    _key_patch.reset();
-
-    if (_failed_nodes.size()!=0) cps_api_object_attr_add(o,CPS_OBJECT_GROUP_FAILED_NODES,_failed_nodes.c_str(),_failed_nodes.size()+1);
-
-    return rc;
-
-    */
 }
 

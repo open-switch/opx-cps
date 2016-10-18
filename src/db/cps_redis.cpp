@@ -109,26 +109,6 @@ bool cps_db::select_db(cps_db::connection &conn,const std::string &db_id) {
     return  (r.is_status() && strcmp("OK",r.get_str())==0);
 }
 
-bool cps_db::multi_start(cps_db::connection &conn) {
-    cps_db::connection::db_operation_atom_t e;
-    e.from_string("MULTI");
-
-    response_set resp;
-    return conn.command(&e,1,resp);
-}
-
-bool cps_db::multi_end(cps_db::connection &conn, bool commit) {
-    cps_db::connection::db_operation_atom_t e;
-    e.from_string(commit? "EXEC" : "DISCARD");
-
-    response_set resp;
-    if (!conn.command(&e,1,resp)) {
-        return false;
-    }
-    cps_db::response r = resp.get_response(0);
-    return  (r.is_status() && strcmp("OK",r.get_str())==0);
-}
-
 bool cps_db::delete_object(cps_db::connection &conn,cps_api_object_t obj) {
     std::vector<char> key;
     bool _is_wildcard =false;
@@ -147,164 +127,8 @@ bool cps_db::delete_object(cps_db::connection &conn,cps_api_object_t obj) {
     return true;
 }
 
-namespace {
-bool op_on_objects(const char *op, cps_db::connection &conn,cps_api_object_list_t objs) {
-
-    cps_db::connection::db_operation_atom_t multi;
-    multi.from_string("MULTI");
-    if (!conn.operation(&multi,1)) return false;
-
-    size_t ix = 0;
-    size_t mx = cps_api_object_list_size(objs);
-    for ( ; ix < mx ; ++ix ) {
-        cps_db::connection::db_operation_atom_t e[2];
-        e[0].from_string(op);
-        if (strcmp(op,"DEL")==0) {
-            e[1]._atom_type = cps_db::connection::db_operation_atom_t::obj_fields_t::obj_field_OBJ_INSTANCE;
-        } else {
-            e[1]._atom_type = cps_db::connection::db_operation_atom_t::obj_fields_t::obj_field_OBJ_KEY_AND_DATA;
-        }
-        e[1]._object = cps_api_object_list_get(objs,ix);;
-        if (!conn.operation(e,2)) return false;
-    }
-    multi.from_string("EXEC");
-    if (!conn.operation(&multi,1)) return false;
-
-    {
-        cps_db::response_set multi;
-        if (!conn.response(multi,1)) return false;
-        cps_db::response _multi(multi.get()[0]);
-        if (!_multi.is_str() || strcmp(_multi.get_str(),"OK")!=0) return false;
-    }
-    for (ix = 0; ix < mx ; ++ix ) {
-        cps_db::response_set queue;
-        if (!conn.response(queue,1)) return false;
-        cps_db::response _queue(queue.get()[0]);
-        if (!_queue.is_str() || strcmp(_queue.get_str(),"QUEUED")!=0) return false;
-    }
-
-    cps_db::response_set resp;
-    if (!conn.response(resp,1)) return false;
-
-    if (resp.get()[0]==nullptr) return false;
-
-    cps_db::response _exec(resp.get()[0]);
-
-    for ( ix = 0, mx = _exec.elements(); ix < mx ; ++ix ) {
-        cps_db::response _resp(_exec.element_at(ix));
-        if (_resp.is_ok()) continue;
-        return false;
-    }
-    return true;
-}
-}
-
-bool cps_db::subscribe(cps_db::connection &conn, cps_api_object_t obj) {
-    std::vector<char> key;
-    if (!cps_db::dbkey_from_instance_key(key,obj,true)) return false;
-    return subscribe(conn,key);
-}
-
-bool cps_db::publish(cps_db::connection &conn, cps_api_object_t obj) {
-    cps_db::connection::db_operation_atom_t e[3];
-    e[0].from_string("PUBLISH");
-    e[1]._atom_type = cps_db::connection::db_operation_atom_t::obj_fields_t::obj_field_OBJ_INSTANCE;
-    e[1]._object = obj;
-    e[2]._atom_type = cps_db::connection::db_operation_atom_t::obj_fields_t::obj_field_OBJ_DATA;
-    e[2]._object = obj;
-
-    response_set resp;
-    if (!conn.command(e,3,resp)) {
-        return false;
-    }
-
-    cps_db::response r = resp.get_response(0);
-    bool rc = r.is_int();
-
-    return rc;
-}
-
-bool cps_db::subscribe(cps_db::connection &conn, std::vector<char> &key) {
-    cps_db::connection::db_operation_atom_t e[2];
-    e[0].from_string("PSUBSCRIBE");
-    if (key[key.size()-1]!='*') cps_utils::cps_api_vector_util_append(key,"*",1);
-    e[1].from_string(&key[0],key.size());
-
-    response_set resp;
-    if (!conn.command(e,2,resp)) {
-        EV_LOG(ERR,DSAPI,0,"CPS-DB-SUB","Subscribe failed to return response");
-        return false;
-    }
-
-    cps_db::response r = resp.get_response(0);
-    if (r.elements()==3) {
-        cps_db::response msg (r.element_at(0));
-        cps_db::response status (r.element_at(2));
-        if (msg.is_str() && strcasecmp(msg.get_str(),"psubscribe")==0) {
-
-            bool rc = (status.is_int() && status.get_int()>0);
-            if (!rc) EV_LOG(ERR,DSAPI,0,"CPS-DB-SUB","Subscribe failed rc %d",status.get_int());
-            return rc;
-        }
-    }
-    return false;
-}
-
-
 #include <iostream>
 #include "cps_string_utils.h"
-
-namespace {
-bool __get_objs(cps_db::connection &conn, std::vector<std::vector<char>> &all_keys, size_t start, size_t mx , cps_api_object_list_t obj_list) {
-    cps_db::connection::db_operation_atom_t multi;
-    multi.from_string("MULTI");
-    if (!conn.operation(&multi,1)) return false;
-
-    for ( size_t ix = start; ix < mx ; ++ix  ) {
-        cps_db::connection::db_operation_atom_t e[3];
-        e[0].from_string("HGET");
-        e[1].from_string(&all_keys[ix][0],all_keys[ix].size());
-        e[2].from_string("object");
-        if (!conn.operation(e,3)) return false;
-    }
-
-    multi.from_string("EXEC");
-    if (!conn.operation(&multi,1)) return false;
-
-    {    //start of multi
-        cps_db::response_set multi;
-        if (!conn.response(multi,1)) return false;
-        cps_db::response _multi(multi.get()[0]);
-        if (!_multi.is_str() || strcmp(_multi.get_str(),"OK")!=0) return false;
-    }
-
-    for ( size_t ix = start; ix < mx ; ++ix  ) {
-        cps_db::response_set queue;
-        if (!conn.response(queue,1)) return false;
-        cps_db::response _queue(queue.get()[0]);
-        if (!_queue.is_str() || strcmp(_queue.get_str(),"QUEUED")!=0) return false;
-    }
-
-    cps_db::response_set resp;
-    if (!conn.response(resp,1)) return false;
-    if (resp.get()[0]==nullptr) return false;
-
-    //load the respose for the exec - all responses in array
-    cps_db::response _exec(resp.get()[0]);
-    for ( size_t ix = 0, _end_elem = _exec.elements(); ix < _end_elem; ++ix  ) {
-        cps_db::response _resp(_exec.element_at(ix));
-        cps_api_object_guard og(cps_api_object_create());
-        if (_resp.is_str() && _resp.get_str()!=nullptr &&
-                cps_api_array_to_object(_resp.get_str(),_resp.get_str_len(),og.get())) {
-            if (!cps_api_object_list_append(obj_list,og.get())) {
-                return false;
-            }
-            og.release();
-        }
-    }
-    return true;
-}
-}
 
 bool cps_db::get_objects(cps_db::connection &conn, cps_api_object_t obj,cps_api_object_list_t obj_list) {
     std::vector<char> k;
@@ -331,3 +155,122 @@ cps_db::response_set::~response_set() {
 }
 
 
+bool cps_db::delete_object(cps_db::connection &conn,const char *key, size_t key_len) {
+    cps_db::connection::db_operation_atom_t e[2];
+    e[0].from_string("DEL");
+    e[1].from_string(key,key_len);
+    response_set resp;
+    return conn.command(e,2,resp);
+}
+
+bool cps_db::atomic_count_set(cps_db::connection &conn,const char *key, size_t key_len, int64_t data) {
+    cps_db::connection::db_operation_atom_t e[3];
+    e[0].from_string("SET");
+    e[1].from_string(key,key_len);
+    e[2].from_string((const char *)&data,sizeof(data));
+    response_set resp;
+    return conn.command(e,sizeof(e)/sizeof(*e),resp);
+}
+
+bool cps_db::atomic_count_change(cps_db::connection &conn,bool inc, const char *key, size_t key_len,
+        int64_t &data) {
+    cps_db::connection::db_operation_atom_t e[2];
+    e[0].from_string(inc==true? "INCR" : "DECR");
+    e[1].from_string(key,key_len);
+
+    response_set resp;
+
+    if (!conn.command(e,sizeof(e)/sizeof(*e),resp)) {
+        return false;
+    }
+
+    cps_db::response r = resp.get_response(0);
+    if (r.is_int()) {
+        data = (r.get_int());
+        return true;
+    }
+    return false;
+}
+
+bool cps_db::walk_keys(cps_db::connection &conn, const void *filt, size_t flen,
+        const std::function<void(const void *key, size_t klen)> &fun) {
+
+    std::string start = "0";
+
+    do {
+        cps_db::connection::db_operation_atom_t e[6];
+        e[0].from_string("SCAN");
+        e[1].from_string(start.c_str());
+        e[2].from_string("MATCH");
+        e[3].from_string((const char *)filt,flen);
+        e[4].from_string("COUNT");
+        e[5].from_string(CPS_DB_MAX_ITEMS_PER_SCAN);
+
+        response_set resp;
+        if (!conn.command(e,sizeof(e)/sizeof(*e),resp)) {
+            return false;
+        }
+
+        cps_db::response it(resp.get()[0]);
+        if (it.elements()!=2) {
+            return false;
+        }
+        cps_db::response cursor(it.element_at(0));
+        cps_db::response values(it.element_at(1));
+        start = cursor.get_str();
+
+        for (size_t ix =0,mx=values.elements(); ix < mx ; ++ix ) {
+            redisReply * data = (redisReply *)values.element_at(ix);
+            fun(data->str,data->len);
+        }
+
+        if (start=="0") break;
+    } while(true);
+    return true;
+}
+
+bool cps_db::set_object_request(cps_db::connection &conn, cps_api_object_t obj, bool *check_exists, size_t *lifetime) {
+    cps_db::connection::db_operation_atom_t e[2];
+    e[0].from_string("HSET");
+    e[1].from_object(obj,true,true);
+    return conn.operation(e,sizeof(e)/sizeof(*e));
+}
+
+bool cps_db::set_object_response(cps_db::connection &conn) {
+    cps_db::response_set rs;
+    cps_db::response_set resp;
+
+    if (conn.response(resp,false)) {
+        //this level of validation is really not needed since all respnses are valid (no fail besides connection)
+        cps_db::response r = resp.get_response(0);
+        return r.is_int() && (r.get_int()==0 || r.get_int()==1);
+    }
+    return false;
+}
+
+
+bool cps_db::get_object_request(cps_db::connection &conn, const char*key, size_t len) {
+    cps_db::connection::db_operation_atom_t e[3];
+    e[0].from_string("HGET");
+    e[1].from_string(key,len);
+    e[2].from_string("object");
+    return conn.operation(e,sizeof(e)/sizeof(*e));
+}
+
+bool cps_db::get_object_response(cps_db::connection &conn, cps_api_object_t obj) {
+    cps_db::response_set resp;
+
+    if (conn.response(resp,false)) {
+        response r = resp.get_response(0);
+        if (r.is_str() && cps_api_array_to_object(r.get_str(),r.get_str_len(),obj)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool cps_db::get_object(cps_db::connection &conn, cps_api_object_t obj) {
+    std::vector<char> key;
+    if (!cps_db::dbkey_from_instance_key(key,obj,false)) return false;
+    return get_object(conn,key,obj);
+}

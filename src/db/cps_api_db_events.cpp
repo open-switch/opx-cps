@@ -8,32 +8,15 @@
 
 #include "cps_api_db.h"
 
+#include "cps_api_db_connection.h"
+#include "cps_api_db_response.h"
+#include "cps_api_vector_utils.h"
+
+#include "cps_string_utils.h"
+
 #include "event_log.h"
 
-bool cps_db::subscribe(cps_db::connection &conn, cps_api_object_t obj) {
-    std::vector<char> key;
-    if (!cps_db::dbkey_from_instance_key(key,obj)) return false;
-    return subscribe(conn,key);
-}
 
-bool cps_db::publish(cps_db::connection &conn, cps_api_object_t obj) {
-    cps_db::connection::db_operation_atom_t e[3];
-    e[0].from_string("PUBLISH");
-    e[1]._atom_type = cps_db::connection::db_operation_atom_t::obj_fields_t::obj_field_OBJ_INSTANCE;
-    e[1]._object = obj;
-    e[2]._atom_type = cps_db::connection::db_operation_atom_t::obj_fields_t::obj_field_OBJ_DATA;
-    e[2]._object = obj;
-
-    response_set resp;
-    if (!conn.command(e,3,resp)) {
-        return false;
-    }
-
-    cps_db::response r = resp.get_response(0);
-    bool rc = r.is_int();
-
-    return rc;
-}
 
 bool cps_db::subscribe(cps_db::connection &conn, std::vector<char> &key) {
     cps_db::connection::db_operation_atom_t e[2];
@@ -60,4 +43,27 @@ bool cps_db::subscribe(cps_db::connection &conn, std::vector<char> &key) {
     }
     return false;
 }
+
+bool cps_db::subscribe(cps_db::connection &conn, cps_api_object_t obj) {
+    std::vector<char> key;
+    if (!cps_db::dbkey_from_instance_key(key,obj,true)) return false;
+    return subscribe(conn,key);
+}
+
+bool cps_db::publish(cps_db::connection &conn, cps_api_object_t obj) {
+    cps_db::connection::db_operation_atom_t e[2];
+    e[0].from_string("PUBLISH");
+    e[1].from_object(obj,true,true);
+
+    response_set resp;
+    if (!conn.command(e,sizeof(e)/sizeof(*e),resp)) {
+        return false;
+    }
+
+    cps_db::response r = resp.get_response(0);
+    bool rc = r.is_int();
+
+    return rc;
+}
+
 

@@ -488,10 +488,10 @@ public:
     void release() { param=nullptr; }
     void set(cps_api_get_params_t*p=nullptr) { close(); param = p; }
     ~cps_api_get_request_guard() {
-    	close();
+        close();
     }
 
-    void close() { if (param!=nullptr) cps_api_get_request_close(param); }
+    void close() { if (param!=nullptr) cps_api_get_request_close(param); param = nullptr; }
 };
 
 #endif

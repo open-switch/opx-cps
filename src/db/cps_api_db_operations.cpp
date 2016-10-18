@@ -34,7 +34,6 @@
 #include "event_log.h"
 
 
-
 cps_api_return_code_t cps_api_db_operation_get(cps_api_get_params_t * param, size_t ix) {
     cps_api_object_t o = cps_api_object_list_get(param->filters,ix);
     STD_ASSERT(o!=nullptr);

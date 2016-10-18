@@ -13,7 +13,7 @@
 
 #include "event_log.h"
 
-constexpr size_t IN_THE_PIPE() { return 1000; }
+constexpr size_t IN_THE_PIPE() { return 500; }
 
 
 bool cps_db::store_objects(cps_db::connection &conn, cps_api_object_list_t objs) {

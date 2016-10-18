@@ -141,8 +141,51 @@ static void _perf_loop(size_t count, cps_api_object_list_t objs) {
         bulk.op =cps_api_oper_DELETE;
         (void)cps_api_db_commit_bulk(&bulk);
     }
-
 }
+
+TEST(cps_api_db_direct,100x1000_commits) {
+    cps_api_object_list_guard lg(cps_api_object_list_clone(Get1000(),true));
+
+    cps_api_db_commit_bulk_t bulk;
+    bulk.objects = lg.get();
+    bulk.op =cps_api_oper_CREATE;
+    bulk.node_group = nullptr;
+    bulk.publish = false;
+
+    size_t ix = 0;
+    size_t mx = 100;
+    for (; ix < mx ; ++ix ) {
+        (void) cps_api_db_commit_bulk(&bulk);
+    }
+}
+
+TEST(cps_api_db_direct,100x1000_gets) {
+    cps_api_object_list_guard lg(cps_api_object_list_clone(Get1000(),true));
+
+    size_t ix = 0;
+    size_t mx = 100;
+    for (; ix < mx ; ++ix ) {
+        lg.set(cps_api_object_list_clone(Get1000(),true));
+        cps_api_db_get_bulk(lg.get(),nullptr);
+    }
+}
+
+TEST(cps_api_db_direct,100x1000_deletes) {
+    cps_api_object_list_guard lg(cps_api_object_list_clone(Get1000(),true));
+
+    cps_api_db_commit_bulk_t bulk;
+    bulk.objects = lg.get();
+    bulk.op =cps_api_oper_DELETE;
+    bulk.node_group = nullptr;
+    bulk.publish = false;
+
+    size_t ix = 0;
+    size_t mx = 100;
+    for (; ix < mx ; ++ix ) {
+        (void) cps_api_db_commit_bulk(&bulk);
+    }
+}
+
 
 TEST(cps_api_db_direct,1x100) {
     _perf_loop(1,Get100());
