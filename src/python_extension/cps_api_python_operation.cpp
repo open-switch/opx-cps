@@ -34,7 +34,7 @@ PyObject * py_cps_get(PyObject *self, PyObject *args) {
     cps_api_get_params_t gr;
     if (cps_api_get_request_init (&gr)==cps_api_ret_code_ERR) {
         py_set_error_string("Failed to initialize the get req");
-        return PyInt_FromLong(cps_api_ret_code_ERR);
+        return nullptr;
     }
 
     cps_api_get_request_guard rg(&gr);
@@ -43,7 +43,7 @@ PyObject * py_cps_get(PyObject *self, PyObject *args) {
 
     if (! PyArg_ParseTuple( args, "O!O", &PyList_Type, &param_list,&res_obj)) {
         py_set_error_string("Failed to parse input args.");
-        return PyInt_FromLong(cps_api_ret_code_ERR);
+        return nullptr;
     }
 
     PyObject * lst = NULL;
@@ -53,7 +53,7 @@ PyObject * py_cps_get(PyObject *self, PyObject *args) {
         PyRef _l(l);
         if (l==NULL) {
             py_set_error_string("Can not create a list.");
-            return PyInt_FromLong(cps_api_ret_code_ERR);
+            return nullptr;
         }
         PyObject *_prev = PyDict_GetItemString(res_obj,"list");
         if (_prev!=NULL) {
@@ -62,7 +62,7 @@ PyObject * py_cps_get(PyObject *self, PyObject *args) {
 
         if (!py_cps_util_set_item_to_dict(res_obj,"list",l)) {
             py_set_error_string("Can not create a list.");
-            return PyInt_FromLong(cps_api_ret_code_ERR);
+            return nullptr;
         }
         lst = l;
     }
@@ -71,7 +71,7 @@ PyObject * py_cps_get(PyObject *self, PyObject *args) {
     }
     if (lst==NULL) {
         py_set_error_string("The return args are invalid.");
-        return PyInt_FromLong(cps_api_ret_code_ERR);
+        return nullptr;
     }
     Py_ssize_t str_keys = PyList_Size(param_list);
     {
@@ -83,23 +83,23 @@ PyObject * py_cps_get(PyObject *self, PyObject *args) {
                 cps_api_object_t o = cps_api_object_list_create_obj_and_append(gr.filters);
                 if (o==NULL) {
                     py_set_error_string("Memory allocation error.");
-                    return PyInt_FromLong(cps_api_ret_code_ERR);
+                    return nullptr;
                 }
                 if (!cps_api_key_from_string(cps_api_object_key(o),PyString_AsString(strObj))) {
                     py_set_error_string("Memory allocation error.");
-                    return PyInt_FromLong(cps_api_ret_code_ERR);
+                    return nullptr;
                 }
             }
             if (PyDict_Check(strObj)) {
                 cps_api_object_t o = dict_to_cps_obj(strObj);
                 if (o==NULL) {
                     py_set_error_string("Can't convert from a python to internal object");
-                    return PyInt_FromLong(cps_api_ret_code_ERR);
+                    return nullptr;
                 }
                 if (!cps_api_object_list_append(gr.filters,o)) {
                     cps_api_object_delete(o);
                     py_set_error_string("Memory allocation error.");
-                    return PyInt_FromLong(cps_api_ret_code_ERR);
+                    return nullptr;
                 }
             }
         }
@@ -114,7 +114,7 @@ PyObject * py_cps_get(PyObject *self, PyObject *args) {
     }
 
     if (rc!=cps_api_ret_code_OK) {
-    	return PyInt_FromLong(rc);
+        Py_RETURN_FALSE;
     }
 
     size_t ix = 0;
@@ -125,15 +125,15 @@ PyObject * py_cps_get(PyObject *self, PyObject *args) {
         PyRef r(d);
         if (d==NULL) {
             py_set_error_string("Memory allocation error.");
-            return PyInt_FromLong(cps_api_ret_code_ERR);
+            return nullptr;
         }
         if (PyList_Append(lst,d)) {
             py_set_error_string("Memory allocation error.");
-            return PyInt_FromLong(cps_api_ret_code_ERR);
+            return nullptr;
         }
     }
 
-    return PyInt_FromLong(cps_api_ret_code_OK);
+    Py_RETURN_TRUE;
 }
 
 static bool py_add_object_to_trans( cps_api_transaction_params_t *tr, PyObject *dict) {
@@ -187,13 +187,13 @@ static bool py_add_object_to_trans( cps_api_transaction_params_t *tr, PyObject *
 PyObject * py_cps_trans(PyObject *self, PyObject *args) {
     PyObject *list;
     if (! PyArg_ParseTuple( args, "O!",  &PyList_Type, &list)) {
-    	return NULL;
+        return nullptr;
     }
 
     cps_api_transaction_params_t tr;
     if (cps_api_transaction_init(&tr)!=cps_api_ret_code_OK) {
         py_set_error_string("Memory allocation error.");
-        return PyInt_FromLong(cps_api_ret_code_ERR);
+        return nullptr;
     }
     cps_api_transaction_guard pg(&tr);
 
@@ -203,7 +203,7 @@ PyObject * py_cps_trans(PyObject *self, PyObject *args) {
         PyObject *dict = PyList_GetItem(list,ix);
         if (!py_add_object_to_trans(&tr,dict)) {
             py_set_error_string("Could not translate the request to a transaction");
-            return PyInt_FromLong(cps_api_ret_code_ERR);
+            return nullptr;
         }
     }
 
@@ -213,7 +213,7 @@ PyObject * py_cps_trans(PyObject *self, PyObject *args) {
         rc = cps_api_commit(&tr);
     }
     if (rc!=cps_api_ret_code_OK) {
-    	return PyInt_FromLong(rc);
+        Py_RETURN_FALSE;
     }
 
     ix = 0;
@@ -222,18 +222,18 @@ PyObject * py_cps_trans(PyObject *self, PyObject *args) {
         PyObject *dict = PyList_GetItem(list,ix);
         if (dict==NULL || !PyDict_Check(dict)) {
             py_set_error_string("Failed to convert the transaction response.");
-            return PyInt_FromLong(cps_api_ret_code_ERR);
+            return nullptr;
         }
         PyObject *_req = PyDict_GetItemString(dict,"change");
         if (_req==NULL || !PyDict_Check(_req)) {
             py_set_error_string("Failed to convert the transaction response.");
-            return PyInt_FromLong(cps_api_ret_code_ERR);
+            return nullptr;
         }
 
         cps_api_object_t obj = cps_api_object_list_get(tr.change_list,ix);
         if (obj==NULL) {
             py_set_error_string("Failed to convert the transaction response.");
-            return PyInt_FromLong(cps_api_ret_code_ERR);
+            return nullptr;
         }
         py_cps_util_set_item_to_dict(_req,"key",
                 PyString_FromString(cps_key_to_string(cps_api_object_key(obj)).c_str()));
@@ -246,7 +246,7 @@ PyObject * py_cps_trans(PyObject *self, PyObject *args) {
 
     cps_api_transaction_close(&tr);
 
-    return PyInt_FromLong(cps_api_ret_code_OK);
+    Py_RETURN_TRUE;
 }
 
 PyObject * py_cps_obj_init(PyObject *self, PyObject *args) {

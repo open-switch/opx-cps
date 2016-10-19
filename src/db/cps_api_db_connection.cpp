@@ -41,6 +41,12 @@ void cps_db::connection::db_operation_atom_t::from_string(const char *str, size_
 void cps_db::connection::db_operation_atom_t::from_string(const char *str) {
     return from_string(str,strlen(str));
 }
+
+void cps_db::connection::db_operation_atom_t::for_event(cps_api_object_t obj) {
+    _atom_type = cps_db::connection::db_operation_atom_t::obj_fields_t::obj_field_OBJ_EVENT_DATA;
+    _object = obj;
+}
+
 void cps_db::connection::db_operation_atom_t::from_object(cps_api_object_t obj, bool instance, bool data) {
     if (!instance) _atom_type = cps_db::connection::db_operation_atom_t::obj_fields_t::obj_field_OBJ_CLASS;
     else if (instance && data) _atom_type = cps_db::connection::db_operation_atom_t::obj_fields_t::obj_field_OBJ_KEY_AND_DATA;
@@ -227,6 +233,11 @@ bool handle_object_data(request_walker_contexct_t &ctx) {
     return true;
 }
 
+bool handle_event_fields(request_walker_contexct_t &ctx) {
+    if (!handle_instance_key(ctx)) return false;
+    return handle_object_data(ctx);
+}
+
 bool request_walker_contexct_t::set(cps_db::connection::db_operation_atom_t * lst_,size_t len_) {
     static const std::unordered_map<int,std::function<bool(request_walker_contexct_t&)>> _map = {
         {(int)cps_db::connection::db_operation_atom_t::obj_fields_t::obj_field_STRING,handle_str},
@@ -234,6 +245,7 @@ bool request_walker_contexct_t::set(cps_db::connection::db_operation_atom_t * ls
         {(int)cps_db::connection::db_operation_atom_t::obj_fields_t::obj_field_OBJ_INSTANCE,handle_instance_key},
         {(int)cps_db::connection::db_operation_atom_t::obj_fields_t::obj_field_OBJ_KEY_AND_DATA,handle_object},
         {(int)cps_db::connection::db_operation_atom_t::obj_fields_t::obj_field_OBJ_DATA,handle_object_data},
+        {(int)cps_db::connection::db_operation_atom_t::obj_fields_t::obj_field_OBJ_EVENT_DATA,handle_event_fields},
     };
 
     size_t iter = 0;

@@ -230,7 +230,6 @@ cps_api_return_code_t cps_api_set_master_node(const char *group,const char * nod
                         return cps_api_ret_code_ERR;
                     }
                 }
-
             }
             _nodes->_master[group]=node_it._addr;
             _nodes->mark_master_set(std::string(group));
@@ -266,7 +265,6 @@ cps_api_return_code_t cps_api_set_master_node(const char *group,const char * nod
 
     return cps_api_ret_code_OK;
 }
-
 
 bool cps_api_node_set_iterate(const std::string &group_name,
         const std::function<bool (const std::string &node)> &operation) {

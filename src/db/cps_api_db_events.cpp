@@ -2,7 +2,6 @@
  * cps_api_db_events.cpp
  *
  *  Created on: Oct 15, 2016
- *      Author: cwichmann
  */
 
 
@@ -53,7 +52,7 @@ bool cps_db::subscribe(cps_db::connection &conn, cps_api_object_t obj) {
 bool cps_db::publish(cps_db::connection &conn, cps_api_object_t obj) {
     cps_db::connection::db_operation_atom_t e[2];
     e[0].from_string("PUBLISH");
-    e[1].from_object(obj,true,true);
+    e[1].for_event(obj);
 
     response_set resp;
     if (!conn.command(e,sizeof(e)/sizeof(*e),resp)) {

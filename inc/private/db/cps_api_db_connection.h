@@ -51,13 +51,15 @@ public:
                                         obj_field_OBJ_KEY_AND_DATA,
                                         obj_field_OBJ_KEY_AND_ALL_FIELDS,
                                         obj_field_OBJ_DATA,
-                                        obj_field_CLASS
+                                        obj_field_CLASS,
+                                        obj_field_OBJ_EVENT_DATA,
         };                                             ///types to enable class, instance or object
         obj_fields_t _atom_type=obj_fields_t::obj_field_STRING;    ///currently defined type
 
         void from_string(const char *str, size_t len);
         void from_string(const char *str);
         void from_object(cps_api_object_t obj, bool instance, bool data);
+        void for_event(cps_api_object_t obj);
     };
 
     void disconnect();

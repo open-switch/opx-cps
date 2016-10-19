@@ -110,25 +110,17 @@ static void cps_api_object_list_swap(cps_api_object_list_t &a, cps_api_object_li
 
 
 static bool _cps_api_get_clone(cps_api_get_params_t * dest, cps_api_get_params_t * src) {
-    size_t mx = cps_api_object_list_size(src->filters);
+    if (src==nullptr || dest==nullptr) return false;
+
+    cps_api_object_list_destroy(dest->filters,true);
+    dest->filters = cps_api_object_list_clone(src->filters,true);
 
     size_t ix = 0;
+
+    size_t mx = src->key_count;
     for ( ; ix < mx ; ++ix ) {
         cps_api_object_t obj = cps_api_object_list_create_obj_and_append(dest->filters);
-        if (obj==NULL) return false;
-
-        cps_api_object_t filter_obj = cps_api_object_list_get(src->filters,ix);
-        if (filter_obj==NULL) return false;
-
-        cps_api_object_clone(obj,filter_obj);
-    }
-
-    ix=0;
-    mx = src->key_count;
-    for ( ; ix < mx ; ++ix ) {
-        cps_api_object_t obj = cps_api_object_list_create_obj_and_append(src->filters);
         if (obj==NULL) return cps_api_ret_code_INTERNAL_FAILURE;
-
         cps_api_key_copy(cps_api_object_key(obj),src->keys+ix);
     }
 
@@ -147,14 +139,14 @@ cps_api_return_code_t cps_api_get(cps_api_get_params_t * param) {
     bool _copy_param = param->key_count!=0;
     cps_api_get_request_guard rg(nullptr);
 
-    if (_copy_param) {	//copy the get request and add the keys if.. the number of just keys > 0
+    if (_copy_param) {    //copy the get request and add the keys if.. the number of just keys > 0
         if (cps_api_get_request_init(&new_req)!=cps_api_ret_code_OK) {
             return cps_api_ret_code_INTERNAL_FAILURE;
         }
         rg.set(&new_req);
 
         if (!_cps_api_get_clone(&new_req,param)) {
-        	return cps_api_ret_code_INTERNAL_FAILURE;
+            return cps_api_ret_code_INTERNAL_FAILURE;
         }
 
         cps_api_object_list_swap(param->list,new_req.list);
@@ -177,8 +169,8 @@ cps_api_return_code_t cps_api_get(cps_api_get_params_t * param) {
     }
 
     if (_copy_param) {
-    	//based on the return - get the response list
-    	cps_api_object_list_swap(param->list,new_req.list);
+        //based on the return - get the response list
+        cps_api_object_list_swap(param->list,new_req.list);
     }
 
     return rc;
@@ -255,6 +247,7 @@ cps_api_return_code_t cps_api_get_request_init(cps_api_get_params_t *req) {
 }
 
 cps_api_return_code_t cps_api_get_request_close(cps_api_get_params_t *req) {
+    if (req==nullptr) return cps_api_ret_code_ERR;
     if (req->list!=NULL) cps_api_object_list_destroy(req->list,true);
     req->list = NULL;
     if (req->filters!=NULL) {
