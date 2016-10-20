@@ -165,6 +165,13 @@ class CPSObject:
             self.obj['data'][self.generate_path(attr_str)] = \
                 types.to_data(self.generate_path(attr_str), val)
 
+    def del_attr(self, attr_str):
+        """
+        Delete an attribute and its value from the object.
+        @attr_str - attribute string
+        """
+        self.obj['data'].pop(self.generate_path(attr_str),None)
+
     def fill_data(self, data_dict):
         """
         Add attribute strings and its values from dictionary.
