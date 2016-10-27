@@ -26,7 +26,6 @@
 #include "cps_api_object_key.h"
 
 #include "cps_api_python.h"
-#include "cps_api_node.h"
 #include "private/cps_string_utils.h"
 
 #include <stdlib.h>
@@ -307,88 +306,7 @@ static PyObject * py_key_from_qualifer(PyObject *self, PyObject *args) {
     return PyString_FromString(_key.c_str());
 }
 
-static PyObject * py_cps_node_set_update(PyObject *self, PyObject *args) {
-    const char *id=NULL, *node_type;
-    PyObject *_list=nullptr;
-    if (! PyArg_ParseTuple( args, "ssO!", &id, &node_type, &PyList_Type, &_list)) Py_RETURN_FALSE;
 
-    auto _node_type = cps_node_type_from_string(node_type);
-    if (_node_type==nullptr) {
-        Py_RETURN_FALSE;
-    }
-
-    cps_api_node_group_t _group;
-    _group.id = id;
-    _group.data_type = *_node_type;
-
-    std::vector<cps_api_node_ident> _ids;
-
-    Py_ssize_t str_keys = PyList_Size(_list);
-    {
-        Py_ssize_t ix = 0;
-        for ( ;ix < str_keys ; ++ix ) {
-            PyObject *tupObj = PyList_GetItem(_list, ix);
-            if (tupObj==nullptr) Py_RETURN_FALSE;
-            PyObject *nameObj = PyTuple_GetItem(tupObj,0);
-            PyObject *addrObj = PyTuple_GetItem(tupObj,1);
-            if (nameObj==nullptr || addrObj==nullptr) Py_RETURN_FALSE;
-            if (PyString_Check(nameObj) && PyString_Check(addrObj)) {
-                cps_api_node_ident _id;
-                _id.addr = PyString_AsString(addrObj);
-                _id.node_name = PyString_AsString(nameObj);
-                _ids.push_back(_id);
-            }
-        }
-    }
-    _group.addrs = &_ids[0];
-    _group.addr_len = _ids.size();
-    if (cps_api_set_node_group(&_group)==cps_api_ret_code_OK) {
-        Py_RETURN_TRUE;
-    }
-    Py_RETURN_FALSE;
-}
-
-
-static PyObject * py_cps_node_delete_group(PyObject *self, PyObject *args) {
-    const char *id=NULL;
-    if (! PyArg_ParseTuple( args, "s", &id)) Py_RETURN_FALSE;
-
-    if (cps_api_delete_node_group(id)==cps_api_ret_code_OK) {
-        Py_RETURN_TRUE;
-    }
-    Py_RETURN_FALSE;
-}
-
-
-static PyObject * py_cps_node_set_master(PyObject *self, PyObject *args) {
-    const char *id=NULL;
-    const char *node_id=NULL;
-    if (! PyArg_ParseTuple( args, "ss", &id,&node_id)) Py_RETURN_FALSE;
-
-    if (cps_api_set_master_node(id,node_id)==cps_api_ret_code_OK) {
-        Py_RETURN_TRUE;
-    }
-    Py_RETURN_FALSE;
-}
-
-
-static PyObject * py_cps_node_set_ownership_type(PyObject *self, PyObject *args) {
-    const char *key=NULL;
-    const char *o_type=NULL;
-    if (! PyArg_ParseTuple( args, "ss", &key,&o_type)) Py_RETURN_FALSE;
-
-    auto _o_type = cps_class_owner_type_from_string(o_type);
-    if (_o_type==nullptr) {
-        Py_RETURN_FALSE;
-    }
-
-    cps_api_key_t k;
-    cps_api_key_from_string(&k, key);
-
-
-    cps_api_obj_set_ownership_type(&k,*_o_type);
-    Py_RETURN_TRUE;
-}
 
 
 static PyObject * py_cps_name_from_key(PyObject *self, PyObject *args) {
@@ -591,6 +509,19 @@ PyDoc_STRVAR(CPS_FN_DOC(py_cps_node_set_ownership_type), "set_ownership_type(key
     "@type - ownership type(service,service-cache,db)\n"
     "@return - True if successful otherwise False");
 
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_api_db_commit), "db_commit(object,previous,publish)\n\n"
+    "Stores the object into the database and return the previous object (optional)\n"
+    "@object - An object (in the form of a dictionary) that will be updated.\n"
+    "           object must contain key, operation type and attributes\n"
+    "@return - True if successful otherwise False");
+
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_api_db_get), "db_get(filter, list_of_objects )\n\n"
+    "Query the database for a object or object class (can specific key attributes)\n"
+    "and append the result into the list_of_objects\n"
+    "@filter  - the object that has at least a key and optional attributes that will be used to locate\n"
+    "             the object.\n"
+    "@list_of_objects - the list that will have the object found appended.\n"
+    "@return - True if successful otherwise False");
 
 /* A list of all the methods defined by this module. */
 /* "METH_VARGS" tells Python how to call the handler */
@@ -629,11 +560,16 @@ static PyMethodDef cps_methods[] = {
 
     {"get",  py_cps_get, METH_VARARGS, cps_get__doc__},
     {"transaction",  py_cps_trans, METH_VARARGS, cps_trans__doc__},
+    {"commit",  py_cps_trans, METH_VARARGS, cps_trans__doc__},
 
     {"node_set_update",  py_cps_node_set_update, METH_VARARGS, CPS_FN_DOC(py_cps_node_set_update)},
     {"node_delete_group",  py_cps_node_delete_group, METH_VARARGS, CPS_FN_DOC(py_cps_node_delete_group)},
     {"node_set_master",  py_cps_node_set_master, METH_VARARGS, CPS_FN_DOC(py_cps_node_set_master)},
     {"set_ownership_type",  py_cps_node_set_ownership_type, METH_VARARGS, CPS_FN_DOC(py_cps_node_set_ownership_type)},
+
+    {"db_commit",  (PyCFunction)py_cps_api_db_commit, METH_VARARGS| METH_KEYWORDS, CPS_FN_DOC(py_cps_api_db_commit)},
+    {"db_get",  py_cps_api_db_get, METH_VARARGS, CPS_FN_DOC(py_cps_api_db_get)},
+
 
     {NULL, NULL}      /* sentinel */
 };

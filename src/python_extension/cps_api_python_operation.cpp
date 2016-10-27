@@ -186,7 +186,9 @@ static bool py_add_object_to_trans( cps_api_transaction_params_t *tr, PyObject *
 
 PyObject * py_cps_trans(PyObject *self, PyObject *args) {
     PyObject *list;
-    if (! PyArg_ParseTuple( args, "O!",  &PyList_Type, &list)) return NULL;
+    if (! PyArg_ParseTuple( args, "O!",  &PyList_Type, &list)) {
+        return nullptr;
+    }
 
     cps_api_transaction_params_t tr;
     if (cps_api_transaction_init(&tr)!=cps_api_ret_code_OK) {

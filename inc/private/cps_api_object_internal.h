@@ -31,6 +31,10 @@
 
 #include "cps_api_key.h"
 
+#include <stdbool.h>
+#include <stddef.h>
+#include <string>
+
 /**
  * The internal format of the CPS API's object array.  the main part is the key followed
  * by an array of bytes
@@ -48,6 +52,7 @@ typedef struct {
     size_t remain;    //the remaining space not used
     bool allocated; //if this buffer is allocated via malloc
     cps_api_object_data_t * data; // the pointer to the TLV array, etc..
+
 } cps_api_object_internal_t;
 
 #define CPS_API_OBJECT_INTERNAL_SPACE_REQ (sizeof(cps_api_object_internal_t) + \

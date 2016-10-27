@@ -33,6 +33,7 @@ class response {
     void * _reply;
 public:
     response(void *p) { _reply = p ; }
+    inline bool valid() { return _reply!=nullptr; }
 
     //simple string returns
     int get_str_len() ;

@@ -21,6 +21,7 @@
 #include "cps_api_db.h"
 #include "cps_string_utils.h"
 
+#include "cps_api_db_interface.h"
 #include "cps_api_object_tools.h"
 
 #include "cps_api_operation_tools.h"
@@ -55,6 +56,7 @@ TEST(cps_api_db,init) {
 
 TEST(cps_api_db,db_ping) {
     cps_db::connection_request b(cps_db::ProcessDBCache(),DEFAULT_REDIS_ADDR);
+    ASSERT_TRUE(b.valid());
     ASSERT_TRUE(cps_db::ping(b.get()));
 }
 
@@ -64,6 +66,28 @@ size_t get_object_count(cps_db::connection &conn,cps_api_object_t obj) {
     cps_db::get_objects(conn,obj,lg.get());
     return cps_api_object_list_size(lg.get());
 }
+}
+
+TEST(cps_api_db,cps_db_api) {
+    cps_api_object_guard og(cps_api_obj_tool_create(cps_api_qualifier_TARGET,BASE_IP_IPV6_ADDRESS,true));
+    ASSERT_TRUE(og.get()!=nullptr);
+
+
+
+    cps_api_object_attr_add_u32(og.get(),BASE_IP_IPV6_VRF_ID,0);
+    cps_api_object_attr_add_u32(og.get(),BASE_IP_IPV6_IFINDEX,1);
+    ASSERT_TRUE(cps_api_db_commit_one(cps_api_oper_CREATE,og.get(),nullptr,true)==cps_api_ret_code_OK);
+
+    cps_api_object_attr_delete(og.get(),BASE_IP_IPV6_IFINDEX);
+    cps_api_object_attr_add_u32(og.get(),BASE_IP_IPV6_IFINDEX,2);
+    ASSERT_TRUE(cps_api_db_commit_one(cps_api_oper_CREATE,og.get(),nullptr,true)==cps_api_ret_code_OK);
+
+    cps_api_object_set_type_operation(cps_api_object_key(og.get()),cps_api_oper_SET);
+    ASSERT_TRUE(cps_api_db_commit_one(cps_api_oper_CREATE,og.get(),nullptr,true)==cps_api_ret_code_OK);
+
+    cps_api_object_set_type_operation(cps_api_object_key(og.get()),cps_api_oper_DELETE);
+    ASSERT_TRUE(cps_api_db_commit_one(cps_api_oper_CREATE,og.get(),nullptr,true)==cps_api_ret_code_OK);
+
 }
 
 TEST(cps_api_db,db_key) {
@@ -78,7 +102,7 @@ TEST(cps_api_db,db_key) {
     cps_api_object_list_guard lg(cps_api_object_list_create());
 
     cps_db::get_objects(b.get(),obj,lg.get());
-    cps_db::delete_objects(b.get(),lg.get());
+    cps_db::delete_object_list(b.get(),lg.get());
 
     //object with 2 key attributes
     //But... can add another for debugging purposes
@@ -87,8 +111,8 @@ TEST(cps_api_db,db_key) {
     size_t c = 0;
     const static size_t _max = UINT8_MAX;
     for ( ; c < _max ; ++c ) {
-    	s+=c;
-    	s+=".";
+        s+=c;
+        s+=".";
     }
     cps_api_object_attr_add(obj,cps_api_obj_CAT_BASE_IP,s.c_str(),s.size());
     cps_api_object_attr_add_u32(obj,BASE_IP_IPV6_VRF_ID,'[');
@@ -103,16 +127,16 @@ TEST(cps_api_db,db_key) {
     ASSERT_EQ(get_object_count(b.get(),clone.get()),1);
 
     for ( size_t ix = 0; ix < 1000 ; ++ix ) {
-    	cps_api_object_attr_delete(obj,BASE_IP_IPV6_IFINDEX);
-    	cps_api_object_attr_add_u32(obj,BASE_IP_IPV6_IFINDEX,ix);
-    	cps_db::store_object(b.get(),obj);
-    	ASSERT_EQ(ix+2,get_object_count(b.get(),clone.get()));
+        cps_api_object_attr_delete(obj,BASE_IP_IPV6_IFINDEX);
+        cps_api_object_attr_add_u32(obj,BASE_IP_IPV6_IFINDEX,ix);
+        cps_db::store_object(b.get(),obj);
+        ASSERT_EQ(ix+2,get_object_count(b.get(),clone.get()));
     }
 
     lg.set(cps_api_object_list_create());
 
     cps_db::get_objects(b.get(),clone.get(),lg.get());
-    cps_db::delete_objects(b.get(),lg.get());
+    cps_db::delete_object_list(b.get(),lg.get());
 
     ASSERT_TRUE(get_object_count(b.get(),obj)==0);
 
@@ -215,7 +239,7 @@ TEST(cps_api_db,db_set_list_obj) {
     ASSERT_TRUE(b.valid());
 
 
-    ASSERT_TRUE(cps_db::delete_objects(b.get(),list));
+    ASSERT_TRUE(cps_db::delete_object_list(b.get(),list));
 
     ASSERT_TRUE(cps_db::store_objects(b.get(),list));
 

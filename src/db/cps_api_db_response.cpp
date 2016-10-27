@@ -61,26 +61,6 @@ bool cps_db::response::is_ok() {
     return static_cast<redisReply*>(_reply)->type != REDIS_REPLY_ERROR ;
 }
 
-#if 0
-void cps_db::response::iterator(const std::function<void(size_t ix, int type, const void *data, size_t len)> &fun) {
-    if (static_cast<redisReply*>(_reply)->type != REDIS_REPLY_ARRAY) {
-        return;
-    }
-    for (size_t ix = 0; ix < static_cast<redisReply*>(_reply)->elements ; ++ix ) {
-        if (static_cast<redisReply*>(_reply)->element[ix]->type==REDIS_REPLY_INTEGER) {
-            fun(ix,static_cast<redisReply*>(_reply)->element[ix]->type,
-                    &static_cast<redisReply*>(_reply)->element[ix]->integer,
-                    sizeof(static_cast<redisReply*>(_reply)->element[ix]->integer));
-        }
-        if (static_cast<redisReply*>(_reply)->element[ix]->type==REDIS_REPLY_STRING) {
-            fun(ix,static_cast<redisReply*>(_reply)->element[ix]->type,
-                    static_cast<redisReply*>(_reply)->element[ix]->str,
-                    static_cast<redisReply*>(_reply)->element[ix]->len);
-        }
-    }
-}
-#endif
-
 void cps_db::response::dump() {
     std::cout << "Resp type is : " << static_cast<redisReply*>(_reply)->type << std::endl;
 

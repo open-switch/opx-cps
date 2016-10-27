@@ -24,7 +24,6 @@ cps-api-common_SRCS+=cps_string_utils.cpp
 cps-api-common_SRCS+=cps_api_operation_debug.cpp
 cps-api-common_SRCS+=cps_api_vector_utils.cpp
 cps-api-common_SRCS+=cps_comm_utils.cpp
-cps-api-common_SRCS+=cps_api_core_utils.cpp
 cps-api-common_SRCS+=cps_api_key_utils.cpp
 
 cps-api-common_SRCS+=non-core/cps_api_object_tools.cpp
@@ -37,6 +36,10 @@ cps-api-common_SRCS+=metadata/cps_dictionary.cpp
 cps-api-common_SRCS+=metadata/cps_dictionary_loader.cpp
 cps-api-common_SRCS+=metadata/cps_api_metadata_import.cpp
 
+cps-api-common_SRCS+=db/cps_api_core_utils.cpp
+cps-api-common_SRCS+=db/cps_api_db_direct.cpp
+cps-api-common_SRCS+=db/cps_api_db_pipeline.cpp
+cps-api-common_SRCS+=db/cps_api_db_events.cpp
 cps-api-common_SRCS+=db/cps_redis.cpp
 cps-api-common_SRCS+=db/cps_api_db_connection.cpp
 cps-api-common_SRCS+=db/cps_api_db_response.cpp
@@ -117,6 +120,11 @@ cps_api_db_timings_CXXFLAGS+=-I$(TOP_SRCDIR)/inc/private
 cps_api_db_timings_SRCS=unit_test/cps_api_db_timings.cpp ${CPS_UT_SRC}
 cps_api_db_timings_LDFLAGS=-lcps-api-common -lcps-class-map-util -ldn_common
 
+
+UNIT_TEST+=cps_api_db_direct_unittest
+cps_api_db_direct_unittest_CXXFLAGS+=-I$(TOP_SRCDIR)/inc/private
+cps_api_db_direct_unittest_SRCS=unit_test/cps_api_db_direct_unittest.cpp ${CPS_UT_SRC}
+cps_api_db_direct_unittest_LDFLAGS=-lcps-api-common -lcps-class-map-util -ldn_common
 
 PY_OBJ_PATH=${BUILD_CURDIR}/pybuild
 

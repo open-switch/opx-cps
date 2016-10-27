@@ -20,11 +20,15 @@
 
 #include <functional>
 #include <string>
+#include <vector>
+#include <unordered_set>
 
-bool cps_api_node_set_iterate(const std::string &group_name,const std::function<void (const std::string &node, void*context)> &operation,
-        void *context);
+bool cps_api_node_set_iterate(const std::string &group_name,
+        const std::function<bool (const std::string &node)> &operation);
 
 bool cps_api_db_del_node_group(const char *group);
+
+bool cps_api_db_get_node_group(const std::string &group,std::vector<std::string> &lst);
 
 bool cps_api_db_get_node_from_ip(const std::string & ip, std::string &name);
 

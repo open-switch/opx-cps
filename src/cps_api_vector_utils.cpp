@@ -29,3 +29,16 @@ bool cps_utils::cps_api_vector_util_append(std::vector<char> &lst_,const void *d
     memcpy(&lst_[len],data_,len_);
     return true;
 }
+
+bool cps_utils::cps_api_range_split(size_t total ,ssize_t step,const cps_api_range_split_function &range) {
+    for ( size_t ix = 0; ix < total ; ) {
+        size_t now = ix;
+        ix += step;
+        if (ix>total) ix = total;
+        if (range(now,ix)) {
+            continue;
+        }
+        return false;
+    }
+    return true;
+}

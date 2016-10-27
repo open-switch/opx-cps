@@ -25,6 +25,9 @@
 
 #include "cps_api_object_key.h"
 
+#include <unordered_map>
+#include <functional>
+#include <vector>
 #include <string.h>
 
 extern "C" cps_api_object_t cps_api_obj_tool_create(cps_api_qualifier_t qual,cps_api_attr_id_t id, bool add_defaults) {
@@ -87,17 +90,7 @@ extern "C" bool cps_api_obj_tool_matches_filter(cps_api_object_t filter, cps_api
 
 
 bool cps_api_obj_tool_merge(cps_api_object_t main, cps_api_object_t overlay) {
-    cps_api_object_it_t it;
-
-    cps_api_object_it_begin(overlay,&it);
-    do {
-        cps_api_object_attr_delete(main,cps_api_object_attr_id(it.attr));
-        if (!cps_api_object_attr_add(main,cps_api_object_attr_id(it.attr),cps_api_object_attr_data_bin(it.attr),
-                cps_api_object_attr_len(it.attr))) {
-            return false;
-        }
-    } while (cps_api_object_it_next(&it));
-    return true;
+	return cps_api_object_attr_merge(main,overlay,true);
 }
 
 bool cps_api_obj_tool_attr_matches(cps_api_object_t obj, cps_api_attr_id_t *ids, void ** values, size_t *len, size_t mx_) {
@@ -113,3 +106,72 @@ bool cps_api_obj_tool_attr_matches(cps_api_object_t obj, cps_api_attr_id_t *ids,
     }
     return true;
 }
+
+namespace {
+
+void __cps_api_obj_tool_attr_callback(cps_api_object_t obj, cps_api_attr_id_t id,
+		const std::function<void(void*,void *data[], size_t sizes[], size_t len, bool &cont)> &func,
+		void *context) {
+
+    cps_api_object_it_t it;
+    if (!cps_api_object_it(obj,&id,1,&it)) {
+        return ;
+    }
+
+    bool _cont = true;
+    do {
+        void *_data = cps_api_object_attr_data_bin(it.attr);
+        size_t _size = cps_api_object_attr_len(it.attr);
+        func(context,&_data,&_size,1,_cont);
+        cps_api_object_it_next(&it);
+        it.attr = std_tlv_find_next(it.attr,&it.len,id);
+    } while (_cont && cps_api_object_it_valid(&it));
+}
+
+
+void __cps_api_bundle_attr_changes(cps_api_object_t obj, cps_api_attr_id_t id, cps_api_obj_tool_attr_callback_t cb,
+		void *context) {
+
+	struct  {
+		std::vector<void*> _data;
+		std::vector<size_t> _sizes;
+	}_priv;
+
+	auto fun = [&](void*,void *data[], size_t sizes[], size_t len, bool &cont) {
+		for ( size_t ix = 0; ix < len ; ++ix ) {
+			_priv._data.push_back(data[ix]);
+			_priv._sizes.push_back(sizes[ix]);
+		}
+	};
+
+	__cps_api_obj_tool_attr_callback(obj,id,fun,context);
+
+	bool _cont = true;
+	cb(context,&(_priv._data[0]),&_priv._sizes[0],_priv._data.size(),&_cont);
+}
+
+}
+
+void cps_api_obj_tool_attr_callback(cps_api_object_t obj, cps_api_attr_id_t id, cps_api_obj_tool_attr_callback_t cb,
+		void *context) {
+
+	CPS_CLASS_ATTR_TYPES_t _type=CPS_CLASS_ATTR_T_LEAF;
+	(void)cps_class_map_attr_class(id,&_type);
+
+	if (_type==CPS_CLASS_ATTR_T_LEAF_LIST) {
+		__cps_api_bundle_attr_changes(obj,id,cb,context);
+	} else {
+		auto fun = [&](void*,void *data[], size_t sizes[], size_t len, bool &cont) {
+			cb(context,data,sizes,len,&cont);
+		};
+		__cps_api_obj_tool_attr_callback(obj,id,fun,context);
+	}
+}
+
+void cps_api_obj_tool_attr_callback_list(cps_api_object_t obj, cps_api_obj_tool_attr_cb_list_t *lst, size_t len) {
+	for (size_t ix = 0; ix < len ; ++ix ) {
+		cps_api_obj_tool_attr_callback(obj,lst[ix].id,lst[ix].callback,lst[ix].context);
+	}
+}
+
+

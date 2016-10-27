@@ -235,7 +235,6 @@ const char * cps_attr_id_to_name(cps_api_attr_id_t id);
  */
 bool cps_api_key_from_attr(cps_api_key_t *key,cps_api_attr_id_t id,size_t key_start_pos);
 
-
 /**
  * Create a key from an attribute ID with a qualifier as the first position.
  *
@@ -264,6 +263,15 @@ void cps_api_class_map_init(void);
  * @return true if the attribute type is found otherwise false
  */
 bool cps_class_map_attr_type(cps_api_attr_id_t id, CPS_CLASS_DATA_TYPE_t *t);
+
+
+/**
+ * This function will return the attribute's "class type" - eg leaf list, etc..
+ * @param id the attribute ID
+ * @param type return the type of the attribute if found
+ * @return false if not found otherwise true
+ */
+bool cps_class_map_attr_class(cps_api_attr_id_t id, CPS_CLASS_ATTR_TYPES_t *type);
 
 /****
  * The following API indicate an object's ownership (or also considered as storage location) of an object.
@@ -304,8 +312,35 @@ void cps_api_obj_set_auto_event(cps_api_key_t *key, bool automated_events);
  */
 bool cps_api_obj_has_auto_events(cps_api_object_t obj);
 
+
+/**
+ * Print the contents of the object to the standard output
+ * @param obj the object to display
+ */
+void cps_api_object_print(cps_api_object_t obj);
+
 #ifdef __cplusplus
 }
+
+#include <string>
+
+/**
+ * Convert the attribute ID and data to a printable string
+ * @param id the attribute ID
+ * @param data the data to display
+ * @param len the length of the data
+ * @return a string representation in the form of:
+ *             attrid : "data"
+ */
+std::string cps_api_object_attr_as_string(cps_api_attr_id_t id, const void * data, size_t len);
+
+/**
+ * Take the object and create a string that has the name (+ key attributes) along with the object
+ * @param obj the object to convert to a string
+ * @return a string containing a ascii representation of the object
+ */
+std::string cps_api_object_to_string(cps_api_object_t obj);
+
 #endif
 
 /**

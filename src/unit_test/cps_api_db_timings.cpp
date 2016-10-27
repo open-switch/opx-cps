@@ -44,42 +44,9 @@
 
 #include "gtest/gtest.h"
 
-cps_api_object_list_guard _100(cps_api_object_list_create());
-cps_api_object_list_guard _1000(cps_api_object_list_create());
-cps_api_object_list_guard _10000(cps_api_object_list_create());
-cps_api_object_list_guard _100000(cps_api_object_list_create());
-
 TEST(cps_api_db,init) {
     __init_class_map();
 
-    size_t ix = 0;
-    size_t mx = 100000;
-    for ( ; ix < mx ; ++ix ) {
-        cps_api_object_guard og(cps_api_object_create());
-        cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),BASE_IP_IPV6,cps_api_qualifier_TARGET);
-        cps_api_object_attr_add_u32(og.get(),BASE_IP_IPV6_VRF_ID,0);
-        cps_api_object_attr_add_u32(og.get(),BASE_IP_IPV6_IFINDEX,ix);
-
-        std::string _elem = cps_string::sprintf("%s-%d","Cliff",(int)ix);
-        cps_api_object_attr_add(og.get(),BASE_IP_IPV6_NAME,_elem.c_str(),_elem.size());
-
-        if (ix < 100) {
-            cps_api_object_t o = cps_api_object_list_create_obj_and_append(_100.get());
-            cps_api_object_clone(o,og.get());
-        }
-        if (ix < 1000) {
-            cps_api_object_t o = cps_api_object_list_create_obj_and_append(_1000.get());
-            cps_api_object_clone(o,og.get());
-        }
-        if (ix < 10000) {
-            cps_api_object_t o = cps_api_object_list_create_obj_and_append(_10000.get());
-            cps_api_object_clone(o,og.get());
-        }
-        if (ix < 100000) {
-            cps_api_object_t o = cps_api_object_list_create_obj_and_append(_100000.get());
-            cps_api_object_clone(o,og.get());
-        }
-    }
 }
 
 TEST(cps_api_db,db_clear_all) {
@@ -89,13 +56,13 @@ TEST(cps_api_db,db_clear_all) {
     cps_api_object_guard og(cps_api_object_create());
     cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),BASE_IP_IPV6,cps_api_qualifier_TARGET);
     ASSERT_TRUE(cps_db::get_objects(con,og.get(),lg.get()));
-    ASSERT_TRUE(cps_db::delete_objects(con,lg.get()));
+    ASSERT_TRUE(cps_db::delete_object_list(con,lg.get()));
 }
 
 TEST(cps_api_db,set_100_pieces_of_data) {
     cps_db::connection con;
     ASSERT_TRUE(con.connect(DEFAULT_REDIS_ADDR,"0",false));
-    ASSERT_TRUE(cps_db::store_objects(con,_100.get()));
+    ASSERT_TRUE(cps_db::store_objects(con,Get100()));
 }
 
 TEST(cps_api_db,get_100_pieces_of_data) {
@@ -113,13 +80,13 @@ TEST(cps_api_db,del_100_pieces_of_data) {
     ASSERT_TRUE(con.connect(DEFAULT_REDIS_ADDR,"0",false));
     cps_api_object_guard og(cps_api_object_create());
     cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),BASE_IP_IPV6,cps_api_qualifier_TARGET);
-    ASSERT_TRUE(cps_db::delete_objects(con,_100.get()));
+    ASSERT_TRUE(cps_db::delete_object_list(con,Get100()));
 }
 
 TEST(cps_api_db,set_1000_pieces_of_data) {
     cps_db::connection con;
     ASSERT_TRUE(con.connect(DEFAULT_REDIS_ADDR,"0",false));
-    ASSERT_TRUE(cps_db::store_objects(con,_1000.get()));
+    ASSERT_TRUE(cps_db::store_objects(con,Get1000()));
 }
 
 TEST(cps_api_db,get_1000_pieces_of_data) {
@@ -135,13 +102,13 @@ TEST(cps_api_db,get_1000_pieces_of_data) {
 TEST(cps_api_db,del_1000_pieces_of_data) {
     cps_db::connection con;
     ASSERT_TRUE(con.connect(DEFAULT_REDIS_ADDR,"0",false));
-    ASSERT_TRUE(cps_db::delete_objects(con,_1000.get()));
+    ASSERT_TRUE(cps_db::delete_object_list(con,Get1000()));
 }
 
 TEST(cps_api_db,set_10000_pieces_of_data) {
     cps_db::connection con;
     ASSERT_TRUE(con.connect(DEFAULT_REDIS_ADDR,"0",false));
-    ASSERT_TRUE(cps_db::store_objects(con,_10000.get()));
+    ASSERT_TRUE(cps_db::store_objects(con,Get10000()));
 }
 
 TEST(cps_api_db,get_10000_pieces_of_data) {
@@ -157,13 +124,13 @@ TEST(cps_api_db,get_10000_pieces_of_data) {
 TEST(cps_api_db,del_10000_pieces_of_data) {
     cps_db::connection con;
     ASSERT_TRUE(con.connect(DEFAULT_REDIS_ADDR,"0",false));
-    ASSERT_TRUE(cps_db::delete_objects(con,_10000.get()));
+    ASSERT_TRUE(cps_db::delete_object_list(con,Get10000()));
 }
 
 TEST(cps_api_db,set_100000_pieces_of_data) {
     cps_db::connection con;
     ASSERT_TRUE(con.connect(DEFAULT_REDIS_ADDR,"0",false));
-    ASSERT_TRUE(cps_db::store_objects(con,_100000.get()));
+    ASSERT_TRUE(cps_db::store_objects(con,Get100000()));
 }
 
 TEST(cps_api_db,get_100000_pieces_of_data) {
@@ -179,7 +146,29 @@ TEST(cps_api_db,get_100000_pieces_of_data) {
 TEST(cps_api_db,del_100000_pieces_of_data) {
     cps_db::connection con;
     ASSERT_TRUE(con.connect(DEFAULT_REDIS_ADDR,"0",false));
-    ASSERT_TRUE(cps_db::delete_objects(con,_100000.get()));
+    ASSERT_TRUE(cps_db::delete_object_list(con,Get100000()));
+}
+
+TEST(cps_api_db,set_1000000_pieces_of_data) {
+    cps_db::connection con;
+    ASSERT_TRUE(con.connect(DEFAULT_REDIS_ADDR,"0",false));
+    ASSERT_TRUE(cps_db::store_objects(con,Get1000000()));
+}
+
+TEST(cps_api_db,get_1000000_pieces_of_data) {
+    cps_db::connection con;
+    ASSERT_TRUE(con.connect(DEFAULT_REDIS_ADDR,"0",false));
+    cps_api_object_guard og(cps_api_object_create());
+    cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),BASE_IP_IPV6,cps_api_qualifier_TARGET);
+    cps_api_object_list_guard lg(cps_api_object_list_create());
+    ASSERT_TRUE(cps_db::get_objects(con,og.get(),lg.get()));
+    printf("Retrieved %d objects\n",(int)cps_api_object_list_size(lg.get()));
+}
+
+TEST(cps_api_db,del_1000000_pieces_of_data) {
+    cps_db::connection con;
+    ASSERT_TRUE(con.connect(DEFAULT_REDIS_ADDR,"0",false));
+    ASSERT_TRUE(cps_db::delete_object_list(con,Get1000000()));
 }
 
 int main(int argc, char **argv) {

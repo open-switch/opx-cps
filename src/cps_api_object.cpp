@@ -37,6 +37,8 @@
 #include <unordered_map>
 #include <stdio.h>
 #include <string>
+#include <memory>
+#include <vector>
 
 #define DEF_OBJECT_SIZE (512)
 #define DEF_OBJECT_REALLOC_STEP_SIZE (128)
@@ -46,23 +48,23 @@
 
 
 //Return the amount of space used by attributes within this object
-static inline size_t obj_used_len(cps_api_object_internal_t *cur) {
+static inline size_t obj_used_len(register cps_api_object_internal_t *cur) {
     return cur->len - cur->remain;
 }
 
 //return the location of the first TLV
-static inline void * obj_data(cps_api_object_internal_t *p) {
+static inline void * obj_data(register cps_api_object_internal_t *p) {
     return ((uint8_t*)p->data) + sizeof(*p->data);
 }
 
-static inline void * obj_data_end(cps_api_object_internal_t *p) {
+static inline void * obj_data_end(register cps_api_object_internal_t *p) {
     return std_tlv_offset(obj_data(p), obj_used_len(p));
 }
 
 //given a pointer to data within the object, return the offset within the object
-static inline size_t obj_data_offset(cps_api_object_internal_t *p, void * tlv) {
-    uint8_t* loc = (uint8_t*)tlv;
-    uint8_t* data = (uint8_t*)obj_data(p);
+static inline size_t obj_data_offset(register cps_api_object_internal_t *p, register void * tlv) {
+    register uint8_t* loc = (uint8_t*)tlv;
+    register uint8_t* data = (uint8_t*)obj_data(p);
 
     return loc - data;
 }
@@ -193,6 +195,7 @@ cps_api_object_t cps_api_object_create_int(const char *desc, unsigned int line, 
         EV_LOG(ERR,DSAPI,0,"CPS-OBJ","Failed to allocate memory for object.. expect sytem issues.");
     }
     db_list_tracker_add(obj, desc, line,file);
+    cps_api_key_set_len(&((cps_api_object_internal_t*)obj)->data->key,0);
     return obj;
 }
 
@@ -210,13 +213,21 @@ bool cps_api_object_clone(cps_api_object_t d, cps_api_object_t s) {
 }
 
 void __delete_repeated_attributes(cps_api_object_t d, cps_api_object_t s) {
-    cps_api_object_it_t it;
+    register cps_api_object_it_t it;
     cps_api_object_it_begin(s,&it);
-
+    std::vector<cps_api_attr_id_t> ids;
     while (cps_api_object_it_valid(&it)) {
         cps_api_attr_id_t id = cps_api_object_attr_id(it.attr);
-        cps_api_object_attr_delete(d,id);
+        if (cps_api_object_attr_len(it.attr)==0) {
+            ids.push_back(id);
+        }
+        do {
+            if (!cps_api_object_attr_delete(d,id)) break;
+        } while (true);
         cps_api_object_it_next(&it);
+    }
+    for (auto it : ids ) {
+        cps_api_object_attr_delete(s,it);
     }
 }
 
@@ -233,6 +244,7 @@ bool cps_api_object_attr_merge(cps_api_object_t d, cps_api_object_t s, bool remo
         //@TODO optimize in the case of zero attributes
         __delete_repeated_attributes(d,s);
         _cur = obj_used_len(dest);
+        _amt = obj_used_len(src);
     }
 
     size_t _tot = _amt + _cur;
@@ -254,7 +266,7 @@ size_t cps_api_object_get_reserve_len(cps_api_object_t obj) {
     return ((cps_api_object_internal_t *)obj)->len;
 }
 
-bool cps_api_object_received(cps_api_object_t obj, size_t size_of_object_received) {
+bool cps_api_object_received(cps_api_object_t obj,register size_t size_of_object_received) {
     cps_api_object_internal_t *o = (cps_api_object_internal_t*)obj;
     if (o->len < size_of_object_received) return false;
     if (size_of_object_received < sizeof(*o->data)) return false;
@@ -279,11 +291,10 @@ void cps_api_object_set_key(cps_api_object_t obj, cps_api_key_t *key) {
 
 cps_api_object_attr_t cps_api_object_attr_get(cps_api_object_t obj, uint64_t attr) {
     cps_api_object_internal_t *p = (cps_api_object_internal_t*)obj;
-    size_t len = obj_used_len(p);
-    void *tlv = obj_data(p);
+    register size_t len = obj_used_len(p);
+    register void *tlv = obj_data(p);
     while (len >= STD_TLV_HDR_LEN) {
-        uint64_t tag = std_tlv_tag(tlv);
-        if (attr == tag) {
+        if (attr == std_tlv_tag(tlv)) {
             return (cps_api_object_attr_t)tlv;
         }
         tlv = std_tlv_next(tlv, &len);
@@ -292,8 +303,8 @@ cps_api_object_attr_t cps_api_object_attr_get(cps_api_object_t obj, uint64_t att
 }
 
 bool cps_api_object_attr_get_list(cps_api_object_t obj,
-        cps_api_attr_id_t *attr, cps_api_object_attr_t *pointers, size_t count) {
-    size_t ix = 0;
+        cps_api_attr_id_t *attr, cps_api_object_attr_t *pointers, register size_t count) {
+    register size_t ix = 0;
     for ( ; ix < count ; ++ix ) {
         pointers[ix] = cps_api_object_attr_get(obj,attr[ix]);
         if (pointers[ix]==NULL) return false;
@@ -301,7 +312,7 @@ bool cps_api_object_attr_get_list(cps_api_object_t obj,
     return true;
 }
 
-void cps_api_object_attr_delete(cps_api_object_t obj, cps_api_attr_id_t attr_id) {
+bool cps_api_object_attr_delete(cps_api_object_t obj, cps_api_attr_id_t attr_id) {
     cps_api_object_internal_t *p = (cps_api_object_internal_t*)obj;
 
     cps_api_object_attr_t  attr = cps_api_object_attr_get(obj, attr_id);
@@ -314,6 +325,7 @@ void cps_api_object_attr_delete(cps_api_object_t obj, cps_api_attr_id_t attr_id)
         memmove(attr, tlv_rm_end, copy_len);
         p->remain += rm_len;
     }
+    return attr!=nullptr;
 }
 
 cps_api_object_attr_t cps_api_object_e_get(cps_api_object_t obj, cps_api_attr_id_t *id,
@@ -352,12 +364,12 @@ size_t cps_api_object_e_get_list_data(cps_api_object_t obj, cps_api_attr_id_t *i
 }
 
 bool cps_api_object_it(cps_api_object_t obj, cps_api_attr_id_t *id,
-        size_t id_size, cps_api_object_it_t *it) {
+        size_t id_size, register cps_api_object_it_t *it) {
     it->attr =  obj_data((cps_api_object_internal_t*)obj);
     it->len = obj_used_len((cps_api_object_internal_t*)obj);
 
-    size_t ix = 0;
-    size_t mx = id_size;
+    register size_t ix = 0;
+    register size_t mx = id_size;
     for ( ; ix < mx ; ++ix ) {
         it->attr = std_tlv_find_next(it->attr,&it->len,id[ix]);
         if (!cps_api_object_it_valid(it)) break;
@@ -380,9 +392,9 @@ static bool add_embedded(cps_api_object_internal_t * obj, cps_api_attr_id_t *id,
         size_t id_size, const void *data, size_t dlen) {
     size_t current_obj_len = obj_used_len(obj);
 
-    size_t len = current_obj_len;
-    void *tlv = obj_data(obj);
-    size_t ix = 0;
+    register size_t len = current_obj_len;
+    register void *tlv = obj_data(obj);
+    register size_t ix = 0;
 
     for ( ; ix < (id_size-1); ++ix) {
         tlv = std_tlv_find_next(tlv,&len,id[ix]);
@@ -399,7 +411,7 @@ static bool add_embedded(cps_api_object_internal_t * obj, cps_api_attr_id_t *id,
     (obj)->remain -= remaining_needed;
 
     tlv = obj_data(obj);
-    size_t cur_tlv_len = current_obj_len;
+    register size_t cur_tlv_len = current_obj_len;
 
     for ( ix = 0 ; ix < (id_size-1) ; ++ix) {
         len = cur_tlv_len;
@@ -467,7 +479,7 @@ bool cps_api_object_e_add(cps_api_object_t obj, cps_api_attr_id_t *id,
 }
 
 void cps_api_object_attr_fill_list(cps_api_object_t obj, size_t base_attr_id, cps_api_object_attr_t *attr, size_t len) {
-    void * ptr = (cps_api_object_attr_t)obj_data((cps_api_object_internal_t*)obj);
+    register void * ptr = (cps_api_object_attr_t)obj_data((cps_api_object_internal_t*)obj);
     size_t used_len = obj_used_len((cps_api_object_internal_t*)obj);
     memset(attr,0,sizeof(*attr)*len);
 
@@ -523,16 +535,22 @@ void cps_api_object_it_begin(cps_api_object_t obj, cps_api_object_it_t *it) {
     it->attr =obj_data( (cps_api_object_internal_t*)obj );
 }
 
-void cps_api_object_list_destroy(cps_api_object_list_t list, bool delete_all_objects) {
-    STD_ASSERT(list!=NULL);
+void cps_api_object_list_clear(cps_api_object_list_t list, bool delete_objects) {
     tObjList * p = (tObjList*)list;
-    if (delete_all_objects) {
+    if (delete_objects) {
         size_t ix = 0;
         size_t mx = p->size();
         for ( ; ix < mx ; ++ix ) {
             cps_api_object_delete((*p)[ix]);
         }
     }
+    p->clear();
+}
+
+void cps_api_object_list_destroy(cps_api_object_list_t list, bool delete_all_objects) {
+    STD_ASSERT(list!=NULL);
+    tObjList * p = (tObjList*)list;
+    cps_api_object_list_clear(list,delete_all_objects);
     delete p;
 }
 
@@ -545,6 +563,44 @@ bool cps_api_object_list_append(cps_api_object_list_t list, cps_api_object_t obj
         return false;
     }
     return true;
+}
+
+bool cps_api_object_list_merge(cps_api_object_list_t dest, cps_api_object_list_t add) {
+    tObjList & _dest = *(tObjList*)dest;
+    tObjList &_add = *(tObjList*)add;
+
+    try {
+        for ( auto & it : _add ) {
+            _dest.push_back(it);
+        }
+    } catch (...) { return false; }
+    _add.clear();
+    return true;
+}
+
+cps_api_object_list_t cps_api_object_list_clone(cps_api_object_list_t src, bool deep) {
+    std::unique_ptr<std::vector<cps_api_object_t>> _n (new std::vector<cps_api_object_t>);
+
+    tObjList & _src = *(tObjList*)src;
+
+    try {
+        for ( auto &it : _src ) {
+            if (!deep) _n->push_back(it);
+            else {
+                cps_api_object_t o = cps_api_object_create();
+                if (o==nullptr) return nullptr;
+                if (cps_api_object_clone(o,it)) {
+                    _n->push_back(o);
+                    continue;
+                }
+                cps_api_object_delete(o);
+                return nullptr;
+            }
+        }
+    } catch (...) {
+        return nullptr;
+    }
+    return _n.release();
 }
 
 void cps_api_object_list_remove(cps_api_object_list_t list, size_t ix) {

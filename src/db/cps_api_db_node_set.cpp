@@ -197,7 +197,6 @@ static bool cps_api_remove_slave(std::string & addr){
     return true;
 }
 
-
 cps_api_return_code_t cps_api_set_master_node(const char *group,const char * node_name){
     std::lock_guard<std::recursive_mutex> lg(_nodes->get_lock());
     (void)load_groups();
@@ -231,7 +230,6 @@ cps_api_return_code_t cps_api_set_master_node(const char *group,const char * nod
                         return cps_api_ret_code_ERR;
                     }
                 }
-
             }
             _nodes->_master[group]=node_it._addr;
             _nodes->mark_master_set(std::string(group));
@@ -262,16 +260,14 @@ cps_api_return_code_t cps_api_set_master_node(const char *group,const char * nod
                         node_it._name.c_str(),master_node.c_str());
                 return cps_api_ret_code_ERR;
             }
-
         }
     }
 
     return cps_api_ret_code_OK;
 }
 
-
-bool cps_api_node_set_iterate(const std::string &group_name,const std::function<void (const std::string &node, void*context)> &operation,
-        void *context) {
+bool cps_api_node_set_iterate(const std::string &group_name,
+        const std::function<bool (const std::string &node)> &operation) {
     std::vector<std::string> lst;
 
     if (!cps_api_db_get_node_group(group_name,lst)) {
@@ -280,7 +276,7 @@ bool cps_api_node_set_iterate(const std::string &group_name,const std::function<
     }
 
     for (auto node_it : lst ) {
-        operation(node_it,context);
+        if (!operation(node_it)) break;    //it is perfectly good to terminate the loop early
     }
     return true;
 }

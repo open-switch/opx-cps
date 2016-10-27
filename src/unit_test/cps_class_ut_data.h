@@ -130,4 +130,10 @@ struct _node_details {
 void __init_class_map();
 std::vector<_node_details>&__get_class_map();
 
+cps_api_object_list_t Get100();
+cps_api_object_list_t Get1000();
+cps_api_object_list_t Get10000();
+cps_api_object_list_t Get100000();
+cps_api_object_list_t Get1000000();
+cps_api_object_list_t GeBIG();
 #endif /* CPS_API_SRC_UNIT_TEST_CPS_CLASS_UT_DATA_H_ */

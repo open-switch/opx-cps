@@ -108,57 +108,70 @@ static void cps_api_object_list_swap(cps_api_object_list_t &a, cps_api_object_li
     b = t;
 }
 
-cps_api_return_code_t cps_api_get(cps_api_get_params_t * param) {
-    cps_api_return_code_t rc = cps_api_ret_code_ERR;
 
-    cps_api_get_params_t new_req;
-    if (cps_api_get_request_init(&new_req)!=cps_api_ret_code_OK) {
-        return cps_api_ret_code_INTERNAL_FAILURE;
-    }
-    cps_api_get_request_guard rg(&new_req);
-    size_t mx = cps_api_object_list_size(param->filters);
+static bool _cps_api_get_clone(cps_api_get_params_t * dest, cps_api_get_params_t * src) {
+    if (src==nullptr || dest==nullptr) return false;
+
+    cps_api_object_list_destroy(dest->filters,true);
+    dest->filters = cps_api_object_list_clone(src->filters,true);
 
     size_t ix = 0;
+
+    size_t mx = src->key_count;
     for ( ; ix < mx ; ++ix ) {
-        cps_api_object_t obj = cps_api_object_list_create_obj_and_append(new_req.filters);
+        cps_api_object_t obj = cps_api_object_list_create_obj_and_append(dest->filters);
         if (obj==NULL) return cps_api_ret_code_INTERNAL_FAILURE;
-
-        cps_api_object_t filter_obj = cps_api_object_list_get(param->filters,ix);
-        if (filter_obj==NULL) return cps_api_ret_code_INTERNAL_FAILURE;
-
-        cps_api_object_clone(obj,filter_obj);
+        cps_api_key_copy(cps_api_object_key(obj),src->keys+ix);
     }
 
-    ix=0;
-    mx = param->key_count;
-    for ( ; ix < mx ; ++ix ) {
-        cps_api_object_t obj = cps_api_object_list_create_obj_and_append(new_req.filters);
-        if (obj==NULL) return cps_api_ret_code_INTERNAL_FAILURE;
+    dest->timeout = src->timeout;
+    dest->keys = nullptr;
+    dest->key_count = 0;
+    return true;
+}
 
-        cps_api_key_copy(cps_api_object_key(obj),param->keys+ix);
+
+cps_api_return_code_t cps_api_get(cps_api_get_params_t * param) {
+
+    cps_api_return_code_t rc = cps_api_ret_code_ERR;
+    cps_api_get_params_t new_req;
+
+    bool _copy_param = param->key_count!=0;
+    cps_api_get_request_guard rg(nullptr);
+
+    if (_copy_param) {    //copy the get request and add the keys if.. the number of just keys > 0
+        if (cps_api_get_request_init(&new_req)!=cps_api_ret_code_OK) {
+            return cps_api_ret_code_INTERNAL_FAILURE;
+        }
+        rg.set(&new_req);
+
+        if (!_cps_api_get_clone(&new_req,param)) {
+            return cps_api_ret_code_INTERNAL_FAILURE;
+        }
+
+        cps_api_object_list_swap(param->list,new_req.list);
     }
 
-    mx = cps_api_object_list_size(new_req.filters);
-    new_req.timeout = param->timeout;
-    new_req.key_count = mx;
-    new_req.keys = nullptr;
+    cps_api_get_params_t * get_req = _copy_param ? &new_req : param;
 
-    cps_api_object_list_swap(param->list,new_req.list);
 
-    ix = 0;
-    for ( ; ix < mx ; ++ix ) {
-        cps_api_object_t o = cps_api_object_list_get(new_req.filters,ix);
+    size_t mx = cps_api_object_list_size(get_req->filters);
+
+    for ( size_t ix = 0 ; ix < mx ; ++ix ) {
+        cps_api_object_t o = cps_api_object_list_get(get_req->filters,ix);
         STD_ASSERT(o!=nullptr);
         if (cps_api_obj_get_ownership_type(o)!=CPS_API_OBJECT_SERVICE) {
-            rc = cps_api_db_operation_get(&new_req,ix);
+            rc = cps_api_db_operation_get(get_req,ix);
         } else {
-            rc=cps_api_process_get_request(&new_req,ix);
+            rc=cps_api_process_get_request(get_req,ix);
         }
         if (rc!=cps_api_ret_code_OK) break;
     }
 
-    //based on the return - get the response list
-    cps_api_object_list_swap(param->list,new_req.list);
+    if (_copy_param) {
+        //based on the return - get the response list
+        cps_api_object_list_swap(param->list,new_req.list);
+    }
 
     return rc;
 }
@@ -169,6 +182,8 @@ cps_api_return_code_t cps_api_commit(cps_api_transaction_params_t * param) {
 
     size_t ix = 0;
     size_t mx = cps_api_object_list_size(param->change_list);
+
+
     for ( ; ix < mx ; ++ix ) {
         cps_api_object_t o = cps_api_object_list_get(param->change_list,ix);
         cps_api_object_attr_delete(o,CPS_OBJECT_GROUP_FAILED_NODES);
@@ -232,6 +247,7 @@ cps_api_return_code_t cps_api_get_request_init(cps_api_get_params_t *req) {
 }
 
 cps_api_return_code_t cps_api_get_request_close(cps_api_get_params_t *req) {
+    if (req==nullptr) return cps_api_ret_code_ERR;
     if (req->list!=NULL) cps_api_object_list_destroy(req->list,true);
     req->list = NULL;
     if (req->filters!=NULL) {

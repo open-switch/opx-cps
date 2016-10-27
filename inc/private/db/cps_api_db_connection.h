@@ -51,19 +51,21 @@ public:
                                         obj_field_OBJ_KEY_AND_DATA,
                                         obj_field_OBJ_KEY_AND_ALL_FIELDS,
                                         obj_field_OBJ_DATA,
-                                        obj_field_CLASS
+                                        obj_field_CLASS,
+                                        obj_field_OBJ_EVENT_DATA,
         };                                             ///types to enable class, instance or object
         obj_fields_t _atom_type=obj_fields_t::obj_field_STRING;    ///currently defined type
 
         void from_string(const char *str, size_t len);
         void from_string(const char *str);
         void from_object(cps_api_object_t obj, bool instance, bool data);
+        void for_event(cps_api_object_t obj);
     };
 
     void disconnect();
     bool reconnect();
-
     bool connect(const std::string &em, const std::string &db_instance="", bool async=false);
+    bool clone(connection &conn);
 
     int get_fd();
 
@@ -76,7 +78,7 @@ public:
 
     bool response(response_set &data, bool expect_events = false);
 
-    bool operation(db_operation_atom_t * lst,size_t len, bool no_reponse=false);
+    bool operation(db_operation_atom_t * lst,size_t len);
 
     bool get_event(response_set &data);
     bool has_event();
@@ -85,7 +87,6 @@ private:
     std::string _addr ;
     bool _async=false;
     void * _ctx=nullptr;
-    size_t _pending = 0;
 
     std::list<void*> _pending_events;
 };
@@ -119,6 +120,9 @@ public:
     cps_db::connection &get() { return *_conn; }
 
     connection_request(cps_db::connection_cache & cache, const char *addr);
+    connection_request(cps_db::connection_cache & cache, const std::string &addr) :
+        connection_request(cache,addr.c_str()) {}
+
     ~connection_request() ;
 };
 
