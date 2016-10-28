@@ -481,10 +481,10 @@ std::string cps_api_object_attr_as_string(cps_api_attr_id_t id, const void * dat
 }
 
 void cps_api_object_print(cps_api_object_t obj) {
-    printf("%s\n",cps_api_object_to_string(obj).c_str());
+    printf("%s\n",cps_api_object_to_c_string(obj).c_str());
 }
 
-std::string cps_api_object_to_string(cps_api_object_t obj) {
+std::string cps_api_object_to_c_string(cps_api_object_t obj) {
     std::vector<char> _buff;
     const char * _key = cps_class_string_from_key(cps_api_object_key(obj),1);
     const char * _qual = cps_class_qual_from_key(cps_api_object_key(obj));
