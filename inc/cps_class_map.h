@@ -339,7 +339,7 @@ std::string cps_api_object_attr_as_string(cps_api_attr_id_t id, const void * dat
  * @param obj the object to convert to a string
  * @return a string containing a ascii representation of the object
  */
-std::string cps_api_object_to_string(cps_api_object_t obj);
+std::string cps_api_object_to_c_string(cps_api_object_t obj);
 
 #endif
 

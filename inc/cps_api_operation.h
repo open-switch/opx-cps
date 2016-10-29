@@ -485,13 +485,13 @@ public:
         param = p;
     }
 
-    void release() { param=nullptr; }
-    void set(cps_api_get_params_t*p=nullptr) { close(); param = p; }
+    void release() { param=NULL; }
+    void set(cps_api_get_params_t*p=NULL) { close(); param = p; }
     ~cps_api_get_request_guard() {
         close();
     }
 
-    void close() { if (param!=nullptr) cps_api_get_request_close(param); param = nullptr; }
+    void close() { if (param!=NULL) cps_api_get_request_close(param); param = NULL; }
 };
 
 #endif
