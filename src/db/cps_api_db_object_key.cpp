@@ -79,39 +79,40 @@ static size_t _get_instance_key_attrs(cps_api_object_t obj, void *lst[],size_t l
 }
 
 namespace {
-	bool append_attrs(std::vector<char> &lst, cps_api_object_t obj, bool believe_wildcard, bool guess_wildcard_from_attrs, bool *was_wildcard) {
-	    size_t _key_len = cps_api_key_get_len(cps_api_object_key(obj));
-		void *_lst[_key_len];
-	    size_t _lst_len[_key_len];
-	    bool contains_all =false;
+    bool append_attrs(std::vector<char> &lst, cps_api_object_t obj, bool believe_wildcard, bool guess_wildcard_from_attrs, bool *was_wildcard) {
+        cps_api_key_t *key = cps_api_object_key(obj);
+        size_t _key_len = cps_api_key_get_len(key);
+        if (!cps_db::dbkey_from_class_key(lst,key)) return false;
 
-	    bool wildcard = false;
+        void *_lst[_key_len];
+        size_t _lst_len[_key_len];
 
-	    size_t _lst_used = _get_instance_key_attrs(obj,_lst,_lst_len,_key_len,wildcard,contains_all);
-	    wildcard = wildcard || !contains_all;
+        bool contains_all =false;
+        bool wildcard = false;
 
-	    if (was_wildcard!=nullptr) *was_wildcard = wildcard;
+        size_t _lst_used = _get_instance_key_attrs(obj,_lst,_lst_len,_key_len,wildcard,contains_all);
+        wildcard = wildcard || !contains_all;
 
-	    if (guess_wildcard_from_attrs==false) {
-	    	wildcard = believe_wildcard;
-	    }
+        if (was_wildcard!=nullptr) *was_wildcard = wildcard;
 
-	    if (_lst_used==0) return true;
+        if (guess_wildcard_from_attrs==false) {
+            wildcard = believe_wildcard;
+        }
 
-	    for (size_t ix = 0; ix < _lst_used ; ++ix ) {
-	        cps_utils::cps_api_vector_util_append(lst,"#-",3);
-	        if (!wildcard && !cps_utils::cps_api_vector_util_append(lst,_lst[ix],_lst_len[ix])) return false;
-	        if (wildcard && !db_key_copy_with_escape(lst,_lst[ix],_lst_len[ix])) return false;
-	    }
-	    return true;
-	}
+        if (_lst_used==0) return true;
+
+        for (size_t ix = 0; ix < _lst_used ; ++ix ) {
+            cps_utils::cps_api_vector_util_append(lst,"#-",3);
+            if (!wildcard && !cps_utils::cps_api_vector_util_append(lst,_lst[ix],_lst_len[ix])) return false;
+            if (wildcard && !db_key_copy_with_escape(lst,_lst[ix],_lst_len[ix])) return false;
+        }
+        if (wildcard) cps_utils::cps_api_vector_util_append(lst,"*",1);
+        return true;
+    }
 }
 
 
 bool cps_db::dbkey_instance_or_wildcard(std::vector<char> &lst,cps_api_object_t obj, bool &wildcard) {
-    cps_api_key_t *key = cps_api_object_key(obj);
-    if (!dbkey_from_class_key(lst,key)) return false;
-
     return append_attrs(lst,obj,false,true,&wildcard);
 }
 
