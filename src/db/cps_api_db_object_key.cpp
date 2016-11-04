@@ -117,9 +117,6 @@ bool cps_db::dbkey_instance_or_wildcard(std::vector<char> &lst,cps_api_object_t 
 }
 
 bool cps_db::dbkey_from_instance_key(std::vector<char> &lst,cps_api_object_t obj, bool escape) {
-    cps_api_key_t *key = cps_api_object_key(obj);
-    if (!dbkey_from_class_key(lst,key)) return false;
-
     return append_attrs(lst,obj,escape,false,nullptr);
 }
 
