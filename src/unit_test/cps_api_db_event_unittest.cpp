@@ -89,8 +89,6 @@ TEST(cps_api_events,event_thread) {
     for ( ; ix < mx ; ++ix ) {
         cps_api_object_t o = cps_api_object_list_create_obj_and_append(lg.get());
         ASSERT_TRUE(o!=nullptr);
-        cps_api_key_set_len(cps_api_object_key(o),1);
-        cps_api_key_set(cps_api_object_key(o),0,ix);
         cps_api_key_from_attr_with_qual(cps_api_object_key(o),ids[ix],cps_api_qualifier_TARGET);
     }
 
@@ -102,7 +100,7 @@ TEST(cps_api_events,event_thread) {
     static const size_t CALLBACKS = 2;
 
     size_t _mx =1;
-    for ( ; ix < mx ; ++ix ) {
+    for ( ix=0 ; ix < mx ; ++ix ) {
         cps_api_attr_id_t ids[] = {BASE_IP_IPV4, BASE_IP_IPV6};
 
         size_t _ix = 0;
@@ -121,39 +119,6 @@ TEST(cps_api_events,event_thread) {
         if ((time(NULL) - now)> 30) break;
     }
     ASSERT_EQ(cnt,(mx*_mx*CALLBACKS));
-
-}
-
-
-TEST(cps_api_events,event_waiting) {
-    cps_api_event_service_handle_t handle;
-    ASSERT_TRUE(cps_api_event_client_connect(&handle)==cps_api_ret_code_OK);
-
-    cps_api_object_list_guard event_reg(cps_api_object_list_create());
-    cps_api_object_t obj = cps_api_object_list_create_obj_and_append(event_reg.get());
-    ASSERT_TRUE(obj!=nullptr);
-
-    cps_api_key_set_group(obj,"A");
-    cps_api_key_set_len(cps_api_object_key(obj),1);
-    cps_api_key_set(cps_api_object_key(obj),0,2);
-
-    ASSERT_TRUE(cps_api_event_client_register_object(handle,event_reg.get())==cps_api_ret_code_OK) ;
-
-    event_reg.set(cps_api_object_list_create());
-
-    cps_api_object_guard og(cps_api_object_create());
-    obj = cps_api_object_list_create_obj_and_append(event_reg.get());
-    ASSERT_TRUE(obj!=nullptr);
-
-    cps_api_key_set_group(obj,"A");
-    cps_api_key_set_len(cps_api_object_key(obj),1);
-    cps_api_key_set(cps_api_object_key(obj),0,1);
-
-    while (true) {
-        char buff[1024];
-        ASSERT_TRUE(cps_api_wait_for_event(handle,og.get())==cps_api_ret_code_OK);
-        printf("1 ---- %d(%d) - Obj %s\n",0,(int)cnt,cps_api_object_to_string(og.get(),buff,sizeof(buff)));
-    }
 
 }
 
