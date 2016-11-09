@@ -40,7 +40,7 @@
 
 
 /**
- * Test setup and configure the object for BASE_IP_IPV6 to be stored only in the DB
+ * Test DB and DB Direct calls
  */
 TEST(cps_api_db,init) {
     std::vector<cps_api_attr_id_t> ids ;
@@ -54,43 +54,38 @@ TEST(cps_api_db,init) {
     cps_api_obj_set_ownership_type(cps_api_object_key(og.get()),CPS_API_OBJECT_DB);
 }
 
-TEST(cps_api_db,db_ping) {
+TEST(cps_api_db,internal_db_ping) {
     cps_db::connection_request b(cps_db::ProcessDBCache(),DEFAULT_REDIS_ADDR);
     ASSERT_TRUE(b.valid());
     ASSERT_TRUE(cps_db::ping(b.get()));
 }
 
-namespace {
-size_t get_object_count(cps_db::connection &conn,cps_api_object_t obj) {
+size_t get_object_count(cps_api_object_t obj,const char *group=nullptr) {
+    if (group!=nullptr) {
+        cps_api_key_set_group(obj,group);
+    }
+    cps_api_object_list_guard lst(cps_api_object_list_create());
+    if (cps_api_db_get(obj,lst.get())==cps_api_ret_code_OK) {
+        return cps_api_object_list_size(lst.get());
+    }
+    return 0;
+}
+
+TEST(cps_api_db,internal_clear) {
     cps_api_object_list_guard lg(cps_api_object_list_create());
-    cps_db::get_objects(conn,obj,lg.get());
-    return cps_api_object_list_size(lg.get());
-}
-}
 
-TEST(cps_api_db,cps_db_api) {
-    cps_api_object_guard og(cps_api_obj_tool_create(cps_api_qualifier_TARGET,BASE_IP_IPV6_ADDRESS,true));
-    ASSERT_TRUE(og.get()!=nullptr);
+    cps_api_object_guard og(cps_api_obj_tool_create(cps_api_qualifier_TARGET,BASE_IP_IPV6,false));
+    printf("Currently found %d %s objects... cleaning\n",(int)get_object_count(og.get()),cps_api_object_to_c_string(og.get()).c_str());
+    ASSERT_EQ(cps_api_db_commit_one(cps_api_oper_DELETE,og.get(),nullptr,false),cps_api_ret_code_OK);
+    ASSERT_EQ(get_object_count(og.get()),0);
 
-
-
-    cps_api_object_attr_add_u32(og.get(),BASE_IP_IPV6_VRF_ID,0);
-    cps_api_object_attr_add_u32(og.get(),BASE_IP_IPV6_IFINDEX,1);
-    ASSERT_TRUE(cps_api_db_commit_one(cps_api_oper_CREATE,og.get(),nullptr,true)==cps_api_ret_code_OK);
-
-    cps_api_object_attr_delete(og.get(),BASE_IP_IPV6_IFINDEX);
-    cps_api_object_attr_add_u32(og.get(),BASE_IP_IPV6_IFINDEX,2);
-    ASSERT_TRUE(cps_api_db_commit_one(cps_api_oper_CREATE,og.get(),nullptr,true)==cps_api_ret_code_OK);
-
-    cps_api_object_set_type_operation(cps_api_object_key(og.get()),cps_api_oper_SET);
-    ASSERT_TRUE(cps_api_db_commit_one(cps_api_oper_CREATE,og.get(),nullptr,true)==cps_api_ret_code_OK);
-
-    cps_api_object_set_type_operation(cps_api_object_key(og.get()),cps_api_oper_DELETE);
-    ASSERT_TRUE(cps_api_db_commit_one(cps_api_oper_CREATE,og.get(),nullptr,true)==cps_api_ret_code_OK);
-
+    og.set(cps_api_obj_tool_create(cps_api_qualifier_TARGET,BASE_IP_IPV4,false));
+    printf("Currently found %d %s objects... cleaning\n",(int)get_object_count(og.get()),cps_api_object_to_c_string(og.get()).c_str());
+    ASSERT_EQ(cps_api_db_commit_one(cps_api_oper_DELETE,og.get(),nullptr,false),cps_api_ret_code_OK);
+    ASSERT_EQ(get_object_count(og.get()),0);
 }
 
-TEST(cps_api_db,db_key) {
+TEST(cps_api_db,internal_db_key) {
 
     cps_db::connection_request b(cps_db::ProcessDBCache(),DEFAULT_REDIS_ADDR);
 
@@ -124,13 +119,13 @@ TEST(cps_api_db,db_key) {
 
     cps_db::store_object(b.get(),obj);
 
-    ASSERT_EQ(get_object_count(b.get(),clone.get()),1);
+    ASSERT_EQ(get_object_count(clone.get()),1);
 
     for ( size_t ix = 0; ix < 1000 ; ++ix ) {
         cps_api_object_attr_delete(obj,BASE_IP_IPV6_IFINDEX);
         cps_api_object_attr_add_u32(obj,BASE_IP_IPV6_IFINDEX,ix);
         cps_db::store_object(b.get(),obj);
-        ASSERT_EQ(ix+2,get_object_count(b.get(),clone.get()));
+        ASSERT_EQ(ix+2,get_object_count(clone.get()));
     }
 
     lg.set(cps_api_object_list_create());
@@ -138,7 +133,7 @@ TEST(cps_api_db,db_key) {
     cps_db::get_objects(b.get(),clone.get(),lg.get());
     cps_db::delete_object_list(b.get(),lg.get());
 
-    ASSERT_TRUE(get_object_count(b.get(),obj)==0);
+    ASSERT_TRUE(get_object_count(obj)==0);
 
 
     std::vector<char> _buff;
@@ -155,7 +150,16 @@ TEST(cps_api_db,db_key) {
     std::cout << "DB instance data " << cps_string::tostring(&_buff[0],_buff.size());
 }
 
-TEST(cps_api_db,db_inc_cntr) {
+
+namespace {
+size_t get_object_count(cps_db::connection &conn,cps_api_object_t obj) {
+    cps_api_object_list_guard lg(cps_api_object_list_create());
+    cps_db::get_objects(conn,obj,lg.get());
+    return cps_api_object_list_size(lg.get());
+}
+}
+
+TEST(cps_api_db,internal_db_inc_cntr) {
 
     cps_db::connection con;
 
@@ -184,7 +188,7 @@ TEST(cps_api_db,db_inc_cntr) {
     cps_db::delete_object(con,_buff);
 }
 
-TEST(cps_api_db,db_set_obj) {
+TEST(cps_api_db,internal_db_set_obj) {
     cps_db::connection con;
 
     cps_api_object_t obj = cps_api_object_create();
@@ -212,7 +216,7 @@ TEST(cps_api_db,db_set_obj) {
     ASSERT_FALSE(cps_db::get_object(con,clone));
 }
 
-TEST(cps_api_db,db_set_list_obj) {
+TEST(cps_api_db,internal_db_set_list_obj) {
     cps_db::connection con;
 
     cps_api_object_t obj = cps_api_object_create();
@@ -251,113 +255,120 @@ TEST(cps_api_db,db_set_list_obj) {
     ASSERT_EQ(cps_api_object_list_size(newl),cps_api_object_list_size(list));
 }
 
-TEST(cps_api_db,db_node_list) {
-
-    cps_api_object_t obj = cps_api_object_create();
-    cps_api_object_guard og(obj);
-
-    cps_api_object_list_t list =cps_api_object_list_create();
-    cps_api_object_list_guard lg(list);
-
-    cps_api_node_ident ids[2] = { {"NODE1", "127.0.0.1:6379"}, {"NODE2","172.17.0.6:6380"} };
-    cps_api_node_group_t _g;
-
-    _g.id = "A";
-    _g.addrs = ids;
-    _g.addr_len = 2;
-    _g.data_type = cps_api_node_data_NODAL;
-
-    cps_api_set_node_group(&_g);
-
-    cps_api_nodes nodes;
-    ASSERT_TRUE(nodes.load());
-
-    ASSERT_TRUE(nodes.part_of("A","127.0.0.1:6379"));
-    ASSERT_TRUE(nodes.part_of("A","172.17.0.6:6380"));
-    ASSERT_TRUE(!nodes.part_of("A","372.17.0.6:6379"));
-}
-
-TEST(cps_api_db,db_node_alias) {
-    cps_db::connection_request b(cps_db::ProcessDBCache(),DEFAULT_REDIS_ADDR);
-
-    const char *lst[]={"cliff","this","local" };
-    ASSERT_TRUE(cps_api_set_identity(DEFAULT_REDIS_ADDR,lst,sizeof(lst)/sizeof(*lst))==cps_api_ret_code_OK);
-
-    cps_api_nodes n;
-    ASSERT_TRUE(n.load());
-
-    for (size_t ix = 0, mx = sizeof(lst)/sizeof(*lst) ; ix < mx ; ++ix ) {
-        const char *addr = n.addr(lst[ix]);
-        ASSERT_TRUE(strcmp(addr,DEFAULT_REDIS_ADDR)==0);
-    }
-}
-
-TEST(cps_api_db,db_node_cleanup) {
-    cps_api_object_guard og(cps_api_object_create());
+TEST(cps_api_db,cps_db_api) {
+    cps_api_object_guard og(cps_api_obj_tool_create(cps_api_qualifier_TARGET,BASE_IP_IPV6_ADDRESS,true));
     ASSERT_TRUE(og.get()!=nullptr);
-    cps_api_object_t obj = og.get();
-    cps_api_key_from_attr_with_qual(cps_api_object_key(obj),BASE_IP_IPV6,cps_api_qualifier_TARGET);
-    cps_api_key_set_group(obj,"A");
-    ASSERT_TRUE(cps_api_commit_one(cps_api_oper_DELETE, obj, 0, 200)==cps_api_ret_code_OK);
+
+
+    cps_api_object_attr_add_u32(og.get(),BASE_IP_IPV6_VRF_ID,0);
+    cps_api_object_attr_add_u32(og.get(),BASE_IP_IPV6_IFINDEX,1);
+    ASSERT_TRUE(cps_api_db_commit_one(cps_api_oper_CREATE,og.get(),nullptr,true)==cps_api_ret_code_OK);
+
+    cps_api_object_attr_delete(og.get(),BASE_IP_IPV6_IFINDEX);
+    cps_api_object_attr_add_u32(og.get(),BASE_IP_IPV6_IFINDEX,2);
+    ASSERT_TRUE(cps_api_db_commit_one(cps_api_oper_CREATE,og.get(),nullptr,true)==cps_api_ret_code_OK);
+
+    cps_api_object_set_type_operation(cps_api_object_key(og.get()),cps_api_oper_SET);
+    ASSERT_TRUE(cps_api_db_commit_one(cps_api_oper_CREATE,og.get(),nullptr,true)==cps_api_ret_code_OK);
+
+    cps_api_object_set_type_operation(cps_api_object_key(og.get()),cps_api_oper_DELETE);
+    ASSERT_TRUE(cps_api_db_commit_one(cps_api_oper_CREATE,og.get(),nullptr,true)==cps_api_ret_code_OK);
+
 }
 
-cps_api_object_guard _tempate(cps_api_object_create());
+TEST(cps_api_db,direct_cleanup) {
+    cps_api_object_list_guard lg(cps_api_object_list_create());
+    cps_api_object_guard og(cps_api_obj_tool_create(cps_api_qualifier_TARGET,BASE_IP_IPV6,false));
+    ASSERT_EQ(cps_api_db_get(og.get(),lg.get()),cps_api_ret_code_OK);
 
-TEST(cps_api_db,db_node_create) {
-    //create one element
-    ASSERT_TRUE(cps_api_key_from_attr_with_qual(cps_api_object_key(_tempate.get()),BASE_IP_IPV6,cps_api_qualifier_TARGET));
-    cps_api_object_attr_add_u32(_tempate.get(),BASE_IP_IPV6_VRF_ID,0);
-    cps_api_object_attr_add_u32(_tempate.get(),BASE_IP_IPV6_IFINDEX,1);
-    cps_api_object_attr_add(_tempate.get(),BASE_IP_IPV6_NAME,"Clifford",9);
-    cps_api_object_attr_add(_tempate.get(),0xc11ff,"Clifford",9);
-    cps_api_key_set_group(_tempate.get(),"A");
-    ASSERT_TRUE(cps_api_commit_one(cps_api_oper_CREATE, _tempate.get(), 0, 200)==cps_api_ret_code_OK);
+    cps_api_db_commit_bulk_t bulk;
+    bulk.objects = lg.get();
+    bulk.op =cps_api_oper_DELETE;
+    bulk.node_group = nullptr;
+    bulk.publish = false;
+
+    ASSERT_EQ(cps_api_db_commit_bulk(&bulk),cps_api_ret_code_OK);
 }
 
-TEST(cps_api_db,db_node_set) {
-    cps_api_object_guard og(cps_api_object_create());
+TEST(cps_api_db,simple) {
+    //cps_api_db_get cps_api_db_commit_one cps_api_db_commit_bulk
 
-    cps_api_object_clone(og.get(),_tempate.get());
-    std::string val = "Clifford Wichmann";
-    cps_api_object_attr_delete(og.get(),BASE_IP_IPV6_NAME);
-    cps_api_object_attr_add(og.get(),BASE_IP_IPV6_NAME,val.c_str(),val.size());
-
-    cps_api_object_attr_add(og.get(),3,val.c_str(),val.size());
-
-    cps_api_object_attr_delete(_tempate.get(),BASE_IP_IPV6_NAME);
-    cps_api_object_attr_add(_tempate.get(),BASE_IP_IPV6_NAME,val.c_str(),val.size());
-    cps_api_object_attr_add(_tempate.get(),3,val.c_str(),val.size());
-
-    cps_api_key_set_group(og.get(),"A");
-    ASSERT_TRUE(cps_api_commit_one(cps_api_oper_SET, og.get(), 0, 200)==cps_api_ret_code_OK);
-}
-
-TEST(cps_api_db,db_node_get_with_compare) {
     cps_api_object_list_guard lg(cps_api_object_list_create());
     cps_api_object_guard og(cps_api_object_create());
 
-    ASSERT_TRUE(cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),BASE_IP_IPV6,cps_api_qualifier_TARGET));
-    cps_api_object_attr_add_u32(og.get(),BASE_IP_IPV6_VRF_ID,0);
-    cps_api_object_attr_add_u32(og.get(),BASE_IP_IPV6_IFINDEX,1);
-    cps_api_key_set_group(og.get(),"A");
+    cps_api_object_t obj = cps_api_object_list_get(Get100(),0);
 
-    ASSERT_TRUE(cps_api_get_objs(og.get(),lg.get(), 0, 200)==cps_api_ret_code_OK);
-    {
-        size_t ix = 0;
-        size_t mx = cps_api_object_list_size(lg.get());
-        for ( ; ix < mx ; ++ix ) {
-            cps_api_object_t o = cps_api_object_list_get(lg.get(),ix);
-            cps_api_object_attr_delete(o,CPS_OBJECT_GROUP_NODE);
-            //compare objects and match exact
-            if (!cps_api_obj_tool_matches_filter(_tempate.get(),o,true)) {
-                char buff[1024];
-                printf("Object A: %s\n",cps_api_object_to_string(o,buff,sizeof(buff)));
-                printf("Object B: %s\n",cps_api_object_to_string(og.get(),buff,sizeof(buff)));
-                ASSERT_TRUE(false);
-            }
-        }
-    }
+    //set up a few objects (current and make a prev)
+    cps_api_object_clone(og.get(),obj);
+    cps_api_object_guard prev(cps_api_object_create());
+
+    //with the operation type being create, do a commit
+    ASSERT_EQ(cps_api_db_commit_one(cps_api_oper_CREATE,og.get(),prev.get(),true),cps_api_ret_code_OK);
+
+    cps_api_object_print(og.get());
+    cps_api_object_print(prev.get());
+
+    cps_api_object_attr_add_u32(og.get(),BASE_IP_IPV6_DUP_ADDR_DETECT_TRANSMITS,10);
+    ASSERT_EQ(cps_api_db_commit_one(cps_api_oper_SET,og.get(),prev.get(),true),cps_api_ret_code_OK);
+
+    ASSERT_TRUE(cps_api_object_get_data(og.get(),BASE_IP_IPV6_DUP_ADDR_DETECT_TRANSMITS)!=nullptr);
+    ASSERT_TRUE(cps_api_object_get_data(prev.get(),BASE_IP_IPV6_DUP_ADDR_DETECT_TRANSMITS)==nullptr);
+
+    cps_api_object_print(og.get());
+    cps_api_object_print(prev.get());
+
+    cps_api_object_attr_delete(og.get(),BASE_IP_IPV6_DUP_ADDR_DETECT_TRANSMITS);
+    cps_api_object_attr_add(og.get(),BASE_IP_IPV6_DUP_ADDR_DETECT_TRANSMITS,nullptr,0);
+    ASSERT_EQ(cps_api_db_commit_one(cps_api_oper_SET,og.get(),prev.get(),true),cps_api_ret_code_OK);
+
+    ASSERT_TRUE(cps_api_object_get_data(prev.get(),BASE_IP_IPV6_DUP_ADDR_DETECT_TRANSMITS)!=nullptr);
+    ASSERT_TRUE(cps_api_object_get_data(og.get(),BASE_IP_IPV6_DUP_ADDR_DETECT_TRANSMITS)==nullptr);
+
+    ASSERT_EQ(cps_api_db_commit_one(cps_api_oper_SET,prev.get(),nullptr,true),cps_api_ret_code_OK);
+
+    ASSERT_EQ(cps_api_db_commit_one(cps_api_oper_DELETE,prev.get(),nullptr,true),cps_api_ret_code_OK);
+
 }
+
+TEST(cps_api_db,cleanup_1) {
+    cps_api_object_list_guard lg(cps_api_object_list_create());
+    cps_api_object_guard og(cps_api_obj_tool_create(cps_api_qualifier_TARGET,BASE_IP_IPV6,false));
+    ASSERT_EQ(cps_api_db_get(og.get(),lg.get()),cps_api_ret_code_OK);
+
+    cps_api_db_commit_bulk_t bulk;
+    bulk.objects = lg.get();
+    bulk.op =cps_api_oper_DELETE;
+    bulk.node_group = nullptr;
+    bulk.publish = false;
+
+    ASSERT_EQ(cps_api_db_commit_bulk(&bulk),cps_api_ret_code_OK);
+}
+
+TEST(cps_api_db,test_bulk) {
+
+    cps_api_object_list_guard lg(cps_api_object_list_clone(Get10000(),true));
+
+    cps_api_db_commit_bulk_t bulk;
+    bulk.objects = lg.get();
+    bulk.node_group = nullptr;
+    bulk.publish = false;
+    bulk.op = cps_api_oper_CREATE;
+    ASSERT_EQ(cps_api_db_commit_bulk(&bulk),cps_api_ret_code_OK);
+
+    for (size_t ix = 0, mx = cps_api_object_list_size(lg.get()); ix  < mx ; ++ix ) {
+        cps_api_object_t o = cps_api_object_list_get(lg.get(),ix);
+        cps_api_object_attr_add_u32(o,BASE_IP_IPV6_DUP_ADDR_DETECT_TRANSMITS,ix);
+    }
+
+    bulk.objects = lg.get();
+    bulk.op = cps_api_oper_SET;
+    ASSERT_EQ(cps_api_db_commit_bulk(&bulk),cps_api_ret_code_OK);
+
+    bulk.objects = Get10000();
+    bulk.op = cps_api_oper_DELETE;
+    ASSERT_EQ(cps_api_db_commit_bulk(&bulk),cps_api_ret_code_OK);
+}
+
 
 TEST(cps_api_db,db_general_test) {
     cps_api_object_list_guard lg(cps_api_object_list_create());

@@ -1,8 +1,12 @@
 PROGRAMS= cps_api_service cps_api_example
-LIBRARIES= cps-api-common cps-class-map-util
-UNIT_TEST=cps_api_key_unittest cps_api_object_unittest cps_api_operation_unittest cps_api_events_unittest
+LIBRARIES= cps-api-common cps-class-map-util cps-ut-data
 
 CXXFLAGS+=-std=c++11
+
+
+cps-ut-data_SRCS= unit_test/cps_class_ut_data.cpp
+cps-ut-data_CXXFLAGS+=-I${TOP_SRCDIR}/inc/private -I${TOP_SRCDIR}/inc/private/db
+cps-ut-data_LDFLAGS = -levent_log -ldn_common -lpthread -lhiredis
 
 
 cps-class-map-util_SRCS=metadata/cps_class_map_query.cpp
@@ -53,84 +57,42 @@ cps_api_service_SRCS=cps_api_service.cpp
 cps_api_service_LDFLAGS = -lcps-api-common -ldn_common -levent_log -lsystemd
 
 
-#CPS Class UT Data Alias
-CPS_UT_SRC =  unit_test/cps_class_ut_data.cpp
+cps_api_example_SRCS=example/cps_api_operation_example.c
+cps_api_example_LDFLAGS=-lcps-api-common
 
-cps_api_db_unittest_CXXFLAGS+=-I$(TOP_SRCDIR)/inc/private/db -I$(TOP_SRCDIR)/inc/private
-cps_api_db_unittest_SRCS=unit_test/cps_api_db_unittest.cpp ${CPS_UT_SRC}
-cps_api_db_unittest_LDFLAGS=-lcps-api-common
+UNIT_TEST=cps_api_key_unittest cps_api_object_unittest cps_api_operation_unittest cps_api_events_unittest
+
 UNIT_TEST+= cps_api_db_unittest cps_api_db_group_tunnel_unittest
 UNIT_TEST+= cps_api_db_connection_event_unittest
-
-cps_api_key_unittest_SRCS=unit_test/cps_api_key_unittest.cpp ${CPS_UT_SRC}
-cps_api_key_unittest_LDFLAGS=-lcps-api-common
-
-cps_api_db_group_tunnel_unittest_CXXFLAGS+=-I$(TOP_SRCDIR)/inc/private/db -I$(TOP_SRCDIR)/inc/private
-cps_api_db_group_tunnel_unittest_SRCS=unit_test/cps_api_db_group_tunnel_unittest.cpp
-cps_api_db_group_tunnel_unittest_LDFLAGS=-lcps-api-common
-
-cps_api_db_connection_event_unittest_CXXFLAGS+=-I$(TOP_SRCDIR)/inc/private/db -I$(TOP_SRCDIR)/inc/private
-cps_api_db_connection_event_unittest_SRCS=unit_test/cps_api_db_connection_event_unittest.cpp
-cps_api_db_connection_event_unittest_LDFLAGS=-lcps-api-common
-
-cps_api_object_unittest_SRCS=unit_test/cps_api_object_unittest.cpp ${CPS_UT_SRC}
-cps_api_object_unittest_LDFLAGS=-lcps-api-common
-
-cps_api_operation_unittest_SRCS=unit_test/cps_api_operation_unittest.cpp ${CPS_UT_SRC}
-cps_api_operation_unittest_LDFLAGS=-lcps-api-common
-
-cps_api_events_unittest_SRCS=unit_test/cps_api_events_unittest.cpp ${CPS_UT_SRC}
-cps_api_events_unittest_LDFLAGS=-lcps-api-common -ldn_common
-
-cps_api_example_SRCS=example/cps_api_operation_example.c
-cps_api_example_LDFLAGS=-lcps-api-common -ldn_common
-
-
 UNIT_TEST+=cps_class_map_unittest
-cps_class_map_unittest_SRCS=unit_test/cps_class_map_unittest.cpp ${CPS_UT_SRC}
-cps_class_map_unittest_LDFLAGS=-lcps-api-common -lcps-class-map-util
-
 UNIT_TEST+=cps_api_receiver
-cps_api_receiver_SRCS=unit_test/cps_api_receiver.cpp ${CPS_UT_SRC}
-cps_api_receiver_LDFLAGS=-lcps-api-common -lcps-class-map-util
-
 UNIT_TEST+=cps_api_timing_unittest
-cps_api_timing_unittest_SRCS=unit_test/cps_api_timings.cpp ${CPS_UT_SRC}
-cps_api_timing_unittest_LDFLAGS=-lcps-api-common -lcps-class-map-util
-
 UNIT_TEST+=cps_api_key_cache_unittest
-cps_api_key_cache_unittest_SRCS=unit_test/cps_api_key_cache_unittest.cpp ${CPS_UT_SRC}
-cps_api_key_cache_unittest_LDFLAGS=-lcps-api-common -lcps-class-map-util
-
 UNIT_TEST+=cps_api_registration_unittest
-cps_api_registration_unittest_SRCS=unit_test/cps_registration_unittest.cpp ${CPS_UT_SRC}
-cps_api_registration_unittest_LDFLAGS=-lcps-api-common -lcps-class-map-util -ldn_common
-
 UNIT_TEST+=cps_api_db_event_unittest
-cps_api_db_event_unittest_SRCS=unit_test/cps_api_db_event_unittest.cpp ${CPS_UT_SRC}
-cps_api_db_event_unittest_LDFLAGS=-lcps-api-common -lcps-class-map-util -ldn_common
-
 UNIT_TEST+= cps_api_db_1_1_unittest
-cps_api_db_1_1_unittest_CXXFLAGS+=-I$(TOP_SRCDIR)/inc/private/db -I$(TOP_SRCDIR)/inc/private
-cps_api_db_1_1_unittest_SRCS=unit_test/cps_api_db_1_1_unittest.cpp ${CPS_UT_SRC}
-cps_api_db_1_1_unittest_LDFLAGS=-lcps-api-common -lcps-class-map-util
-
 UNIT_TEST+=cps_api_db_timings
-cps_api_db_timings_CXXFLAGS+=-I$(TOP_SRCDIR)/inc/private
-cps_api_db_timings_SRCS=unit_test/cps_api_db_timings.cpp ${CPS_UT_SRC}
-cps_api_db_timings_LDFLAGS=-lcps-api-common -lcps-class-map-util -ldn_common
-
-
 UNIT_TEST+=cps_api_db_direct_unittest
-cps_api_db_direct_unittest_CXXFLAGS+=-I$(TOP_SRCDIR)/inc/private
-cps_api_db_direct_unittest_SRCS=unit_test/cps_api_db_direct_unittest.cpp ${CPS_UT_SRC}
-cps_api_db_direct_unittest_LDFLAGS=-lcps-api-common -lcps-class-map-util -ldn_common
+
 
 PY_OBJ_PATH=${BUILD_CURDIR}/pybuild
 
 ADDED_FOLDERS+=${PY_OBJ_PATH}
 
+#is this currect?
+include ${MAKE_INC}/buildpaths.mak
+
+define add_UT_pieces
+$(1)_SRCS+= unit_test/${1}.cpp
+$(1)_LDFLAGS+= -lcps-ut-data -lcps-api-common -lcps-class-map-util -ldn_common
+$(1)_CXXFLAGS+=-I$(TOP_SRCDIR)/inc/private/db -I$(TOP_SRCDIR)/inc/private
+endef
+
+$(foreach UT,${UNIT_TEST},$(eval $(call add_UT_pieces,${UT})))
+
 include ${MAKE_INC}/workspace.mak
+
+
 
 ${BUILD_CURDIR_sos}/libcps-class-map-util.so : ${BUILD_CURDIR_sos}/libcps-api-common.so
 

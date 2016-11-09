@@ -63,6 +63,18 @@ bool cps_api_filter_get_count(cps_api_object_t obj, size_t *obj_count) {
     return true;
 }
 
+bool cps_api_filter_set_getnext(cps_api_object_t obj) {
+    return cps_api_object_attr_add_u32(obj,CPS_OBJECT_GROUP_GET_NEXT,true);
+}
+
+
+bool cps_api_filter_is_getnext(cps_api_object_t obj) {
+    uint32_t *p = (uint32_t*) cps_api_object_get_data(obj,CPS_OBJECT_GROUP_GET_NEXT);
+    if (p==nullptr) return false;
+    return *p;
+
+}
+
 void cps_api_key_init(cps_api_key_t * key,
         cps_api_qualifier_t qual,
         cps_api_object_category_types_t cat,
@@ -328,3 +340,13 @@ bool cps_api_is_registered(cps_api_key_t *key, cps_api_return_code_t *rc) {
     return cps_api_find_owners(key,owner);
 }
 
+bool cps_api_filter_wildcard_attrs(cps_api_object_t obj, bool has_wildcard_attributes) {
+    while (cps_api_object_attr_delete(obj,CPS_OBJECT_GROUP_EXACT_MATCH)) ;
+    return cps_api_object_attr_add_u32(obj,CPS_OBJECT_GROUP_EXACT_MATCH,has_wildcard_attributes);
+}
+
+bool cps_api_filter_has_wildcard_attrs(cps_api_object_t obj) {
+    uint32_t *p = (uint32_t*) cps_api_object_get_data(obj,CPS_OBJECT_GROUP_EXACT_MATCH);
+    if (p==nullptr) return false;
+    return *p;
+}

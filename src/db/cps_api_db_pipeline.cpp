@@ -194,7 +194,6 @@ bool cps_db::get_objects(cps_db::connection &conn,std::vector<char> &key,cps_api
     if (_query.valid()) {
         query = &_query.get();
     }
-    cps_utils::cps_api_vector_util_append(key,"*",1);
 
     std::vector<std::vector<char>> all_keys;
 

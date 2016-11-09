@@ -51,8 +51,6 @@ cps_api_return_code_t cps_api_db_operation_commit(cps_api_transaction_params_t *
 
     bool _send_event = cps_api_obj_has_auto_events(o);
 
-    cps_api_object_set_type_operation(cps_api_object_key(o),cps_api_oper_CREATE);
-
     return cps_api_db_commit_one(
             cps_api_object_type_operation(cps_api_object_key(o)),
             o,prev,_send_event);

@@ -120,14 +120,24 @@ can be used to monitor the state of the transaction.*/
 connectivity reasons. Nodes are in a single string separated by comma (,).*/
 /*type=string*/
   CPS_OBJECT_GROUP_FAILED_NODES = 131087,
-/*If this attribute is present in an event registration, only events matching the exact object
-key or attributes in the object will be provided to the application.*/
+/*If this attribute is present in an event registration or query - then the attributes in the object will be used to detmine
+matching events or objects.  To be more explicit on events and object queries:
+) in the case of events - only events matching the exact object key or attributes in the object will
+be provided to the application.
+) in the case of queries - if exact match is present, then the value of the exact match shall be used to determine
+if a wildcard matching behaviour will be used. If this value is not present, the wildcard matching will be guessed.*/
 /*type=boolean*/
   CPS_OBJECT_GROUP_EXACT_MATCH = 131098,
 /*In the event that an API needs to store a return code within an object itself, they can use this field.  This field is
 left as an int size.*/
 /*type=uint32*/
   CPS_OBJECT_GROUP_RETURN_CODE = 131105,
+/*If this attribute is present in an object, then the caller would like the next object in lexicographic order*/
+/*type=boolean*/
+  CPS_OBJECT_GROUP_GET_NEXT = 131106,
+/*Provide the number of entries to retrieve at one time to support the concept of range along with the get next attribute*/
+/*type=uint64*/
+  CPS_OBJECT_GROUP_NUMBER_OF_ENTRIES = 131107,
 } CPS_OBJECT_GROUP_t;
 /* Object cps/node-group */
 

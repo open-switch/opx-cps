@@ -179,6 +179,48 @@ bool cps_api_filter_set_count(cps_api_object_t obj, size_t obj_count);
 bool cps_api_filter_get_count(cps_api_object_t obj, size_t *obj_count);
 
 /**
+ * Set the a flag on the filter that tells the application to return the object located after this object (key order).
+ * Note: This may be provided along with a filter count and therefore applications should be looking at both the filter count and the
+ * filter get next settings to determine how to process requests.
+ *
+ * @param obj is the filter which to set the flag on
+ * @return true if successful otherwise false (likely due to a memory issue)
+ */
+bool cps_api_filter_set_getnext(cps_api_object_t obj);
+
+/**
+ * This API returns true if the next object should be returned
+ * @param obj the object filter
+ * @return true if the user wants the next object otherwise false
+ */
+bool cps_api_filter_is_getnext(cps_api_object_t obj);
+
+/**
+ * This API indicates to the back end that the object filter has wildcards as part of the attributes in the object.
+ * Normally back end functionality can assume when a attribute is passed, the attributes being passed are specific values.
+ * For instance, if the name of an interface has a "*" in the name, the behaviour should be different then an application searching
+ * for a list of interfaces eg. "eth*"
+ *
+ * @param obj the object filter
+ * @param has_wildcard_attributes when true, this means that the attributes (one or more) in the filter contain wildcards and
+ *     a more complicated search may be required.
+ *
+ * @return true if the attibute filter could be set or false if there was no space or out of memory
+ */
+bool cps_api_filter_wildcard_attrs(cps_api_object_t obj, bool has_wildcard_attributes);
+
+
+/**
+ * This API will returns the value of the cps_api_filter_wildcard_attrs setting.  If the cps_api_filter_wildcard_attrs has not been
+ * called, the default value will be false
+ *
+ * @param obj the object filter
+ * @return the contents of the filter wildcard attributes flag
+ */
+bool cps_api_filter_has_wildcard_attrs(cps_api_object_t obj);
+
+
+/**
  * @addtogroup typesandconstsOperation Types and Constants
  * @{
  */

@@ -36,6 +36,7 @@
 #include <map>
 #include <stdlib.h>
 
+
 namespace {
 
 bool __process_key(std::vector<cps_api_attr_id_t> &ids, const char * str_key, cps_api_attr_id_t _elem_id, const cps_class_map_node_details & details) {
@@ -106,11 +107,10 @@ void __process_ownership(std_config_node_t node, void *user_data) {
             return ;
         }
         cps_api_obj_set_ownership_type(&key,*_owner_type);
-        if (events==nullptr) {
+        if (events!=nullptr) {
             cps_api_obj_set_auto_event(&key,_automated_event);
         }
     }
-
 }
 
 void __process_node(std_config_node_t node, void *user_data) {
@@ -215,19 +215,17 @@ void __process_enum_assoc(std_config_node_t node, void *user_data) {
 void __process_file(std_config_node_t node, void *user_data) {
     const char * _node_name = std_config_name_get(node);
 
-    if (strcmp(_node_name,"metadata_entry")==0) {
-        __process_node(node,user_data);
-    }
-    if (strcmp(_node_name,"class_ownership")==0) {
-        __process_ownership(node,user_data);
-    }
-    if (strcmp(_node_name,"enum_entry")==0) {
-        __process_enum(node,user_data);
-    }
-    if (strcmp(_node_name,"enum_association")==0) {
-        __process_enum_assoc(node,user_data);
-    }
+    static const std::unordered_map<std::string,const std::function<void(std_config_node_t  node, void *user_data)>> _handlers  {
+            {"metadata_entry", __process_node },
+            {"class_ownership", __process_ownership},
+            {"enum_entry", __process_enum},
+            {"enum_association", __process_enum_assoc},
+    };
 
+    auto it = _handlers.find(_node_name);
+    if (it!=_handlers.end()) return ;
+
+    return it->second(node,user_data);
 }
 
 using _prioritized_file_list = std::map<double,std::vector<std::string>>;
