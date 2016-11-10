@@ -106,7 +106,7 @@ void __process_ownership(std_config_node_t node, void *user_data) {
             return ;
         }
         cps_api_obj_set_ownership_type(&key,*_owner_type);
-        if (events==nullptr) {
+        if (events!=nullptr) {
             cps_api_obj_set_auto_event(&key,_automated_event);
         }
     }
