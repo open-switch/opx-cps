@@ -99,8 +99,6 @@ namespace {
             wildcard = believe_wildcard;
         }
 
-        if (_lst_used==0) return true;
-
         for (size_t ix = 0; ix < _lst_used ; ++ix ) {
             cps_utils::cps_api_vector_util_append(lst,"#-",3);
             if (!wildcard && !cps_utils::cps_api_vector_util_append(lst,_lst[ix],_lst_len[ix])) return false;
