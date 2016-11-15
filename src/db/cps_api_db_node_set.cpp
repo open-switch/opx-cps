@@ -126,7 +126,6 @@ bool cps_api_db_del_node_group(const char *group){
              return false;
          }
 
-
          cps_api_set_key_data(og.get(),CPS_DB_INSTANCE_GROUP,cps_api_object_ATTR_T_BIN,group,strlen(group)+1);
          cps_api_set_key_data(og.get(),CPS_DB_INSTANCE_NODE_ID,cps_api_object_ATTR_T_BIN,node_it._name.c_str(),
                                  strlen(node_it._name.c_str())+1);

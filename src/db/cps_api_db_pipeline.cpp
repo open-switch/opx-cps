@@ -195,8 +195,6 @@ bool cps_db::get_objects(cps_db::connection &conn,std::vector<char> &key,cps_api
         query = &_query.get();
     }
 
-    std::vector<std::vector<char>> all_keys;
-
     size_t _count = 0;
 
     bool rc = true;

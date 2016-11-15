@@ -45,6 +45,8 @@
 #include <memory>
 #include <set>
 
+
+
 struct db_connection_details {
     static const uint64_t timeout = 60*1000*1000 ; //60 seconds
 
@@ -60,6 +62,7 @@ struct db_connection_details {
         _keys.clear();
         _last_msg = 0;
     }
+
     void communicated() {
         _last_msg = std_get_uptime(nullptr);
     }
@@ -334,6 +337,7 @@ static cps_api_return_code_t _cps_api_event_service_register_objs_function_(cps_
 
     return cps_api_ret_code_OK;
 }
+
 
 static cps_api_return_code_t _cps_api_event_service_publish_msg(cps_api_event_service_handle_t handle,
         cps_api_object_t msg) {
