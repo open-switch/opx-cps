@@ -211,11 +211,9 @@ bool test_reset() {
     return delete_object_instance(og.get());
 }
 
-TEST(cps_api_db,internal_clear) {
-    test_reset();
-}
-
 TEST(cps_api_db,db_key_with_wildcard_chars) {
+	test_reset();
+
     cps_api_object_guard         og(cps_api_obj_tool_create(cps_api_qualifier_TARGET,BASE_IP_IPV6,false));
     cps_api_object_list_guard     lg(cps_api_object_list_create());
 
@@ -288,19 +286,26 @@ TEST(cps_api_db,db_key_with_wildcard_chars) {
 }
 
 
-TEST(cps_api_db,direct_cleanup) {
-    cps_api_object_list_guard lg(cps_api_object_list_create());
-    cps_api_object_guard og(cps_api_obj_tool_create(cps_api_qualifier_TARGET,BASE_IP_IPV6,false));
-    ASSERT_EQ(cps_api_db_get(og.get(),lg.get()),cps_api_ret_code_OK);
+TEST(cps_api_db,direct_delete) {
+
+    cps_api_object_list_guard lg(cps_api_object_list_clone(Get1000(),true));
+
+    ASSERT_TRUE(get_object_count(cps_api_object_list_get(lg.get(),0))==0);
+    //
 
     cps_api_db_commit_bulk_t bulk;
     bulk.objects = lg.get();
-    bulk.op =cps_api_oper_DELETE;
+    bulk.op =cps_api_oper_CREATE;
     bulk.node_group = nullptr;
     bulk.publish = false;
 
     ASSERT_EQ(cps_api_db_commit_bulk(&bulk),cps_api_ret_code_OK);
+
+    bulk.op =cps_api_oper_DELETE;
+    ASSERT_EQ(cps_api_db_commit_bulk(&bulk),cps_api_ret_code_OK);
+
 }
+
 
 TEST(cps_api_db,simple) {
     //cps_api_db_get cps_api_db_commit_one cps_api_db_commit_bulk
