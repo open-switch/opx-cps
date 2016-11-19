@@ -223,7 +223,7 @@ void __process_file(std_config_node_t node, void *user_data) {
     };
 
     auto it = _handlers.find(_node_name);
-    if (it!=_handlers.end()) return ;
+    if (it==_handlers.end()) return ;
 
     return it->second(node,user_data);
 }
