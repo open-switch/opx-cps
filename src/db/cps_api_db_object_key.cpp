@@ -22,8 +22,8 @@
 #include "cps_api_object_key.h"
 #include "cps_class_map_query.h"
 
-namespace {
-bool db_key_copy_with_escape(std::vector<char> &lst,const void *data, size_t len) {
+
+bool cps_db::db_key_copy_with_escape(std::vector<char> &lst,const void *data, size_t len) {
     size_t _offset = lst.size();
     size_t _space_wanted = len + _offset;
 
@@ -32,7 +32,7 @@ bool db_key_copy_with_escape(std::vector<char> &lst,const void *data, size_t len
 
         const char *_p = (const char *)data;
         for ( size_t ix = 0; ix < len ; ++ix ) {
-            if (_p[ix]=='[' || _p[ix]==']' || _p[ix]=='?' || _p[ix]=='\\' || _p[ix]=='*') {
+            if (_p[ix]=='[' || _p[ix]==']' || _p[ix]=='?' || _p[ix]=='\\'  || _p[ix]=='*') {
                 ++_space_wanted;
                 lst.resize(_space_wanted);
                 lst[_offset++] = '\\';
@@ -45,7 +45,6 @@ bool db_key_copy_with_escape(std::vector<char> &lst,const void *data, size_t len
     return true;
 }
 
-}
 
 bool cps_db::dbkey_from_class_key(std::vector<char> &lst,const cps_api_key_t *key) {
     size_t _len = cps_api_key_get_len_in_bytes((cps_api_key_t*)key);
@@ -55,7 +54,7 @@ bool cps_db::dbkey_from_class_key(std::vector<char> &lst,const cps_api_key_t *ke
 
 static size_t _get_instance_key_attrs(cps_api_object_t obj, void *lst[],size_t lst_len[],size_t len, bool &wildcard, bool &contains_all) {
     //size of key is fixed to less then some const max - safe for use in stack vector
-    auto &key_ids = cps_api_key_attrs(cps_api_object_key(obj));
+    auto &key_ids = cps_api_key_attrs(cps_api_object_key(obj),1);
 
     wildcard = false;
     contains_all = false;
@@ -82,7 +81,8 @@ namespace {
     bool append_attrs(std::vector<char> &lst, cps_api_object_t obj, bool believe_wildcard, bool guess_wildcard_from_attrs, bool *was_wildcard) {
         cps_api_key_t *key = cps_api_object_key(obj);
         size_t _key_len = cps_api_key_get_len(key);
-        if (!cps_db::dbkey_from_class_key(lst,key)) return false;
+
+        bool _wildcard_attrs = cps_api_filter_has_wildcard_attrs(obj);
 
         void *_lst[_key_len];
         size_t _lst_len[_key_len];
@@ -98,11 +98,22 @@ namespace {
         if (guess_wildcard_from_attrs==false) {
             wildcard = believe_wildcard;
         }
+        std::function<bool(std::vector<char>&,const void*,size_t len)> append_func = cps_utils::cps_api_vector_util_append;
 
+        if (wildcard) {
+            append_func = cps_db::db_key_copy_with_escape;
+        }
+
+        if (!append_func(lst,(const void *)cps_api_key_elem_start_const(key),
+                cps_api_key_get_len_in_bytes((cps_api_key_t*)key))) {
+            return false;
+        }
+        if (_wildcard_attrs) {
+            append_func = cps_utils::cps_api_vector_util_append;
+        }
         for (size_t ix = 0; ix < _lst_used ; ++ix ) {
-            cps_utils::cps_api_vector_util_append(lst,"#-",3);
-            if (!wildcard && !cps_utils::cps_api_vector_util_append(lst,_lst[ix],_lst_len[ix])) return false;
-            if (wildcard && !db_key_copy_with_escape(lst,_lst[ix],_lst_len[ix])) return false;
+            if(!cps_utils::cps_api_vector_util_append(lst,"#-",3)) return false;
+            if(!append_func(lst,_lst[ix],_lst_len[ix])) return false;
         }
         if (wildcard) cps_utils::cps_api_vector_util_append(lst,"*",1);
         return true;
