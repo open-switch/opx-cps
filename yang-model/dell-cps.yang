@@ -12,6 +12,7 @@ module dell-base-cps {
               joe or jain, you want to convert these aliases for the node back to 10.11.11.11:443.";
     key "name";
     leaf name {
+
       description "The name to use as a replacement for any of the alias attributes.";
       type string;
     }
@@ -73,14 +74,26 @@ module dell-base-cps {
       type string;
     }
     leaf exact-match {
-      description "If this attribute is present in an event registration, only events matching the exact object
-                  key or attributes in the object will be provided to the application.";
+      description "If this attribute is present in an event registration or query - then the attributes in the object will be used to detmine
+	      matching events or objects.  To be more explicit on events and object queries:
+	      	) in the case of events - only events matching the exact object key or attributes in the object will
+	      		be provided to the application.
+	      	) in the case of queries - if exact match is present, then the value of the exact match shall be used to determine
+	      		if a wildcard matching behaviour will be used. If this value is not present, the wildcard matching will be guessed.";      		
       type boolean;
     }
     leaf return-code {
       description "In the event that an API needs to store a return code within an object itself, they can use this field.  This field is
                   left as an int size.";
       type uint32;
+    }
+    leaf get-next {
+    	description "If this attribute is present in an object, then the caller would like the next object in lexicographic order";
+    	type boolean;
+    }
+    leaf number-of-entries {
+    	description "Provide the number of entries to retrieve at one time to support the concept of range along with the get next attribute";
+      type uint64;
     }
   }
 
