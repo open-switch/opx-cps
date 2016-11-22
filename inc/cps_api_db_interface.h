@@ -8,6 +8,10 @@
 #include "cps_api_object.h"
 #include "cps_api_operation.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct cps_api_db_commit_bulk_t {
     cps_api_operation_types_t op;    //the operation type (set,delete,create)
     cps_api_object_list_t objects;     //the list of objects to be modified or deleted/stored
@@ -86,6 +90,8 @@ cps_api_return_code_t cps_api_db_get_bulk(cps_api_object_list_t objs, const char
 
 
 #ifdef __cplusplus
+} //end extern "C"
+
 class cps_api_db_commit_bulk_guard {
     cps_api_db_commit_bulk_t *_entry;
 public:

@@ -133,7 +133,14 @@ bool cps_db::delete_object(cps_db::connection &conn,cps_api_object_t obj) {
 bool cps_db::get_objects(cps_db::connection &conn, cps_api_object_t obj,cps_api_object_list_t obj_list) {
     std::vector<char> k;
     bool wildcard = false;
-    if (!cps_db::dbkey_instance_or_wildcard(k,obj,wildcard)) return false;
+
+    if (cps_api_filter_has_wildcard_attrs(obj)) {    //if prefer to search entries
+        wildcard=true;
+        if (!cps_db::dbkey_from_instance_key(k,obj,true)) return false;
+    } else {    //otherwise guess from attributes provided
+        if (!cps_db::dbkey_instance_or_wildcard(k,obj,wildcard)) return false;
+    }
+
     if (wildcard) return get_objects(conn,k,obj_list);
 
     cps_api_object_guard og(cps_api_object_create());

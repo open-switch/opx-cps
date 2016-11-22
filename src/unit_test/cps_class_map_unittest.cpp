@@ -23,16 +23,15 @@
 
 #include "cps_class_map.h"
 #include "cps_api_operation.h"
-#include "private/cps_class_map_query.h"
+#include "cps_class_map_query.h"
+#include "cps_api_metadata_import.h"
 
-#include <gtest/gtest.h>
-
-#include <vector>
 
 #include "cps_class_ut_data.h"
 
-
-
+#include <gtest/gtest.h>
+#include <vector>
+#include <unistd.h>
 #include <string.h>
 
 TEST(cps_class_map,load) {

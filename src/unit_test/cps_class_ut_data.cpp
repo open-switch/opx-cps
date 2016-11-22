@@ -9,8 +9,14 @@
 #include "cps_class_map.h"
 #include "private/cps_string_utils.h"
 
+#include "cps_class_map_query.h"
+#include "cps_api_metadata_import.h"
+
+
 #include <vector>
 #include <string>
+#include <stdio.h>
+#include <unistd.h>
 
 static std::vector<_node_details> lst = {
 { { cps_api_obj_CAT_BASE_IP,BASE_IP_IPV6,BASE_IP_IPV6_VRF_ID,BASE_IP_IPV6_IFINDEX,BASE_IP_IPV6_ADDRESS,BASE_IP_IPV6_ADDRESS_IP }, BASE_IP_IPV6_ADDRESS, { "base-ip/ipv6/address", "", true, CPS_CLASS_ATTR_T_LIST, CPS_CLASS_DATA_TYPE_T_BIN }},
@@ -106,6 +112,78 @@ void __init_global_test_objects() {
             cps_api_object_clone(o,og.get());
         }
     }
+    char _tmpl[]="/tmp/UT_xxXXXXXX";
+    char *_dir_name = mkdtemp(_tmpl);
+
+    if(_dir_name==nullptr) assert(0);
+
+    std::string _fn = _dir_name;
+    _fn+=std::string("/blah")+CPS_DEF_CLASS_XML_SUFFIX;
+
+    FILE *fp = fopen(_fn.c_str(),"w");
+    assert(fp!=nullptr);
+
+    std::string _meta_data_file = "<cps-class-map >\n"
+"\n"
+"<metadata_entry key=\"[cps]\" id=\"2\" name=\"cps\" desc=\"The CPS embedded space.\" embedded=\"true\" node-type=\"subsystem\" data-type=\"bin\" owner-type=\"db\" />\n"
+"\n"
+"<!-- Key data container-->\n"
+"<metadata_entry key=\"[cps].[cps/key_data]\" id=\"0xffffffffffffffff\" name=\"cps/key_data\" desc=\"The CPS key data conainer.\" embedded=\"true\" node-type=\"container\" data-type=\"bin\" />\n"
+"\n"
+"<!-- CPS Object attributes -->\n"
+"<metadata_entry key=\"[cps].[cps/object]\" id=\"0x8\" name=\"cps/object\" desc=\"This object contains attributes related to CPS operations on an object\" embedded=\"true\" node-type=\"container\" data-type=\"bin\" />\n"
+"\n"
+"<!-- CPS Service Statistics  -->\n"
+"<metadata_entry key=\"[cps].[cps/object].[cps/object/stat]\" id=\"0x80000\" name=\"cps/object/stat\" desc=\"Contains the CPS internal statisics for this object.\" embedded=\"true\" node-type=\"container\" data-type=\"bin\" />\n"
+"\n"
+"<metadata_entry key=\"[cps].[cps/object].[cps/object/stat].[cps/object/operations/set_min_time]\" id=\"0x80001\" name=\"cps/object/operations/set_min_time\" desc=\"the fastest response to a set request.\" embedded=\"false\" node-type=\"leaf\" data-type=\"uint64_t\" />\n"
+"<metadata_entry key=\"[cps].[cps/object].[cps/object/stat].[cps/object/operations/set_max_time]\" id=\"0x80002\" name=\"cps/object/operations/set_max_time\" desc=\"the longest time it took to process a set request.\" embedded=\"false\" node-type=\"leaf\" data-type=\"uint64_t\" />\n"
+"<metadata_entry key=\"[cps].[cps/object].[cps/object/stat].[cps/object/operations/set_ave_time]\" id=\"0x80003\" name=\"cps/object/operations/set_ave_time\" desc=\"the average time it takes to process a set request.\" embedded=\"false\" node-type=\"leaf\" data-type=\"uint64_t\" />\n"
+"<metadata_entry key=\"[cps].[cps/object].[cps/object/stat].[cps/object/operations/set_requests]\" id=\"0x80004\" name=\"cps/object/operations/set_requests\" desc=\"the number of set requests.\" embedded=\"false\" node-type=\"leaf\" data-type=\"uint64_t\" />\n"
+"\n"
+"<metadata_entry key=\"[cps].[cps/object].[cps/object/stat].[cps/object/operations/get_min_time]\" id=\"0x80005\" name=\"cps/object/operations/get_min_time\" desc=\"the fastest response to a get request.\" embedded=\"false\" node-type=\"leaf\" data-type=\"uint64_t\" />\n"
+"<metadata_entry key=\"[cps].[cps/object].[cps/object/stat].[cps/object/operations/get_max_time]\" id=\"0x80006\" name=\"cps/object/operations/get_max_time\" desc=\"the longest time it took to process a get request.\" embedded=\"false\" node-type=\"leaf\" data-type=\"uint64_t\" />\n"
+"<metadata_entry key=\"[cps].[cps/object].[cps/object/stat].[cps/object/operations/get_ave_time]\" id=\"0x80007\" name=\"cps/object/operations/get_ave_time\" desc=\"the average time it takes to process a get request.\" embedded=\"false\" node-type=\"leaf\" data-type=\"uint64_t\" />\n"
+"<metadata_entry key=\"[cps].[cps/object].[cps/object/stat].[cps/object/operations/get_requests]\" id=\"0x80008\" name=\"cps/object/operations/get_requests\" desc=\"the number of get requests.\" embedded=\"false\" node-type=\"leaf\" data-type=\"uint64_t\" />\n"
+"\n"
+"<metadata_entry key=\"[cps].[cps/object].[cps/object/stat].[cps/object/operations/nameservice_reconnects]\" id=\"0x80009\" name=\"cps/object/operations/nameservice_reconnects\" desc=\"the number of reconnections with the name service.\" embedded=\"false\" node-type=\"leaf\" data-type=\"uint64_t\" />\n"
+"<metadata_entry key=\"[cps].[cps/object].[cps/object/stat].[cps/object/operations/nameservice_lost_conn]\" id=\"0x8000a\" name=\"cps/object/operations/nameservice_lost_conn\" desc=\"Number of times that the NS disconnected.\" embedded=\"false\" node-type=\"leaf\" data-type=\"uint64_t\" />\n"
+"<metadata_entry key=\"[cps].[cps/object].[cps/object/stat].[cps/object/operations/set_failed]\" id=\"0x8000b\" name=\"cps/object/operations/set_failed\" desc=\"Number of failed set requests.\" embedded=\"false\" node-type=\"leaf\" data-type=\"uint64_t\" />\n"
+"<metadata_entry key=\"[cps].[cps/object].[cps/object/stat].[cps/object/operations/set_invalid_req]\" id=\"0x8000c\" name=\"cps/object/operations/set_invalid_req\" desc=\"Number of invalid set requests (communication error).\" embedded=\"false\" node-type=\"leaf\" data-type=\"uint64_t\" />\n"
+"<metadata_entry key=\"[cps].[cps/object].[cps/object/stat].[cps/object/operations/get_failed]\" id=\"0x8000d\" name=\"cps/object/operations/get_failed\" desc=\"Number of failed get requests.\" embedded=\"false\" node-type=\"leaf\" data-type=\"uint64_t\" />\n"
+"<metadata_entry key=\"[cps].[cps/object].[cps/object/stat].[cps/object/operations/get_invalid_req]\" id=\"0x8000e\" name=\"cps/object/operations/get_invalid_req\" desc=\"Number of invalid set requests due to protocol errors.\" embedded=\"false\" node-type=\"leaf\" data-type=\"uint64_t\" />\n"
+"<metadata_entry key=\"[cps].[cps/object].[cps/object/stat].[cps/object/operations/key_field]\" id=\"0x8000f\" name=\"cps/object/operations/key_field\" desc=\"The keys registered with this service\" embedded=\"false\" node-type=\"leaf-list\" data-type=\"key\" />\n"
+"\n"
+"<metadata_entry key=\"[cps].[cps/object].[cps/object/stat].[cps/object/operations/close_count]\" id=\"0x80010\" name=\"cps/object/operations/close_count\" desc=\"Number of close operations done with the nameservice.\" embedded=\"false\" node-type=\"leaf\" data-type=\"uint64_t\" />\n"
+"<metadata_entry key=\"[cps].[cps/object].[cps/object/stat].[cps/object/operations/cleanup_runs]\" id=\"0x80011\" name=\"cps/object/operations/cleanup_runs\" desc=\"Number of clean ups on cache done due to close connections.\" embedded=\"false\" node-type=\"leaf\" data-type=\"uint64_t\" />\n"
+"<metadata_entry key=\"[cps].[cps/object].[cps/object/stat].[cps/object/operations/events_sent]\" id=\"0x80012\" name=\"cps/object/operations/events_sent\" desc=\"Number of events sent by the name service for registration changes.\" embedded=\"false\" node-type=\"leaf\" data-type=\"uint64_t\" />\n"
+"<metadata_entry key=\"[cps].[cps/object].[cps/object/stat].[cps/object/operations/process_id]\" id=\"0x80013\" name=\"cps/object/operations/process_id\" desc=\"The process ID of the application registering for object handling.\" embedded=\"false\" node-type=\"leaf\" data-type=\"uint64_t\" />\n"
+"\n"
+"<!-- CPS Node Ownership  -->\n"
+"<class_ownership id=\"cps/node-group\" qualifiers=\"target,observed\" owner-type=\"db\" />\n"
+"\n"
+"\n"
+"<!-- CPS Enum Mapping  -->\n"
+"<enum_entry name=\"base-acl/counter-type\" >\n"
+"  <enum name=\"PACKET\" value=\"1\" />\n"
+"  <enum name=\"BYTE\" value=\"2\" />\n"
+"</enum_entry>\n"
+"\n"
+"<enum_association name=\"base-acl/counter/types\" enum=\"base-acl/counter-type\" />\n"
+"\n"
+"</cps-class-map>\n"
+"\n"
+;
+    assert(fwrite(_meta_data_file.c_str(),_meta_data_file.size(),1,fp)>0);
+    fclose(fp);
+
+    setenv(CPS_API_METADATA_ENV,_dir_name,true);
+
+    cps_api_metadata_import();
+    std::string _cmd = "rm -Rf ";
+    _cmd += _dir_name;
+    assert(system(_cmd.c_str())==0);
+
 }
 
 void __init_class_map() {

@@ -239,7 +239,6 @@ cps_api_return_code_t cps_api_db_commit_one(cps_api_operation_types_t op,cps_api
         }
     }
     return cps_api_ret_code_OK;
-
 }
 
 namespace {
