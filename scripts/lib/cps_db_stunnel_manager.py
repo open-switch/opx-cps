@@ -22,6 +22,8 @@ stunnel_config_path = "/tmp/"
 stunnel_path = '/usr/bin/stunnel4 '
 default_timeout_connect = "2"
 default_timeout_busy = "5"
+default_timeout_idle = "0"
+default_retry = "yes"
 
 def get_free_port():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -148,6 +150,9 @@ class TunnelConfigManager():
             f.write("cert = "+default_cert+"\n")
             f.write("TIMEOUTconnect = "+default_timeout_connect+"\n")
             f.write("TIMEOUTbusy = "+default_timeout_busy+"\n")
+            f.write("TIMEOUTidle = "+default_timeout_idle+"\n")
+            f.write("retry = "+default_retry+"\n")
+
         except Exception as e:
             if os.path.exists(self.fname):
                 os.remove(self.fname)
