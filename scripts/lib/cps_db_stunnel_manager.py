@@ -22,7 +22,7 @@ stunnel_config_path = "/tmp/"
 stunnel_path = '/usr/bin/stunnel4 '
 default_timeout_connect = "2"
 default_timeout_busy = "5"
-default_timeout_idle = "0"
+default_timeout_idle = "-1"
 default_retry = "yes"
 
 def get_free_port():
