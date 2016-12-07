@@ -333,6 +333,7 @@ bool cps_db::connection::response(response_set &data_, bool expect_events) {
         if (rc!=REDIS_OK) {
             EV_LOG(ERR,DSAPI,0,"DB-RESP","Failed to get reply from %s",_addr.c_str());
             //clean up response so no partial responses
+            reconnect();
             return false;
         }
         if (expect_events && is_event_message(reply)) {
