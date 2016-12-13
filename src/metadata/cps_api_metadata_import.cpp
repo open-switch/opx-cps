@@ -312,7 +312,7 @@ void cps_api_metadata_import(void) {
         }
     }
 
-    ///TODO erg.. in a transition where the software will be moving to SONiC soon - and then this should be /etc/sonic/cpsmetadata
+    ///TODO erg.. in a transition where the software will be moving to OPX soon - and then this should be /etc/opx/cpsmetadata
     auto _search_path = cps_string::split(CPS_DEF_META_SEARCH_PATHS,":");
     for (auto &__dir : _search_path ) {
         std_dir_iterate((__dir+ "/cpsmetadata").c_str(),__cb,&_files,true);

@@ -46,7 +46,7 @@
 #define CPS_DEF_PRODUCT_LOC "/opt/dell/os10"
 #define CPS_DEF_SEARCH_PATH CPS_DEF_PRODUCT_LOC "/lib"        //the location of the generated class
 #define CPS_DEF_SEARCH_PATH_CFG "/etc" CPS_DEF_PRODUCT_LOC
-#define CPS_DEF_META_SEARCH_PATHS  CPS_DEF_SEARCH_PATH ":/etc/sonic:" CPS_DEF_SEARCH_PATH_CFG
+#define CPS_DEF_META_SEARCH_PATHS  CPS_DEF_SEARCH_PATH ":/etc/opx:" CPS_DEF_SEARCH_PATH_CFG
 
 #define CPS_DEF_CLASS_FILE_NAME "cpsclass"      //must match with the generated lib name
 #define CPS_DEF_CLASS_XML_SUFFIX "-cpsmetadata.xml"

@@ -1,4 +1,3 @@
-#!/bin/bash
 #
 # Copyright (c) 2015 Dell Inc.
 #
@@ -15,29 +14,6 @@
 # permissions and limitations under the License.
 #
 
-USERNAME=cpsuser
-GROUPNAME=cpsusers
-GROUPMEMBERS="admin linuxadmin"
 
-HAS_GROUP=$(/bin/cat /etc/group | grep  $GROUPNAME  &> /dev/null; echo $?)
-
-if [ ! $HAS_GROUP = 0 ] ; then
-	groupadd  $GROUPNAME
-	if [ ! $? = 0 ] ; then
-		echo "Failed to add group named $GROUPNAME"		
-	fi  	
-fi
-
-for i in $GROUPMEMBERS ; do
-	usermod -a -G  $GROUPNAME $i
-	if [ ! $? = 0 ] ; then
-		echo "Failed to add user $i to $GROUPNAME"
-		continue
-	fi  	
-done
-
-HAS_USER=$(id $USERNAME &>/dev/null ; echo $?)
-if [ ! $HAS_USER = 0 ] ; then
-	useradd -g $GROUPNAME $USERNAME
-fi
-
+LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu
+PYTHONPATH=/usr/lib/opx:/usr/lib/x86_64-linux-gnu/opx

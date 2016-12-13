@@ -1,0 +1,40 @@
+Source: opx-cps
+Section: net
+Priority: optional
+Maintainer: Dell <support@dell.com>
+Build-Depends:
+ debhelper (>= 9), dh-autoreconf, libopx-common-dev, libopx-logging-dev,
+ python-dev, dh-python, dh-systemd, libhiredis-dev, libsystemd-dev
+Standards-Version: 3.9.3
+Vcs-Browser: https://github.com/open-switch/opx-cps
+Vcs-Git: https://github.com/open-switch/opx-cps.git
+
+Package: opx-cps
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}, python-opx-cps, libopx-cps1
+Description: This package contains the Openswitch object library.  The object library is provides APIs to set/get/delete/create and execute RPC calls using data models provided by components.
+
+
+Package: libopx-cps1
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: This package contains the Openswitch object library.  The object library is provides APIs to set/get/delete/create and execute RPC calls using data models provided by components.
+
+
+Package: python-opx-cps
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}
+XB-Python-Version: ${python:Versions}
+Description: This package contains the Openswitch object library.  The object library is provides APIs to set/get/delete/create and execute RPC calls using data models provided by components.
+
+Package: opx-yang-utils-dev
+Architecture: any
+Depends: python, ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}
+XB-Python-Version: ${python:Versions}
+Description: This package contains tool to parse yang file and convert it to .cpp and .h files.
+
+Package: libopx-cps-dev
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends},libopx-common-dev,libopx-cps1 (= ${binary:Version}),libopx-logging-dev
+Description: This package contains the Openswitch object library.  The object library is provides APIs to set/get/delete/create and execute RPC calls using data models provided by components.
+
