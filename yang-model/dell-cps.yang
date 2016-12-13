@@ -1,0 +1,157 @@
+module dell-base-cps {
+    namespace "http://www.dell.com/esg/networking/os10/dell-cps";
+  prefix "cps";
+
+  list node-details {
+    description "This object contains a list of aliases for a node.  Any one of the aliases will be converted
+              into the name.
+
+              For instance lets asume that there was a node with an IP address of 10.11.11.11 and
+              there was a port 443 that contained a service. The name would be 10.11.11.11:443 while on that node,
+              lets say we wanted a user friendly name and therefore called the entity joe or jane but when you see
+              joe or jain, you want to convert these aliases for the node back to 10.11.11.11:443.";
+    key "name";
+    leaf name {
+
+      description "The name to use as a replacement for any of the alias attributes.";
+      type string;
+    }
+    leaf-list alias {
+      description "A list of alias that can be convered back to the name.";
+      type string;
+    }
+  }
+
+  list node-group {
+    description "This object is used to describe the mapping of a group ID to a list of node IP/port combinations.";
+    key "name";
+
+    leaf name {
+      description "The name of the group.";
+      type string;
+    }
+    list node {
+      leaf name {
+        description "The name of the node entry. (an alias for the ip)";
+        type string;
+      }
+      leaf ip {
+        description "The IP address and port of the element.  Valid IP address/port
+                    combinations are IPv4:port or [IPv6]:port";
+        type string;
+      }
+      leaf tunnel-ip {
+        description "The IP addres and port of the stunnel client. Valid IP address/port
+                    combinations are IPv4:port or [IPv6]:port";
+        type string;
+      }
+    }
+    leaf type {
+      type uint32;
+    }
+  }
+
+  container object-group {
+    description "These attributes are placed in objects by CPS infrastructure and provide additional information or change
+                behaviour as needed.";
+    leaf group {
+      description "This attribute holds the group ID if specified.";
+      type string;
+    }
+    leaf node {
+      description "This attribute contains the node id.";
+      type string;
+    }
+    leaf transaction {
+      description "In the case of commit operations (and the object is cacheable and doesn't exist at the time
+              due to a restart, then an Inprogress return code will be provided and this transaction ID
+              can be used to monitor the state of the transaction.";
+      type uint64;
+    }
+    leaf failed-nodes {
+      description "This attribute is used in an object to indicate which nodes did not process the request due to
+              connectivity reasons. Nodes are in a single string separated by comma (,).";
+      type string;
+    }
+    leaf exact-match {
+      description "If this attribute is present in an event registration or query - then the attributes in the object will be used to detmine
+	      matching events or objects.  To be more explicit on events and object queries:
+	      	) in the case of events - only events matching the exact object key or attributes in the object will
+	      		be provided to the application.
+	      	) in the case of queries - if exact match is present, then the value of the exact match shall be used to determine
+	      		if a wildcard matching behaviour will be used. If this value is not present, the wildcard matching will be guessed.";      		
+      type boolean;
+    }
+    leaf return-code {
+      description "In the event that an API needs to store a return code within an object itself, they can use this field.  This field is
+                  left as an int size.";
+      type uint32;
+    }
+    leaf get-next {
+    	description "If this attribute is present in an object, then the caller would like the next object in lexicographic order";
+    	type boolean;
+    }
+    leaf number-of-entries {
+    	description "Provide the number of entries to retrieve at one time to support the concept of range along with the get next attribute";
+      type uint64;
+    }
+  }
+
+  list connection-entry {
+    key "name";
+    leaf name {
+      type string;
+    }
+    leaf ip {
+      type string;
+    }
+    leaf group {
+      type string;
+    }
+    leaf connection-state {
+      type boolean;
+    }
+  }
+
+  list db-instance{
+    key "group node-id";
+    leaf group{
+        type string;
+        description "Group name";
+    }
+
+    leaf node-id{
+        type string;
+        description "Node name";
+    }
+
+    leaf port{
+        type string;
+        description "System port where DB Instance was started for given group";
+    }
+  }
+
+   list tunnel{
+    key "group node-id";
+    leaf group{
+        type string;
+        description "Group name";
+    }
+
+    leaf node-id{
+        type string;
+        description "Node name";
+    }
+
+    leaf ip{
+        type string;
+        description "Ip address of the node.";
+    }
+
+    leaf port{
+        type string;
+        config false;
+        description "System port where tunneling from DB to other node occurs.";
+    }
+  }
+}

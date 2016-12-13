@@ -1,0 +1,129 @@
+#!/usr/bin/python
+#
+# Copyright (c) 2016 Dell Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+#
+# THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR
+# CONDITIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT
+# LIMITATION ANY IMPLIED WARRANTIES OR CONDITIONS OF TITLE, FITNESS
+# FOR A PARTICULAR PURPOSE, MERCHANTABLITY OR NON-INFRINGEMENT.
+#
+# See the Apache Version 2.0 License for specific language governing
+# permissions and limitations under the License.
+#
+
+"""
+This tool is used to get the first-level contents of a given YANG path with their registration information
+
+Usage: python cps_model_info [yang path]
+
+Examples:
+python cps_model_info
+python cps_model_info base-port
+python cps_model_info base-port/interface
+
+"""
+
+import sys
+import os
+import cps
+import cps_utils
+
+def find_process_name(pid):
+    """
+    Get the process name from proc filesystem
+    @params pid - pid of which the process name is required
+    @returns ps - process name if found else an empty string
+    """
+
+    try:
+        with open(os.path.join('/proc/' + str(pid) + '/cmdline'), 'rb') as fd:
+            ps = fd.read()
+        # Skip the absolute path
+        ps = ps.split("/")[-1]
+    except Exception:
+        ps = ""
+
+    return ps
+
+
+
+def registered(path):
+    """
+    Check for CPS Object registrations
+    @params[in] path - yang path of the object to check for CPS registration
+    @returns None
+    """
+
+    qual = ["target", "observed", "proposed", "realtime"]
+    # Check to see Object Registration
+    for q in qual:
+        key = cps.key_from_name(q, path)
+        if (cps.enabled(key)):
+            print "\nRegistered to CPS with qualifier: ", q
+
+            # Find Ownership
+            stats = cps.obj_stats(key)
+            if bool(stats) != False:
+                if 'cps/object/operations/process_id' in stats['data']:
+                    pid = cps_utils.cps_attr_types_map.from_data('cps/object/operations/process_id' , stats['data']['cps/object/operations/process_id'])
+
+                    ps = find_process_name(pid)
+                    if ps != "":
+                        print "\nProcess Owner: ", ps, "\n"
+
+
+
+
+def yangwalk(yangpath):
+    """
+    YANG data model walk
+    @params[in] yangpath - Input yang path to fetch its first level contents
+    @returns None
+    """
+
+    if yangpath == '':
+        # Find the modules
+        i = cps.info("")['names'].keys()
+        for mod in i:
+            print mod
+        return
+
+
+    if cps.type(yangpath)['attribute_type'] == "leaf":
+        #Print YANG leaf attributes
+        print "Name = ", cps.type(yangpath)['name'], "\nAttribute Type = ", cps.type(yangpath)['attribute_type'], "\nData Type = ", cps.type(yangpath)['data_type'], "\nDescription = ", cps.type(yangpath)['description']
+        registered(yangpath)
+        return
+
+
+    slashes = cps.type(yangpath)['name'].count("/")
+    complist = cps.info(yangpath, False)['names'].keys()
+
+    #Print first level contents of the specified YANG path
+    for elem in complist:
+        if cps.type(elem)['name'].count("/") == slashes+1:
+            print "\n", cps.type(elem)['name']
+            print "\tAttribute Type = ", cps.type(elem)['attribute_type']
+            if cps.type(elem)['attribute_type'] == "leaf":
+                print "\tData Type = ", cps.type(elem)['data_type']
+            print "\tDescription = ", cps.type(elem)['description']
+            registered(elem)
+
+
+if __name__ == "__main__":
+
+    # Usage: python cps_model_info.py [yangpath]
+    if len(sys.argv) >= 2:
+        yangpath = sys.argv[1]
+    else:
+        yangpath = ''
+
+    yangwalk(yangpath)
+
+    sys.exit(0)
+
+
