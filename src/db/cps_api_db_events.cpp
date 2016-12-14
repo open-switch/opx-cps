@@ -10,6 +10,8 @@
 #include "cps_api_db_connection.h"
 #include "cps_api_db_response.h"
 #include "cps_api_vector_utils.h"
+#include "cps_api_select_utils.h"
+
 
 #include "cps_string_utils.h"
 
@@ -50,19 +52,31 @@ bool cps_db::subscribe(cps_db::connection &conn, cps_api_object_t obj) {
 }
 
 bool cps_db::publish(cps_db::connection &conn, cps_api_object_t obj) {
+
+#if 0
+    cps_api_select_guard sg(cps_api_select_alloc_read());
+    if (!sg.valid()) {
+        return false;
+    }
+    size_t _fd = conn.get_fd();
+    sg.add_fd(_fd);
+
+    while (sg.get_event((size_t)~0)) {
+        cps_db::response_set resp;
+        if (!conn.response(resp,false)) {
+            conn.reconnect();
+        }
+    }
+#endif
+
     cps_db::connection::db_operation_atom_t e[2];
     e[0].from_string("PUBLISH");
     e[1].for_event(obj);
 
-    response_set resp;
-    if (!conn.command(e,sizeof(e)/sizeof(*e),resp)) {
+    if (!conn.operation(e,sizeof(e)/sizeof(*e),true)) {
         return false;
     }
-
-    cps_db::response r = resp.get_response(0);
-    bool rc = r.is_int();
-
-    return rc;
+    return true;
 }
 
 

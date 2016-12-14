@@ -229,7 +229,7 @@ cps_api_return_code_t cps_api_db_commit_one(cps_api_operation_types_t op,cps_api
     if (publish) {
         bool _first_time = true;
         for ( auto &it : lst ) {
-            cps_db::connection_request r(cps_db::ProcessDBCache(),it);
+            cps_db::connection_request r(cps_db::ProcessDBEvents(),it);
             if (!r.valid()) continue;
             if (_first_time) cps_api_object_set_type_operation(cps_api_object_key(obj),op);
             if (!cps_db::publish(r.get(),obj)) {
@@ -334,7 +334,7 @@ cps_api_return_code_t cps_api_db_commit_bulk(cps_api_db_commit_bulk_t *param) {
         bool _first_time = true;
         for ( auto &it : lst ) {
 
-            cps_db::connection_request r(cps_db::ProcessDBCache(),it);
+            cps_db::connection_request r(cps_db::ProcessDBEvents(),it);
             if (!r.valid()) continue;
             for (size_t ix = 0, mx = cps_api_object_list_size(param->objects); ix < mx ; ++ix ) {
                 cps_api_object_t o = cps_api_object_list_get(param->objects,ix);

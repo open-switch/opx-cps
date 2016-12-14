@@ -262,7 +262,7 @@ static void __redisCallbackFn__(struct redisAsyncContext*c, void *reply, void *a
 
 }
 
-bool cps_db::connection::operation(db_operation_atom_t * lst_,size_t len_) {
+bool cps_db::connection::operation(db_operation_atom_t * lst_,size_t len_, bool force_push) {
     request_walker_contexct_t ctx(lst_,len_);
 
     if (!ctx.valid()) {
@@ -288,6 +288,14 @@ bool cps_db::connection::operation(db_operation_atom_t * lst_,size_t len_) {
     } while (retry-->0);
 
     if (!_success) return false;
+    if (!force_push) return true;
+    int _is_done=0;
+    while (_is_done==0) {
+        if (redisBufferWrite(static_cast<redisContext*>(_ctx),&_is_done)==REDIS_ERR) {
+            reconnect();
+            return false;
+        }
+    }
     return true;
 }
 
@@ -392,15 +400,26 @@ bool cps_db::connection::get_event(response_set &data) {
 
 static pthread_once_t  onceControl = PTHREAD_ONCE_INIT;
 static cps_db::connection_cache * _cache;
+static cps_db::connection_cache * _event_cache;
 
 void __init(void) {
     _cache = new cps_db::connection_cache;
-    STD_ASSERT(_cache!=nullptr);
+    _event_cache = new cps_db::connection_cache;
+    std::thread([&](){
+
+
+    });
+    STD_ASSERT(_cache!=nullptr && _event_cache!=nullptr);
 }
 
 cps_db::connection_cache & cps_db::ProcessDBCache() {
     pthread_once(&onceControl,__init);
     return *_cache;
+}
+
+cps_db::connection_cache & cps_db::ProcessDBEvents() {
+    pthread_once(&onceControl,__init);
+    return *_event_cache;
 }
 
 cps_db::connection * cps_db::connection_cache::get(const std::string &name) {
@@ -431,6 +450,10 @@ void cps_db::connection_cache::remove(const std::string &name) {
     _pool.erase(name);
 }
 
+void cps_db::connection_cache::flush_pending() {
+
+}
+
 cps_db::connection_request::connection_request(cps_db::connection_cache & cache,const char *addr) : _cache(cache) {
     _name = addr;
     _conn = _cache.get(addr);
@@ -443,7 +466,6 @@ cps_db::connection_request::connection_request(cps_db::connection_cache & cache,
         }
     }
 }
-
 cps_db::connection_request::~connection_request() {
     if(_conn!=nullptr) {
         _cache.put(_name,_conn);

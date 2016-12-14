@@ -345,17 +345,13 @@ static cps_api_return_code_t _cps_api_event_service_publish_msg(cps_api_event_se
     STD_ASSERT(msg!=NULL);
     STD_ASSERT(handle!=NULL);
 
-    cps_api_key_t *_okey = cps_api_object_key(msg);
-
-    if (cps_api_key_get_len(_okey) < CPS_OBJ_KEY_SUBCAT_POS) {
-        return cps_api_ret_code_ERR;
-    }
+    if (cps_api_key_get_len(cps_api_object_key(msg))==0) return cps_api_ret_code_ERR;
 
     const char *_group = cps_api_key_get_group(msg);
 
     bool sent = true;
     cps_api_node_set_iterate(_group,[&msg,&sent](const std::string &name)->bool{
-        cps_db::connection_request r(cps_db::ProcessDBCache(),name.c_str());
+        cps_db::connection_request r(cps_db::ProcessDBEvents(),name.c_str());
         sent = sent && r.valid() && cps_db::publish(r.get(),msg);
         return true;
     });
