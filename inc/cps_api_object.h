@@ -154,6 +154,15 @@ cps_api_object_t cps_api_object_init(void *data, size_t bufflen);
  */
 cps_api_object_t cps_api_object_create_int(const char *desc,unsigned int line, const char *name);
 
+
+/**
+ * This API will create a reference from the current CPS object.  This is a very simple reference counting mechanism.
+ * @param obj the object that you want to create a reference of
+ * @param copy_on_write the flag that will indicate if you would like the copy on write behaviour or not
+ * @return a object that is a reference to another object
+ */
+cps_api_object_t cps_api_object_reference(cps_api_object_t obj, bool copy_on_write);
+
 /**
  * Clone an object to another object
  *
@@ -162,6 +171,19 @@ cps_api_object_t cps_api_object_create_int(const char *desc,unsigned int line, c
  * @return true if the object has been cloned
  */
 bool cps_api_object_clone(cps_api_object_t dest, cps_api_object_t src);
+
+
+/**
+ * Create a exact duplicate of the object specified and return a newly allocated one.  This differs from the cps_api_clone in the way that this API
+ * expects to allocate a new object while the previously mentioned API uses an existing object.
+ * @param src the object to copy
+ * @return true if successful otherwise false
+ */
+cps_api_object_t cps_api_object_create_clone(cps_api_object_t src) ;
+
+
+
+void cps_api_object_swap(cps_api_object_t lhs, cps_api_object_t rhs);
 
 /**
  * Merge the attributes of the src object into the dest object.  At the end the dest object
@@ -495,6 +517,12 @@ bool cps_api_object_received(cps_api_object_t obj, size_t size_of_object_receive
 bool cps_api_array_to_object(const void * data, size_t len,cps_api_object_t obj) ;
 
 /**
+ * CPS Object Lists - cps_api_object_list_t can be treated as an array of reference counted objects.
+ *
+ *The following APIs will allow the creation, deletion, merging, and other operations.
+ */
+
+/**
  * Create a list of objects.  Each object added to the list is not copied but the list does
  * provide a helper function to delete any contained objects.
  *
@@ -508,6 +536,19 @@ cps_api_object_list_t cps_api_object_list_create(void);
  * @param delete_objects true if the user wants all contained objects to also be freed
  */
 void cps_api_object_list_destroy(cps_api_object_list_t list, bool delete_objects);
+
+
+/**
+ * Add an object to the list.  In this case, a reference to the object or a object clone will be passed to the list.  If the object is passed
+ * by reference, then it will be a single object shared - any changes will be applied to all references.  If the object is cloned, then
+ * a new object will be created and added to the list
+ *
+ * @param list to add the object
+ * @param obj the object to add
+ * @param clone this flag should be false to append a reference of the object to the list otherwise a clone will be allocated and added
+ * @return true if the object is successfully added
+ */
+bool cps_api_object_list_append_copy(cps_api_object_list_t list, cps_api_object_t obj, bool clone);
 
 /**
  * Add an object to the list.  The object is not copied into the list.
@@ -524,6 +565,16 @@ bool cps_api_object_list_append(cps_api_object_list_t list,cps_api_object_t obj)
  * @return true if the lists have been merged successfully otherwise an error due to likely lack of memory
  */
 bool cps_api_object_list_merge(cps_api_object_list_t dest, cps_api_object_list_t add) ;
+
+/**
+ * Merge take the contents from src defined by the src_start and src_end and add this to the end of the dest object list
+ * @param dest one of the lists to append to
+ * @param add the list that you want to copy the contents from
+ * @param src_start the start index of where to copy
+ * @param src_end which is where the copy should stop (eg.. copy from start to max length of list)
+ * @return true if the lists have been merged successfully otherwise an error due to likely lack of memory
+ */
+bool cps_api_object_list_merge_section(cps_api_object_list_t dest, cps_api_object_list_t src, size_t src_start, size_t src_end) ;
 
 /**
  * Clone a list into a new list and optionally deep copy all of the CPS objects.
@@ -577,6 +628,18 @@ size_t cps_api_object_list_size(cps_api_object_list_t list);
 
 
 /**
+ * Set the provided object into the list at the given index.  If the index doesn't exist, the list will
+ * be resized to make the index valid (filling in null objects inbetween)
+ * @param list the list to add the object
+ * @param ix the index of the object to add
+ * @param obj the object to insert into the list
+ * @param free_existing if true, and there is an object currently in the list, free it before setting the new object
+ * @return true if successful otherwise false
+ */
+bool cps_api_object_list_set(cps_api_object_list_t list,size_t ix, cps_api_object_t obj, bool free_existing);
+
+
+/**
  * Print out the contents of the CPS API object tracker database.
  * @return true if no entries - false if there are elements
  */
@@ -606,7 +669,7 @@ public:
      * When the object goes out of scope delete the object if it is still owned  (not NULL)
      */
     ~cps_api_object_guard() {
-        if (obj!=NULL) cps_api_object_delete(obj);
+        free();
     }
     /**
      * Check to see if the object is valid
@@ -652,7 +715,7 @@ public:
      * Create the object guard passing in the object.
      * @param l the list to manage
      */
-    cps_api_object_list_guard(cps_api_object_list_t l) : lst(l){}
+    cps_api_object_list_guard(cps_api_object_list_t l=NULL) : lst(l){}
     /**
      * Release the contained list and don't clean it on destruction
      */
