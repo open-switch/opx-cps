@@ -1,6 +1,6 @@
 module dell-cps {
 
-namespace "http://www.dell.com/esg/networking/opx/cps/interfaces";
+namespace "http://www.dell.com/esg/networking/os10/cps/interfaces";
 prefix "cps";
 
 import dell-common-types {
