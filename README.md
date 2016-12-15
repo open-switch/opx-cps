@@ -24,3 +24,4 @@ With the object keys and attributes applications can:
    d) Action
 3) Register and publish object messages
 
+(c) Dell 2016
