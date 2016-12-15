@@ -43,7 +43,7 @@
 #include <string>
 
 /** @cond HIDDEN_SYMBOLS */
-#define CPS_DEF_PRODUCT_LOC "/opt/dell/os10"
+#define CPS_DEF_PRODUCT_LOC "/opx"
 #define CPS_DEF_SEARCH_PATH CPS_DEF_PRODUCT_LOC "/lib"        //the location of the generated class
 #define CPS_DEF_SEARCH_PATH_CFG "/etc" CPS_DEF_PRODUCT_LOC
 #define CPS_DEF_META_SEARCH_PATHS  CPS_DEF_SEARCH_PATH ":/etc/opx:" CPS_DEF_SEARCH_PATH_CFG

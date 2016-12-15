@@ -1,5 +1,5 @@
 module dell-base-cps {
-    namespace "http://www.dell.com/esg/networking/os10/dell-cps";
+    namespace "http://www.dell.com/esg/networking/opx/dell-cps";
   prefix "cps";
 
   list node-details {

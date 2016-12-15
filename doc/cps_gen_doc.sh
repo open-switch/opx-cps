@@ -1,6 +1,6 @@
 #!/bin/bash
 
-CPS_DOC_FILE="OS10.1.0B-cps-api-doc.zip"
+CPS_DOC_FILE="OPX-cps-api-doc.zip"
 CPS_DOC_DIR="workspace/cps-api-doc"
 # File used to generate doxygen documentation for CPS C bindings
 PSEUDO_CPS_FILE=workspace/cps.py
@@ -21,7 +21,7 @@ doxygen cps-api/doc/doxygen_c.cfg
 ### Generate documentation for the Python CPS API
 echo '"""@package cps' > $PSEUDO_CPS_FILE
 echo '' >> $PSEUDO_CPS_FILE
-echo 'Python API for the OS10 Control Plane Services' >>  $PSEUDO_CPS_FILE
+echo 'Python API for the OPX Control Plane Services' >>  $PSEUDO_CPS_FILE
 echo '' >> $PSEUDO_CPS_FILE
 echo '"""' >> $PSEUDO_CPS_FILE
 ### extract documentation from C Python bindings
