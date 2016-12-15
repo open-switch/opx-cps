@@ -13,8 +13,8 @@
 # See the Apache Version 2.0 License for specific language governing
 # permissions and limitations under the License.
 
-#export PYTHONPATH=/opt/dell/os10/lib:/opt/dell/os10/lib/python
-#/usr/bin/python /opt/dell/os10/lib/cps_db_stunnel_manager.py
+#export PYTHONPATH=/usr/lib/opx:/usr/lib/x86_64-linux-gnu/opx
+#/usr/bin/python cps_db_stunnel_manager.py
 
 # THIS IS NO LONGER NEEDED. THIS FILE WILL BE DELETED!
 # THIS IS NO LONGER NEEDED. THIS FILE WILL BE DELETED!
