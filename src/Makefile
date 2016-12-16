@@ -74,6 +74,7 @@ UNIT_TEST+= cps_api_db_1_1_unittest
 UNIT_TEST+=cps_api_db_timings
 UNIT_TEST+=cps_api_db_direct_unittest
 UNIT_TEST+=cps_api_db_sync_unittest
+UNIT_TEST+=cps_api_db_fill_unittest
 
 PY_OBJ_PATH=${BUILD_CURDIR}/pybuild
 

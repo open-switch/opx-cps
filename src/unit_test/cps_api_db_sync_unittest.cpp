@@ -68,6 +68,8 @@ TEST(cps_api_db_sync, objsync) {
 
    cps_api_set_node_group(&_g);
 
+   sleep(30);
+
    cps_api_object_guard src_og(cps_api_object_create());
    cps_api_key_from_attr_with_qual(cps_api_object_key(src_og.get()),BASE_IP_IPV6,cps_api_qualifier_TARGET);
    cps_api_key_set_node( src_og.get(), "NODE2");
