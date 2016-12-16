@@ -258,12 +258,8 @@ bool request_walker_contexct_t::set(cps_db::connection::db_operation_atom_t * ls
 
 }
 
-static void __redisCallbackFn__(struct redisAsyncContext*c, void *reply, void *app_context) {
-
-}
-
 bool cps_db::connection::operation(db_operation_atom_t * lst_,size_t len_, bool force_push) {
-    request_walker_contexct_t ctx(lst_,len_);
+	request_walker_contexct_t ctx(lst_,len_);
 
     if (!ctx.valid()) {
         EV_LOGGING(DSAPI,ERR,"CPS-DB-OP","The DB context is invalid.");
@@ -273,22 +269,19 @@ bool cps_db::connection::operation(db_operation_atom_t * lst_,size_t len_, bool 
     bool _success = false;
     ssize_t retry = MAX_RETRY;
     do {
-        if (!_async) {
-            if (redisAppendCommandArgv(static_cast<redisContext*>(_ctx),ctx.cmds_ptr - ctx.cmds,ctx.cmds,ctx.cmds_lens)==REDIS_OK) {
-                _success = true; break;
-            }
-        } else {
-            if (redisAsyncCommandArgv(static_cast<redisAsyncContext*>(_ctx),__redisCallbackFn__,nullptr,
-                    ctx.cmds_ptr - ctx.cmds,ctx.cmds,ctx.cmds_lens)==REDIS_OK) {
-                _success = true; break;
-            }
-        }
+		if (redisAppendCommandArgv(static_cast<redisContext*>(_ctx),ctx.cmds_ptr - ctx.cmds,ctx.cmds,ctx.cmds_lens)==REDIS_OK) {
+			_success = true; break;
+		}
         EV_LOG(ERR,DSAPI,0,"CPS-RED-CON-OP","Seems to be an issue with the REDIS request - (first entry: %s)",ctx.cmds[0]);
         reconnect();
     } while (retry-->0);
 
     if (!_success) return false;
     if (!force_push) return true;
+    return flush();
+}
+
+bool cps_db::connection::flush() {
     int _is_done=0;
     while (_is_done==0) {
         if (redisBufferWrite(static_cast<redisContext*>(_ctx),&_is_done)==REDIS_ERR) {
@@ -405,10 +398,6 @@ static cps_db::connection_cache * _event_cache;
 void __init(void) {
     _cache = new cps_db::connection_cache;
     _event_cache = new cps_db::connection_cache;
-    std::thread([&](){
-
-
-    });
     STD_ASSERT(_cache!=nullptr && _event_cache!=nullptr);
 }
 
@@ -424,15 +413,27 @@ cps_db::connection_cache & cps_db::ProcessDBEvents() {
 
 cps_db::connection * cps_db::connection_cache::get(const std::string &name) {
     std::lock_guard<std::mutex> l(_mutex);
+
+    const auto &_connect = [] (const std::string &name) -> cps_db::connection *{
+    	auto *_conn = new cps_db::connection;
+		if (!_conn->connect(name)) {
+			delete _conn;
+			_conn  = nullptr;
+		}
+    	return _conn;
+    };
+
     auto it = _pool.find(name);
-    if (it==_pool.end()) return nullptr;
+    if (it==_pool.end()) {
+    	return _connect(name);
+    }
 
     if (it->second.size()>0) {
         auto ptr = it->second[it->second.size()-1].release();
         it->second.pop_back();
         return ptr;
     }
-    return nullptr;
+    return _connect(name);
 }
 
 void cps_db::connection_cache::put(const std::string &name, connection* conn) {
@@ -450,22 +451,11 @@ void cps_db::connection_cache::remove(const std::string &name) {
     _pool.erase(name);
 }
 
-void cps_db::connection_cache::flush_pending() {
-
-}
-
 cps_db::connection_request::connection_request(cps_db::connection_cache & cache,const char *addr) : _cache(cache) {
     _name = addr;
     _conn = _cache.get(addr);
-    if (_conn==nullptr) {
-        _conn = new cps_db::connection;
-        if (!_conn->connect(addr)) {
-            delete _conn;
-            _conn  = nullptr;
-            return;
-        }
-    }
 }
+
 cps_db::connection_request::~connection_request() {
     if(_conn!=nullptr) {
         _cache.put(_name,_conn);

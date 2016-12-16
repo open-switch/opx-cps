@@ -22,13 +22,6 @@
 #include "cps_api_events.h"
 #include "private/db/cps_api_db.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-
-
-#include "gtest/gtest.h"
-
-
 #include "cps_api_operation.h"
 #include "cps_api_events.h"
 #include "cps_api_event_init.h"
@@ -37,6 +30,10 @@
 #include "cps_class_map.h"
 #include "cps_api_node.h"
 #include "cps_api_object_tools.h"
+
+
+#include "cps_api_core_utils.h"
+#include "cps_api_select_utils.h"
 
 //IP Meta data
 #include "cps_class_ut_data.h"
@@ -48,7 +45,50 @@
 #include <inttypes.h>
 #include <memory>
 
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "gtest/gtest.h"
+
+
 cps_api_event_service_handle_t handle;
+
+TEST(cps_api_events,seed_meta_data) {
+    __init_class_map();
+}
+
+TEST(cps_api_events,initialize_event_system) {
+    ASSERT_TRUE(cps_api_event_service_init()==cps_api_ret_code_OK);
+    ASSERT_TRUE(cps_db::cps_api_db_init()==cps_api_ret_code_OK);
+    ASSERT_TRUE(cps_api_event_thread_init()==cps_api_ret_code_OK);
+    ASSERT_TRUE(cps_api_event_thread_init()==cps_api_ret_code_OK);    //testing to ensure that multiple calls to init succeed
+}
+
+const static auto &_rep_send_event = [] (size_t range) ->bool {
+	size_t ix = 0;
+	size_t mx = cps_api_object_list_size(Get1000());
+	for ( ; ix < range ; ++ix ) {
+		cps_api_object_t o = cps_api_object_list_get(Get1000(),ix%mx);
+		if (!cps_api_core_publish(o)) return false;
+	}
+	return true;
+};
+
+TEST(cps_api_events,simple_publish_events_10000) {
+	ASSERT_TRUE(_rep_send_event(10000));
+}
+
+TEST(cps_api_events,epoll_trial_20000) {
+	std::vector<cps_api_select_handle_t> _handles;
+	size_t ix = 0;
+	size_t mx = 1000;
+	for ( ; ix < mx ; ++ix ) {
+		_handles.push_back(cps_api_select_alloc_read());
+	}
+	for ( auto &it : _handles) {
+		cps_api_select_dealloc(it);
+	}
+}
 
 bool _cps_api_event_thread_callback(cps_api_object_t object,void * context) {
      char buff[1024];
@@ -66,110 +106,28 @@ bool _cps_api_event_thread_callback_2(cps_api_object_t object,void * context) {
      return true;
 }
 
-
 bool threaded_client_test() {
 
     cps_api_event_reg_t reg;
     reg.priority = 0;
 
-    cps_api_key_t keys[5];
-    cps_api_key_init(&keys[0],cps_api_qualifier_OBSERVED,
-            cps_api_obj_cat_INTERFACE,1,0);
+    cps_api_key_t keys[4];
+    cps_api_key_from_attr_with_qual(&keys[0],BASE_IP_IPV6,cps_api_qualifier_OBSERVED);
+    cps_api_key_from_attr_with_qual(&keys[1],BASE_IP_IPV4,cps_api_qualifier_OBSERVED);
+    cps_api_key_from_attr_with_qual(&keys[2],BASE_IP_IPV6,cps_api_qualifier_TARGET);
+    cps_api_key_from_attr_with_qual(&keys[3],BASE_IP_IPV4,cps_api_qualifier_TARGET);
 
-    cps_api_key_init(&keys[1],cps_api_qualifier_OBSERVED,
-            cps_api_obj_cat_ROUTE,1,0);
-
-    cps_api_key_init(&keys[2],cps_api_qualifier_OBSERVED,
-            cps_api_obj_cat_ROUTE,1,1,1);
-
-    cps_api_key_init(&keys[3],cps_api_qualifier_TARGET,
-            cps_api_obj_cat_ROUTE,1,0);
-
-    cps_api_key_init(&keys[4],cps_api_qualifier_TARGET,
-            cps_api_obj_cat_INTERFACE,1,0);
 
     reg.objects = keys;
-    reg.number_of_objects = 5 ; //sizeof(keys)/sizeof(*keys);
+    reg.number_of_objects = 4 ; //sizeof(keys)/sizeof(*keys);
 
-    if (cps_api_event_thread_reg(&reg,
-            _cps_api_event_thread_callback,NULL)!=cps_api_ret_code_OK)
+    if (cps_api_event_thread_reg(&reg,_cps_api_event_thread_callback,NULL)!=cps_api_ret_code_OK)
         return false;
 
-    cps_api_key_set_len(keys,1);
+    cps_api_key_set_len(&keys[0],1);
     reg.number_of_objects = 1;
-    if (cps_api_event_thread_reg(&reg,
-            _cps_api_event_thread_callback_2,NULL)!=cps_api_ret_code_OK)
+    if (cps_api_event_thread_reg(&reg, _cps_api_event_thread_callback_2,NULL)!=cps_api_ret_code_OK)
         return false;
-    return true;
-}
-
-bool push_running = true;
-void * push_client_messages(void *) {
-
-    size_t ix = 0;
-    size_t mx = 10000;
-
-    cps_api_event_service_handle_t handle;
-    if (cps_api_event_client_connect(&handle)!=cps_api_ret_code_OK) return false;
-
-    cps_api_object_t obj = cps_api_object_create();
-    cps_api_object_attr_add(obj,1,"Cliff",6);
-    cps_api_qualifier_t q[2] ={ cps_api_qualifier_TARGET, cps_api_qualifier_OBSERVED};
-    cps_api_object_category_types_t c[3]={cps_api_obj_cat_INTERFACE,
-            cps_api_obj_cat_ROUTE,cps_api_obj_cat_QOS
-    };
-
-    for ( ; ix < mx ; ++ix ) {
-        if ((ix %10)==0) {
-            if (cps_api_event_client_disconnect(handle)!=cps_api_ret_code_OK) return false;
-            if (cps_api_event_client_connect(&handle)!=cps_api_ret_code_OK) return false;
-        }
-        cps_api_key_init(cps_api_object_key(obj),q[ix%2],c[ix%3],1,2,ix%3,ix);
-        if (cps_api_event_publish(handle,obj)!=cps_api_ret_code_OK) exit(1);
-    }
-    push_running = false;
-    return NULL;
-}
-
-bool simple_client_use() {
-    cps_api_event_service_handle_t handle;
-    if (cps_api_event_client_connect(&handle)!=cps_api_ret_code_OK) return false;
-
-    cps_api_event_reg_t reg;
-    reg.priority = 0;
-
-    cps_api_key_t keys[5];
-    cps_api_key_init(&keys[0],cps_api_qualifier_OBSERVED,
-            cps_api_obj_cat_INTERFACE,1,0);
-
-    cps_api_key_init(&keys[1],cps_api_qualifier_OBSERVED,
-            cps_api_obj_cat_ROUTE,1,0);
-
-    cps_api_key_init(&keys[2],cps_api_qualifier_OBSERVED,
-            cps_api_obj_cat_ROUTE,1,1,1);
-
-    cps_api_key_init(&keys[3],cps_api_qualifier_TARGET,
-            cps_api_obj_cat_ROUTE,1,0);
-
-    cps_api_key_init(&keys[4],cps_api_qualifier_TARGET,
-            cps_api_obj_cat_INTERFACE,1,0);
-
-
-    reg.objects = keys;
-    reg.number_of_objects =5; //sizeof(keys)/sizeof(*keys);
-
-    if (cps_api_event_client_register(handle,&reg)!=cps_api_ret_code_OK) return false;
-
-    cps_api_object_t rec = cps_api_object_create();
-    pthread_t id;
-    pthread_create(&id,NULL,push_client_messages,NULL);
-    char buff[1024];
-    int cnt=0;
-    while(true) {
-        if (cps_api_wait_for_event(handle,rec)!=cps_api_ret_code_OK) return false;
-        printf("3(%d) -  %s\n",cnt,cps_api_object_to_string(rec,buff,sizeof(buff)));
-        ++cnt;
-    }
     return true;
 }
 
@@ -204,10 +162,6 @@ bool full_reg() {
     return true;
 }
 
-TEST(cps_api_events,seed_meta_data) {
-    __init_class_map();
-}
-
 struct _event_reg_handler {
     cps_api_event_reg_t _reg;
     std::unique_ptr<cps_api_key_t[]> _keys;
@@ -231,15 +185,6 @@ std::unique_ptr<_event_reg_handler> _setup_key_reg(cps_api_attr_id_t attr, cps_a
     return _setup_key_reg(&attr,&qual,1,use_defaults);
 }
 
-
-
-TEST(cps_api_events,initialize_event_system) {
-    ASSERT_TRUE(cps_api_event_service_init()==cps_api_ret_code_OK);
-    ASSERT_TRUE(cps_db::cps_api_db_init()==cps_api_ret_code_OK);
-    ASSERT_TRUE(cps_api_event_thread_init()==cps_api_ret_code_OK);
-    ASSERT_TRUE(cps_api_event_thread_init()==cps_api_ret_code_OK);    //testing to ensure that multiple calls to init succeed
-}
-
 size_t _cnt_test_1=0;
 std::mutex m;
 
@@ -255,23 +200,6 @@ bool __cps_api_event_thread_callback_t_test_1(cps_api_object_t object,void * con
     m.unlock();
     return true;
 }
-
-TEST(cps_api_events,event_thread_tests) {
-    auto reg = _setup_key_reg(BASE_IP_IPV4_ADDRESS_PREFIX_LENGTH);
-    ASSERT_TRUE(cps_api_event_thread_reg(&reg->_reg,&__cps_api_event_thread_callback_t_test_1,nullptr)==cps_api_ret_code_OK);
-
-    m.lock();
-    cps_api_object_guard og(cps_api_obj_tool_create(cps_api_qualifier_TARGET,BASE_IP_IPV4_ADDRESS_PREFIX_LENGTH,true));
-
-    cps_api_event_thread_publish(og.get());
-    m.lock();
-
-    og.set(cps_api_obj_tool_create(cps_api_qualifier_TARGET,BASE_IP_IPV6_ADDRESS_PREFIX_LENGTH,true));
-
-    cps_api_event_thread_publish(og.get());
-    m.lock();
-}
-
 
 TEST(cps_api_events,basic_clients) {
     cps_api_event_service_handle_t handle;
@@ -297,8 +225,41 @@ TEST(cps_api_events,basic_clients) {
         cps_api_object_attr_add( og.get(),BASE_IP_IPV6_ADDRESS_PREFIX_LENGTH,"24",3);
 
         cps_api_event_publish(handle,og.get());
+        sleep(1);
         ASSERT_TRUE(cps_api_wait_for_event(handle,og.get())==cps_api_ret_code_OK);
         printf("3(%d) -  %s\n",cnt,cps_api_object_to_string(og.get(),buff,sizeof(buff)));
+    }
+    cps_api_event_client_disconnect(handle);
+}
+
+TEST(cps_api_events,basic_clients_10000) {
+    cps_api_event_service_handle_t handle;
+    ASSERT_TRUE(cps_api_event_client_connect(&handle)==cps_api_ret_code_OK);
+
+    cps_api_event_reg_t reg;
+    reg.priority = 0;
+
+    cps_api_key_t keys;
+    ASSERT_TRUE(cps_api_key_from_attr_with_qual(&keys,BASE_IP_IPV6,cps_api_qualifier_TARGET));
+
+    reg.objects = &keys;
+    reg.number_of_objects =1;
+
+    ASSERT_TRUE(cps_api_event_client_register(handle,&reg)==cps_api_ret_code_OK) ;
+
+    printf("Sending.... \n");
+    size_t ix = 0;
+    size_t mx = 10000;
+    for ( ; ix < mx ; ++ix ) {
+    	cps_api_object_t _obj = cps_api_object_list_get(Get1000(),ix%1000);
+    	cps_api_event_publish(handle,_obj);
+    }
+
+    printf("Receiving.... \n");
+    cps_api_object_guard og(cps_api_object_create());
+    for ( ix = 0 ; ix < mx ; ++ix ) {
+        ASSERT_TRUE(cps_api_wait_for_event(handle,og.get())==cps_api_ret_code_OK);
+
     }
     cps_api_event_client_disconnect(handle);
 }
@@ -569,6 +530,24 @@ TEST(cps_api_events,full_test) {
     ASSERT_TRUE(full_reg());
     ASSERT_TRUE(threaded_client_test());
 }
+
+TEST(cps_api_events,event_thread_tests) {
+    auto reg = _setup_key_reg(BASE_IP_IPV4_ADDRESS_PREFIX_LENGTH);
+    ASSERT_TRUE(cps_api_event_thread_reg(&reg->_reg,&__cps_api_event_thread_callback_t_test_1,nullptr)==cps_api_ret_code_OK);
+
+    m.lock();
+    cps_api_object_guard og(cps_api_obj_tool_create(cps_api_qualifier_TARGET,BASE_IP_IPV4_ADDRESS_PREFIX_LENGTH,true));
+
+    cps_api_event_thread_publish(og.get());
+    m.lock();
+
+    og.set(cps_api_obj_tool_create(cps_api_qualifier_TARGET,BASE_IP_IPV6_ADDRESS_PREFIX_LENGTH,true));
+
+    cps_api_event_thread_publish(og.get());
+    m.lock();
+}
+
+
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

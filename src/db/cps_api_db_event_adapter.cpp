@@ -34,8 +34,8 @@
 #include "std_mutex_lock.h"
 #include "event_log.h"
 
+#include "cps_api_select_utils.h"
 #include "std_time_tools.h"
-#include "std_select_tools.h"
 
 #include <thread>
 #include <stdlib.h>
@@ -79,11 +79,13 @@ struct __db_event_handle_t {
     std::recursive_mutex _mutex;
 
     std::unordered_map<std::string,std::vector<std::vector<char>>> _group_keys;
-
     std::unordered_map<std::string,std::unique_ptr<cps_db::connection>> _connections;
     std::unordered_map<std::string,db_connection_details> _connection_mon;
+    std::unordered_map<int,cps_db::connection*> _fd_to_conn;
 
     cps_api_key_cache<std::vector<cps_api_object_t>> _filters;
+
+    cps_api_select_guard _select_set = (cps_api_select_alloc_read());
 
     fd_set _connection_set;
     ssize_t _max_fd;
@@ -112,6 +114,7 @@ __db_event_handle_t::~__db_event_handle_t() {
         return true;
     };
     _filters.walk(fn);
+
 }
 
 bool __db_event_handle_t::object_matches_filter(cps_api_object_t obj) {
@@ -166,11 +169,12 @@ void __db_event_handle_t::add_connection_state_event(const char *node, const cha
 }
 
 void __db_event_handle_t::update_connection_set() {
-    _max_fd = -1;
-    FD_ZERO(&_connection_set);
+	_select_set.remove_all_fds();
+	_fd_to_conn.clear();
     for (auto &it : _connections) {
-        FD_SET(it.second->get_fd(), &_connection_set);
-        if (_max_fd< it.second->get_fd())  _max_fd = it.second->get_fd();
+    	auto _fd = it.second->get_fd();
+    	_select_set.add_fd(_fd);
+    	_fd_to_conn[_fd] = it.second.get();
     }
 }
 
@@ -403,13 +407,37 @@ static cps_api_return_code_t _cps_api_wait_for_event(
 
     uint64_t last_checked = 0;
 
-    int fd_max = -1;
-    fd_set _r_set ;
-    ssize_t rc = 0;
-
     uint64_t __started_time = std_get_uptime(nullptr);
     size_t _max_wait_time = 0;
     bool _waiting_for_event = true;
+
+    auto _fetch_event = [&](cps_db::connection *conn) -> bool {
+    	if (get_event(conn,msg)) {
+    		if (!nh->object_matches_filter(msg)) return false;        //throw out if doesn't match
+        	std::string node_name;
+        	if(cps_api_db_get_node_from_ip(conn->addr(),node_name)) {
+    		   cps_api_object_attr_add(msg,CPS_OBJECT_GROUP_NODE,node_name.c_str(),node_name.size()+1);
+        	}
+        	return true;
+    	}
+    	return false;
+    };
+
+#if 0
+    const auto _read_event = []() {
+        if (has_data) {
+		   if (get_event(it.second.get(),msg)) {
+			   if (!nh->object_matches_filter(msg)) continue;        //throw out if doesn't match
+			   nh->_connection_mon[it.first].communicated();
+			   std::string node_name;
+			   if(cps_api_db_get_node_from_ip(it.first,node_name)) {
+				   cps_api_object_attr_add(msg,CPS_OBJECT_GROUP_NODE,node_name.c_str(),node_name.size()+1);
+			   }
+			   return cps_api_ret_code_OK;
+		   }
+        }
+    };
+#endif
 
     cps_api_return_code_t __rc = cps_api_ret_code_TIMEOUT;
     while (_waiting_for_event) {
@@ -433,6 +461,7 @@ static cps_api_return_code_t _cps_api_wait_for_event(
             cps_api_object_clone(msg,og.get());
             return cps_api_ret_code_OK;
         }
+
         if (std_time_is_expired(last_checked,MILLI_TO_MICRO(1000*3))) {    //wait for 3 seconds before scanning again
             last_checked = std_get_uptime(nullptr);
             __maintain_connections(nh);
@@ -444,47 +473,32 @@ static cps_api_return_code_t _cps_api_wait_for_event(
             continue;
         }
 
-        bool pending_event = false;
         for (auto &it : nh->_connections) {
             if (it.second->has_event()) {
-                pending_event = true;
+            	if (get_event(it.second.get(),msg)) {
+            		return cps_api_ret_code_OK;
+            	}
             }
         }
 
-        if (!pending_event) {
-            _r_set = nh->_connection_set;
-            fd_max = nh->_max_fd+1;
-            timeval tv={ static_cast<long int>(_max_wait_time/1000), static_cast<long int>((_max_wait_time%1000)*1000) };
-            nh->_mutex.unlock();
-            rc = std_select_ignore_intr(fd_max,&_r_set,nullptr,nullptr,&tv,nullptr);
-            nh->_mutex.lock();
-            if (rc==-1) {
-                last_checked = 0;    //trigger reconnect evaluation
-                continue;
-            }
-            if (rc==0) continue;
-        }
+		int _handle = -1;
+		nh->_mutex.unlock();
+		size_t _count = nh->_select_set.get_event(_max_wait_time,&_handle);
+		nh->_mutex.lock();
 
-        for (auto &it : nh->_connections) {
-            if (it.second->get_fd() > nh->_max_fd) {
-                EV_LOG(ERR,DSAPI,0,"CPS-EVT-WAIT","Invalid Max FD value %d vs current fd %d",nh->_max_fd,it.second->get_fd());
-                continue;
-            }
-            bool has_data = it.second->has_event();
-            has_data |= !pending_event && FD_ISSET(it.second->get_fd(),&_r_set) ;
+		if ( _count<0) {
+			continue;
+		}
+		auto it = nh->_fd_to_conn.find(_handle);
+		if (it==nh->_fd_to_conn.end()) {
+			nh->update_connection_set();
+			continue;
+		}
 
-            if (has_data) {
-                if (get_event(it.second.get(),msg)) {
-                    if (!nh->object_matches_filter(msg)) continue;        //throw out if doesn't match
-                    nh->_connection_mon[it.first].communicated();
-                    std::string node_name;
-                    if(cps_api_db_get_node_from_ip(it.first,node_name)) {
-                        cps_api_object_attr_add(msg,CPS_OBJECT_GROUP_NODE,node_name.c_str(),node_name.size()+1);
-                    }
-                    return cps_api_ret_code_OK;
-                }
-            }
-        }
+    	nh->_mutex.unlock();
+		bool _rc = _fetch_event(it->second);
+		nh->_mutex.lock();
+		if (_rc) return cps_api_ret_code_OK;
     }
     return __rc;
 

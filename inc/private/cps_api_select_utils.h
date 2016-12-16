@@ -52,6 +52,8 @@ public:
 
     ssize_t get_events(int *handles, size_t len, size_t timeout);
     ssize_t get_event(size_t timeout, int * handle=nullptr);
+
+    void remove_all_fds();
 };
 
 #endif /* CPS_API_INC_PRIVATE_CPS_API_SELECT_UTILS_H_ */

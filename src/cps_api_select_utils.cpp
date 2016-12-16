@@ -48,6 +48,7 @@ void cps_api_select_dealloc(cps_api_select_handle_t h) {
         ::close(_h->_fd);
         return;
     }
+    std::lock_guard<std::mutex> _lg(__mutex);
     __select_entries_cache.push_back(_h.get());
     _h.release();
     return;
@@ -93,14 +94,13 @@ cps_api_select_handle_t cps_api_select_alloc(const cps_api_select_settings &sett
 bool cps_api_select_add_fd(cps_api_select_handle_t handle,int fd) {
     __handle_struct *_h = (__handle_struct*)handle;
     epoll_event _settings = _h->_epoll_op_defaults;
+    _settings.data.fd = fd;
     return (epoll_ctl(_h->_fd,EPOLL_CTL_ADD,fd,&_settings)>=0);
 }
 
 int cps_api_select_wait(cps_api_select_handle_t handle, int *handles, size_t len, size_t timeoutms) {
     __handle_struct *_h = (__handle_struct*)handle;
     epoll_event _events[len];
-    if (timeoutms==(size_t)~0) timeoutms=0;
-    else if (timeoutms==0) timeoutms=-1;
     int _rc = epoll_wait(_h->_fd,_events,len,timeoutms) ;
     if (_rc>0) {
         for ( ssize_t ix = 0; ix < _rc ; ++ix) {
@@ -125,6 +125,13 @@ void cps_api_select_guard::remove_fd(int fd) {
     __cleanup_fds.erase(fd);
 }
 
+void cps_api_select_guard::remove_all_fds() {
+    for (auto &it : __cleanup_fds) {
+        cps_api_select_remove_fd(__h,it);
+    }
+    __cleanup_fds.clear();
+}
+
 ssize_t cps_api_select_guard::get_events(int *handles, size_t len, size_t timeout) {
     return cps_api_select_wait(__h,handles,len,timeout);
 }
@@ -137,12 +144,7 @@ ssize_t cps_api_select_guard::get_event(size_t timeout,int *handle) {
 
 void cps_api_select_guard::close() {
     if (__h==nullptr) return;
-
-    for (auto &it : __cleanup_fds) {
-        cps_api_select_remove_fd(__h,it);
-    }
-    __cleanup_fds.clear();
+    remove_all_fds();
     cps_api_select_dealloc(__h);
-
     __h=nullptr;
 }

@@ -740,16 +740,3 @@ size_t cps_api_object_list_size(cps_api_object_list_t list) {
     register _cps_api_list_type_t * p = (_cps_api_list_type_t*)list;
     return p->size();
 }
-
-const char * cps_api_object_to_string(cps_api_object_t obj, char *buff, size_t len) {
-    std::string str = "Key (";
-    str += cps_api_key_print(cps_api_object_key(obj),buff,len);
-    str += ")\n";
-    str += cps_string::tostring(cps_api_object_array(obj), cps_api_object_to_array_len(obj));
-
-    buff[len-1] = '\0';
-    strncpy(buff,str.c_str(),len-1);
-    return buff;
-}
-
-

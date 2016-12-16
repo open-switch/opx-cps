@@ -474,7 +474,8 @@ static std::string _escape(std::string data) {
 }
 
 std::string cps_api_object_attr_as_string(cps_api_attr_id_t id, const void * data, size_t len) {
-    std::string _ret = cps_attr_id_to_name(id);
+    const char * _raw_name = cps_attr_id_to_name(id);
+    std::string _ret = _raw_name!=nullptr ? _raw_name : cps_string::tostring("%d",(int)id);
     std::string _data = cps_api_object_attr_data_to_string(id,data,len);
 
     return _ret + " : " + _escape(_data);
@@ -535,5 +536,12 @@ std::string cps_api_object_to_c_string(cps_api_object_t obj) {
     cps_api_object_it_begin(obj,&it);
 
     return prefix + _handler("","",&it) + "\n";
+
+}
+
+const char * cps_api_object_to_string(cps_api_object_t obj, char *buff, size_t len) {
+	std::string _str = cps_api_object_to_c_string(obj);
+	buff[len-1]='\0';
+	return strncpy(buff,_str.c_str(),len-1);
 
 }
