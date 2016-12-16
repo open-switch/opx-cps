@@ -22,6 +22,7 @@ cma_gen_file_c_includes = """
 
 #include \"event_log.h\"
 #include \"cps_api_operation.h\"
+#include \"cps_class_map.h\"
 #include \"cma_utilities.h\"
 #include \"cma_init.h\"
 #include \"cma_errnum.h\"
@@ -596,27 +597,13 @@ class Language:
     def write_init(self, elem, read_res, write_res, rpc_res):
         print "void cma_init_"  + self.get_aug_key_for_key(elem) + "(void) {"
         print "  cps_api_registration_functions_t f;"
-        keys_list = self.cb_node_keys[elem].split(',')
-        two_keys = keys_list[:2]
-        two_keys_aug = []
-        #print "0 is " + two_keys[0] + " 1 is " + two_keys[1]
-        two_keys_aug.append(self.get_aug_key_for_key(two_keys[0]))
-        if len(two_keys) < 2:
-            two_keys_aug.append("0")
-        else:
-            two_keys_aug.append(self.get_aug_key_for_key(two_keys[1]))
-        rest_keys = keys_list[2:]
 
         print "  memset(&f,0,sizeof(f));"
         print "  "
         line = ""
-        line += "cps_api_key_init(&f.key,cps_api_qualifier_TARGET," + ','.join(
-            two_keys_aug) + ","
-        line += str(len(rest_keys))
-        for rk in rest_keys:
-            line += "," + self.get_aug_key_for_key(rk)
-        line += ");"
+        line += "cps_api_key_from_attr_with_qual(&f.key," + self.get_aug_key_for_key(elem) + ",cps_api_qualifier_TARGET);"
         print "  " + line
+        print ""
         if read_res:
             print "  f._read_function=_get_" + self.get_aug_key_for_key(elem) + ";"
         else:
