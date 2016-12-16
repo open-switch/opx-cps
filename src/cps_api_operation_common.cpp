@@ -34,6 +34,7 @@
 #include "private/cps_api_client_utils.h"
 #include "private/cps_ns.h"
 
+
 #include <algorithm>
 #include <vector>
 #include <string.h>
@@ -74,6 +75,21 @@ bool cps_api_filter_is_getnext(cps_api_object_t obj) {
     return *p;
 
 }
+
+void cps_api_key_set_qualifier(cps_api_key_t *key, cps_api_qualifier_t qual) {
+    cps_api_key_elem_raw_set(key,CPS_OBJ_KEY_INST_POS,qual);
+}
+
+CPS_CONFIG_TYPE_t cps_api_object_get_config_type(cps_api_object_t obj) {
+    uint32_t *p = (uint32_t*) cps_api_object_get_data(obj,CPS_OBJECT_GROUP_CONFIG_TYPE);
+    if (p==nullptr) return CPS_CONFIG_TYPE_RUNNING_CONFIG;
+    return *(CPS_CONFIG_TYPE_t*)p;
+}
+
+bool cps_api_object_set_config_type(cps_api_object_t obj, CPS_CONFIG_TYPE_t type) {
+    return cps_api_object_attr_add_u32(obj,CPS_OBJECT_GROUP_CONFIG_TYPE,type);
+}
+
 
 void cps_api_key_init(cps_api_key_t * key,
         cps_api_qualifier_t qual,

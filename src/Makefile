@@ -1,4 +1,4 @@
-PROGRAMS= cps_api_service cps_api_example
+PROGRAMS= cps_api_service
 LIBRARIES= cps-api-common cps-class-map-util cps-ut-data
 
 CXXFLAGS+=-std=c++11
@@ -56,9 +56,6 @@ cps-api-common_LDFLAGS = -levent_log -ldn_common -lpthread -lhiredis
 cps_api_service_SRCS=cps_api_service.cpp
 cps_api_service_LDFLAGS = -lcps-api-common -ldn_common -levent_log -lsystemd
 
-
-cps_api_example_SRCS=example/cps_api_operation_example.c
-cps_api_example_LDFLAGS=-lcps-api-common
 
 UNIT_TEST=cps_api_key_unittest cps_api_object_unittest cps_api_operation_unittest cps_api_events_unittest
 

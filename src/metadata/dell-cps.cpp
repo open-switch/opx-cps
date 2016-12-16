@@ -12,6 +12,7 @@ static struct {
   cps_class_map_node_details details;
 } lst[] = {
 { { cps_api_obj_CAT_CPS,CPS_NODE_GROUP,CPS_NODE_GROUP_NAME,CPS_NODE_GROUP_TYPE }, CPS_NODE_GROUP_TYPE, { "cps/node-group/type", "", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT32 }},
+{ { cps_api_obj_CAT_CPS,CPS_OBJECT_GROUP,CPS_OBJECT_GROUP_CONFIG_TYPE }, CPS_OBJECT_GROUP_CONFIG_TYPE, { "cps/object-group/config-type", "", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_ENUM }},
 { { cps_api_obj_CAT_CPS,CPS_OBJECT_GROUP,CPS_OBJECT_GROUP_RETURN_CODE }, CPS_OBJECT_GROUP_RETURN_CODE, { "cps/object-group/return-code", "In the event that an API needs to store a return code within an object itself, they can use this field.  This field isleft as an int size.", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT32 }},
 { { cps_api_obj_CAT_CPS,CPS_CONNECTION_ENTRY,CPS_CONNECTION_ENTRY_NAME,CPS_CONNECTION_ENTRY_NAME }, CPS_CONNECTION_ENTRY_NAME, { "cps/connection-entry/name", "", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_STRING }},
 { { cps_api_obj_CAT_CPS,CPS_NODE_DETAILS,CPS_NODE_DETAILS_NAME,CPS_NODE_DETAILS_NAME }, CPS_NODE_DETAILS_NAME, { "cps/node-details/name", "The name to use as a replacement for any of the alias attributes.", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_STRING }},
@@ -39,7 +40,7 @@ static struct {
 { { cps_api_obj_CAT_CPS,CPS_CONNECTION_ENTRY,CPS_CONNECTION_ENTRY_NAME }, CPS_CONNECTION_ENTRY, { "cps/connection-entry", "", true, CPS_CLASS_ATTR_T_LIST, CPS_CLASS_DATA_TYPE_T_BIN }},
 { { cps_api_obj_CAT_CPS,CPS_CONNECTION_ENTRY,CPS_CONNECTION_ENTRY_NAME,CPS_CONNECTION_ENTRY_CONNECTION_STATE }, CPS_CONNECTION_ENTRY_CONNECTION_STATE, { "cps/connection-entry/connection-state", "", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_BOOL }},
 { { cps_api_obj_CAT_CPS,CPS_DB_INSTANCE,CPS_DB_INSTANCE_GROUP,CPS_DB_INSTANCE_NODE_ID,CPS_DB_INSTANCE_PORT }, CPS_DB_INSTANCE_PORT, { "cps/db-instance/port", "System port where DB Instance was started for given group", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_STRING }},
-{ { cps_api_obj_CAT_CPS,CPS_OBJECT_GROUP,CPS_OBJECT_GROUP_EXACT_MATCH }, CPS_OBJECT_GROUP_EXACT_MATCH, { "cps/object-group/exact-match", "If this attribute is present in an event registration or query - then the attributes in the object will be used to detminematching events or objects.  To be more explicit on events and object queries:) in the case of events - only events matching the exact object key or attributes in the object will be provided to the application.) in the case of queries - if exact match is present, then the value of the exact match shall be used to determine if a wildcard matching behaviour will be used. If this value is not present, the wildcard matching will be guessed.", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_BOOL }},
+{ { cps_api_obj_CAT_CPS,CPS_OBJECT_GROUP,CPS_OBJECT_GROUP_EXACT_MATCH }, CPS_OBJECT_GROUP_EXACT_MATCH, { "cps/object-group/exact-match", "If this attribute is present in an event registration or query - then the attributes in the object will be used to detminematching events or objects.  To be more explicit on events and object queries:) in the case of events - only events matching the exact object key or attributes in the object willbe provided to the application.) in the case of queries - if exact match is present, then the value of the exact match shall be used to determineif a wildcard matching behaviour will be used. If this value is not present, the wildcard matching will be guessed.", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_BOOL }},
 { { cps_api_obj_CAT_CPS,CPS_NODE_GROUP,CPS_NODE_GROUP_NAME,CPS_NODE_GROUP_NODE,CPS_NODE_GROUP_NODE_NAME }, CPS_NODE_GROUP_NODE_NAME, { "cps/node-group/node/name", "The name of the node entry. (an alias for the ip)", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_STRING }},
 { { cps_api_obj_CAT_CPS,CPS_NODE_GROUP,CPS_NODE_GROUP_NAME,CPS_NODE_GROUP_NAME }, CPS_NODE_GROUP_NAME, { "cps/node-group/name", "The name of the group.", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_STRING }},
 { { cps_api_obj_CAT_CPS,CPS_OBJECT_GROUP,CPS_OBJECT_GROUP_FAILED_NODES }, CPS_OBJECT_GROUP_FAILED_NODES, { "cps/object-group/failed-nodes", "This attribute is used in an object to indicate which nodes did not process the request due toconnectivity reasons. Nodes are in a single string separated by comma (,).", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_STRING }},
@@ -49,7 +50,6 @@ static struct {
 
 
 static const size_t lst_len = sizeof(lst)/sizeof(*lst);
-
 t_std_error cps_api_yang_module_init(void) {
     size_t ix = 0;
     for ( ; ix < lst_len ; ++ix ) {
@@ -57,4 +57,3 @@ t_std_error cps_api_yang_module_init(void) {
     }
     return STD_ERR_OK;
 }
-

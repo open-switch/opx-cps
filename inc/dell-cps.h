@@ -31,9 +31,6 @@
 
 #define DELL_BASE_CPS_MODEL_STR "dell-base-cps"
 
-
-/* Object cps/node-group/node */
-
 typedef enum {
 /*The name of the node entry. (an alias for the ip)*/
 /*type=string*/
@@ -138,6 +135,9 @@ left as an int size.*/
 /*Provide the number of entries to retrieve at one time to support the concept of range along with the get next attribute*/
 /*type=uint64*/
   CPS_OBJECT_GROUP_NUMBER_OF_ENTRIES = 131107,
+
+/*type=enumeration*/
+  CPS_OBJECT_GROUP_CONFIG_TYPE = 131108,
 } CPS_OBJECT_GROUP_t;
 /* Object cps/node-group */
 

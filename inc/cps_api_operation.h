@@ -37,6 +37,7 @@
 
 #include "cps_api_object_category.h"
 #include "cps_api_object.h"
+#include "dell-cps.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -78,8 +79,32 @@ typedef enum {
     cps_api_qualifier_REALTIME=4,
     cps_api_qualifier_REGISTRATION=5,
     cps_api_qualifier_RESERVED1=6,
+    cps_api_qualifier_RUNNING_CONFIG=7,
+    cps_api_qualifier_STARTUP_CONFIG=8,
     cps_api_qualifier_MAX,
 } cps_api_qualifier_t;
+
+/**
+ * This enum range is designed to help with the configuration of objects in the system.  A application can set the following enums
+ * on any objects that they perform a commit operation on (set/delete/create).
+ *
+ * Using this information (configuraiton type), an application can make changes to:
+ * 1) Running configuration - used for warm restart or applicaiton/process restart
+ * 2) Startup configuraiton - used in the case that the system goes through a full cold start process
+ * 3) Running configuraiton only - used in the case that an application is dynamically changing the system based on observations or
+ *         other actions that should not be stored for cold starts (eg.. iscsi auto provisioning, temporary IP address, etc..)
+ */
+typedef enum {
+  CPS_CONFIG_TYPE_STARTUP_CONFIG = 1, /*This configuration should be placed into the startup config only and has no effect on the existing running config.*/      //!< CPS_CONFIG_TYPE_STARTUP_CONFIG
+  CPS_CONFIG_TYPE_RUNNING_CONFIG = 2, /*This configuration should be placed into the running configuration but is a candidate in the future for copying to startup//!< CPS_CONFIG_TYPE_RUNNING_CONFIG
+based on user requests.*/
+  CPS_CONFIG_TYPE_STARTUP_AND_RUNNING = 3, /*This configuration request should be placed in the running config and startup config both*/                          //!< CPS_CONFIG_TYPE_STARTUP_AND_RUNNING
+  CPS_CONFIG_TYPE_RUNNING_CONFIG_ONLY = 4, /*This configuration request should never be copied into the startup configuration.  This is appliciable for running   //!< CPS_CONFIG_TYPE_RUNNING_CONFIG_ONLY
+configuration only.*/
+  CPS_CONFIG_TYPE_MIN=1,                                                                                                                                          //!< CPS_CONFIG_TYPE_MIN
+  CPS_CONFIG_TYPE_MAX=4,                                                                                                                                          //!< CPS_CONFIG_TYPE_MAX
+} CPS_CONFIG_TYPE_t;
+
 
 /**@{*/
 /**
@@ -101,6 +126,14 @@ typedef enum {
 #define CPS_OBJ_KEY_APP_INST_POS (3)
 /**@}*/
 /**@}*/
+
+/**
+ * Set the qualifier of the key to the provided value.
+ * @param key the key to change the qualifier on
+ * @param qual the qualifer to use
+ */
+void cps_api_key_set_qualifier(cps_api_key_t *key, cps_api_qualifier_t qual);
+
 
 /**
  * Setup the key for use with the CPS API.  Initialize the length of the key
@@ -331,6 +364,24 @@ cps_api_return_code_t cps_api_transaction_init(cps_api_transaction_params_t *req
  * @return cps_api_ret_code_OK if successful
  */
 cps_api_return_code_t cps_api_transaction_close(cps_api_transaction_params_t *req);
+
+
+/**
+ * The following API will check the config type within the object and return the type to the caller.  If there is no config type
+ * in the object, the API will default to runtime config.
+ *
+ * @param obj the object in question.
+ * @return returns a valid configuration type
+ */
+CPS_CONFIG_TYPE_t cps_api_object_get_config_type(cps_api_object_t obj);
+
+/**
+ * Set the config type within the object.
+ * @param obj the object in question
+ * @param type tye config type to set
+ * @return true if successful false on a memory allocation error
+ */
+bool cps_api_object_set_config_type(cps_api_object_t obj, CPS_CONFIG_TYPE_t type);
 
 /**
  * Add a set to the existing transaction.  Do not apply the data at this time.
