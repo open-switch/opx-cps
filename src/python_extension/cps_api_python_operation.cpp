@@ -499,7 +499,7 @@ PyObject * py_cps_sync(PyObject *self, PyObject *args) {
     PyObject *dest_dict, *src_dict;
     PyObject *cb;
     
-    if (! PyArg_ParseTuple( args, "O!O!",  &PyDict_Type, &dest_dict,&PyDict_Type, &src_dict, &PyDict_Type, &cb)) return NULL;
+    if (! PyArg_ParseTuple( args, "O!O!O!",  &PyDict_Type, &dest_dict,&PyDict_Type, &src_dict, &PyDict_Type, &cb)) return NULL;
     
     
     cps_api_object_t dest_obj = dict_to_cps_obj(dest_dict);
