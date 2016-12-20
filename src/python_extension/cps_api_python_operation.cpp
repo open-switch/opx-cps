@@ -424,7 +424,7 @@ PyObject * py_cps_obj_close(PyObject *self, PyObject *args) {
     Py_RETURN_TRUE;
 }
 
-static bool _sync_function(cps_api_db_sync_cb_param_t *params, cps_api_db_sync_cb_response_t *res) {
+static bool _sync_function(void *context, cps_api_db_sync_cb_param_t *params, cps_api_db_sync_cb_response_t *res) {
     
     PyObject *p = PyDict_New();
     //PyRef dict(p);  
@@ -457,13 +457,11 @@ static bool _sync_function(cps_api_db_sync_cb_param_t *params, cps_api_db_sync_c
     py_cps_util_set_item_to_dict(r,"change",PyString_FromString(change.at(res->change).c_str()));
     py_cps_util_set_item_to_dict(r,"change_notify",PyString_FromString(change_notify.at(res->change_notify).c_str()));
     
-    //TODO - context
-    //bool result = sync_cb(p, r);     
+    //py_callbacks_t *cb = (py_callbacks_t*)context;
     /*
-    py_callbacks_t *cb = (py_callbacks_t*)context;
-    PyObject *result = cb->execute(p, r);
+    PyObject *result = cb->execute("sync", p, r);
     
-    if (result==NULL || !PyBool_Check(res) || (Py_False==(res))) {
+    if (result==NULL || !PyBool_Check(result) || (Py_False==(result))) {
         return false;
     }
     */
@@ -472,7 +470,7 @@ static bool _sync_function(cps_api_db_sync_cb_param_t *params, cps_api_db_sync_c
 }
 
 
-static bool _error_function(cps_api_db_sync_cb_param_t *params, cps_api_db_sync_cb_error_t *err) {
+static bool _error_function(void *context, cps_api_db_sync_cb_param_t *params, cps_api_db_sync_cb_error_t *err) {
     PyObject *p = PyDict_New();
     //PyRef dict(p); 
     
@@ -487,13 +485,11 @@ static bool _error_function(cps_api_db_sync_cb_param_t *params, cps_api_db_sync_
     };
     py_cps_util_set_item_to_dict(e,"error", PyString_FromString(error.at(err->err_code).c_str()));
     
-    //TODO - context
-    //bool result = error_cb(p, r);
+    //py_callbacks_t *cb = (py_callbacks_t*)context;
     /*
-    py_callbacks_t *cb = (py_callbacks_t*)context;
-    PyObject *result = cb->execute(p, e);
+    PyObject *result = cb->execute("error", p, e);
     
-    if (result==NULL || !PyBool_Check(res) || (Py_False==(res))) {
+    if (result==NULL || !PyBool_Check(result) || (Py_False==(result))) {
         return false;
     }
     */
@@ -504,39 +500,31 @@ static bool _error_function(cps_api_db_sync_cb_param_t *params, cps_api_db_sync_
 PyObject * py_cps_sync(PyObject *self, PyObject *args) {
 
     PyObject *dest_dict, *src_dict;
-    PyCFunction *sync_cb, *error_cb;
+    PyObject *cb;
     
-    if (! PyArg_ParseTuple( args, "O!O!",  &PyDict_Type, &dest_dict,&PyDict_Type, &src_dict, &PyCFunction_Type, &sync_cb, &PyCFunction_Type, &error_cb)) return NULL;
+    if (! PyArg_ParseTuple( args, "O!O!",  &PyDict_Type, &dest_dict,&PyDict_Type, &src_dict, &PyDict_Type, &cb)) return NULL;
     
     
     cps_api_object_t dest_obj = dict_to_cps_obj(dest_dict);
     cps_api_object_t src_obj = dict_to_cps_obj(src_dict);
     
-    //TODO - context
-    /*
-    std::unique_ptr<py_callbacks_t> p_sync_cb (new py_callbacks_t);
-    if (p_sync_cb.get()==NULL) {
+    std::unique_ptr<py_callbacks_t> p (new py_callbacks_t);
+    if (p.get()==NULL) {
         py_set_error_string("Memory allocation error");
         return nullptr;
     }
-    p_sync_cb->_methods = sync_cb;
+    p->_methods = cb;
     
-    std::unique_ptr<py_callbacks_t> p_err_cb (new py_callbacks_t);
-    if (p_err_cb.get()==NULL) {
-        py_set_error_string("Memory allocation error");
-        return nullptr;
-    }
-    p_err_cb->_methods = error_cb;
-    */
+    void *context = p.get();
 
     cps_api_return_code_t rc;
-    rc = cps_api_sync(dest_obj, src_obj, _sync_function, _error_function);
+    rc = cps_api_sync(context, dest_obj, src_obj, _sync_function, _error_function);
     if (rc!=cps_api_ret_code_OK) {
         Py_RETURN_FALSE;
     }
     
-    //p_sync_cb.release();
-    //p_err_cb.release();
+    p.release();
     
+    Py_INCREF(cb);
     Py_RETURN_TRUE;
 }

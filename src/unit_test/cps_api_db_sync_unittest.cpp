@@ -26,7 +26,7 @@
 #include "dell-cps.h"
 #include "gtest/gtest.h"
 
-bool test_sync_cb(cps_api_db_sync_cb_param_t *params, cps_api_db_sync_cb_response_t *res)
+bool test_sync_cb(void *context, cps_api_db_sync_cb_param_t *params, cps_api_db_sync_cb_response_t *res)
 {
     std::cout << "Operation: " << params->opcode << std::endl;
     std::cout << "Source Node: " << params->src_node << std::endl;
@@ -49,7 +49,7 @@ bool test_sync_cb(cps_api_db_sync_cb_param_t *params, cps_api_db_sync_cb_respons
     return true;
 }
 
-bool test_sync_error_cb(cps_api_db_sync_cb_param_t *params, cps_api_db_sync_cb_error_t *err)
+bool test_sync_error_cb(void *context, cps_api_db_sync_cb_param_t *params, cps_api_db_sync_cb_error_t *err)
 {
     std::cout << "Error Code: " << err->err_code << std::endl;
     return true;
@@ -78,7 +78,7 @@ TEST(cps_api_db_sync, objsync) {
    cps_api_key_from_attr_with_qual(cps_api_object_key(dst_og.get()),BASE_IP_IPV6,cps_api_qualifier_TARGET);
    cps_api_key_set_node( dst_og.get(), "NODE1");
 
-   cps_api_return_code_t ret = cps_api_sync(dst_og.get(), src_og.get(), test_sync_cb , test_sync_error_cb);
+   cps_api_return_code_t ret = cps_api_sync(NULL, dst_og.get(), src_og.get(), test_sync_cb , test_sync_error_cb);
    std::cout << ret << std::endl;
 
 }

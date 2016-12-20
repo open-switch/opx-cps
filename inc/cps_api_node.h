@@ -83,7 +83,7 @@ struct cps_api_db_sync_cb_error_t {
 * @return must return true otherwise processing will be stopped
 */
 
-typedef bool (*cps_api_sync_callback_t)(cps_api_db_sync_cb_param_t *params, cps_api_db_sync_cb_response_t *res);
+typedef bool (*cps_api_sync_callback_t)(void *context, cps_api_db_sync_cb_param_t *params, cps_api_db_sync_cb_response_t *res);
 
 /**
 * The error callback function used with CPS DB Sync operation
@@ -91,7 +91,7 @@ typedef bool (*cps_api_sync_callback_t)(cps_api_db_sync_cb_param_t *params, cps_
 * @param err structure with error information
 * @return true on success otherwise false (processing will be stopped)
 */
-typedef bool (*cps_api_sync_error_callback_t)(cps_api_db_sync_cb_param_t *params, cps_api_db_sync_cb_error_t *err);
+typedef bool (*cps_api_sync_error_callback_t)(void *context, cps_api_db_sync_cb_param_t *params, cps_api_db_sync_cb_error_t *err);
 
 
 /**
@@ -103,7 +103,7 @@ typedef bool (*cps_api_sync_error_callback_t)(cps_api_db_sync_cb_param_t *params
 * @return returns code cps_api_ret_code_OK if successful otherwise an error
 */
 
-cps_api_return_code_t cps_api_sync(cps_api_object_t dest, cps_api_object_t src,  cps_api_sync_callback_t cb, cps_api_sync_error_callback_t err_cb);
+cps_api_return_code_t cps_api_sync(void *context, cps_api_object_t dest, cps_api_object_t src,  cps_api_sync_callback_t cb, cps_api_sync_error_callback_t err_cb);
 
 
 /**

@@ -65,7 +65,7 @@ constexpr static size_t __get_local_ip_len() {
 
 #define MAX_IP_LEN 64
 
-cps_api_return_code_t cps_api_sync(cps_api_object_t dest, cps_api_object_t src,  cps_api_sync_callback_t cb, cps_api_sync_error_callback_t err_cb)
+cps_api_return_code_t cps_api_sync(void *context, cps_api_object_t dest, cps_api_object_t src,  cps_api_sync_callback_t cb, cps_api_sync_error_callback_t err_cb)
 {
     cps_api_db_sync_cb_param_t params;
     cps_api_db_sync_cb_response_t res;
@@ -141,7 +141,7 @@ cps_api_return_code_t cps_api_sync(cps_api_object_t dest, cps_api_object_t src, 
                     continue;
                 }
                 if(is_cb) {
-                    if((cb(&params, &res))) {
+                    if((cb(context, &params, &res))) {
                         if(res.change == cps_api_make_change) {
                             cps_db::store_object(_dest_conn_meta.get(), params.object_src);
                             if(res.change_notify == cps_api_raise_event) {
@@ -158,7 +158,7 @@ cps_api_return_code_t cps_api_sync(cps_api_object_t dest, cps_api_object_t src, 
         cps_db::connection_request _source_walk(cps_db::ProcessDBCache(),_src_addr);
         if (!_source_walk.valid() || !cps_db::ping(_source_walk.get())) {
             er.err_code = cps_api_db_no_connection;
-            err_cb(&params, &er);
+            err_cb(context, &params, &er);
             return cps_api_ret_code_ERR;
         }
         walked = cps_db::walk_keys(_source_walk.get(),&key[0],key.size(),[&](const void *remote_inst_key, size_t len) {
@@ -191,7 +191,7 @@ cps_api_return_code_t cps_api_sync(cps_api_object_t dest, cps_api_object_t src, 
                 params.opcode = cps_api_oper_DELETE;
                 std::vector<char> _k(_key_cache[ix].begin(), _key_cache[ix].end());
                 cps_db::get_object(_dest_conn_cleanup.get(), _k, params.object_dest);
-                if(cb(&params, &res)) {
+                if(cb(context, &params, &res)) {
                     if(res.change == cps_api_make_change) {
                         cps_db::delete_object(_dest_conn_cleanup.get(), params.object_dest);
                         if (cps_db::dbkey_field_delete_request(_dest_conn_cleanup.get(), _key_cache[ix].c_str(), _key_cache[ix].size(),
