@@ -74,41 +74,29 @@ struct py_callbacks_t {
         return ((o!=NULL) && (PyCallable_Check(o)));
     }
 
-    PyObject *execute(const char * method, PyObject *param) {
+    PyObject *func(const char * method, PyObject *args) {
         if (!contains(method)) {
             return NULL;
         }
 
         PyObject *o = PyDict_GetItemString(_methods,method);
-        PyObject * args = Py_BuildValue("OO", _methods,param);
         PyObject *ret = PyObject_CallObject(o,args);
         Py_DECREF(args);
-
         return ret;
     }
-};
 
-struct py_sync_callbacks_t {
-    PyObject * _methods;
-
-    bool contains(const char *method) {
-        PyObject *o = PyDict_GetItemString(_methods,method);
-        return ((o!=NULL) && (PyCallable_Check(o)));
+    PyObject *execute(const char * method, PyObject *param) {
+        PyObject * args = Py_BuildValue("OO", _methods,param);
+        return func(method, args);
     }
 
     PyObject *execute(const char * method, PyObject *sync_param, PyObject *param) {
-        if (!contains(method)) {
-            return NULL;
-        }
-
-        PyObject *o = PyDict_GetItemString(_methods,method);
         PyObject * args = Py_BuildValue("OOO", _methods,sync_param,param);
-        PyObject *ret = PyObject_CallObject(o,args);
-        Py_DECREF(args);
-
-        return ret;
+        return func(method, args);
     }
+
 };
+
 
 class NonBlockingPythonContext {
      PyThreadState *_save = nullptr;

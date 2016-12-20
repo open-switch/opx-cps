@@ -457,7 +457,7 @@ static bool _sync_function(void *context, cps_api_db_sync_cb_param_t *params, cp
     py_cps_util_set_item_to_dict(r,"change",PyString_FromString(change.at(res->change).c_str()));
     py_cps_util_set_item_to_dict(r,"change_notify",PyString_FromString(change_notify.at(res->change_notify).c_str()));
     
-    py_sync_callbacks_t *cb = (py_sync_callbacks_t*)context;
+    py_callbacks_t *cb = (py_callbacks_t*)context;
     
     PyObject *result = cb->execute("sync", p, r);
     
@@ -484,7 +484,7 @@ static bool _error_function(void *context, cps_api_db_sync_cb_param_t *params, c
     };
     py_cps_util_set_item_to_dict(e,"error", PyString_FromString(error.at(err->err_code).c_str()));
     
-    py_sync_callbacks_t *cb = (py_sync_callbacks_t*)context;
+    py_callbacks_t *cb = (py_callbacks_t*)context;
     PyObject *result = cb->execute("error", p, e);
     
     if (result==NULL || !PyBool_Check(result) || (Py_False==(result))) {
@@ -505,7 +505,7 @@ PyObject * py_cps_sync(PyObject *self, PyObject *args) {
     cps_api_object_t dest_obj = dict_to_cps_obj(dest_dict);
     cps_api_object_t src_obj = dict_to_cps_obj(src_dict);
     
-    std::unique_ptr<py_sync_callbacks_t> p (new py_sync_callbacks_t);
+    std::unique_ptr<py_callbacks_t> p (new py_callbacks_t);
     if (p.get()==NULL) {
         py_set_error_string("Memory allocation error");
         return nullptr;
