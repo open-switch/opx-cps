@@ -88,6 +88,28 @@ struct py_callbacks_t {
     }
 };
 
+struct py_sync_callbacks_t {
+    PyObject * _methods;
+
+    bool contains(const char *method) {
+        PyObject *o = PyDict_GetItemString(_methods,method);
+        return ((o!=NULL) && (PyCallable_Check(o)));
+    }
+
+    PyObject *execute(const char * method, PyObject *sync_param, PyObject *param) {
+        if (!contains(method)) {
+            return NULL;
+        }
+
+        PyObject *o = PyDict_GetItemString(_methods,method);
+        PyObject * args = Py_BuildValue("OOO", _methods,sync_param,param);
+        PyObject *ret = PyObject_CallObject(o,args);
+        Py_DECREF(args);
+
+        return ret;
+    }
+};
+
 class NonBlockingPythonContext {
      PyThreadState *_save = nullptr;
 public:
