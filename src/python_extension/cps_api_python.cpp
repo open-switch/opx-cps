@@ -509,6 +509,14 @@ PyDoc_STRVAR(CPS_FN_DOC(py_cps_node_set_ownership_type), "set_ownership_type(key
     "@type - ownership type(service,service-cache,db)\n"
     "@return - True if successful otherwise False");
 
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_sync), "sync(dest_obj, src_obj,callbacks)\n\n"
+   "Sync the source object with destination object\n"
+   "@dest_obj - Destination object\n"
+   "@src_obj - Source object\n"
+   "@callbacks - Python dictionary with 'sync' and 'error' as key\n"
+   "             and its callback function as its value\n"
+   "@return - True if successful otherwise False");
+
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_api_db_commit), "db_commit(object,previous,publish)\n\n"
     "Stores the object into the database and return the previous object (optional)\n"
     "@object - An object (in the form of a dictionary) that will be updated.\n"
@@ -566,6 +574,7 @@ static PyMethodDef cps_methods[] = {
     {"node_delete_group",  py_cps_node_delete_group, METH_VARARGS, CPS_FN_DOC(py_cps_node_delete_group)},
     {"node_set_master",  py_cps_node_set_master, METH_VARARGS, CPS_FN_DOC(py_cps_node_set_master)},
     {"set_ownership_type",  py_cps_node_set_ownership_type, METH_VARARGS, CPS_FN_DOC(py_cps_node_set_ownership_type)},
+    {"sync",  py_cps_sync, METH_VARARGS, CPS_FN_DOC(py_cps_sync)},
 
     {"db_commit",  (PyCFunction)py_cps_api_db_commit, METH_VARARGS| METH_KEYWORDS, CPS_FN_DOC(py_cps_api_db_commit)},
     {"db_get",  py_cps_api_db_get, METH_VARARGS, CPS_FN_DOC(py_cps_api_db_get)},
