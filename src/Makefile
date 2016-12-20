@@ -94,13 +94,13 @@ $(foreach UT,${UNIT_TEST},$(eval $(call add_UT_pieces,${UT})))
 include ${MAKE_INC}/workspace.mak
 
 
-
+${BUILD_CURDIR_sos}/libcps-ut-data.so : ${BUILD_CURDIR_sos}/libcps-class-map-util.so
 ${BUILD_CURDIR_sos}/libcps-class-map-util.so : ${BUILD_CURDIR_sos}/libcps-api-common.so
 
 cps_python_CPPFLAGS=-DMAJOR_VERSION=1 -DMINOR_VERSION=0 -I${TOP_SRCDIR}/inc -Ipython2.7 -I.
 cps_python_CXXFLAGS=-std=c++11
 
-${BUILD_DN_SYSROOT}/lib/cps.so: $(wildcard python_extension/*) ${BUILD_CURDIR_sos}/libcps-class-map-util.so ${BUILD_CURDIR_sos}/libcps-api-common.so | ${PY_OBJ_PATH} ${BUILD_DN_SYSROOT}/lib
+${BUILD_DN_SYSROOT}/lib/cps.so: $(wildcard python_extension/*) ${BUILD_CURDIR_sos}/libcps-ut-data.so ${BUILD_CURDIR_sos}/libcps-class-map-util.so ${BUILD_CURDIR_sos}/libcps-api-common.so | ${PY_OBJ_PATH} ${BUILD_DN_SYSROOT}/lib
 	cp -f $(wildcard python_extension/*) ${PY_OBJ_PATH}
 	cp -f unit_test/cps_class_ut_data.h ${PY_OBJ_PATH}
 	mkdir -p ${PY_OBJ_PATH}/private && cp -f $(wildcard ../inc/private/*.h) ${PY_OBJ_PATH}/private
