@@ -21,6 +21,7 @@
  */
 
 #include "cps_api_operation.h"
+#include "cps_api_node.h"
 #include "cps_api_python.h"
 #include "private/cps_class_map_query.h"
 
@@ -423,3 +424,119 @@ PyObject * py_cps_obj_close(PyObject *self, PyObject *args) {
     Py_RETURN_TRUE;
 }
 
+static bool _sync_function(cps_api_db_sync_cb_param_t *params, cps_api_db_sync_cb_response_t *res) {
+    
+    PyObject *p = PyDict_New();
+    //PyRef dict(p);  
+    
+    static const std::map<int,std::string> op = {
+        {cps_api_oper_DELETE,"delete" },
+        {cps_api_oper_CREATE,"create"},
+        {cps_api_oper_SET, "set"},
+        {cps_api_oper_ACTION,"rpc"}
+    };
+    py_cps_util_set_item_to_dict(p,"opcode",PyString_FromString(op.at(params->opcode).c_str()));
+    py_cps_util_set_item_to_dict(p,"src_node", PyString_FromString(params->src_node));
+    py_cps_util_set_item_to_dict(p,"dest_node", PyString_FromString(params->dest_node)); 
+    py_cps_util_set_item_to_dict(p,"object_dest",cps_obj_to_dict(params->object_dest));
+    py_cps_util_set_item_to_dict(p,"object_src",cps_obj_to_dict(params->object_src));
+    
+    PyObject *r = PyDict_New();
+    //PyRef dict(r);
+
+    static const std::map<int, std::string> change = {
+        {cps_api_make_change, "make_change"},
+        {cps_api_no_change, "no_change"}            
+    };
+    
+    static const std::map<int, std::string> change_notify = {
+        {cps_api_raise_event, "raise_event" },
+        {cps_api_raise_no_event, "raise_no_event"}
+    };
+    
+    py_cps_util_set_item_to_dict(r,"change",PyString_FromString(change.at(res->change).c_str()));
+    py_cps_util_set_item_to_dict(r,"change_notify",PyString_FromString(change_notify.at(res->change_notify).c_str()));
+    
+    //TODO - context
+    //bool result = sync_cb(p, r);     
+    /*
+    py_callbacks_t *cb = (py_callbacks_t*)context;
+    PyObject *result = cb->execute(p, r);
+    
+    if (result==NULL || !PyBool_Check(res) || (Py_False==(res))) {
+        return false;
+    }
+    */
+    
+    return true;    
+}
+
+
+static bool _error_function(cps_api_db_sync_cb_param_t *params, cps_api_db_sync_cb_error_t *err) {
+    PyObject *p = PyDict_New();
+    //PyRef dict(p); 
+    
+    py_cps_util_set_item_to_dict(p,"src_node", PyString_FromString(params->src_node));
+    py_cps_util_set_item_to_dict(p,"dest_node", PyString_FromString(params->dest_node));
+    
+    PyObject *e = PyDict_New();
+    //PyRef dict(e);
+    
+    static const std::map<int,std::string> error = {
+        {cps_api_db_no_connection,"no_connection" }    
+    };
+    py_cps_util_set_item_to_dict(e,"error", PyString_FromString(error.at(err->err_code).c_str()));
+    
+    //TODO - context
+    //bool result = error_cb(p, r);
+    /*
+    py_callbacks_t *cb = (py_callbacks_t*)context;
+    PyObject *result = cb->execute(p, e);
+    
+    if (result==NULL || !PyBool_Check(res) || (Py_False==(res))) {
+        return false;
+    }
+    */
+    return true;
+}
+
+
+PyObject * py_cps_sync(PyObject *self, PyObject *args) {
+
+    PyObject *dest_dict, *src_dict;
+    PyCFunction *sync_cb, *error_cb;
+    
+    if (! PyArg_ParseTuple( args, "O!O!",  &PyDict_Type, &dest_dict,&PyDict_Type, &src_dict, &PyCFunction_Type, &sync_cb, &PyCFunction_Type, &error_cb)) return NULL;
+    
+    
+    cps_api_object_t dest_obj = dict_to_cps_obj(dest_dict);
+    cps_api_object_t src_obj = dict_to_cps_obj(src_dict);
+    
+    //TODO - context
+    /*
+    std::unique_ptr<py_callbacks_t> p_sync_cb (new py_callbacks_t);
+    if (p_sync_cb.get()==NULL) {
+        py_set_error_string("Memory allocation error");
+        return nullptr;
+    }
+    p_sync_cb->_methods = sync_cb;
+    
+    std::unique_ptr<py_callbacks_t> p_err_cb (new py_callbacks_t);
+    if (p_err_cb.get()==NULL) {
+        py_set_error_string("Memory allocation error");
+        return nullptr;
+    }
+    p_err_cb->_methods = error_cb;
+    */
+
+    cps_api_return_code_t rc;
+    rc = cps_api_sync(dest_obj, src_obj, _sync_function, _error_function);
+    if (rc!=cps_api_ret_code_OK) {
+        Py_RETURN_FALSE;
+    }
+    
+    //p_sync_cb.release();
+    //p_err_cb.release();
+    
+    Py_RETURN_TRUE;
+}
