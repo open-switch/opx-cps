@@ -3,13 +3,17 @@ import time
 import cps
 import cps_object
 
-def sync_err_cb(params, err):
+def sync_err_cb(methods, params, err):
+    print "Methods: ", methods
     print "Sync Params: ", params
     print "Error: ", err
+    return True
 
-def sync_cb(params, res):
+def sync_cb(methods, params, res):
+    print "Methods: ", methods
     print "Sync Params: ", params
     print "Response: ", res
+    return True
 
 
 cps.node_set_update("TestGroup", "nodal", [("NODE1", "127.0.0.1:6379"), ("NODE2", "10.11.63.118:6379")])
