@@ -13,6 +13,8 @@ def sync_cb(methods, params, res):
     print "Methods: ", methods
     print "Sync Params: ", params
     print "Response: ", res
+    #res['change'] = "no_change"
+    #res['change_notify'] = "raise_no_event"
     return True
 
 

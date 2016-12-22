@@ -464,6 +464,19 @@ static bool _sync_function(void *context, cps_api_db_sync_cb_param_t *params, cp
     if (result==NULL || !PyBool_Check(result) || (Py_False==(result))) {
         return false;
     }
+
+    PyObject* ch = PyDict_GetItem(r, PyString_FromString("change"));
+    PyObject* ch_notify = PyDict_GetItem(r, PyString_FromString("change_notify"));
+
+    for(auto const& it : change) {
+        if (it.second == PyString_AsString(ch))
+            res->change = (cps_api_dbchange_t)it.first;
+    }
+
+    for(auto const& it : change_notify) {
+        if (it.second == PyString_AsString(ch_notify))
+            res->change_notify = (cps_api_dbchange_notify_t)it.first;
+    }
     
     return true;    
 }
@@ -522,6 +535,5 @@ PyObject * py_cps_sync(PyObject *self, PyObject *args) {
     
     p.release();
     
-    Py_INCREF(cb);
     Py_RETURN_TRUE;
 }
