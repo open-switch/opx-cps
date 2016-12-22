@@ -31,7 +31,7 @@ import event_log as ev
 from copy import deepcopy
 
 
-module_path = "/usr/lib"
+module_path = "/usr/lib/python"
 
 print_methods = {}
 convert_methods = {}
