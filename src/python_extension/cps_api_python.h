@@ -74,7 +74,7 @@ struct py_callbacks_t {
         return ((o!=NULL) && (PyCallable_Check(o)));
     }
 
-    PyObject *func(const char * method, PyObject *args) {
+    PyObject *call_object(const char * method, PyObject *args) {
         if (!contains(method)) {
             return NULL;
         }
@@ -87,12 +87,12 @@ struct py_callbacks_t {
 
     PyObject *execute(const char * method, PyObject *param) {
         PyObject * args = Py_BuildValue("OO", _methods,param);
-        return func(method, args);
+        return call_object(method, args);
     }
 
     PyObject *execute(const char * method, PyObject *sync_param, PyObject *param) {
         PyObject * args = Py_BuildValue("OOO", _methods,sync_param,param);
-        return func(method, args);
+        return call_object(method, args);
     }
 
 };
