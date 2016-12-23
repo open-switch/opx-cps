@@ -6,6 +6,7 @@ import sys
 
 def find_subdir(base, name):
     target = os.path.join(base,name)
+    
     if os.path.exists(target):
         return target
 
@@ -44,6 +45,7 @@ def main():
     del _cmd[0]
     app = _cmd[0]
 
+
     p = subprocess.Popen(['ar_tool.py','sysroot'],stdout=subprocess.PIPE)
     root = p.communicate()[0].strip()
     relative = os.getcwd()    
@@ -62,6 +64,7 @@ def main():
     app_sysroot_bin = find_subdir(app_sysroot,'bin')
     app_sysroot_lib = find_subdir(app_sysroot,'lib')
     app_sysroot_tests = find_subdir(app_sysroot,'tests')
+
     app_sos = find_subdir(buildroot,relative+'_sos')
     app_apps = find_subdir(buildroot,relative+'_apps')
     
@@ -75,12 +78,10 @@ def main():
      
     bin=''
     for i in [ app_apps, app_sysroot_bin,app_sysroot_tests ] :
-      _file = os.path.join(i,app)
-      print _file
-      if os.path.exists(_file):
-        bin = _file
-        break
-  
+        _dir = find_subdir(i,app)
+        if _dir!='':
+            bin = _dir
+            break
 
     if bin.find('.py')!=-1:
         _cmd.insert(0,'/usr/bin/python')
