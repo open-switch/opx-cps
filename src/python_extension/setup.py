@@ -25,6 +25,5 @@ setup(name="cps", version="0.0",
                              "cps_api_python_db_extension.cpp"],
                              libraries=[
                              'cps-api-common',
-                             'cps-ut-data',
                              "cps-class-map-util"],
                              )])

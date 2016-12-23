@@ -18,7 +18,6 @@
 
 #include "cps_api_operation.h"
 #include "cps_api_key.h"
-#include "cps_class_ut_data.h"
 #include "cps_class_map.h"
 #include "private/cps_class_map_query.h"
 
@@ -45,11 +44,6 @@ void py_set_error_string(const char * msg) {
 
 static PyObject * py_cps_map_init(PyObject *self, PyObject *args) {
     cps_api_class_map_init();
-    Py_RETURN_TRUE;
-}
-
-static PyObject * py_cps_map_init_ut(PyObject *self, PyObject *args) {
-    __init_class_map();
     Py_RETURN_TRUE;
 }
 
@@ -379,9 +373,6 @@ PyDoc_STRVAR(CPS_FN_DOC(py_cps_byte_array_key), "arraykey(ba)\n\n"
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_map_init), "init()\n\n"
     "Initialize the CPS class map API. This API is deprecated.");
 
-PyDoc_STRVAR(CPS_FN_DOC(py_cps_map_init_ut), "init_ut()\n\n"
-    "Initialize the CPS class map API for Unit Tests.");
-
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_byte_array_to_obj), "convarray(ba)\n\n"
     "Return a python dictionary containing both 'key' and 'data' elements\n"
     "from bytearray 'ba'.\n"
@@ -543,7 +534,6 @@ PyDoc_STRVAR(CPS_FN_DOC(py_cps_api_db_get), "db_get(filter, list_of_objects )\n\
 /* "METH_VARGS" tells Python how to call the handler */
 static PyMethodDef cps_methods[] = {
     {"init",  py_cps_map_init, METH_VARARGS, CPS_FN_DOC(py_cps_map_init)},
-    {"init_ut",  py_cps_map_init_ut, METH_VARARGS, CPS_FN_DOC(py_cps_map_init_ut)},
     {"convarray",  py_cps_byte_array_to_obj, METH_VARARGS, CPS_FN_DOC(py_cps_byte_array_to_obj)},
     {"arraykey",  py_cps_byte_array_key, METH_VARARGS, CPS_FN_DOC(py_cps_byte_array_key)},
     {"convdict",  py_cps_obj_to_array, METH_VARARGS, CPS_FN_DOC(py_cps_obj_to_array)},

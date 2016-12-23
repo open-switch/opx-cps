@@ -2,6 +2,7 @@
 import time
 import cps
 import cps_object
+import cps_unit_test_data
 
 def sync_err_cb(methods, params, err):
     print "Methods: ", methods
@@ -21,7 +22,7 @@ def sync_cb(methods, params, res):
 cps.node_set_update("TestGroup", "nodal", [("NODE1", "127.0.0.1:6379"), ("NODE2", "10.11.63.118:6379")])
 time.sleep(30)
 
-cps.init_ut()
+cps_unit_test_data.cps_gen_ut_data(2)
 src_obj = cps_object.CPSObject("base-ip/ipv6")
 src_obj.add_attr("cps/object-group/node", "NODE2")
 

@@ -38,6 +38,7 @@ def cps_gen_ut_data( amount, persist=False):
     
     if persist==True:
         for _o in l:
+            _o['operation'] = 'create'
             cps.db_commit(_o,None,False)
     return l    
 
