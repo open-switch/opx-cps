@@ -21,7 +21,6 @@ extern "C" {
 #endif
 
 #include "cps_api_object.h"
-#include "cps_api_operation.h"
 #include "cps_api_errors.h"
 
 #include <stddef.h>
@@ -42,69 +41,6 @@ typedef struct {
     size_t addr_len;                ///the length of the addresses in this node
     cps_api_node_data_type_t data_type;        ///in the case of database clustering, determine if it will be 1+1 or nodal
 } cps_api_node_group_t;
-
-typedef enum {
-    cps_api_make_change,
-    cps_api_no_change,
-}cps_api_dbchange_t;
-
-
-typedef enum {
-    cps_api_raise_event,
-    cps_api_raise_no_event,
-}cps_api_dbchange_notify_t;
-
-typedef enum {
-    cps_api_db_no_connection,
-}cps_api_db_errorcode_t;
-
-struct cps_api_db_sync_cb_param_t {
-    cps_api_operation_types_t opcode;    // the operation type (set,delete,create)
-    cps_api_object_t object_dest;
-    cps_api_object_t object_src;
-    const char *src_node;
-    const char *dest_node;
-};
-
-struct cps_api_db_sync_cb_response_t {
-    cps_api_dbchange_t change;            // enumerator that indicates whether to make changes to DB or not
-    cps_api_dbchange_notify_t change_notify;  // enumerator that indicates whether to publish events in case of DB changes or not
-};
-
-
-struct cps_api_db_sync_cb_error_t {
-    cps_api_db_errorcode_t err_code;
-};
-
-/**
-* The callback function used with CPS DB Sync operation
-* @param params the structure to initialize
-* @param res the response from application
-* @return must return true otherwise processing will be stopped
-*/
-
-typedef bool (*cps_api_sync_callback_t)(void *context, cps_api_db_sync_cb_param_t *params, cps_api_db_sync_cb_response_t *res);
-
-/**
-* The error callback function used with CPS DB Sync operation
-* @param params the structure to initialize
-* @param err structure with error information
-* @return true on success otherwise false (processing will be stopped)
-*/
-typedef bool (*cps_api_sync_error_callback_t)(void *context, cps_api_db_sync_cb_param_t *params, cps_api_db_sync_cb_error_t *err);
-
-
-/**
-* Sync/GET CPS Object from a given node
-* @param node_name node from where to sync
-* @param filter object to be synced
-* @param cb callback function
-* @param err_cb error callback function
-* @return returns code cps_api_ret_code_OK if successful otherwise an error
-*/
-
-cps_api_return_code_t cps_api_sync(void *context, cps_api_object_t dest, cps_api_object_t src,  cps_api_sync_callback_t cb, cps_api_sync_error_callback_t err_cb);
-
 
 /**
  * Create a node grouping which allowing access to fanout requests to all of the addresses specified
