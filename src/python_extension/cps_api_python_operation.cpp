@@ -22,7 +22,6 @@
 
 #include "cps_api_operation.h"
 #include "cps_api_operation_tools.h"
-#include "cps_api_node.h"
 #include "cps_api_python.h"
 #include "private/cps_class_map_query.h"
 
