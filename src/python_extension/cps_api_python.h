@@ -74,19 +74,29 @@ struct py_callbacks_t {
         return ((o!=NULL) && (PyCallable_Check(o)));
     }
 
-    PyObject *execute(const char * method, PyObject *param) {
+    PyObject *call_object(const char * method, PyObject *args) {
         if (!contains(method)) {
             return NULL;
         }
 
         PyObject *o = PyDict_GetItemString(_methods,method);
-        PyObject * args = Py_BuildValue("OO", _methods,param);
         PyObject *ret = PyObject_CallObject(o,args);
         Py_DECREF(args);
-
         return ret;
     }
+
+    PyObject *execute(const char * method, PyObject *param) {
+        PyObject * args = Py_BuildValue("OO", _methods,param);
+        return call_object(method, args);
+    }
+
+    PyObject *execute(const char * method, PyObject *sync_param, PyObject *param) {
+        PyObject * args = Py_BuildValue("OOO", _methods,sync_param,param);
+        return call_object(method, args);
+    }
+
 };
+
 
 class NonBlockingPythonContext {
      PyThreadState *_save = nullptr;
@@ -134,6 +144,7 @@ PyObject * py_cps_node_set_update(PyObject *self, PyObject *args);
 PyObject * py_cps_node_delete_group(PyObject *self, PyObject *args);
 PyObject * py_cps_node_set_ownership_type(PyObject *self, PyObject *args);
 PyObject * py_cps_node_set_master(PyObject *self, PyObject *args);
+PyObject * py_cps_sync(PyObject *self, PyObject *args);
 PyObject * py_cps_api_db_commit(PyObject *self, PyObject *args, PyObject *_keydict) ;
 PyObject * py_cps_api_db_get(PyObject *self, PyObject *args);
 
