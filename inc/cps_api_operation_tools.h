@@ -49,23 +49,23 @@ typedef enum {
     cps_api_db_no_connection,
 }cps_api_db_errorcode_t;
 
-struct cps_api_db_sync_cb_param_t {
+typedef struct {
     cps_api_operation_types_t opcode;    // the operation type (set,delete,create)
     cps_api_object_t object_dest;
     cps_api_object_t object_src;
     const char *src_node;
     const char *dest_node;
-};
+}cps_api_db_sync_cb_param_t;
 
-struct cps_api_db_sync_cb_response_t {
+typedef struct {
     cps_api_dbchange_t change;            // enumerator that indicates whether to make changes to DB or not
     cps_api_dbchange_notify_t change_notify;  // enumerator that indicates whether to publish events in case of DB changes or not
-};
+}cps_api_db_sync_cb_response_t;
 
 
-struct cps_api_db_sync_cb_error_t {
+typedef struct {
     cps_api_db_errorcode_t err_code;
-};
+}cps_api_db_sync_cb_error_t;
 
 /**
 * The callback function used with CPS DB Sync operation
