@@ -113,7 +113,6 @@ public:
 };
 
 cps_db::connection_cache & ProcessDBCache();
-
 cps_db::connection_cache & ProcessDBEvents();
 
 class connection_request {

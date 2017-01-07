@@ -259,7 +259,7 @@ bool request_walker_contexct_t::set(cps_db::connection::db_operation_atom_t * ls
 }
 
 bool cps_db::connection::operation(db_operation_atom_t * lst_,size_t len_, bool force_push) {
-	request_walker_contexct_t ctx(lst_,len_);
+    request_walker_contexct_t ctx(lst_,len_);
 
     if (!ctx.valid()) {
         EV_LOGGING(DSAPI,ERR,"CPS-DB-OP","The DB context is invalid.");
@@ -269,9 +269,9 @@ bool cps_db::connection::operation(db_operation_atom_t * lst_,size_t len_, bool 
     bool _success = false;
     ssize_t retry = MAX_RETRY;
     do {
-		if (redisAppendCommandArgv(static_cast<redisContext*>(_ctx),ctx.cmds_ptr - ctx.cmds,ctx.cmds,ctx.cmds_lens)==REDIS_OK) {
-			_success = true; break;
-		}
+        if (redisAppendCommandArgv(static_cast<redisContext*>(_ctx),ctx.cmds_ptr - ctx.cmds,ctx.cmds,ctx.cmds_lens)==REDIS_OK) {
+            _success = true; break;
+        }
         EV_LOG(ERR,DSAPI,0,"CPS-RED-CON-OP","Seems to be an issue with the REDIS request - (first entry: %s)",ctx.cmds[0]);
         reconnect();
     } while (retry-->0);
@@ -415,21 +415,18 @@ cps_db::connection * cps_db::connection_cache::get(const std::string &name) {
     std::lock_guard<std::mutex> l(_mutex);
 
     const auto &_connect = [] (const std::string &name) -> cps_db::connection *{
-    	auto *_conn = new cps_db::connection;
-		if (!_conn->connect(name)) {
-			delete _conn;
-			_conn  = nullptr;
-		}
-    	return _conn;
+        auto *_conn = new cps_db::connection;
+        if (!_conn->connect(name)) {
+            delete _conn;
+            _conn  = nullptr;
+        }
+        return _conn;
     };
 
     auto it = _pool.find(name);
-    if (it==_pool.end()) {
-    	return _connect(name);
-    }
 
-    if (it->second.size()>0) {
-        auto ptr = it->second[it->second.size()-1].release();
+    if (it!=_pool.end() && it->second.size()>0) {
+        auto ptr = it->second.back().release();
         it->second.pop_back();
         return ptr;
     }
