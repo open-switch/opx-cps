@@ -1,7 +1,7 @@
 PROGRAMS= cps_api_service cps_api_example
 LIBRARIES= cps-api-common cps-class-map-util cps-ut-data
 
-CXXFLAGS+=-std=c++11
+CXXFLAGS+=-std=c++11 
 
 
 cps-ut-data_SRCS= unit_test/cps_class_ut_data.cpp
