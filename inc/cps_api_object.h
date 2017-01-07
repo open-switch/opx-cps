@@ -182,7 +182,13 @@ bool cps_api_object_clone(cps_api_object_t dest, cps_api_object_t src);
 cps_api_object_t cps_api_object_create_clone(cps_api_object_t src) ;
 
 
-
+/**
+ * Take the contents of the object from the right hand side and switch it with the one on the left hand side.
+ * This can quickly move (not copy) one object to another object.
+ *
+ * @param lhs one of the objects to swap
+ * @param rhs the second object to swap
+ */
 void cps_api_object_swap(cps_api_object_t lhs, cps_api_object_t rhs);
 
 /**
@@ -644,7 +650,7 @@ bool cps_api_object_list_set(cps_api_object_list_t list,size_t ix, cps_api_objec
  * @return true if no entries - false if there are elements
  */
 bool cps_api_list_debug(void) ;
-
+void cps_api_list_stats();
 #ifdef __cplusplus
 }
 #endif

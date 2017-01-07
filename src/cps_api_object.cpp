@@ -28,6 +28,7 @@
 #include "std_tlv.h"
 #include "cps_api_object.h"
 #include "private/cps_api_object_internal.h"
+
 #include "event_log.h"
 
 #include <endian.h>
@@ -39,9 +40,14 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <inttypes.h>
 
+#define KEY_TOKEN (0xC11ff)
 #define DEF_OBJECT_SIZE (512)
 #define DEF_OBJECT_REALLOC_STEP_SIZE (128)
+
+static size_t __allocated_objs;
+static size_t __deallocated_objs;
 
 
 struct tracker_detail {
@@ -88,7 +94,12 @@ bool cps_api_list_debug() {
     return false;
 }
 
-
+void cps_api_list_stats() {
+    printf("Allocated                 = %" PRIx64 "\n",__allocated_objs);
+    printf("Deallocated             = %" PRIx64 "\n",__deallocated_objs);
+    printf("Remaining                 = %" PRIx64 "\n",(__allocated_objs-__deallocated_objs));
+    printf("Internal remaining         = %" PRIx64 "\n",trackers.size());
+}
 
 cps_api_object_ATTR_TYPE_t cps_api_object_int_type_for_len(size_t len) {
     static const cps_api_object_ATTR_TYPE_t types[] = {
@@ -154,7 +165,7 @@ static cps_api_object_internal_t * obj_alloc(size_t  len) {
     p->len = len;
     p->remain = len;
     p->allocated = true;
-    p->token = 0xC11ff;
+    p->token = KEY_TOKEN;
     p->ref_count = 1;
 
     p->copy_algorithm = cps_api_object_internal_t::DUP_REF_ONLY;
@@ -168,7 +179,10 @@ static cps_api_object_internal_t * obj_alloc(size_t  len) {
 }
 
 static void obj_delloc(cps_api_object_internal_t *p) {
-    if (p->token!=0xC11ff) STD_ASSERT(false);
+    if (p->token!=KEY_TOKEN) {
+        EV_LOGGING(DSAPI,DEBUG,0,"CPS dealloc called on object that was already deleted.");
+        return;
+    }
 
     if (p->ref_count>1) {
         --p->ref_count;
@@ -177,9 +191,10 @@ static void obj_delloc(cps_api_object_internal_t *p) {
 
     if(p->allocated==false) return;
 
+    ++__deallocated_objs;
     db_list_tracker_rm(p);
     p->token = -1;
-    if (!p->allocated) return;
+
     free(p->data);
     free(p);
 }
@@ -202,6 +217,7 @@ cps_api_object_t cps_api_object_init(void *data, size_t bufflen) {
     if (bufflen < CPS_API_MIN_OBJ_LEN) return NULL;
     cps_api_object_internal_t *p = (cps_api_object_internal_t*)data;
     bufflen -= sizeof(cps_api_object_internal_t);
+    p->token = KEY_TOKEN;
     p->allocated = false;
     p->data = (cps_api_object_data_t*)(p+1);
     p->remain = bufflen - sizeof(cps_api_object_data_t);
@@ -209,6 +225,7 @@ cps_api_object_t cps_api_object_init(void *data, size_t bufflen) {
     p->ref_count = 1;
     p->master = nullptr;
     cps_api_key_set_len(cps_api_object_key((cps_api_object_t)data),0);
+
     return (cps_api_object_t)(data);
 }
 
@@ -219,6 +236,7 @@ cps_api_object_t cps_api_object_create_int(const char *desc, unsigned int line, 
     }
     db_list_tracker_add(obj, desc, line,file);
     cps_api_key_set_len(&((cps_api_object_internal_t*)obj)->data->key,0);
+    ++__allocated_objs;
     return obj;
 }
 
@@ -246,10 +264,10 @@ void cps_api_object_swap(cps_api_object_t lhs, cps_api_object_t rhs) {
 }
 
 cps_api_object_t cps_api_object_create_clone(cps_api_object_t src)  {
-	cps_api_object_guard og(cps_api_object_create());
-	if (og.get()==nullptr) return nullptr;
-	if(!cps_api_object_clone(og.get(),src)) return nullptr;
-	return og.release();
+    cps_api_object_guard og(cps_api_object_create());
+    if (og.get()==nullptr) return nullptr;
+    if(!cps_api_object_clone(og.get(),src)) return nullptr;
+    return og.release();
 }
 
 bool cps_api_object_clone(cps_api_object_t d, cps_api_object_t s) {
@@ -641,12 +659,12 @@ bool cps_api_object_list_append(cps_api_object_list_t list, cps_api_object_t obj
 }
 
 bool cps_api_object_list_merge(cps_api_object_list_t dest, cps_api_object_list_t add) {
-	return cps_api_object_list_merge_section(dest,add,0,cps_api_object_list_size(add));
+    return cps_api_object_list_merge_section(dest,add,0,cps_api_object_list_size(add));
 }
 
 
 bool cps_api_object_list_merge_section(cps_api_object_list_t dest, cps_api_object_list_t src,
-		size_t src_start, size_t number)  {
+        size_t src_start, size_t number)  {
 
     register _cps_api_list_type_t & _dest = *(_cps_api_list_type_t*)dest;
     register _cps_api_list_type_t &_src = *(_cps_api_list_type_t*)src;
@@ -659,11 +677,11 @@ bool cps_api_object_list_merge_section(cps_api_object_list_t dest, cps_api_objec
 
     size_t _dest_size = _dest.size();
     try {
-    	_dest.resize(_dest_size + number);
+        _dest.resize(_dest_size + number);
     } catch (...) { return false; }
 
     for ( size_t mx = src_start + number; src_start < mx ; ++src_start ) {
-    	_dest[_dest_size++] = cps_api_object_reference(_src[src_start],false);
+        _dest[_dest_size++] = cps_api_object_reference(_src[src_start],false);
     }
 
     return true;
