@@ -199,6 +199,50 @@ bool cps_db::atomic_count_change(cps_db::connection &conn,bool inc, const char *
     return false;
 }
 
+bool cps_db::dbkey_field_set_request(cps_db::connection &conn, const char *key, size_t key_len, const char *field, size_t field_len, const char *data, size_t data_len) {
+    cps_db::connection::db_operation_atom_t e[4];
+    e[0].from_string("HSET");
+    e[1].from_string(key, key_len);
+    e[2].from_string(field, field_len);
+    e[3].from_string(data, data_len);
+    return conn.operation(e,sizeof(e)/sizeof(*e));
+}
+
+bool cps_db::dbkey_field_set_response(cps_db::connection &conn) {
+    return cps_db::set_object_response(conn);
+}
+
+bool cps_db::dbkey_field_get_request(cps_db::connection &conn, const char *key, size_t key_len, const char *field, size_t field_len) {
+    cps_db::connection::db_operation_atom_t e[3];
+    e[0].from_string("HGET");
+    e[1].from_string(key, key_len);
+    e[2].from_string(field, field_len);
+    return conn.operation(e,sizeof(e)/sizeof(*e));
+}
+
+std::string cps_db::dbkey_field_get_response_string(cps_db::connection &conn) {
+    response_set resp;
+    if (conn.response(resp,false)) {
+        cps_db::response r = resp.get_response(0);
+        if(r.is_str()) {
+            return r.get_str();
+        }
+    }
+    return "";
+}
+
+bool cps_db::dbkey_field_delete_request(cps_db::connection &conn, const char *key, size_t key_len, const char * field, size_t field_len) {
+    cps_db::connection::db_operation_atom_t e[3];
+    e[0].from_string("HDEL");
+    e[1].from_string(key, key_len);
+    e[2].from_string(field, field_len);
+    return conn.operation(e,sizeof(e)/sizeof(*e));
+}
+
+bool cps_db::dbkey_field_delete_response(cps_db::connection &conn) {
+    return cps_db::set_object_response(conn);
+}
+
 bool cps_db::walk_keys(cps_db::connection &conn, const void *filt, size_t flen,
         const std::function<void(const void *key, size_t klen)> &fun) {
 
