@@ -77,7 +77,7 @@ bool cps_api_filter_is_getnext(cps_api_object_t obj) {
 }
 
 void cps_api_key_set_qualifier(cps_api_key_t *key, cps_api_qualifier_t qual) {
-    cps_api_key_elem_raw_set(key,CPS_OBJ_KEY_INST_POS,qual);
+	cps_api_key_set(key,CPS_OBJ_KEY_INST_POS,qual);
 }
 
 CPS_CONFIG_TYPE_t cps_api_object_get_config_type(cps_api_object_t obj) {
