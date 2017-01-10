@@ -79,8 +79,15 @@ typedef enum {
     cps_api_qualifier_REALTIME=4,
     cps_api_qualifier_REGISTRATION=5,
     cps_api_qualifier_RESERVED1=6,
+    /* This range provide qualifiers only to be used with DB service back ends or through the CPS DB API. */
+    cps_api_qualifier_DB_SERVICE_REALM_START=7,
+    /* The Startup Config contains (meant to store) the application's configuration - used in the case of a
+     * cold start (eg. no traffic to recover after the reboot). */
     cps_api_qualifier_RUNNING_CONFIG=7,
+    /* Running Config that contains the data required to recover the state of a process/system after it restarts due to a application
+     * restart or system restart system restart.  */
     cps_api_qualifier_STARTUP_CONFIG=8,
+    cps_api_qualifier_DB_SERVICE_REALM_END=10,
     cps_api_qualifier_MAX,
 } cps_api_qualifier_t;
 
@@ -88,10 +95,10 @@ typedef enum {
  * This enum range is designed to help with the configuration of objects in the system.  A application can set the following enums
  * on any objects that they perform a commit operation on (set/delete/create).
  *
- * Using this information (configuraiton type), an application can make changes to:
- * 1) Running configuration - used for warm restart or applicaiton/process restart
- * 2) Startup configuraiton - used in the case that the system goes through a full cold start process
- * 3) Running configuraiton only - used in the case that an application is dynamically changing the system based on observations or
+ * Using this information (configuration type), an application can make changes to:
+ * 1) Running configuration - used for warm restart or application/process restart
+ * 2) Startup configuration - used in the case that the system goes through a full cold start process
+ * 3) Running configuration only - used in the case that an application is dynamically changing the system based on observations or
  *         other actions that should not be stored for cold starts (eg.. iscsi auto provisioning, temporary IP address, etc..)
  */
 typedef enum {
@@ -99,7 +106,7 @@ typedef enum {
   CPS_CONFIG_TYPE_RUNNING_CONFIG = 2, /*This configuration should be placed into the running configuration but is a candidate in the future for copying to startup//!< CPS_CONFIG_TYPE_RUNNING_CONFIG
 based on user requests.*/
   CPS_CONFIG_TYPE_STARTUP_AND_RUNNING = 3, /*This configuration request should be placed in the running config and startup config both*/                          //!< CPS_CONFIG_TYPE_STARTUP_AND_RUNNING
-  CPS_CONFIG_TYPE_RUNNING_CONFIG_ONLY = 4, /*This configuration request should never be copied into the startup configuration.  This is appliciable for running   //!< CPS_CONFIG_TYPE_RUNNING_CONFIG_ONLY
+  CPS_CONFIG_TYPE_RUNNING_CONFIG_ONLY = 4, /*This configuration request should never be copied into the startup configuration.  This is applicable for running   //!< CPS_CONFIG_TYPE_RUNNING_CONFIG_ONLY
 configuration only.*/
   CPS_CONFIG_TYPE_MIN=1,                                                                                                                                          //!< CPS_CONFIG_TYPE_MIN
   CPS_CONFIG_TYPE_MAX=4,                                                                                                                                          //!< CPS_CONFIG_TYPE_MAX
@@ -130,7 +137,7 @@ configuration only.*/
 /**
  * Set the qualifier of the key to the provided value.
  * @param key the key to change the qualifier on
- * @param qual the qualifer to use
+ * @param qual the qualifier to use
  */
 void cps_api_key_set_qualifier(cps_api_key_t *key, cps_api_qualifier_t qual);
 
@@ -229,16 +236,16 @@ bool cps_api_filter_set_getnext(cps_api_object_t obj);
 bool cps_api_filter_is_getnext(cps_api_object_t obj);
 
 /**
- * This API indicates to the back end that the object filter has wildcards as part of the attributes in the object.
+ * This API indicates to the back end that the object filter has wild-cards as part of the attributes in the object.
  * Normally back end functionality can assume when a attribute is passed, the attributes being passed are specific values.
- * For instance, if the name of an interface has a "*" in the name, the behaviour should be different then an application searching
+ * For instance, if the name of an interface has a "*" in the name, the behavior should be different then an application searching
  * for a list of interfaces eg. "eth*"
  *
  * @param obj the object filter
  * @param has_wildcard_attributes when true, this means that the attributes (one or more) in the filter contain wildcards and
  *     a more complicated search may be required.
  *
- * @return true if the attibute filter could be set or false if there was no space or out of memory
+ * @return true if the attribute filter could be set or false if there was no space or out of memory
  */
 bool cps_api_filter_wildcard_attrs(cps_api_object_t obj, bool has_wildcard_attributes);
 
@@ -488,7 +495,7 @@ typedef void * cps_api_operation_handle_t;
 
 /**
  * Initialize the operation subsystem and get back a handle.  The handle then can be used
- * to in futher calls to register a CPS object.
+ * to in further calls to register a CPS object.
  * @param handle handle to the CPS owner
  * @param number_of_threads number of threads to process
  * @return standard db return code
@@ -554,7 +561,7 @@ bool cps_api_is_registered(cps_api_key_t *key, cps_api_return_code_t *rc);
 #ifdef __cplusplus
 
 /**
- * Cleanup a transaction automatically when you go out of scope with this transaciton helper
+ * Cleanup a transaction automatically when you go out of scope with this transaction helper
  */
 class cps_api_transaction_guard {
     cps_api_transaction_params_t *param;
