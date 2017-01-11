@@ -14,8 +14,7 @@
  * permissions and limitations under the License.
  */
 
-/*
- */
+
 
 #ifndef CPS_API_OPERATION_H_
 #define CPS_API_OPERATION_H_
