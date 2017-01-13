@@ -26,7 +26,6 @@ module dell-base-cps {
       		configuration only.";
       }
     }
-    default "ingress-egress";
   }
 
 
