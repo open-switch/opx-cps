@@ -249,8 +249,7 @@ bool cps_api_key_from_attr_with_qual(cps_api_key_t *key,cps_api_attr_id_t id,
 
 /**
  * Search through all of the available class maps on the system and load them.
- * The class map will by default also search through all of the LD_LIBRARY_PATHS along with the
- * /usr/lib folder if it exists
+ * The class map will by default also search through all of the LD_LIBRARY_PATHS
  */
 void cps_api_class_map_init(void);
 
