@@ -22,5 +22,6 @@
 
 bool cps_api_core_publish(cps_api_object_t obj);
 
+void cps_api_event_stats();
 
 #endif /* CPS_API_INC_PRIVATE_CPS_API_CORE_UTILS_H_ */

@@ -11,7 +11,7 @@
 
 #include "cps_class_map_query.h"
 #include "cps_api_metadata_import.h"
-
+#include "cps_api_core_utils.h"
 
 #include <vector>
 #include <string>
@@ -193,4 +193,18 @@ void __init_class_map() {
         cps_class_map_init(it.id,&(it._ids[0]),it._ids.size(),&it.details);
     }
     __init_global_test_objects();
+    cps_api_list_stats();
+}
+
+void __init_cleanup() {
+	cps_api_object_list_clear(Get100(),true);
+	cps_api_object_list_clear(Get1000(),true);
+	cps_api_object_list_clear(Get10000(),true);
+	cps_api_object_list_clear(Get100000(),true);
+	cps_api_object_list_clear(Get1000000(),true);
+	cps_api_object_list_clear(GeBIG(),true);
+
+	cps_api_list_debug();
+	cps_api_list_stats();
+	cps_api_event_stats();
 }

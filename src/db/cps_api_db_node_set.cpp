@@ -37,7 +37,7 @@ static std::unordered_map<std::string,std::string> _ip_to_node_map;
 
 static bool load_groups() {
     std::lock_guard<std::recursive_mutex> lg(_nodes->get_lock());
-       if (std_time_is_expired(_last_loaded,5*1000*1000)) {
+       if (std_time_is_expired(_last_loaded,MILLI_TO_MICRO(5*1000))) {
            _last_loaded = std_get_uptime(nullptr);
            return _nodes->load();
        }
