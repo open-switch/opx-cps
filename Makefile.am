@@ -3,6 +3,9 @@ SUBDIRS = inc
 
 #Script files
 
+data_cpsdir = $(sysconfdir)/redis
+data_cps_DATA = config/etc/redis/redis.conf
+
 bin_SCRIPTS = scripts/bin/*
 
 toolsdir= /usr/lib/opx
@@ -101,6 +104,3 @@ cps_la_LIBADD=libopx_cps_api_common.la  libopx_cps_class_map.la
 
 systemdconfdir=/lib/systemd/system
 systemdconf_DATA = $(top_srcdir)/scripts/init/opx-cps.service $(top_srcdir)/scripts/init/opx-cps-db.service
-
-environdir = $(sysconfdir)/opx
-environ_DATA = $(top_srcdir)/scripts/init/opx-environment
