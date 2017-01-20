@@ -22,6 +22,7 @@ Wants=redis-server.service
 DefaultDependencies=no
 
 [Service]
+EnvironmentFile=/etc/opx/opx-environment
 ExecStart=/usr/bin/opx_cps_service
 
 # Resource Limitations

@@ -1,0 +1,6 @@
+#!/bin/sh
+
+systemctl stop redis-server
+rm -f /etc/redis/redis.conf
+mv /etc/redis/redis.conf.orig /etc/redis/redis.conf
+
