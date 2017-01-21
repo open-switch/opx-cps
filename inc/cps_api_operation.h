@@ -134,6 +134,15 @@ configuration only.*/
 /**@}*/
 
 /**
+ * Get the cps_api_qualifier_t for a key
+ * @param key the key to query
+ * @return the cps_api_qualifier_t
+ */
+static inline cps_api_qualifier_t cps_api_key_get_qual(cps_api_key_t *key) {
+    return (cps_api_qualifier_t)cps_api_key_element_at(key,CPS_OBJ_KEY_INST_POS);
+}
+
+/**
  * Set the qualifier of the key to the provided value.
  * @param key the key to change the qualifier on
  * @param qual the qualifier to use
@@ -169,14 +178,6 @@ void cps_api_key_init(cps_api_key_t * key,
         cps_api_object_subcategory_types_t subcat,
         size_t number_of_inst, ...);
 
-/**
- * Get the cps_api_qualifier_t for a key
- * @param key the key to query
- * @return the cps_api_qualifier_t
- */
-static inline cps_api_qualifier_t cps_api_key_get_qual(cps_api_key_t *key) {
-    return (cps_api_qualifier_t)cps_api_key_element_at(key,CPS_OBJ_KEY_INST_POS);
-}
 
 /**
  * Get the key's object category
