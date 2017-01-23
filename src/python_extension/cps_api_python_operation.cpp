@@ -24,6 +24,7 @@
 #include "cps_api_operation_tools.h"
 #include "cps_api_python.h"
 #include "private/cps_class_map_query.h"
+#include "cps_api_db_interface.h"
 
 #include "Python.h"
 #include <map>
@@ -80,7 +81,6 @@ PyObject * py_cps_get(PyObject *self, PyObject *args) {
         for ( ;ix < str_keys ; ++ix ) {
             PyObject *strObj = PyList_GetItem(param_list, ix);
             if (PyString_Check(strObj)) {
-                //
                 cps_api_object_t o = cps_api_object_list_create_obj_and_append(gr.filters);
                 if (o==NULL) {
                     py_set_error_string("Memory allocation error.");
@@ -425,10 +425,9 @@ PyObject * py_cps_obj_close(PyObject *self, PyObject *args) {
 }
 
 static bool _sync_function(void *context, cps_api_db_sync_cb_param_t *params, cps_api_db_sync_cb_response_t *res) {
-    
+
     PyObject *p = PyDict_New();
-    //PyRef dict(p);  
-    
+
     static const std::map<int,std::string> op = {
         {cps_api_oper_DELETE,"delete" },
         {cps_api_oper_CREATE,"create"},
@@ -437,30 +436,29 @@ static bool _sync_function(void *context, cps_api_db_sync_cb_param_t *params, cp
     };
     py_cps_util_set_item_to_dict(p,"opcode",PyString_FromString(op.at(params->opcode).c_str()));
     py_cps_util_set_item_to_dict(p,"src_node", PyString_FromString(params->src_node));
-    py_cps_util_set_item_to_dict(p,"dest_node", PyString_FromString(params->dest_node)); 
+    py_cps_util_set_item_to_dict(p,"dest_node", PyString_FromString(params->dest_node));
     py_cps_util_set_item_to_dict(p,"object_dest",cps_obj_to_dict(params->object_dest));
     py_cps_util_set_item_to_dict(p,"object_src",cps_obj_to_dict(params->object_src));
-    
+
     PyObject *r = PyDict_New();
-    //PyRef dict(r);
 
     static const std::map<int, std::string> change = {
         {cps_api_make_change, "make_change"},
-        {cps_api_no_change, "no_change"}            
+        {cps_api_no_change, "no_change"}
     };
-    
+
     static const std::map<int, std::string> change_notify = {
         {cps_api_raise_event, "raise_event" },
         {cps_api_raise_no_event, "raise_no_event"}
     };
-    
+
     py_cps_util_set_item_to_dict(r,"change",PyString_FromString(change.at(res->change).c_str()));
     py_cps_util_set_item_to_dict(r,"change_notify",PyString_FromString(change_notify.at(res->change_notify).c_str()));
-    
+
     py_callbacks_t *cb = (py_callbacks_t*)context;
-    
+
     PyObject *result = cb->execute("sync", p, r);
-    
+
     if (result==NULL || !PyBool_Check(result) || (Py_False==(result))) {
         return false;
     }
@@ -477,29 +475,27 @@ static bool _sync_function(void *context, cps_api_db_sync_cb_param_t *params, cp
         if (it.second == PyString_AsString(ch_notify))
             res->change_notify = (cps_api_dbchange_notify_t)it.first;
     }
-    
-    return true;    
+
+    return true;
 }
 
 
 static bool _error_function(void *context, cps_api_db_sync_cb_param_t *params, cps_api_db_sync_cb_error_t *err) {
     PyObject *p = PyDict_New();
-    //PyRef dict(p); 
-    
+
     py_cps_util_set_item_to_dict(p,"src_node", PyString_FromString(params->src_node));
     py_cps_util_set_item_to_dict(p,"dest_node", PyString_FromString(params->dest_node));
-    
+
     PyObject *e = PyDict_New();
-    //PyRef dict(e);
-    
+
     static const std::map<int,std::string> error = {
-        {cps_api_db_no_connection,"no_connection" }    
+        {cps_api_db_no_connection,"no_connection" }
     };
     py_cps_util_set_item_to_dict(e,"error", PyString_FromString(error.at(err->err_code).c_str()));
-    
+
     py_callbacks_t *cb = (py_callbacks_t*)context;
     PyObject *result = cb->execute("error", p, e);
-    
+
     if (result==NULL || !PyBool_Check(result) || (Py_False==(result))) {
         return false;
     }
@@ -511,20 +507,20 @@ PyObject * py_cps_sync(PyObject *self, PyObject *args) {
 
     PyObject *dest_dict, *src_dict;
     PyObject *cb;
-    
+
     if (! PyArg_ParseTuple( args, "O!O!O!",  &PyDict_Type, &dest_dict,&PyDict_Type, &src_dict, &PyDict_Type, &cb)) return NULL;
-    
-    
+
+
     cps_api_object_t dest_obj = dict_to_cps_obj(dest_dict);
     cps_api_object_t src_obj = dict_to_cps_obj(src_dict);
-    
+
     std::unique_ptr<py_callbacks_t> p (new py_callbacks_t);
     if (p.get()==NULL) {
         py_set_error_string("Memory allocation error");
         return nullptr;
     }
     p->_methods = cb;
-    
+
     void *context = p.get();
 
     cps_api_return_code_t rc;
@@ -532,8 +528,8 @@ PyObject * py_cps_sync(PyObject *self, PyObject *args) {
     if (rc!=cps_api_ret_code_OK) {
         Py_RETURN_FALSE;
     }
-    
+
     p.release();
-    
+
     Py_RETURN_TRUE;
 }
