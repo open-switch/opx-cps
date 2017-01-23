@@ -29,6 +29,7 @@
 #include "cps_api_object_attr.h"
 #include "cps_api_object.h"
 #include "cps_api_operation.h"
+#include "std_error_codes.h"
 
 #include <stdbool.h>
 
@@ -110,12 +111,12 @@ bool cps_api_obj_tool_attr_matches(cps_api_object_t obj, cps_api_attr_id_t *ids,
  * @param stop a boolean pointer that if set to false will stop the looking for more attributes
  */
 typedef void (*cps_api_obj_tool_attr_callback_t)(void * contect, void *attrs[], size_t sizes[],
-		size_t number_of_attrs, bool *stop);
+        size_t number_of_attrs, bool *stop);
 
 typedef struct {
-	cps_api_attr_id_t id;
-	cps_api_obj_tool_attr_callback_t callback;
-	void * context;
+    cps_api_attr_id_t id;
+    cps_api_obj_tool_attr_callback_t callback;
+    void * context;
 } cps_api_obj_tool_attr_cb_list_t;
 
 /**
@@ -129,7 +130,7 @@ typedef struct {
  * @return true if successful otherwise false.
  */
 void cps_api_obj_tool_attr_callback(cps_api_object_t obj, cps_api_attr_id_t id, cps_api_obj_tool_attr_callback_t cb,
-		void *context);
+        void *context);
 
 /**
  * Provide a way for a user to specifiy one or more callback handlers for attributes discovered in an object.
@@ -140,6 +141,55 @@ void cps_api_obj_tool_attr_callback(cps_api_object_t obj, cps_api_attr_id_t id, 
  */
 void cps_api_obj_tool_attr_callback_list(cps_api_object_t obj, cps_api_obj_tool_attr_cb_list_t *lst, size_t len);
 
+/**
+ * This API will take a error code and error string and store it into the object.  An application can then call
+ * cps_api_object_return_string and cps_api_object_return_code to get the string and return code respectively.
+ * @param obj the object that will have the attributes added
+ * @param error the error code
+ * @param fmt the string formatted error
+ * @param ... variable length parameters
+ * @return bool if successful otherwise an error
+ */
+bool cps_api_set_object_return_attrs(cps_api_object_t obj, t_std_error error, const char *fmt, ...);
+
+/**
+ * This API will take a error code and store it into the object.  An application can then call
+ * cps_api_object_return_code to get the return code.
+ * @param obj the object that will have the attributes added
+ * @param error the error code
+ * @return bool if successful otherwise an error
+ */
+bool cps_api_object_set_return_code(cps_api_object_t obj, t_std_error error);
+
+/**
+ * This function will get return error string in the object if it exists
+ * @param obj the object containing the return string
+ * @return returns a valid pointer in the case that there is a return string, otherwise a null
+ */
+const char *cps_api_object_return_string(cps_api_object_t obj);
+
+
+/**
+ * This API will return a pointer to the object's return code if it exists
+ * @param obj the object with the return code
+ * @return a pointer to the return code within the object or null
+ */
+const t_std_error *cps_api_object_return_code(cps_api_object_t obj);
+
+/**
+ * Check the object for the exact match flag.  If present return its value otherwise return false (no exact match by default)
+ * @param obj the object in question
+ * @param have_exact_match true if want an exact match against all attributes in the provided object otherwise false
+ * @return true if successfully set the attribute
+ */
+bool cps_api_object_exact_match(cps_api_object_t obj, bool have_exact_match);
+
+/**
+ * Check the object for the exact match flag.  If present return its value otherwise return false (no exact match by default)
+ * @param obj the object in question
+ * @return true if exact match is desired otherwise false
+ */
+bool cps_api_object_get_exact_match_flag(cps_api_object_t obj);
 
 #ifdef __cplusplus
 }

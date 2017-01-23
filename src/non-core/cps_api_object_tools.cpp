@@ -25,10 +25,16 @@
 
 #include "cps_api_object_key.h"
 
+#include "std_error_codes.h"
+
+
 #include <unordered_map>
 #include <functional>
 #include <vector>
 #include <string.h>
+#include <cstdarg>
+
+#define _MAX_REASONABLE_ERROR_STRING 4096
 
 extern "C" cps_api_object_t cps_api_obj_tool_create(cps_api_qualifier_t qual,cps_api_attr_id_t id, bool add_defaults) {
     cps_api_object_guard og(cps_api_object_create());
@@ -90,7 +96,7 @@ extern "C" bool cps_api_obj_tool_matches_filter(cps_api_object_t filter, cps_api
 
 
 bool cps_api_obj_tool_merge(cps_api_object_t main, cps_api_object_t overlay) {
-	return cps_api_object_attr_merge(main,overlay,true);
+    return cps_api_object_attr_merge(main,overlay,true);
 }
 
 bool cps_api_obj_tool_attr_matches(cps_api_object_t obj, cps_api_attr_id_t *ids, void ** values, size_t *len, size_t mx_) {
@@ -110,8 +116,8 @@ bool cps_api_obj_tool_attr_matches(cps_api_object_t obj, cps_api_attr_id_t *ids,
 namespace {
 
 void __cps_api_obj_tool_attr_callback(cps_api_object_t obj, cps_api_attr_id_t id,
-		const std::function<void(void*,void *data[], size_t sizes[], size_t len, bool &cont)> &func,
-		void *context) {
+        const std::function<void(void*,void *data[], size_t sizes[], size_t len, bool &cont)> &func,
+        void *context) {
 
     cps_api_object_it_t it;
     if (!cps_api_object_it(obj,&id,1,&it)) {
@@ -130,48 +136,102 @@ void __cps_api_obj_tool_attr_callback(cps_api_object_t obj, cps_api_attr_id_t id
 
 
 void __cps_api_bundle_attr_changes(cps_api_object_t obj, cps_api_attr_id_t id, cps_api_obj_tool_attr_callback_t cb,
-		void *context) {
+        void *context) {
 
-	struct  {
-		std::vector<void*> _data;
-		std::vector<size_t> _sizes;
-	}_priv;
+    struct  {
+        std::vector<void*> _data;
+        std::vector<size_t> _sizes;
+    }_priv;
 
-	auto fun = [&](void*,void *data[], size_t sizes[], size_t len, bool &cont) {
-		for ( size_t ix = 0; ix < len ; ++ix ) {
-			_priv._data.push_back(data[ix]);
-			_priv._sizes.push_back(sizes[ix]);
-		}
-	};
+    auto fun = [&](void*,void *data[], size_t sizes[], size_t len, bool &cont) {
+        for ( size_t ix = 0; ix < len ; ++ix ) {
+            _priv._data.push_back(data[ix]);
+            _priv._sizes.push_back(sizes[ix]);
+        }
+    };
 
-	__cps_api_obj_tool_attr_callback(obj,id,fun,context);
+    __cps_api_obj_tool_attr_callback(obj,id,fun,context);
 
-	bool _cont = true;
-	cb(context,&(_priv._data[0]),&_priv._sizes[0],_priv._data.size(),&_cont);
+    bool _cont = true;
+    cb(context,&(_priv._data[0]),&_priv._sizes[0],_priv._data.size(),&_cont);
 }
 
 }
 
 void cps_api_obj_tool_attr_callback(cps_api_object_t obj, cps_api_attr_id_t id, cps_api_obj_tool_attr_callback_t cb,
-		void *context) {
+        void *context) {
 
-	CPS_CLASS_ATTR_TYPES_t _type=CPS_CLASS_ATTR_T_LEAF;
-	(void)cps_class_map_attr_class(id,&_type);
+    CPS_CLASS_ATTR_TYPES_t _type=CPS_CLASS_ATTR_T_LEAF;
+    (void)cps_class_map_attr_class(id,&_type);
 
-	if (_type==CPS_CLASS_ATTR_T_LEAF_LIST) {
-		__cps_api_bundle_attr_changes(obj,id,cb,context);
-	} else {
-		auto fun = [&](void*,void *data[], size_t sizes[], size_t len, bool &cont) {
-			cb(context,data,sizes,len,&cont);
-		};
-		__cps_api_obj_tool_attr_callback(obj,id,fun,context);
-	}
+    if (_type==CPS_CLASS_ATTR_T_LEAF_LIST) {
+        __cps_api_bundle_attr_changes(obj,id,cb,context);
+    } else {
+        auto fun = [&](void*,void *data[], size_t sizes[], size_t len, bool &cont) {
+            cb(context,data,sizes,len,&cont);
+        };
+        __cps_api_obj_tool_attr_callback(obj,id,fun,context);
+    }
 }
 
 void cps_api_obj_tool_attr_callback_list(cps_api_object_t obj, cps_api_obj_tool_attr_cb_list_t *lst, size_t len) {
-	for (size_t ix = 0; ix < len ; ++ix ) {
-		cps_api_obj_tool_attr_callback(obj,lst[ix].id,lst[ix].callback,lst[ix].context);
-	}
+    for (size_t ix = 0; ix < len ; ++ix ) {
+        cps_api_obj_tool_attr_callback(obj,lst[ix].id,lst[ix].callback,lst[ix].context);
+    }
 }
 
+bool cps_api_object_set_return_attrs(cps_api_object_t obj, t_std_error error, const char *fmt, ...) {
+    va_list _args;
 
+    std::vector<char> _msg;
+
+    if (fmt!=nullptr && strlen(fmt)!=0) {
+        va_start (_args,fmt);
+        va_list _backup;
+        va_copy(_backup,_args);
+        ssize_t _val =  1+std::vsnprintf(NULL, 0, fmt, _backup);
+        if (_val > _MAX_REASONABLE_ERROR_STRING) {
+            _val = _MAX_REASONABLE_ERROR_STRING;
+        }
+        if (_val <=0) {
+            return false;
+        }
+        try {
+            _msg.resize(_val);
+            std::vsnprintf(_msg.data(), _msg.size(), fmt, _args);
+        } catch (...) {
+
+        }
+        va_end(_args);
+        va_end(_backup);
+    }
+    return cps_api_object_attr_add_u32(obj,CPS_OBJECT_GROUP_RETURN_CODE,error) &&
+            cps_api_object_attr_add(obj,CPS_OBJECT_GROUP_RETURN_STRING,&_msg[0],_msg.size());
+}
+
+bool cps_api_object_set_return_code(cps_api_object_t obj,t_std_error error) {
+    while (cps_api_object_attr_delete(obj,CPS_OBJECT_GROUP_RETURN_CODE)) ;
+    return cps_api_object_attr_add_u32(obj,CPS_OBJECT_GROUP_RETURN_CODE,error);
+}
+
+const char *cps_api_object_return_string(cps_api_object_t obj) {
+    return (const char*)cps_api_object_get_data(obj,CPS_OBJECT_GROUP_RETURN_STRING);
+}
+
+const t_std_error *cps_api_object_return_code(cps_api_object_t obj) {
+    return (const t_std_error*)cps_api_object_get_data(obj,CPS_OBJECT_GROUP_RETURN_STRING);
+}
+
+bool cps_api_object_exact_match(cps_api_object_t obj, bool have_exact_match) {
+    if (!have_exact_match) {
+        while (cps_api_object_attr_delete(obj,CPS_OBJECT_GROUP_EXACT_MATCH)) ;
+        return true;
+    }
+    return cps_api_object_attr_add_u32(obj,CPS_OBJECT_GROUP_EXACT_MATCH,have_exact_match);
+}
+
+bool cps_api_object_get_exact_match_flag(cps_api_object_t obj) {
+    uint32_t *_p = (uint32_t*)cps_api_object_get_data(obj,CPS_OBJECT_GROUP_EXACT_MATCH);
+    if (_p==nullptr) return false;
+    return *_p;
+}
