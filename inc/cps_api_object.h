@@ -274,6 +274,7 @@ void cps_api_object_attr_fill_list(cps_api_object_t obj, size_t base_attr_id, cp
  * If the attribute is invalid the request is ignored otherwise the attr is removed.
  * @param obj the object that contains the attribute to be deleted
  * @param attr the attribute of the item to delete
+ * @return the function returns true if the element is found and deleted otherwise false
  */
 bool cps_api_object_attr_delete(cps_api_object_t obj, cps_api_attr_id_t attr);
 
