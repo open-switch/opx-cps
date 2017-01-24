@@ -37,6 +37,9 @@
 #include <functional>
 #include <inttypes.h>
 
+#define CPS_ATTR_ID_GEN_ATTR_ID_START (0)
+#define CPS_ATTR_ID_GEN_ATTR_ID_END (1<<16)
+
 struct enum_field_t {
     std::string name;
     int value;
@@ -483,6 +486,24 @@ std::string cps_api_object_attr_as_string(cps_api_attr_id_t id, const void * dat
 
 void cps_api_object_print(cps_api_object_t obj) {
     printf("%s\n",cps_api_object_to_c_string(obj).c_str());
+}
+
+static inline bool __is_in_cps_attr_set(cps_api_attr_id_t id) {
+	static const cps_api_attr_id_t _cps_start_id_range =(cps_api_attr_id_t)(cps_api_obj_CAT_CPS*CPS_ATTR_ID_GEN_ATTR_ID_END);
+	static const cps_api_attr_id_t _cps_end_id_range = (cps_api_attr_id_t)((cps_api_obj_CAT_CPS+1)*CPS_ATTR_ID_GEN_ATTR_ID_END);
+	return id >=_cps_start_id_range && id<_cps_end_id_range;	//return true if the attribute ID is within the CPS attribute space
+}
+
+bool cps_api_attr_id_is_temporary(cps_api_attr_id_t id) {
+	if (id==CPS_API_OBJ_KEY_ATTRS) return false;
+	if (id==CPS_OBJECT_GROUP_CONFIG_TYPE) return false;
+	if (!__is_in_cps_attr_set(id)) return false;
+	return true;
+}
+
+bool cps_api_attr_id_is_cps_reserved(cps_api_attr_id_t id) {
+	if (id<=CPS_API_ATTR_RESERVE_RANGE_END && id >=CPS_API_ATTR_RESERVE_RANGE_START) return true;	//a higher range reserved for keys and embedded objects
+	return __is_in_cps_attr_set(id);
 }
 
 std::string cps_api_object_to_c_string(cps_api_object_t obj) {

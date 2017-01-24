@@ -319,6 +319,23 @@ bool cps_api_obj_has_auto_events(cps_api_object_t obj);
  */
 void cps_api_object_print(cps_api_object_t obj);
 
+
+/**
+ * This API will return true if the attribute ID is a CPS reserved attribute ID otherwise false
+ * @param id the attribute ID to check
+ * @return true if this is a CPS infra attribute ID or false if it is a general purpose application attribute ID
+ */
+bool cps_api_attr_id_is_cps_reserved(cps_api_attr_id_t id);
+
+
+/**
+ * This function will indicate if the attribute ID specified is an attribute that is managed by CPS and
+ * can be safely deleted or ignored (can be used during object compression)
+ * @param id the attribute ID
+ * @return true if the attribute who's ID is specified can be safely removed as it is a CPS internal attribute otherwise false
+ */
+bool cps_api_attr_id_is_temporary(cps_api_attr_id_t id);
+
 #ifdef __cplusplus
 }
 
