@@ -213,9 +213,6 @@ PyObject * py_cps_trans(PyObject *self, PyObject *args) {
         NonBlockingPythonContext l;
         rc = cps_api_commit(&tr);
     }
-    if (rc!=cps_api_ret_code_OK) {
-        Py_RETURN_FALSE;
-    }
 
     ix = 0;
     mx = PyList_Size(list);
@@ -246,6 +243,10 @@ PyObject * py_cps_trans(PyObject *self, PyObject *args) {
     }
 
     cps_api_transaction_close(&tr);
+
+    if (rc!=cps_api_ret_code_OK) {
+        Py_RETURN_FALSE;
+    }
 
     Py_RETURN_TRUE;
 }
