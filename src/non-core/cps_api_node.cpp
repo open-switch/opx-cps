@@ -55,7 +55,6 @@ struct vector_hash {
 
 }
 
-
 constexpr static const char * __get_local_ip() {
     return "127.0.0.1";
 }
@@ -623,6 +622,7 @@ void cps_api_key_del_node_attrs(cps_api_object_t obj) {
 }
 
 bool cps_api_key_set_group(cps_api_object_t obj,const char *group) {
+	cps_api_object_attr_delete(obj,CPS_OBJECT_GROUP_GROUP);
     return cps_api_object_attr_add(obj,CPS_OBJECT_GROUP_GROUP,group,strlen(group)+1);
 }
 
@@ -637,6 +637,7 @@ const char * cps_api_key_get_group(cps_api_object_t obj) {
 }
 
 bool cps_api_key_set_node(cps_api_object_t obj, const char *node) {
+	cps_api_object_attr_delete(obj,CPS_OBJECT_GROUP_NODE);
     return cps_api_object_attr_add(obj,CPS_OBJECT_GROUP_NODE,node,strlen(node)+1);
 }
 
