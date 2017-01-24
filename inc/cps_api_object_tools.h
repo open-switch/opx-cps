@@ -191,6 +191,14 @@ bool cps_api_object_exact_match(cps_api_object_t obj, bool have_exact_match);
  */
 bool cps_api_object_get_exact_match_flag(cps_api_object_t obj);
 
+
+/**
+ * Compact the object by removing any temporary CPS attributes (eg. return code, status, transaction id, etc..) of an object
+ * @param obj the object to operate on
+ * @return true if successful otherwise false
+ */
+bool cps_api_object_compact(cps_api_object_t obj);
+
 #ifdef __cplusplus
 }
 #endif
