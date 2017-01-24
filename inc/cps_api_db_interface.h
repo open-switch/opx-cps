@@ -24,12 +24,12 @@
 extern "C" {
 #endif
 
-struct cps_api_db_commit_bulk_t {
+typedef struct cps_api_db_commit_bulk_s {
     cps_api_operation_types_t op;    //the operation type (set,delete,create)
     cps_api_object_list_t objects;     //the list of objects to be modified or deleted/stored
     bool publish;    //true if the API will be required to publish change via cps event service
     const char *node_group;
-};
+}cps_api_db_commit_bulk_t;
 
 /**
  * Initialize the bulk commit structure
