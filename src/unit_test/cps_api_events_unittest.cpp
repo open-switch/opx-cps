@@ -603,6 +603,6 @@ TEST(cps_api_events,event_thread_tests) {
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
   int _rc = RUN_ALL_TESTS();
-  __init_cleanup();
+  UTDataClear();
   return _rc;
 }
