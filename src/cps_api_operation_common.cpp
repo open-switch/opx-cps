@@ -142,7 +142,7 @@ static bool _cps_api_get_clone(cps_api_get_params_t * dest, cps_api_get_params_t
     if (src==nullptr || dest==nullptr) return false;
 
     cps_api_object_list_destroy(dest->filters,true);
-    dest->filters = cps_api_object_list_clone(src->filters,true);
+    dest->filters = cps_api_object_list_clone(src->filters,false);
 
     size_t ix = 0;
 
@@ -163,7 +163,7 @@ static bool _cps_api_get_clone(cps_api_get_params_t * dest, cps_api_get_params_t
 void _filter_list_as_needed(cps_api_object_t obj, cps_api_object_list_t results, size_t from, size_t to) {
     if (!cps_api_object_get_exact_match_flag(obj)) return;
 
-    cps_api_object_exact_match(obj,false);
+
 
     size_t _list_walker = from;
 
@@ -184,7 +184,7 @@ void _filter_list_as_needed(cps_api_object_t obj, cps_api_object_list_t results,
         }
         ++_list_walker;
     }
-    cps_api_object_exact_match(obj,true);
+
 }
 
 cps_api_return_code_t cps_api_get(cps_api_get_params_t * param) {
