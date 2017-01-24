@@ -36,7 +36,7 @@
 
 #define _MAX_REASONABLE_ERROR_STRING 4096
 
-extern "C" cps_api_object_t cps_api_obj_tool_create(cps_api_qualifier_t qual,cps_api_attr_id_t id, bool add_defaults) {
+cps_api_object_t cps_api_obj_tool_create(cps_api_qualifier_t qual,cps_api_attr_id_t id, bool add_defaults) {
     cps_api_object_guard og(cps_api_object_create());
     if (!og.valid()) return nullptr;
 
@@ -50,7 +50,12 @@ extern "C" cps_api_object_t cps_api_obj_tool_create(cps_api_qualifier_t qual,cps
 static bool __cps_api_obj_tool_matches_filter(cps_api_object_it_t &fit, cps_api_object_it_t &oit, bool require_all_attribs) {
 
     for ( ; cps_api_object_it_valid(&fit); cps_api_object_it_next(&fit)) {
-        cps_api_attr_id_t id = cps_api_object_attr_id(fit.attr);
+
+    	cps_api_attr_id_t id = cps_api_object_attr_id(fit.attr);
+
+    	if (cps_api_attr_id_is_cps_reserved(id) && (id!=CPS_API_OBJ_KEY_ATTRS)) {
+    		continue; // skip CPS internal attributes
+    	}
 
         cps_api_object_it_t tgt = oit;
         tgt.attr = cps_api_object_it_find(&tgt,id);
@@ -59,6 +64,7 @@ static bool __cps_api_obj_tool_matches_filter(cps_api_object_it_t &fit, cps_api_
             if (!require_all_attribs) continue;
             return false;
         }
+
         if (id == CPS_API_OBJ_KEY_ATTRS) {
             cps_api_object_it_t in_fit = fit;
             cps_api_object_it_inside(&in_fit);
@@ -85,7 +91,7 @@ static bool __cps_api_obj_tool_matches_filter(cps_api_object_it_t &fit, cps_api_
 }
 
 
-extern "C" bool cps_api_obj_tool_matches_filter(cps_api_object_t filter, cps_api_object_t obj, bool require_all_attribs) {
+bool cps_api_obj_tool_matches_filter(cps_api_object_t filter, cps_api_object_t obj, bool require_all_attribs) {
     cps_api_object_it_t it;
     cps_api_object_it_begin(filter,&it);
 
@@ -180,7 +186,7 @@ void cps_api_obj_tool_attr_callback_list(cps_api_object_t obj, cps_api_obj_tool_
     }
 }
 
-bool cps_api_object_set_return_attrs(cps_api_object_t obj, t_std_error error, const char *fmt, ...) {
+bool cps_api_set_object_return_attrs(cps_api_object_t obj, t_std_error error, const char *fmt, ...) {
     va_list _args;
 
     std::vector<char> _msg;
@@ -205,12 +211,14 @@ bool cps_api_object_set_return_attrs(cps_api_object_t obj, t_std_error error, co
         va_end(_args);
         va_end(_backup);
     }
+    cps_api_object_attr_delete(obj,CPS_OBJECT_GROUP_RETURN_CODE) ;
+    cps_api_object_attr_delete(obj,CPS_OBJECT_GROUP_RETURN_STRING) ;
     return cps_api_object_attr_add_u32(obj,CPS_OBJECT_GROUP_RETURN_CODE,error) &&
             cps_api_object_attr_add(obj,CPS_OBJECT_GROUP_RETURN_STRING,&_msg[0],_msg.size());
 }
 
 bool cps_api_object_set_return_code(cps_api_object_t obj,t_std_error error) {
-    while (cps_api_object_attr_delete(obj,CPS_OBJECT_GROUP_RETURN_CODE)) ;
+    cps_api_object_attr_delete(obj,CPS_OBJECT_GROUP_RETURN_CODE) ;
     return cps_api_object_attr_add_u32(obj,CPS_OBJECT_GROUP_RETURN_CODE,error);
 }
 
@@ -219,12 +227,13 @@ const char *cps_api_object_return_string(cps_api_object_t obj) {
 }
 
 const t_std_error *cps_api_object_return_code(cps_api_object_t obj) {
-    return (const t_std_error*)cps_api_object_get_data(obj,CPS_OBJECT_GROUP_RETURN_STRING);
+    return (const t_std_error*)cps_api_object_get_data(obj,CPS_OBJECT_GROUP_RETURN_CODE);
 }
 
 bool cps_api_object_exact_match(cps_api_object_t obj, bool have_exact_match) {
+	cps_api_object_attr_delete(obj,CPS_OBJECT_GROUP_EXACT_MATCH);
+
     if (!have_exact_match) {
-        while (cps_api_object_attr_delete(obj,CPS_OBJECT_GROUP_EXACT_MATCH)) ;
         return true;
     }
     return cps_api_object_attr_add_u32(obj,CPS_OBJECT_GROUP_EXACT_MATCH,have_exact_match);
@@ -234,4 +243,19 @@ bool cps_api_object_get_exact_match_flag(cps_api_object_t obj) {
     uint32_t *_p = (uint32_t*)cps_api_object_get_data(obj,CPS_OBJECT_GROUP_EXACT_MATCH);
     if (_p==nullptr) return false;
     return *_p;
+}
+
+bool cps_api_object_compact(cps_api_object_t obj) {
+	if (obj==nullptr) return false;
+    cps_api_object_it_t obj_it;
+    cps_api_object_it_begin(obj,&obj_it);
+
+    for ( ; cps_api_object_it_valid(&obj_it); cps_api_object_it_next(&obj_it)) {
+    	cps_api_attr_id_t id = cps_api_object_attr_id(obj_it.attr);
+    	if (cps_api_attr_id_is_temporary(id)) {
+    		cps_api_object_attr_delete(obj,id);
+    	    cps_api_object_it_begin(obj,&obj_it);
+    	}
+    }
+    return true;
 }
