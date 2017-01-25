@@ -249,6 +249,10 @@ cps_api_return_code_t cps_api_commit(cps_api_transaction_params_t * param) {
         cps_api_object_t o = cps_api_object_list_get(param->change_list,ix);
         cps_api_object_attr_delete(o,CPS_OBJECT_GROUP_FAILED_NODES);
         STD_ASSERT(o!=nullptr);
+
+        ///TODO until the performance fix is updated - made the temporary fix
+        bool _is_db_handled = cps_api_obj_get_ownership_type(o)!=CPS_API_OBJECT_SERVICE;
+
         if (cps_api_obj_get_ownership_type(o)!=CPS_API_OBJECT_SERVICE) {
             rc = cps_api_db_operation_commit(param,ix);
         } else {
@@ -259,7 +263,7 @@ cps_api_return_code_t cps_api_commit(cps_api_transaction_params_t * param) {
             EV_LOG(ERR,DSAPI,0,"COMMIT","Failed to commit request at %d out of %d",ix, (int)mx);
             break;
         }
-        if (cps_api_obj_has_auto_events(o) && cps_api_object_type_operation(cps_api_object_key(o))!=cps_api_oper_ACTION) {
+        if (!_is_db_handled && cps_api_obj_has_auto_events(o) && cps_api_object_type_operation(cps_api_object_key(o))!=cps_api_oper_ACTION) {
             cps_api_core_publish(o);
         }
     }
