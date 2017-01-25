@@ -27,12 +27,14 @@
 */
 
 #include "cps_api_key.h"
+#include "cps_api_object_attr.h"
+
+#include "std_tlv.h"
 
 #include <stddef.h>
 #include <stdbool.h>
-#include "std_tlv.h"
 
-#include "cps_api_object_attr.h"
+#include <string.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -69,6 +71,7 @@ extern "C" {
  * @cond HIDDEN_SYMBOLS
  * These are internally reserved attribute IDs for internal CPS usage.
  */
+#define CPS_API_ATTR_APP_RANGE_START ((cps_api_attr_id_t)1<<16)
 #define CPS_API_ATTR_RESERVE_RANGE_END ((cps_api_attr_id_t)-1)
 #define CPS_API_ATTR_RESERVE_RANGE_START ((cps_api_attr_id_t)-10)
 /** @endcond */
@@ -77,8 +80,12 @@ extern "C" {
  * These are some reserved IDs for the CPS
  * */
 #define CPS_API_OBJ_KEY_ATTRS (CPS_API_ATTR_RESERVE_RANGE_END)
+
+////
+//The following defines are obsoleted and will be removed in a subsequent update
 #define CPS_API_OBJ_TRANS_ID (CPS_API_OBJ_KEY_ATTRS-1)
 #define CPS_API_OBJ_FLAGS (CPS_API_OBJ_TRANS_ID-1)
+////
 
 /** Types of object attributes. */
 typedef enum cps_api_object_ATTR_TYPE_t {
@@ -97,8 +104,10 @@ enum cps_api_object_FLAGS_t {
  */
 typedef void * cps_api_object_t;
 
-/** NULL / Empty object */
-#define CPS_API_OBJECT_NULL ((void*)0)
+/**
+ * An application can use NULL directly or use the following null definition
+ * */
+#define CPS_API_OBJECT_NULL NULL
 
 /**
  * The type of a list of objects
@@ -274,6 +283,7 @@ void cps_api_object_attr_fill_list(cps_api_object_t obj, size_t base_attr_id, cp
  * If the attribute is invalid the request is ignored otherwise the attr is removed.
  * @param obj the object that contains the attribute to be deleted
  * @param attr the attribute of the item to delete
+ * @return the function returns true if the element is found and deleted otherwise false
  */
 bool cps_api_object_attr_delete(cps_api_object_t obj, cps_api_attr_id_t attr);
 

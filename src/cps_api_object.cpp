@@ -381,7 +381,7 @@ bool cps_api_object_attr_get_list(cps_api_object_t obj,
     return true;
 }
 
-bool cps_api_object_attr_delete(cps_api_object_t obj, cps_api_attr_id_t attr_id) {
+static bool __cps_api_object_attr_delete(cps_api_object_t obj, cps_api_attr_id_t attr_id) {
     cps_api_object_internal_t *p = (cps_api_object_internal_t*)obj;
 
     cps_api_object_attr_t  attr = cps_api_object_attr_get(obj, attr_id);
@@ -395,6 +395,12 @@ bool cps_api_object_attr_delete(cps_api_object_t obj, cps_api_attr_id_t attr_id)
         p->remain += rm_len;
     }
     return attr!=nullptr;
+}
+
+bool cps_api_object_attr_delete(cps_api_object_t obj, cps_api_attr_id_t attr_id) {
+	bool _first_time = __cps_api_object_attr_delete(obj,attr_id);
+	while (_first_time && __cps_api_object_attr_delete(obj,attr_id)) ; //delete attributes
+	return _first_time;
 }
 
 cps_api_object_attr_t cps_api_object_e_get(cps_api_object_t obj, cps_api_attr_id_t *id,

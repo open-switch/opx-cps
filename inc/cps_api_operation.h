@@ -101,14 +101,14 @@ typedef enum {
  *         other actions that should not be stored for cold starts (eg.. iscsi auto provisioning, temporary IP address, etc..)
  */
 typedef enum {
-  CPS_CONFIG_TYPE_STARTUP_CONFIG = 1, /*This configuration should be placed into the startup config only and has no effect on the existing running config.*/      //!< CPS_CONFIG_TYPE_STARTUP_CONFIG
-  CPS_CONFIG_TYPE_RUNNING_CONFIG = 2, /*This configuration should be placed into the running configuration but is a candidate in the future for copying to startup//!< CPS_CONFIG_TYPE_RUNNING_CONFIG
+  CPS_CONFIG_TYPE_STARTUP_CONFIG = 1, /*This configuration should be placed into the startup config only and has no effect on the existing running config.*/
+  CPS_CONFIG_TYPE_RUNNING_CONFIG = 2, /*This configuration should be placed into the running configuration but is a candidate in the future for copying to startup
 based on user requests.*/
-  CPS_CONFIG_TYPE_STARTUP_AND_RUNNING = 3, /*This configuration request should be placed in the running config and startup config both*/                          //!< CPS_CONFIG_TYPE_STARTUP_AND_RUNNING
-  CPS_CONFIG_TYPE_RUNNING_CONFIG_ONLY = 4, /*This configuration request should never be copied into the startup configuration.  This is applicable for running   //!< CPS_CONFIG_TYPE_RUNNING_CONFIG_ONLY
+  CPS_CONFIG_TYPE_STARTUP_AND_RUNNING = 3, /*This configuration request should be placed in the running config and startup config both*/
+  CPS_CONFIG_TYPE_RUNNING_CONFIG_ONLY = 4, /*This configuration request should never be copied into the startup configuration.  This is applicable for running
 configuration only.*/
-  CPS_CONFIG_TYPE_MIN=1,                                                                                                                                          //!< CPS_CONFIG_TYPE_MIN
-  CPS_CONFIG_TYPE_MAX=4,                                                                                                                                          //!< CPS_CONFIG_TYPE_MAX
+  CPS_CONFIG_TYPE_MIN=1,
+  CPS_CONFIG_TYPE_MAX=4,
 } CPS_CONFIG_TYPE_t;
 
 

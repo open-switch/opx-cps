@@ -21,6 +21,7 @@
 #include "cps_api_db.h"
 #include "cps_api_db_response.h"
 #include "cps_string_utils.h"
+#include "cps_api_operation.h"
 
 #include "cps_api_vector_utils.h"
 #include "event_log.h"
@@ -28,6 +29,8 @@
 #include <vector>
 #include <functional>
 #include <mutex>
+
+#include <iostream>
 
 #include <hiredis/hiredis.h>
 
@@ -126,9 +129,6 @@ bool cps_db::delete_object(cps_db::connection &conn,cps_api_object_t obj) {
     }
     return true;
 }
-
-#include <iostream>
-#include "cps_string_utils.h"
 
 bool cps_db::get_objects(cps_db::connection &conn, cps_api_object_t obj,cps_api_object_list_t obj_list) {
     std::vector<char> k;

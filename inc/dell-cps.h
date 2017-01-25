@@ -31,6 +31,8 @@
 
 #define DELL_BASE_CPS_MODEL_STR "dell-base-cps"
 
+/* Object cps/node-group/node */
+
 typedef enum {
 /*The name of the node entry. (an alias for the ip)*/
 /*type=string*/
@@ -117,18 +119,31 @@ can be used to monitor the state of the transaction.*/
 connectivity reasons. Nodes are in a single string separated by comma (,).*/
 /*type=string*/
   CPS_OBJECT_GROUP_FAILED_NODES = 131087,
-/*If this attribute is present in an event registration or query - then the attributes in the object will be used to detmine
-matching events or objects.  To be more explicit on events and object queries:
-) in the case of events - only events matching the exact object key or attributes in the object will
-be provided to the application.
-) in the case of queries - if exact match is present, then the value of the exact match shall be used to determine
-if a wildcard matching behaviour will be used. If this value is not present, the wildcard matching will be guessed.*/
+/*This attribute is true if the attributes in the object (primarily used for get requests) contain wildcard characters.
+For instance if someone was searching for a python interface/vlan object with all names starting with eth, the python dictionary
+would appear as follows:
+{
+'key': 'interface/vlan',
+'data' : { 'interface/vlan/name' : 'eth*',
+      'cps/object-group/wildcard-search': True }
+}*/
+/*type=boolean*/
+  CPS_OBJECT_GROUP_WILDCARD_SEARCH = 131109,
+/*If this attribute is present in an filter object, then the attributes in the object will be used to find
+objects who's attributes match the attribute values specified in this filter object.
+For examplpe:
+A { 1=A,2=B } will match B { 1=A,2=B,C=3,D=4 }
+A { 1=A,2=B } will not match { 1=A,C=3 }*/
 /*type=boolean*/
   CPS_OBJECT_GROUP_EXACT_MATCH = 131098,
 /*In the event that an API needs to store a return code within an object itself, they can use this field.  This field is
 left as an int size.*/
 /*type=uint32*/
   CPS_OBJECT_GROUP_RETURN_CODE = 131105,
+/*This field can be used to store a string description (tag) of either an error that occurued during the requested operation or additional
+information to the successful request (less likely).*/
+/*type=uint32*/
+  CPS_OBJECT_GROUP_RETURN_STRING = 131110,
 /*If this attribute is present in an object, then the caller would like the next object in lexicographic order*/
 /*type=boolean*/
   CPS_OBJECT_GROUP_GET_NEXT = 131106,

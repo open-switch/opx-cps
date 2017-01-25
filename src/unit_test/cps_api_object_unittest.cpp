@@ -381,6 +381,8 @@ TEST(cps_api_object,cps_obj_attr) {
         }
         ASSERT_TRUE(ix==4);
     }
+    cps_api_object_compact(obj);
+
     cps_api_object_delete(obj);
 
 }
