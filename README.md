@@ -1,4 +1,5 @@
-#opx-cps
+# opx-cps
+This repository contains the CPS object library files.
 
 ##Description 
 The OPX CPS provides a data-centric API allowing applications to communicate with each other between threads, processes or diverse locations.
@@ -25,4 +26,5 @@ With the object keys and attributes applications can:
    d) Action
 3) Register and publish object messages
 
-(c) Dell 2016
+(c) 2017 Dell
+
