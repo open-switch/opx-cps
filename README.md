@@ -2,7 +2,7 @@
 This repository contains the CPS object library files.
 
 ##Description 
-The OPX CPS provides a data-centric API allowing applications to communicate with each other between threads, processes or diverse locations.
+The OPX CPS provides a micro-service data-centric API allowing applications to communicate with each other between threads, processes or diverse locations.
 
 The data model of OPX CPS is described through Yang or other constructs.
 Applications can use CPS objects using Python, C, C++ and REST services in the opx-cps-REST service.
