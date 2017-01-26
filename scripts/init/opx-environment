@@ -15,5 +15,6 @@
 #
 
 
-LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu
+LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:/usr/lib:/lib
 PYTHONPATH=/usr/lib/opx:/usr/lib/x86_64-linux-gnu/opx
+CPS_API_METADATA_PATH=/usr/lib/opx:/usr/lib/x86_64-linux-gnu

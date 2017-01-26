@@ -22,6 +22,7 @@ Wants=opx-cps.service
 DefaultDependencies=no
 
 [Service]
+EnvironmentFile=/etc/opx/opx-environment
 ExecStart=/usr/bin/python /usr/lib/opx/cps_db_stunnel_manager.py
 
 # Resource Limitations
