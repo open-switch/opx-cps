@@ -11,8 +11,9 @@ Vcs-Git: https://github.com/open-switch/opx-cps.git
 
 Package: opx-cps
 Architecture: any
+Pre-Depends: redis-server
 Replaces: redis-server
-Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}, python-opx-cps, libopx-cps1, redis-server
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}, python-opx-cps, libopx-cps1
 Description: This package contains the Openswitch object library.  The object library is provides APIs to set/get/delete/create and execute RPC calls using data models provided by components.
 
 
