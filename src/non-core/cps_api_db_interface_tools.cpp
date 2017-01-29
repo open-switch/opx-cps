@@ -14,7 +14,7 @@
 #include <string>
 #include <cstring>
 
-cps_api_return_code_t cps_api_config_db_write(cps_api_object_t obj) {
+cps_api_return_code_t cps_api_db_config_write(cps_api_object_t obj) {
     cps_api_return_code_t rc = cps_api_ret_code_OK;
     cps_api_key_t *key = cps_api_object_key(obj);
 
