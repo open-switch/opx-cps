@@ -14,6 +14,7 @@
 #include <string>
 #include <cstring>
 
+extern "C" {
 cps_api_return_code_t cps_api_db_config_write(cps_api_object_t obj) {
     cps_api_return_code_t rc = cps_api_ret_code_OK;
     cps_api_key_t *key = cps_api_object_key(obj);
@@ -38,6 +39,7 @@ cps_api_return_code_t cps_api_db_config_write(cps_api_object_t obj) {
     }
     cps_api_key_set_qualifier(key,_qual);
     return rc;
+}
 }
 
 cps_api_return_code_t cps_api_sync(void *context, cps_api_object_t dest, cps_api_object_t src,  cps_api_sync_callback_t cb, cps_api_sync_error_callback_t err_cb)
