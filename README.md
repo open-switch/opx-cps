@@ -26,5 +26,17 @@ With the object keys and attributes applications can:
    d) Action
 3) Register and publish object messages
 
+##Packages
+Contained within this repository are
+
+libopx-cps1\_*version*\_*arch*.deb         - Utility libraries
+libopx-cps-dev\_*version*\_*arch*.deb      - Exported header files
+python-opx-cps\_*version*\_*arch*.deb      - Python bindings
+opx-cps\_*version*\_*arch*.deb             - Service executables, configuration files, tool scripts 
+opx-yang-utils-dev\_*version*\_*arch*.deb  - Tools to parse yang files
+
+
+See https://github.com/open-switch/opx-docs/wiki/Architecture for information on CPS module.
+
 (c) 2017 Dell
 
