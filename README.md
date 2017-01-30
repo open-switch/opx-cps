@@ -1,42 +1,39 @@
 # opx-cps
-This repository contains the CPS object library files.
-
-##Description 
-The OPX CPS provides a micro-service data-centric API allowing applications to communicate with each other between threads, processes or diverse locations.
+This repository contains the CPS object library files. The OPX CPS provides a micro-service data-centric API allowing applications to communicate with each other between threads, processes, or diverse locations.
 
 The data model of OPX CPS is described through Yang or other constructs.
-Applications can use CPS objects using Python, C, C++ and REST services in the opx-cps-REST service.
+Applications can use CPS objects with Python, C, C++, and REST services in the opx-cps-REST service.
 Applications/threads will register for ownership of CPS objects while other applications/threads will operate and receive events of the registered CPS objects. Applications can also publish objects through the event service.
 
-A high level list of CPS features are:
-1) Distributed framework for application interaction
-2) DB-like API (Get, Commit[add,delete,create,modify])
-3) Publish/subscribe semantics supported
+A high-level list of CPS features include:
+- Distributed framework for application interaction
+- Database-like API (Get, Commit[add,delete,create,modify])
+- Publish/subscribe semantics supported
 
-Lookup and binary to text translation and object introspection available
+Lookup and binary to text translation and object introspection is available.
 
-Applications define objects through (optionally yang based) object models. These object models are converted into binary (C accessable) object keys and object attributes that can be used in conjunction with the C-based CPS APIs. There are adaptions on top of CPS that allows these objects and APIs to be converted to different languages like Python.
+Applications define objects through (optionally Yang-based) object models. These object models are converted into binary (C accessible) object keys and object attributes that can be used in conjunction with the C-based CPS APIs. There are adaptions on top of CPS that allows these objects and APIs to be converted to different languages like Python.
 
 With the object keys and attributes applications can:
-1) Get a single or get multiple objects 
-2) Perform transactions consisting of:
-   a) Create
-   b) Delete
-   c) Set
-   d) Action
-3) Register and publish object messages
+- Get a single or get multiple objects.
+- Perform transactions consisting of:
+   - Create
+   - Delete
+   - Set
+   - Action
+- Register and publish object messages.
 
 ##Packages
-Contained within this repository are
+libopx-cps1\_*version*\_*arch*.deb — Utility libraries
 
-libopx-cps1\_*version*\_*arch*.deb         - Utility libraries
-libopx-cps-dev\_*version*\_*arch*.deb      - Exported header files
-python-opx-cps\_*version*\_*arch*.deb      - Python bindings
-opx-cps\_*version*\_*arch*.deb             - Service executables, configuration files, tool scripts 
-opx-yang-utils-dev\_*version*\_*arch*.deb  - Tools to parse yang files
+libopx-cps-dev\_*version*\_*arch*.deb — Exported header files
 
+python-opx-cps\_*version*\_*arch*.deb — Python bindings
 
-See https://github.com/open-switch/opx-docs/wiki/Architecture for information on CPS module.
+opx-cps\_*version*\_*arch*.deb — Service executables, configuration files, tool scripts 
+
+opx-yang-utils-dev\_*version*\_*arch*.deb — Tools to parse yang files
+
+See [Architecture](https://github.com/open-switch/opx-docs/wiki/Architecture) for more information on the CPS module.
 
 (c) 2017 Dell
-
