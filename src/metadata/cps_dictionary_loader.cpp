@@ -40,6 +40,7 @@
 #include <sys/stat.h>
 #include <string>
 #include <map>
+#include <mutex>
 
 static std_mutex_lock_create_static_init_rec(lock);
 static std::map<std::string,struct stat> _loaded_libs;
@@ -87,7 +88,7 @@ bool cps_class_objs_load(const char *path, const char * prefix) {
     return rc==STD_ERR_OK;
 }
 
-void cps_api_class_map_init(void) {
+void _cps_api_class_map_init(void) {
     const char * path = std_getenv("LD_LIBRARY_PATH");
     if (path==NULL) {
         path = CPS_DEF_SEARCH_PATH;
@@ -110,4 +111,13 @@ void cps_api_class_map_init(void) {
     cps_api_metadata_import();
 }
 
-
+static std::mutex *_init_lock = new std::mutex;
+void cps_api_class_map_init(void) {
+    {
+        std::lock_guard<std::mutex> l(*_init_lock);
+        static bool loaded = false;
+        if(loaded) return;
+        loaded = true;
+    }
+    _cps_api_class_map_init();
+}
