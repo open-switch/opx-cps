@@ -18,19 +18,23 @@
 #include "cps_api_node_private.h"
 #include "cps_api_node_set.h"
 #include "cps_api_db.h"
-
+#include "cps_api_db_connection.h"
 #include "cps_api_object.h"
+#include "cps_api_object_tools.h"
 #include "cps_api_operation_tools.h"
 #include "cps_class_map.h"
 #include "cps_api_object_key.h"
 #include "cps_api_node_set.h"
 #include "cps_string_utils.h"
+#include "cps_api_vector_utils.h"
 #include "dell-cps.h"
-
+#include "std_utils.h"
 #include "event_log.h"
 
 #include <mutex>
-#include <string.h>
+#include <string>
+#include <cstring>
+#include <unordered_map>
 #include <iostream>
 
 namespace cps_db {
@@ -51,7 +55,6 @@ struct vector_hash {
 
 }
 
-
 constexpr static const char * __get_local_ip() {
     return "127.0.0.1";
 }
@@ -60,6 +63,7 @@ constexpr static size_t __get_local_ip_len() {
 }
 
 #define MAX_IP_LEN 64
+
 
 static cps_api_return_code_t cps_api_del_node_tunnel(const char * group, const char * node) {
     cps_api_transaction_params_t trans;
@@ -105,7 +109,7 @@ cps_api_return_code_t cps_api_delete_node_group(const char *grp) {
 
     cps_api_object_attr_add(og.get(),CPS_NODE_GROUP_NAME,grp,strlen(grp)+1);
 
-    cps_db::connection_request b(cps_db::ProcessDBCache(),DEFAULT_REDIS_ADDR);
+    cps_db::connection_request b(cps_db::ProcessDBEvents(),DEFAULT_REDIS_ADDR);
     if (!b.valid()) return cps_api_ret_code_ERR;
     bool rc = false;
     if ((rc=cps_db::delete_object(b.get(),og.get()))) {
@@ -305,7 +309,7 @@ cps_api_return_code_t cps_api_set_node_group(cps_api_node_group_t *group) {
 
     cps_api_object_attr_add(og.get(),CPS_NODE_GROUP_TYPE,&group->data_type,sizeof(group->data_type));
 
-    cps_db::connection_request b(cps_db::ProcessDBCache(),DEFAULT_REDIS_ADDR);
+    cps_db::connection_request b(cps_db::ProcessDBEvents(),DEFAULT_REDIS_ADDR);
     if (!b.valid()) {
         return cps_api_ret_code_ERR;
     }
@@ -334,7 +338,6 @@ cps_api_return_code_t cps_api_set_node_group(cps_api_node_group_t *group) {
 
     return cps_api_ret_code_OK;
 }
-
 
 cps_api_return_code_t cps_api_set_identity(const char *name, const char **alias, size_t len) {
     cps_db::connection_request b(cps_db::ProcessDBCache(),DEFAULT_REDIS_ADDR);
@@ -442,13 +445,10 @@ bool cps_api_nodes::update_slaves(const char *group) {
                         node_it._name.c_str(),master_node.c_str());
                 return false;
             }
-
         }
     }
-
     return true;
 }
-
 
 bool cps_api_nodes::load_groups() {
     cps_api_object_guard og(cps_api_object_create());
@@ -622,6 +622,7 @@ void cps_api_key_del_node_attrs(cps_api_object_t obj) {
 }
 
 bool cps_api_key_set_group(cps_api_object_t obj,const char *group) {
+	cps_api_object_attr_delete(obj,CPS_OBJECT_GROUP_GROUP);
     return cps_api_object_attr_add(obj,CPS_OBJECT_GROUP_GROUP,group,strlen(group)+1);
 }
 
@@ -636,6 +637,7 @@ const char * cps_api_key_get_group(cps_api_object_t obj) {
 }
 
 bool cps_api_key_set_node(cps_api_object_t obj, const char *node) {
+	cps_api_object_attr_delete(obj,CPS_OBJECT_GROUP_NODE);
     return cps_api_object_attr_add(obj,CPS_OBJECT_GROUP_NODE,node,strlen(node)+1);
 }
 

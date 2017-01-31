@@ -26,6 +26,7 @@
 
 #include "cps_api_operation.h"
 #include "cps_api_object.h"
+#include "cps_api_object_tools.h"
 
 #include "cps_api_operation_debug.h"
 #include "cps_class_map.h"
@@ -280,29 +281,32 @@ static bool cps_api_handle_commit(cps_api_operation_data_t *op, int fd, size_t l
 
     if (rc!=cps_api_ret_code_OK) {
         op->inc_stat(cps_api_obj_stat_SET_FAILED);
-        return cps_api_send_return_code(fd,cps_api_msg_o_RETURN_CODE,rc);
-    } else {
-        char buff[CPS_API_KEY_STR_MAX];
-        cps_api_object_t cur = cps_api_object_list_get(param.change_list,0);
-        if (cps_api_object_list_size(param.prev)==0) {
-            cps_api_object_list_create_obj_and_append(param.prev);
-        }
-        cps_api_object_t prev = cps_api_object_list_get(param.prev,0);
+    }
 
-        if (cur==NULL || prev==NULL) {
-            EV_LOG(ERR,DSAPI,0,"COMMIT-REQ","response to request was invalid for %s - cur=%d,prev=%d.",
-                cps_api_key_name_print(cps_api_object_key(l),buff,sizeof(buff)), (cur!=NULL),(prev!=NULL));
-            op->inc_stat(cps_api_obj_stat_SET_INVALID);
-            return false;
-        }
+    char buff[CPS_API_KEY_STR_MAX];
+    cps_api_object_t cur = cps_api_object_list_get(param.change_list,0);
 
-        if (!cps_api_send_one_object(fd,cps_api_msg_o_COMMIT_OBJECT,cur) ||
-                !cps_api_send_one_object(fd,cps_api_msg_o_COMMIT_OBJECT,prev)) {
-            EV_LOG(ERR,DSAPI,0,"COMMIT-REQ","Failed to send response to commit for %s... ",
-                cps_api_key_name_print(cps_api_object_key(l),buff,sizeof(buff)));
-            op->inc_stat(cps_api_obj_stat_SET_INVALID);
-            return false;
-        }
+    if (cps_api_object_list_size(param.prev)==0) {
+        cps_api_object_list_create_obj_and_append(param.prev);
+    }
+
+    cps_api_object_t prev = cps_api_object_list_get(param.prev,0);
+
+    if (cur==NULL || prev==NULL) {
+        EV_LOG(ERR,DSAPI,0,"COMMIT-REQ","response to request was invalid for %s - cur=%d,prev=%d.",
+            cps_api_key_name_print(cps_api_object_key(l),buff,sizeof(buff)), (cur!=NULL),(prev!=NULL));
+        op->inc_stat(cps_api_obj_stat_SET_INVALID);
+        return false;
+    }
+
+    cps_api_object_set_return_code(cur,rc);
+
+    if (!cps_api_send_one_object(fd,cps_api_msg_o_COMMIT_OBJECT,cur) ||
+            !cps_api_send_one_object(fd,cps_api_msg_o_COMMIT_OBJECT,prev)) {
+        EV_LOG(ERR,DSAPI,0,"COMMIT-REQ","Failed to send response to commit for %s... ",
+            cps_api_key_name_print(cps_api_object_key(l),buff,sizeof(buff)));
+        op->inc_stat(cps_api_obj_stat_SET_INVALID);
+        return false;
     }
 
     return true;

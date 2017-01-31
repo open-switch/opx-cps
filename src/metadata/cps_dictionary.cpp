@@ -37,6 +37,9 @@
 #include <functional>
 #include <inttypes.h>
 
+#define CPS_ATTR_ID_GEN_ATTR_ID_START (0)
+#define CPS_ATTR_ID_GEN_ATTR_ID_END (1<<16)
+
 struct enum_field_t {
     std::string name;
     int value;
@@ -440,7 +443,7 @@ std::string cps_api_object_attr_data_to_string(cps_api_attr_id_t id, const void 
     case CPS_CLASS_DATA_TYPE_T_ENUM:
         {
             const char * _val = cps_class_enum_id(id,*(int*)data);
-            if (_val==nullptr) return _val;
+            if (_val!=nullptr) return _val;
             return cps_string::sprintf("%d",*(int*)data);
         }
     case CPS_CLASS_DATA_TYPE_T_BOOL:
@@ -474,7 +477,8 @@ static std::string _escape(std::string data) {
 }
 
 std::string cps_api_object_attr_as_string(cps_api_attr_id_t id, const void * data, size_t len) {
-    std::string _ret = cps_attr_id_to_name(id);
+    const char * _raw_name = cps_attr_id_to_name(id);
+    std::string _ret = _raw_name!=nullptr ? _raw_name : cps_string::tostring("%d",(int)id);
     std::string _data = cps_api_object_attr_data_to_string(id,data,len);
 
     return _ret + " : " + _escape(_data);
@@ -482,6 +486,24 @@ std::string cps_api_object_attr_as_string(cps_api_attr_id_t id, const void * dat
 
 void cps_api_object_print(cps_api_object_t obj) {
     printf("%s\n",cps_api_object_to_c_string(obj).c_str());
+}
+
+static inline bool __is_in_cps_attr_set(cps_api_attr_id_t id) {
+	static const cps_api_attr_id_t _cps_start_id_range =(cps_api_attr_id_t)(cps_api_obj_CAT_CPS*CPS_ATTR_ID_GEN_ATTR_ID_END);
+	static const cps_api_attr_id_t _cps_end_id_range = (cps_api_attr_id_t)((cps_api_obj_CAT_CPS+1)*CPS_ATTR_ID_GEN_ATTR_ID_END);
+	return id >=_cps_start_id_range && id<_cps_end_id_range;	//return true if the attribute ID is within the CPS attribute space
+}
+
+bool cps_api_attr_id_is_temporary(cps_api_attr_id_t id) {
+	if (id==CPS_API_OBJ_KEY_ATTRS) return false;
+	if (id==CPS_OBJECT_GROUP_CONFIG_TYPE) return false;
+	if (!__is_in_cps_attr_set(id)) return false;
+	return true;
+}
+
+bool cps_api_attr_id_is_cps_reserved(cps_api_attr_id_t id) {
+	if (id<=CPS_API_ATTR_RESERVE_RANGE_END && id >=CPS_API_ATTR_RESERVE_RANGE_START) return true;	//a higher range reserved for keys and embedded objects
+	return __is_in_cps_attr_set(id);
 }
 
 std::string cps_api_object_to_c_string(cps_api_object_t obj) {
@@ -521,7 +543,10 @@ std::string cps_api_object_to_c_string(cps_api_object_t obj) {
                     _type==CPS_CLASS_ATTR_T_LIST) {
                 current += cps_string::sprintf("Container (%s) - length(%d)\n",
                         cps_class_attr_type_to_string(_type),(int)_len);
-                current += _handler(indent+"  ",current,&it) ;
+                cps_api_object_it_t _inside = it;
+
+                cps_api_object_it_inside(&_inside);
+                current += _handler(indent+"  ",current,&_inside) ;
             } else {
                 current += indent + cps_api_object_attr_as_string(_id,_data,_len) + "\n";
             }
@@ -535,5 +560,12 @@ std::string cps_api_object_to_c_string(cps_api_object_t obj) {
     cps_api_object_it_begin(obj,&it);
 
     return prefix + _handler("","",&it) + "\n";
+
+}
+
+const char * cps_api_object_to_string(cps_api_object_t obj, char *buff, size_t len) {
+    std::string _str = cps_api_object_to_c_string(obj);
+    buff[len-1]='\0';
+    return strncpy(buff,_str.c_str(),len-1);
 
 }

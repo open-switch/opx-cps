@@ -42,7 +42,6 @@ typedef struct {
     cps_api_node_data_type_t data_type;        ///in the case of database clustering, determine if it will be 1+1 or nodal
 } cps_api_node_group_t;
 
-
 /**
  * Create a node grouping which allowing access to fanout requests to all of the addresses specified
  * @param group the group configuration

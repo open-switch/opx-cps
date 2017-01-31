@@ -2,6 +2,33 @@ module dell-base-cps {
     namespace "http://www.dell.com/esg/networking/os10/dell-cps";
   prefix "cps";
 
+  typedef config-type {
+    type enumeration {
+      enum "startup-config" {
+        value 1;
+        description
+          "This configuration should be placed into the startup config only and has no effect on the existing running config.";
+      }
+      enum "running-config" {
+        value 2;
+        description
+          "This configuration should be placed into the running configuration but is a candidate in the future for copying to startup
+          based on user requests.";
+      }
+      enum "startup-and-running" {
+        value 3;
+        description
+          "This configuration request should be placed in the running config and startup config both";
+      }
+      enum "running-config-only" {
+        value 4;
+        description "This configuration request should never be copied into the startup configuration.  This is appliciable for running
+            configuration only.";
+      }
+    }
+  }
+
+
   list node-details {
     description "This object contains a list of aliases for a node.  Any one of the aliases will be converted
               into the name.
@@ -73,13 +100,26 @@ module dell-base-cps {
               connectivity reasons. Nodes are in a single string separated by comma (,).";
       type string;
     }
+    leaf wildcard-search {
+        description "This attribute is true if the attributes in the object (primarily used for get requests) contain wildcard characters.
+        For instance if someone was searching for a python interface/vlan object with all names starting with eth, the python dictionary
+        would appear as follows:
+            {
+                'key': 'interface/vlan',
+                'data' : { 'interface/vlan/name' : 'eth*',
+                           'cps/object-group/wildcard-search': True }
+            }
+        ";
+        type boolean;
+    }
+
     leaf exact-match {
-      description "If this attribute is present in an event registration or query - then the attributes in the object will be used to detmine
-	      matching events or objects.  To be more explicit on events and object queries:
-	      	) in the case of events - only events matching the exact object key or attributes in the object will
-	      		be provided to the application.
-	      	) in the case of queries - if exact match is present, then the value of the exact match shall be used to determine
-	      		if a wildcard matching behaviour will be used. If this value is not present, the wildcard matching will be guessed.";      		
+      description "If this attribute is present in an filter object, then the attributes in the object will be used to find
+          objects who's attributes match the attribute values specified in this filter object.
+          For examplpe:
+            A { 1=A,2=B } will match B { 1=A,2=B,C=3,D=4 }
+            A { 1=A,2=B } will not match { 1=A,C=3 }
+            ";
       type boolean;
     }
     leaf return-code {
@@ -87,13 +127,21 @@ module dell-base-cps {
                   left as an int size.";
       type uint32;
     }
+    leaf return-string {
+      description "This field can be used to store a string description (tag) of either an error that occurued during the requested operation or additional
+            information to the successful request (less likely).";
+      type uint32;
+    }
     leaf get-next {
-    	description "If this attribute is present in an object, then the caller would like the next object in lexicographic order";
-    	type boolean;
+        description "If this attribute is present in an object, then the caller would like the next object in lexicographic order";
+        type boolean;
     }
     leaf number-of-entries {
-    	description "Provide the number of entries to retrieve at one time to support the concept of range along with the get next attribute";
+        description "Provide the number of entries to retrieve at one time to support the concept of range along with the get next attribute";
       type uint64;
+    }
+    leaf config-type {
+      type config-type;
     }
   }
 

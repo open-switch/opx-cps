@@ -9,14 +9,16 @@
 #include "cps_class_map.h"
 #include "private/cps_string_utils.h"
 
+
 #include "cps_class_map_query.h"
 #include "cps_api_metadata_import.h"
-
-
 #include <vector>
 #include <string>
+#include <array>
+#include <algorithm>
 #include <stdio.h>
 #include <unistd.h>
+#include <unordered_map>
 
 static std::vector<_node_details> lst = {
 { { cps_api_obj_CAT_BASE_IP,BASE_IP_IPV6,BASE_IP_IPV6_VRF_ID,BASE_IP_IPV6_IFINDEX,BASE_IP_IPV6_ADDRESS,BASE_IP_IPV6_ADDRESS_IP }, BASE_IP_IPV6_ADDRESS, { "base-ip/ipv6/address", "", true, CPS_CLASS_ATTR_T_LIST, CPS_CLASS_DATA_TYPE_T_BIN }},
@@ -41,75 +43,73 @@ static std::vector<_node_details> lst = {
 { { cps_api_obj_CAT_BASE_IP,BASE_IP_IPV4,BASE_IP_IPV4_VRF_ID,BASE_IP_IPV4_IFINDEX,BASE_IP_IPV4_IFINDEX }, BASE_IP_IPV4_IFINDEX, { "base-ip/ipv4/ifindex", "The interface index", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT32 }},
 };
 
+
+std::unordered_map<std::string,cps_api_object_list_guard> _test_objs;
+
+cps_api_object_list_t GetFromCount(size_t count) {
+    auto _key = cps_string::sprintf("Get%d",(int)count );
+    cps_api_object_list_guard &lg = _test_objs[_key];
+    if (lg.get()==nullptr) lg.set(cps_api_object_list_create());
+    return lg.get();
+}
+
 std::vector<_node_details> &__get_class_map(){ return lst; }
 
-cps_api_object_list_guard _100(cps_api_object_list_create());
-cps_api_object_list_t Get100() {
-    return _100.get();
-}
-cps_api_object_list_guard _1000(cps_api_object_list_create());
-cps_api_object_list_t Get1000() {
-    return _1000.get();
-}
-cps_api_object_list_guard _10000(cps_api_object_list_create());
-cps_api_object_list_t Get10000() {
-    return _10000.get();
-}
-cps_api_object_list_guard _100000(cps_api_object_list_create());
-cps_api_object_list_t Get100000() {
-    return _100000.get();
+void UTDataClear() {
+    for (auto &it  : _test_objs ) {
+        if (it.second.get()==nullptr) continue;
+        it.second.set(nullptr);
+    }
 }
 
-cps_api_object_list_guard _1000000(cps_api_object_list_create());
-cps_api_object_list_t Get1000000() {
-    return _1000000.get();
-}
+cps_api_object_list_t Get10() { return GetFromCount(10); }
+cps_api_object_list_t Get100() { return GetFromCount(100); }
+cps_api_object_list_t Get1000() { return GetFromCount(1000); }
+cps_api_object_list_t Get10000() { return GetFromCount(10000); }
+cps_api_object_list_t Get100000() { return GetFromCount(100000); }
+cps_api_object_list_t Get1000000() { return GetFromCount(1000000); }
 
 cps_api_object_list_guard _big(cps_api_object_list_create());
 cps_api_object_list_t GeBIG() {
-    return _big.get();
+    return Get100000();
 }
 
 void __init_global_test_objects() {
     cps_api_object_guard og(cps_api_object_create());
     cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),BASE_IP_IPV6,cps_api_qualifier_TARGET);
+
+    struct _pre_init_maps_characteristics_t  {
+        size_t range_end;
+    };
+
+    std::array<size_t,13> lists = {1,10,100,1000,10000,100000,2,4,20,30,40,50,400000};
+
+    std::sort(lists.begin(),lists.end());
+
     size_t ix = 0;
-    size_t mx = 100000;
+    size_t mx = lists[lists.size()-1];
+
     for ( ; ix < mx ; ++ix ) {
-
-        cps_api_object_attr_delete(og.get(),BASE_IP_IPV6_VRF_ID);
         cps_api_object_attr_delete(og.get(),BASE_IP_IPV6_IFINDEX);
-
         cps_api_object_attr_add_u32(og.get(),BASE_IP_IPV6_IFINDEX,ix);
 
-        std::string _elem = cps_string::sprintf("%s-%d","Cliff",(int)ix);
 
         cps_api_object_attr_delete(og.get(),BASE_IP_IPV6_NAME);
+        std::string _elem = cps_string::sprintf("Cliff-UT-IPVX-%d",(int)ix);
         cps_api_object_attr_add(og.get(),BASE_IP_IPV6_NAME,_elem.c_str(),_elem.size());
 
-        if (ix < 100) {
-            cps_api_object_attr_delete(og.get(),BASE_IP_IPV6_VRF_ID);
-            cps_api_object_attr_add_u32(og.get(),BASE_IP_IPV6_VRF_ID,1);
-            cps_api_object_t o = cps_api_object_list_create_obj_and_append(_100.get());
-            cps_api_object_clone(o,og.get());
-        }
-        if (ix < 1000) {
-            cps_api_object_attr_delete(og.get(),BASE_IP_IPV6_VRF_ID);
-            cps_api_object_attr_add_u32(og.get(),BASE_IP_IPV6_VRF_ID,2);
-            cps_api_object_t o = cps_api_object_list_create_obj_and_append(_1000.get());
-            cps_api_object_clone(o,og.get());
-        }
-        if (ix < 10000) {
-            cps_api_object_attr_delete(og.get(),BASE_IP_IPV6_VRF_ID);
-            cps_api_object_attr_add_u32(og.get(),BASE_IP_IPV6_VRF_ID,3);
-            cps_api_object_t o = cps_api_object_list_create_obj_and_append(_10000.get());
-            cps_api_object_clone(o,og.get());
-        }
-        if (ix < 100000) {
-            cps_api_object_attr_delete(og.get(),BASE_IP_IPV6_VRF_ID);
-            cps_api_object_attr_add_u32(og.get(),BASE_IP_IPV6_VRF_ID,4);
-            cps_api_object_t o = cps_api_object_list_create_obj_and_append(_100000.get());
-            cps_api_object_clone(o,og.get());
+        for ( auto &_cur_range : lists) {
+            if (ix < _cur_range    ) {
+                cps_api_object_attr_delete(og.get(),BASE_IP_IPV6_VRF_ID);
+                cps_api_object_attr_add_u32(og.get(),BASE_IP_IPV6_VRF_ID,_cur_range);
+
+
+                cps_api_object_list_t lst = GetFromCount(_cur_range);
+
+                cps_api_object_t o = cps_api_object_list_create_obj_and_append(lst);
+                cps_api_object_clone(o,og.get());
+            }
+
         }
     }
     char _tmpl[]="/tmp/UT_xxXXXXXX";
@@ -185,8 +185,13 @@ void __init_global_test_objects() {
     assert(system(_cmd.c_str())==0);
 
 }
-
+static void __ns_uniqueue_init() {
+    std::string _pid = cps_string::sprintf("%d",(int)getpid());
+    setenv("CPSNS",_pid.c_str(),1);
+}
 void __init_class_map() {
+    __ns_uniqueue_init();
+
     std::vector<cps_api_attr_id_t> ids ;
 
     for ( auto &it : lst) {

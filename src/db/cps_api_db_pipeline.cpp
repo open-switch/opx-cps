@@ -17,20 +17,48 @@
 
 
 #include "cps_api_db.h"
-
+#include "cps_api_db_connection.h"
 #include "cps_api_db_response.h"
 #include "cps_api_vector_utils.h"
 
 #include "event_log.h"
 
-constexpr size_t IN_THE_PIPE() { return 500; }
+bool cps_db::for_each_store_field(cps_db::connection &conn,std::vector<char> &key, const char * field, size_t field_len, const char *data, size_t data_len) {
+    cps_db::connection_request _query(ProcessDBCache(),conn.addr());
+    cps_db::connection* query = &conn;
+    if (_query.valid()) {
+        query = &_query.get();
+    }
+    else return false;
+
+    if (!cps_db::ping(_query.get())) return false;
+
+    size_t count = 0;
+    bool ret = true;
+    auto _process_set_response = [&]() {
+       for(size_t ix=0; ix < count; ++ix) cps_db::dbkey_field_set_response(*query);
+       count = 0;
+    };
+
+    bool walked = cps_db::walk_keys(conn,&key[0],key.size(),[&](const void *inst_key, size_t len) {
+        if(!ret) return;
+        if(!cps_db::dbkey_field_set_request(*query, (char *)inst_key, len, field, field_len, data, data_len)) {
+            ret = false;
+        } else ++count;
+        if(count < cps_db::IN_THE_PIPE()) return;
+        _process_set_response();
+    });
+    if (walked == false || !ret) return false;
+    _process_set_response();
+    return true;
+}
 
 
 bool cps_db::store_objects(cps_db::connection &conn, cps_api_object_list_t objs) {
 
     cps_api_object_guard og(cps_api_object_create());
     if (!cps_db::ping(conn)) return false;
-    return cps_utils::cps_api_range_split(cps_api_object_list_size(objs),IN_THE_PIPE(),
+    return cps_utils::cps_api_range_split(cps_api_object_list_size(objs),cps_db::IN_THE_PIPE(),
             [&](size_t start, size_t mx) -> bool {
             for ( size_t ix = start; ix < mx ; ++ix ) {
                 cps_db::connection::db_operation_atom_t e[2];
@@ -98,7 +126,7 @@ bool cps_db::merge_objects(cps_db::connection &conn, cps_api_object_list_t objs)
 
     cps_api_object_guard og(cps_api_object_create());
     if (!cps_db::ping(conn)) return false;
-    return cps_utils::cps_api_range_split(cps_api_object_list_size(objs),IN_THE_PIPE(),
+    return cps_utils::cps_api_range_split(cps_api_object_list_size(objs),cps_db::IN_THE_PIPE(),
             [&](size_t start, size_t mx) -> bool {
             std::vector<char> key_buff;
             cps_api_object_guard og(cps_api_object_create());
@@ -120,7 +148,7 @@ bool cps_db::merge_objects(cps_db::connection &conn, cps_api_object_list_t objs)
 bool cps_db::get_objects_bulk(cps_db::connection &conn, std::vector<std::vector<char>> &keys, cps_api_object_list_t objs) {
     cps_api_object_guard og(cps_api_object_create());
     if (!cps_db::ping(conn)) return false;
-    return cps_utils::cps_api_range_split(keys.size(),IN_THE_PIPE(),
+    return cps_utils::cps_api_range_split(keys.size(),cps_db::IN_THE_PIPE(),
             [&](size_t start, size_t mx) -> bool {
 
             if (!bulk_get_req_from_array(conn,keys,start,mx)) return false;
@@ -143,7 +171,7 @@ bool cps_db::get_object_list(cps_db::connection &conn,cps_api_object_list_t objs
 
     cps_api_object_guard og(cps_api_object_create());
     if (!cps_db::ping(conn)) return false;
-    bool rc = cps_utils::cps_api_range_split(cps_api_object_list_size(objs),IN_THE_PIPE(),
+    bool rc = cps_utils::cps_api_range_split(cps_api_object_list_size(objs),cps_db::IN_THE_PIPE(),
             [&](size_t start, size_t mx) -> bool {
             std::vector<char> key_buff;
 
@@ -170,7 +198,7 @@ bool cps_db::get_object_list(cps_db::connection &conn,cps_api_object_list_t objs
 
 bool cps_db::delete_object_list(cps_db::connection &conn,cps_api_object_list_t objs) {
 	if (!cps_db::ping(conn)) return false;
-    return cps_utils::cps_api_range_split(cps_api_object_list_size(objs),IN_THE_PIPE(),
+    return cps_utils::cps_api_range_split(cps_api_object_list_size(objs),cps_db::IN_THE_PIPE(),
             [&](size_t start, size_t mx) -> bool {
             for ( size_t ix = start; ix < mx ; ++ix ) {
                 cps_db::connection::db_operation_atom_t e[2];
@@ -223,7 +251,7 @@ bool cps_db::get_objects(cps_db::connection &conn,std::vector<char> &key,cps_api
             rc = false;
         } else ++_count;
 
-        if (_count < IN_THE_PIPE()) return;
+        if (_count < cps_db::IN_THE_PIPE()) return;
         _drain_queue(_count);
     });
     if (walked==false || !rc) return false;
