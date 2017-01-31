@@ -18,8 +18,6 @@
 
 <cps-class-map >
 
-<metadata_entry key="[cps]" id="2" name="cps" desc="The CPS embedded space." embedded="true" node-type="subsystem" data-type="bin" owner-type="db" />
-
 <!-- Key data container-->
 <metadata_entry key="[cps].[cps/key_data]" id="0xffffffffffffffff" name="cps/key_data" desc="The CPS key data conainer." embedded="true" node-type="container" data-type="bin" />
 

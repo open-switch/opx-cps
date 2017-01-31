@@ -40,24 +40,41 @@
 #include <sys/stat.h>
 #include <string>
 #include <map>
+#include <mutex>
 
 static std_mutex_lock_create_static_init_rec(lock);
 static std::map<std::string,struct stat> _loaded_libs;
 
 static bool _cps_class_data(const char *name, std_dir_file_TYPE_t type,void *context) {
+    if (name==nullptr) return true;
     if (type != std_dir_file_T_FILE) return true;
 
+    std::string _dup_check = name;
+    if ((context!=nullptr) && _dup_check.find((const char*)context)==std::string::npos) {
+   	 return true;
+    }
 
      struct stat _stats;
      if (stat(name,&_stats)!=0) {
          memset(&_stats,0,sizeof(_stats));
      }
+     auto _loc = _dup_check.rfind('/');
+     if (_loc!=std::string::npos) {
+    	 _dup_check = _dup_check.substr(_loc+1);
+     }
+
+	_loc = _dup_check.find('.');
+
+     if (_loc!=std::string::npos) {
+    	 _dup_check = _dup_check.substr(0,_loc);
+     }
+
 
      std_mutex_simple_lock_guard lg(&lock);
 
     //avoid duplicate loaded libs..
-    if (_loaded_libs.find(name)!=_loaded_libs.end()) {
-        if (_loaded_libs[name].st_ino == _stats.st_ino) return true;
+    if (_loaded_libs.find(_dup_check)!=_loaded_libs.end()) {
+        return true;
     }
     if (strstr(name,(const char*)context)!=NULL) {
         void (*class_data_init)(void)=nullptr;
@@ -70,7 +87,7 @@ static bool _cps_class_data(const char *name, std_dir_file_TYPE_t type,void *con
          if (STD_ERR_OK != std_shlib_load(name, &lib_hndl, func_map, func_map_size)) {
              EV_LOG(ERR,DSAPI,0,"cps_class_data","Can not load function map");
          } else {
-             _loaded_libs[name] = _stats;
+             _loaded_libs[_dup_check] = _stats;
 
              class_data_init();
              //Since we don't need to use any functions in the library after initialized
@@ -87,7 +104,7 @@ bool cps_class_objs_load(const char *path, const char * prefix) {
     return rc==STD_ERR_OK;
 }
 
-void cps_api_class_map_init(void) {
+void _cps_api_class_map_init(void) {
     const char * path = std_getenv("LD_LIBRARY_PATH");
     if (path==NULL) {
         path = CPS_DEF_SEARCH_PATH;
@@ -110,4 +127,13 @@ void cps_api_class_map_init(void) {
     cps_api_metadata_import();
 }
 
-
+static std::mutex *_init_lock = new std::mutex;
+void cps_api_class_map_init(void) {
+    {
+        std::lock_guard<std::mutex> l(*_init_lock);
+        static bool loaded = false;
+        if(loaded) return;
+        loaded = true;
+    }
+    _cps_api_class_map_init();
+}
