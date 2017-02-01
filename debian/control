@@ -1,7 +1,7 @@
 Source: opx-cps
 Section: net
 Priority: optional
-Maintainer: OpenSwitch Developers <ops-dev@lists.openswitch.net>
+Maintainer: Dell EMC <ops-dev@lists.openswitch.net>
 Build-Depends:
  debhelper (>= 9), dh-autoreconf, libopx-common-dev, libopx-logging-dev,
  python-dev, dh-python, dh-systemd, libhiredis-dev, libsystemd-dev
