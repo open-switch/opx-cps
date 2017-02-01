@@ -19,6 +19,10 @@
 #include "cps_api_object.h"
 #include "cps_api_errors.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * The following function call will take the object and store the object into the DB in either the running, startup or running + startup areas.
  * The DB Config Type (running cfg, running + startup, startup only) present in the object is used to control the destination.
@@ -34,6 +38,9 @@
  */
 cps_api_return_code_t cps_api_db_config_write(cps_api_object_t obj);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 
