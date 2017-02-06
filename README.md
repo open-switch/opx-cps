@@ -37,18 +37,23 @@ opx-yang-utils-dev\_*version*\_*arch*.deb — Tools to parse yang files
 See [Architecture](https://github.com/open-switch/opx-docs/wiki/Architecture) for more information on the CPS module.
 
 
-##Debugging Tools:
+##Debugging Tools
 
 This section covers the following tools.
 
 1) cps\_model\_info
+
 2) cps\_get\_oid
+
 3) cps\_set\_oid
+
 4) cps\_trace\_events
+
 5) cps\_send\_events
 
 
-###cps\_model\_info: 
+
+###1) cps\_model\_info: 
 This tool is useful to get all information about CPS Objects on the target.
 It's used to get the attributes of a specific CPS object or first-level contents of a given YANG path of the CPS Object (as defined in the Yang model).
 
@@ -119,7 +124,7 @@ Process Owner:  base\_nas
 
 
 
-###cps\_get\_oid.py
+###2) cps\_get\_oid.py
 This tool is used to get data from a CPS Object Service provider.
 
 ####Usage:
@@ -148,7 +153,7 @@ root@OPX:~#
 
 
 
-###cps\_set\_oid.py
+###3) cps\_set\_oid.py
 This tool is used to do transactions on a given CPS Object.
 
 ####Usage:
@@ -168,7 +173,7 @@ root@OPX:/opt/dell/os10/bin# cps\_set\_oid.py target create base-if-phy/physical
 
 
 
-###cps\_trace\_events.py
+###4) cps\_trace\_events.py
 This tool is used to subscribe/listen for CPS events on the target.
 
 ####Usage:
@@ -200,7 +205,7 @@ if/interfaces-state/interface/admin-status = 2
 
 
 
-###cps\_send\_event.py
+###5) cps\_send\_event.py
 
 This tool is used to publish/send CPS events on the target.
 
