@@ -64,22 +64,30 @@ cps\_model\_info [CPS Object Path as defined in the Yang model]
 
 ####Examples:
 
+```
 root@OPX:~# cps\_model\_info
+
 base-packet
+
 base-pas
-base-switch
+
 base-acl
+
 if
-base-mirror
+
 base-qos
+
 base-if-phy
-<snip>
 
+```
 
+```
 root@OPX:~# cps\_model\_info base-if-phy
 
 base-if-phy/front-panel-port
+
         Attribute Type =  list
+
         Description =  This map contains the front panel ports and theNPU ports associated with with the front panel ports.
 
 Registered to CPS with qualifier:  target
@@ -87,21 +95,24 @@ Registered to CPS with qualifier:  target
 Process Owner:  base\_nas\_front\_panel\_ports.py
 
 base-if-phy/physical
+
         Attribute Type =  list
         Description =
 
 Registered to CPS with qualifier:  target
 
 Process Owner:  base\_nas
+```
 
-
-
-
+```
 root@OPX:~# cps\_model\_info base-if-phy/physical
 
 base-if-phy/physical/phy-mode
+
         Attribute Type =  leaf
+
         Data Type =  enum
+
         Description =  Port PHY mode, Ethernet or FC
 
 Registered to CPS with qualifier:  target
@@ -110,30 +121,32 @@ Process Owner:  base\_nas
 
 
 base-if-phy/physical/hardware-port-id
+
         Attribute Type =  leaf
+
         Data Type =  uint32_t
+
         Description =  This is the physical hardware port
 
 Registered to CPS with qualifier:  target
 
 Process Owner:  base\_nas
-<snip>
-
-
-
-
+```
 
 
 ###2) cps\_get\_oid.py
 This tool is used to get data from a CPS Object Service provider.
 
 ####Usage:
-cps\_get\_oid.py <qualifier> <CPS Object Path as defined in the Yang model>
+cps\_get\_oid.py *qualifier* *CPS Object Path as defined in the Yang model*
 
 CPS Object Path can be determined from cps\_model\_info tool.
 
+Qualifier: target/observed/proposed
+
 ####Examples:
 
+```
 root@OPX:~# cps\_get\_oid.py target base-if-phy/physical hardware-port-id=125
 
 Key: 1.17.1114163.1114115.1114116.
@@ -149,8 +162,7 @@ base-if-phy/physical/phy-media = 1
 base-if-phy/physical/front-panel-number = 25
 base-if-phy/physical/loopback = 0
 root@OPX:~#                             
-
-
+```
 
 
 ###3) cps\_set\_oid.py
@@ -158,17 +170,19 @@ This tool is used to do transactions on a given CPS Object.
 
 ####Usage:
 
-cps\_set\_oid.py <qualifier> <operation> <CPS Object Path as defined in the Yang model> <CPS Object attr=value>
+cps\_set\_oid.py *qualifier* *operation* *CPS Object Path as defined in the Yang model* *CPS Object attr=value*
 
 CPS Object Path and its attributes can be determined from cps\_model\_info tool.
 
 Qualifier: target/observed/proposed
+
 Operation: create/set/delete
 
 ####Examples:
 
+```
 root@OPX:/opt/dell/os10/bin# cps\_set\_oid.py target create base-if-phy/physical hardware-port-id=26 admin-state=2
-
+```
 
 
 
@@ -178,12 +192,13 @@ This tool is used to subscribe/listen for CPS events on the target.
 
 ####Usage:
 
-cps\_trace\_events.py <qualifier> <CPS Object Path as defined in the Yang model>
+cps\_trace\_events.py *qualifier* *CPS Object Path as defined in the Yang model*
 
 CPS Object Path can be determined from cps\_model\_info tool.
 
 ####Examples:
 
+```
 root@OPX:~# cps\_trace\_events.py observed dell-base-if-cmn/if/interfaces-state/interface
 Key : 2.19.44.2883618.2883611.2883586.
  Registering for observed dell-base-if-cmn/if/interfaces-state/interface
@@ -200,9 +215,7 @@ Key: 2.19.44.2883618.2883611.2883586.
 if/interfaces-state/interface/name = e101-025-0
 if/interfaces-state/interface/if-index = 41
 if/interfaces-state/interface/admin-status = 2
-                                                        
-
-
+```                                                     
 
 
 ###5) cps\_send\_event.py
@@ -211,17 +224,20 @@ This tool is used to publish/send CPS events on the target.
 
 ####Usage:
 
-cps\_send\_event.py <operation> <qualifier> <CPS Object Path as defined in the Yang model> <CPS Object attr=value>
+cps\_send\_event.py *operation* *qualifier* *CPS Object Path as defined in the Yang model* *CPS Object attr=value*
 
 CPS Object Path and its attributes can be determined from cps\_model\_info tool.
 
 Qualifier: target/observed/proposed
+
 Operation: create/set/delete
 
 
 ####Examples:
 
+```
 root@OPX:/opt/dell/os10/bin# cps\_send\_event.py create observed  dell-base-if-cmn/if/interfaces-state/interface  if/interfaces-state/interface/name=e101-007-0 if/interfaces-state/interface/oper-status=2
 
+```
 
 (c) 2017 Dell
