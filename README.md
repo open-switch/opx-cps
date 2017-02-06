@@ -65,72 +65,60 @@ cps\_model\_info [CPS Object Path as defined in the Yang model]
 ####Examples:
 
 ```
-root@OPX:~# cps\_model\_info
+root@OPX:~# cps_model_info
 
 base-packet
-
 base-pas
-
 base-acl
-
 if
-
 base-qos
-
 base-if-phy
 
 ```
 
 ```
-root@OPX:~# cps\_model\_info base-if-phy
+root@OPX:~# cps_model_info base-if-phy
 
 base-if-phy/front-panel-port
-
         Attribute Type =  list
-
         Description =  This map contains the front panel ports and theNPU ports associated with with the front panel ports.
 
 Registered to CPS with qualifier:  target
 
-Process Owner:  base\_nas\_front\_panel\_ports.py
+Process Owner:  base_nas_front_panel_ports.py
 
-base-if-phy/physical
-
+base-if-phy/hardware-port
         Attribute Type =  list
-        Description =
+        Description =  This entity holds the details of which front panel port corresponds to a specific NPU/hardware port.  Thislist is not dynamic and therefore will not change for a single instance of a product.
 
 Registered to CPS with qualifier:  target
 
-Process Owner:  base\_nas
+Process Owner:  base_nas_front_panel_ports.py
+
+
 ```
 
 ```
-root@OPX:~# cps\_model\_info base-if-phy/physical
+root@OPX:~# cps_model_info base-if-phy/physical
 
 base-if-phy/physical/phy-mode
-
         Attribute Type =  leaf
-
         Data Type =  enum
-
         Description =  Port PHY mode, Ethernet or FC
 
 Registered to CPS with qualifier:  target
 
-Process Owner:  base\_nas
+Process Owner:  base_nas
 
 
 base-if-phy/physical/hardware-port-id
-
         Attribute Type =  leaf
-
         Data Type =  uint32_t
-
         Description =  This is the physical hardware port
 
 Registered to CPS with qualifier:  target
 
-Process Owner:  base\_nas
+Process Owner:  base_nas
 ```
 
 
@@ -147,7 +135,7 @@ Qualifier: target/observed/proposed
 ####Examples:
 
 ```
-root@OPX:~# cps\_get\_oid.py target base-if-phy/physical hardware-port-id=125
+root@OPX:~# cps_get_oid.py target base-if-phy/physical hardware-port-id=125
 
 Key: 1.17.1114163.1114115.1114116.
 base-if-phy/physical/breakout-capabilities = 4,2,4
@@ -181,7 +169,7 @@ Operation: create/set/delete
 ####Examples:
 
 ```
-root@OPX:/opt/dell/os10/bin# cps\_set\_oid.py target create base-if-phy/physical hardware-port-id=26 admin-state=2
+root@OPX:/opt/dell/os10/bin# cps_set_oid.py target create base-if-phy/physical hardware-port-id=26 admin-state=2
 ```
 
 
@@ -199,7 +187,7 @@ CPS Object Path can be determined from cps\_model\_info tool.
 ####Examples:
 
 ```
-root@OPX:~# cps\_trace\_events.py observed dell-base-if-cmn/if/interfaces-state/interface
+root@OPX:~# cps_trace_events.py observed dell-base-if-cmn/if/interfaces-state/interface
 Key : 2.19.44.2883618.2883611.2883586.
  Registering for observed dell-base-if-cmn/if/interfaces-state/interface
 1.2.131094.131075.
@@ -236,7 +224,7 @@ Operation: create/set/delete
 ####Examples:
 
 ```
-root@OPX:/opt/dell/os10/bin# cps\_send\_event.py create observed  dell-base-if-cmn/if/interfaces-state/interface  if/interfaces-state/interface/name=e101-007-0 if/interfaces-state/interface/oper-status=2
+root@OPX:/opt/dell/os10/bin# cps_send_event.py create observed  dell-base-if-cmn/if/interfaces-state/interface  if/interfaces-state/interface/name=e101-007-0 if/interfaces-state/interface/oper-status=2
 
 ```
 
