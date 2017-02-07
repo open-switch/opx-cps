@@ -478,7 +478,7 @@ static std::string _escape(std::string data) {
 
 std::string cps_api_object_attr_as_string(cps_api_attr_id_t id, const void * data, size_t len) {
     const char * _raw_name = cps_attr_id_to_name(id);
-    std::string _ret = _raw_name!=nullptr ? _raw_name : cps_string::tostring("%d",(int)id);
+    std::string _ret = _raw_name!=nullptr ? _raw_name : cps_string::sprintf("%d",(int)id);
     std::string _data = cps_api_object_attr_data_to_string(id,data,len);
 
     return _ret + " : " + _escape(_data);
