@@ -78,7 +78,8 @@ public:
 
     bool response(response_set &data, bool expect_events = false);
 
-    bool operation(db_operation_atom_t * lst,size_t len);
+    bool operation(db_operation_atom_t * lst,size_t len, bool force_flush=false);
+    bool flush();
 
     bool get_event(response_set &data);
     bool has_event();
@@ -107,9 +108,12 @@ public:
 
     void put(const std::string &name, connection* conn);
     void remove(const std::string &name);
+
+    void flush_pending();
 };
 
 cps_db::connection_cache & ProcessDBCache();
+cps_db::connection_cache & ProcessDBEvents();
 
 class connection_request {
     std::string _name;
