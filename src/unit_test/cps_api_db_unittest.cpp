@@ -183,6 +183,33 @@ TEST(cps_api_db,cps_db_api) {
 
 }
 
+TEST(cps_api_db,cps_db_standard_api_test) {
+    cps_api_object_guard og(cps_api_obj_tool_create(cps_api_qualifier_TARGET,BASE_IP_IPV6_ADDRESS,true));
+    ASSERT_TRUE(og.get()!=nullptr);
+
+
+    cps_api_object_attr_add_u32(og.get(),BASE_IP_IPV6_VRF_ID,0);
+    cps_api_object_attr_add_u32(og.get(),BASE_IP_IPV6_IFINDEX,1);
+
+    ASSERT_TRUE(cps_api_commit_one(cps_api_oper_CREATE,og.get(),1,100)==cps_api_ret_code_OK);
+    ASSERT_TRUE(cps_api_commit_one(cps_api_oper_DELETE,og.get(),1,100)==cps_api_ret_code_OK);
+
+    cps_api_object_attr_delete(og.get(),BASE_IP_IPV6_IFINDEX);
+    cps_api_object_attr_add_u32(og.get(),BASE_IP_IPV6_IFINDEX,2);
+    ASSERT_TRUE(cps_api_commit_one(cps_api_oper_CREATE,og.get(),1,100)==cps_api_ret_code_OK);
+
+    cps_api_object_set_type_operation(cps_api_object_key(og.get()),cps_api_oper_SET);
+    ASSERT_TRUE(cps_api_commit_one(cps_api_oper_SET,og.get(),1,100)==cps_api_ret_code_OK);
+
+    ASSERT_TRUE(cps_api_object_exact_match(og.get(),true));
+    cps_api_object_list_guard lg(cps_api_object_list_create());
+
+    ASSERT_EQ(cps_api_get_objs(og.get(),lg.get(),2,100),cps_api_ret_code_OK);
+    ASSERT_EQ(cps_api_object_list_size(lg.get()),1);
+
+    ASSERT_TRUE(cps_api_commit_one(cps_api_oper_DELETE,og.get(),1,100)==cps_api_ret_code_OK);
+}
+
 
 size_t get_object_count(cps_api_object_t obj) {
     cps_api_object_guard _og(cps_api_object_create());
