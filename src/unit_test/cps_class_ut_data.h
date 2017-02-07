@@ -128,8 +128,12 @@ struct _node_details {
  * Init librarry unit test
  */
 void __init_class_map();
+void UTDataClear();
 std::vector<_node_details>&__get_class_map();
 
+
+cps_api_object_list_t GetFromCount(size_t count);
+cps_api_object_list_t Get10();
 cps_api_object_list_t Get100();
 cps_api_object_list_t Get1000();
 cps_api_object_list_t Get10000();
