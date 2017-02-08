@@ -660,7 +660,7 @@ bool cps_api_object_list_set(cps_api_object_list_t list,size_t ix, cps_api_objec
  * @return true if no entries - false if there are elements
  */
 bool cps_api_list_debug(void) ;
-void cps_api_list_stats();
+void cps_api_list_stats(void);
 #ifdef __cplusplus
 }
 #endif

@@ -83,12 +83,12 @@ using cps_class_map_key_to_type = cps_api_key_cache<_key_characteristics>;
 
 
 static std_mutex_lock_create_static_init_rec(lock);
-static cps_class_map_type_t _class_def;
-static cps_class_map_string_t _str_map;
-static cps_class_map_enums_t _enum_map;
-static cps_class_map_id_to_enum_t _attr_id_to_enum;
-static cps_class_map_key_to_map_element _key_to_map_element;
-static cps_class_map_key_to_type _key_storage_type;
+static auto _class_def = new cps_class_map_type_t;
+static auto _str_map = new cps_class_map_string_t;
+static auto _enum_map = new cps_class_map_enums_t;
+static auto _attr_id_to_enum = new cps_class_map_id_to_enum_t;
+static auto _key_to_map_element = new cps_class_map_key_to_map_element;
+static auto  *_key_storage_type = new cps_class_map_key_to_type;
 const static size_t NO_OFFSET=0;
 
 
@@ -130,22 +130,22 @@ static void cps_class_data_has_been_loaded(void) {
 
 const cps_class_map_node_details_int_t * cps_dict_find_by_name(const char * name) {
     cps_class_data_has_been_loaded();
-    const auto it = _str_map.find(name);
-    if (it==_str_map.end()) return nullptr;
+    const auto it = _str_map->find(name);
+    if (it==_str_map->end()) return nullptr;
     return it->second;
 }
 
 const cps_class_map_node_details_int_t * cps_dict_find_by_id(cps_api_attr_id_t id) {
     cps_class_data_has_been_loaded();
-    auto it = _class_def.find(id);
-    if (it==_class_def.end()) return nullptr;
+    auto it = _class_def->find(id);
+    if (it==_class_def->end()) return nullptr;
     return it->second.get();
 }
 
 cps_class_map_node_details_int_t * cps_dict_find_by_id(cps_api_attr_id_t id, bool writable) {
     cps_class_data_has_been_loaded(); (void)writable;
-    auto it = _class_def.find(id);
-    if (it==_class_def.end()) return nullptr;
+    auto it = _class_def->find(id);
+    if (it==_class_def->end()) return nullptr;
     return it->second.get();
 }
 
@@ -159,7 +159,7 @@ cps_class_map_node_details_int_t * cps_dict_find_by_key(const cps_api_key_t *key
 
     if (_src_len<=offset) return nullptr;
 
-    _key_to_map_element.find(_src+offset,_src_len-offset,ref,true);
+    _key_to_map_element->find(_src+offset,_src_len-offset,ref,true);
     if (ref==nullptr) return nullptr;
     return ref;
 }
@@ -169,8 +169,8 @@ cps_class_map_node_details_int_t * cps_dict_find_by_key(const cps_api_key_t *key
 void cps_dict_walk(void *context, cps_dict_walk_fun fun) {
     std_mutex_simple_lock_guard lg(&lock);
     cps_class_data_has_been_loaded();
-    auto it = _class_def.cbegin();
-    auto end = _class_def.cend();
+    auto it = _class_def->cbegin();
+    auto end = _class_def->cend();
     for ( ; it != end ; ++it ) {
         if (!fun(context,it->second.get())) break;
     }
@@ -183,7 +183,7 @@ cps_api_return_code_t cps_class_map_init(cps_api_attr_id_t id, const cps_api_att
     std::vector<cps_api_attr_id_t> v(ids,ids+(ids_len));
     if(ids_len==0) return cps_api_ret_code_ERR;
 
-    if (_class_def.find(id)!=_class_def.end()) {
+    if (_class_def->find(id)!=_class_def->end()) {
         EV_LOGGING(DSAPI,WARNING,0,"CPS-META","ID %d is already used by another component - %s failed",id,details->name);
         return cps_api_ret_code_ERR;
     }
@@ -209,9 +209,9 @@ cps_api_return_code_t cps_class_map_init(cps_api_attr_id_t id, const cps_api_att
     cps_api_key_t _key;
     cps_api_key_init_from_attr_array(&_key,&ref.ids[0],ref.ids.size(),NO_OFFSET);
 
-    _key_to_map_element.insert(&_key,p.get());
-    _str_map[p->full_path] = p.get();
-    _class_def[id] = std::move(p);
+    _key_to_map_element->insert(&_key,p.get());
+    (*_str_map)[p->full_path] = p.get();
+    (*_class_def)[id] = std::move(p);
     return cps_api_ret_code_OK;
 }
 
@@ -251,7 +251,7 @@ const char * cps_class_attr_name(const cps_api_attr_id_t *ids, size_t ids_len) {
     cps_api_key_t key;
     cps_api_key_init_from_attr_array(&key,(cps_api_attr_id_t *)ids,ids_len,NO_OFFSET);
     cps_class_map_node_details_int_t *p = nullptr;
-    _key_to_map_element.find(&key,p,true);
+    _key_to_map_element->find(&key,p,true);
 
     if (p==nullptr) return nullptr;
     return p->name.c_str();
@@ -263,7 +263,7 @@ bool cps_class_attr_is_embedded(const cps_api_attr_id_t *ids, size_t ids_len) {
     cps_api_key_t key;
     cps_api_key_init_from_attr_array(&key,(cps_api_attr_id_t *)ids,ids_len,NO_OFFSET);
     cps_class_map_node_details_int_t *p = nullptr;
-    _key_to_map_element.find(&key,p,true);
+    _key_to_map_element->find(&key,p,true);
 
     if (p==nullptr) return nullptr;
 
@@ -276,7 +276,7 @@ bool cps_class_attr_is_valid(const cps_api_attr_id_t *ids, size_t ids_len) {
     cps_api_key_t key;
     cps_api_key_init_from_attr_array(&key,(cps_api_attr_id_t *)ids,ids_len,NO_OFFSET);
     cps_class_map_node_details_int_t *p = nullptr;
-    _key_to_map_element.find(&key,p,true);
+    _key_to_map_element->find(&key,p,true);
 
     return (p!=nullptr);
 }
@@ -304,12 +304,12 @@ const char * cps_class_string_from_key(cps_api_key_t *key, size_t offset) {
 
 
 cps_api_return_code_t cps_class_map_enum_reg(const char *enum_name, const char *field, int value, const char * descr) {
-    auto it = _enum_map.find(enum_name);
-    if (it==_enum_map.end()) {
-        _enum_map[enum_name] = std::move(CPSEnum(enum_name, enum_name));
-        it = _enum_map.find(enum_name);
+    auto it = _enum_map->find(enum_name);
+    if (it==_enum_map->end()) {
+        (*_enum_map)[enum_name] = std::move(CPSEnum(enum_name, enum_name));
+        it = _enum_map->find(enum_name);
     }
-    if (it==_enum_map.end()) {
+    if (it==_enum_map->end()) {
         return cps_api_ret_code_ERR;
     }
     it->second.reg(field,value,descr);
@@ -317,24 +317,24 @@ cps_api_return_code_t cps_class_map_enum_reg(const char *enum_name, const char *
 }
 
 cps_api_return_code_t cps_class_map_enum_associate(cps_api_attr_id_t id, const char *name) {
-    _attr_id_to_enum[id] = name;
+    (*_attr_id_to_enum)[id] = name;
     return cps_api_ret_code_OK;
 }
 
 const char *cps_class_enum_id(cps_api_attr_id_t id, int val) {
-    auto it = _attr_id_to_enum.find(id);
-    if (it==_attr_id_to_enum.end()) return nullptr;
+    auto it = _attr_id_to_enum->find(id);
+    if (it==_attr_id_to_enum->end()) return nullptr;
 
-    auto eit = _enum_map.find(it->second.c_str());
-    if (eit == _enum_map.end()) return nullptr;
+    auto eit = _enum_map->find(it->second.c_str());
+    if (eit == _enum_map->end()) return nullptr;
 
     return eit->second.name(val);
 }
 
 cps_api_attr_id_t *cps_api_attr_name_to_id(const char *name) {
     std_mutex_simple_lock_guard lg(&lock);
-    auto it = _str_map.find(name);
-    if (it==_str_map.end()) return nullptr;
+    auto it = _str_map->find(name);
+    if (it==_str_map->end()) return nullptr;
     return &it->second->id;
 }
 
@@ -356,11 +356,11 @@ const std::vector<cps_api_attr_id_t> & cps_api_key_attrs(const cps_api_key_t *ke
 }
 
 int    cps_api_enum_value(cps_api_attr_id_t id, const char *tag) {
-    auto it = _attr_id_to_enum.find(id);
-    if (it==_attr_id_to_enum.end()) return -1;
+    auto it = _attr_id_to_enum->find(id);
+    if (it==_attr_id_to_enum->end()) return -1;
 
-    auto eit = _enum_map.find(it->second.c_str());
-    if (eit == _enum_map.end()) return -1;
+    auto eit = _enum_map->find(it->second.c_str());
+    if (eit == _enum_map->end()) return -1;
     return eit->second.value(tag);
 }
 
@@ -380,25 +380,25 @@ bool cps_class_map_attr_class(cps_api_attr_id_t id, CPS_CLASS_ATTR_TYPES_t *type
 
 CPS_API_OBJECT_OWNER_TYPE_t cps_api_obj_get_ownership_type(cps_api_object_t obj) {
     std_mutex_simple_lock_guard lg(&lock);
-    _key_characteristics *p = _key_storage_type.at(cps_api_object_key(obj),true);
+    _key_characteristics *p = _key_storage_type->at(cps_api_object_key(obj),true);
     if (p==nullptr) return CPS_API_OBJECT_SERVICE;
     return p->_owner_type;
 }
 
 bool cps_api_obj_has_auto_events(cps_api_object_t obj) {
     std_mutex_simple_lock_guard lg(&lock);
-    _key_characteristics *p = _key_storage_type.at(cps_api_object_key(obj),true);
+    _key_characteristics *p = _key_storage_type->at(cps_api_object_key(obj),true);
     if (p==nullptr) return false;
     return p->_automated_event;
 }
 
 void cps_api_obj_set_ownership_type(cps_api_key_t *key, CPS_API_OBJECT_OWNER_TYPE_t type) {
     std_mutex_simple_lock_guard lg(&lock);
-    _key_characteristics *p = _key_storage_type.at(key,true);
+    _key_characteristics *p = _key_storage_type->at(key,true);
     if (p==nullptr) {
         _key_characteristics s;
         s._owner_type = type;
-        _key_storage_type.insert(key,s);
+        _key_storage_type->insert(key,s);
     } else {
         p->_owner_type = type;
     }
@@ -406,11 +406,11 @@ void cps_api_obj_set_ownership_type(cps_api_key_t *key, CPS_API_OBJECT_OWNER_TYP
 
 void cps_api_obj_set_auto_event(cps_api_key_t *key, bool automated_events) {
     std_mutex_simple_lock_guard lg(&lock);
-    _key_characteristics *p = _key_storage_type.at(key,true);
+    _key_characteristics *p = _key_storage_type->at(key,true);
     if (p==nullptr) {
         _key_characteristics s;
         s._automated_event = automated_events;
-        _key_storage_type.insert(key,s);
+        _key_storage_type->insert(key,s);
     } else {
         p->_automated_event = automated_events;
     }

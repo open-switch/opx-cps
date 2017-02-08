@@ -239,7 +239,7 @@ bool handle_event_fields(request_walker_contexct_t &ctx) {
 }
 
 bool request_walker_contexct_t::set(cps_db::connection::db_operation_atom_t * lst_,size_t len_) {
-    static const std::unordered_map<int,std::function<bool(request_walker_contexct_t&)>> _map = {
+    static const auto *_map = new std::unordered_map<int,std::function<bool(request_walker_contexct_t&)>> {
         {(int)cps_db::connection::db_operation_atom_t::obj_fields_t::obj_field_STRING,handle_str},
         {(int)cps_db::connection::db_operation_atom_t::obj_fields_t::obj_field_OBJ_CLASS,handle_class_key},
         {(int)cps_db::connection::db_operation_atom_t::obj_fields_t::obj_field_OBJ_INSTANCE,handle_instance_key},
@@ -251,7 +251,7 @@ bool request_walker_contexct_t::set(cps_db::connection::db_operation_atom_t * ls
     size_t iter = 0;
     for ( ; iter < len_; ++iter ) {
         _cur = lst_+iter;
-        if (!_map.at((int)_cur->_atom_type)(*this)) return false;
+        if (!_map->at((int)_cur->_atom_type)(*this)) return false;
     }
     return true;
 }
