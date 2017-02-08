@@ -26,13 +26,18 @@ if __name__ == '__main__':
         print "%s qual base-port/physical hardware-port-id=26"
         print "qual = target,observed,.."
         print "qual is an optional argument if not specified, target is used by default"
+        print "pass db in the argument list to query the CPS DB"
         exit(1)
     l = []
     k = []
     cur_obj = None
+    from_db = False
     qual = "target"
-    qual_list = ["target","observed","proposed","realtime"]
+    qual_list = ["target","observed","proposed","realtime","running","startup"]
     for e in sys.argv[1:]:
+        if e == 'db':
+            from_db = True
+            continue
         if e in qual_list:
             qual = e
             continue
@@ -48,7 +53,13 @@ if __name__ == '__main__':
 
     k.append(cur_obj.get())
 
-    cps.get(k, l)
+    if from_db == False:
+        cps.get(k, l)
+    else:
+        for obj in k:
+            cps.db_get(obj, l)
+
     for entry in l:
         print ""
         cps_utils.print_obj(entry)
+        print "----------------------------------------------"
