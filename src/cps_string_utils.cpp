@@ -59,7 +59,6 @@ std::string tostring(const void *data, size_t len) {
         if ((ix%16==0) && (ix!=0)) s+="\n";
         s+=cps_string::sprintf("%02x ",((unsigned char*)data)[ix]);
     }
-    s+="\n";
     return s;
 }
 

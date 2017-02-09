@@ -116,42 +116,29 @@ const char *CPSEnum::name(int value) const  {
     return it->second;
 }
 
-static bool _map_init=false;
-
-static void cps_class_data_has_been_loaded(void) {
-
-    std_mutex_simple_lock_guard lg(&lock);
-    if (_map_init) return;
-    if (!_map_init) {
-        _map_init = true;
-        cps_api_class_map_init();
-    }
-}
-
 const cps_class_map_node_details_int_t * cps_dict_find_by_name(const char * name) {
-    cps_class_data_has_been_loaded();
+    cps_api_class_map_init();
     const auto it = _str_map->find(name);
     if (it==_str_map->end()) return nullptr;
     return it->second;
 }
 
 const cps_class_map_node_details_int_t * cps_dict_find_by_id(cps_api_attr_id_t id) {
-    cps_class_data_has_been_loaded();
+    cps_api_class_map_init();
     auto it = _class_def->find(id);
     if (it==_class_def->end()) return nullptr;
     return it->second.get();
 }
 
 cps_class_map_node_details_int_t * cps_dict_find_by_id(cps_api_attr_id_t id, bool writable) {
-    cps_class_data_has_been_loaded(); (void)writable;
+    cps_api_class_map_init(); (void)writable;
     auto it = _class_def->find(id);
     if (it==_class_def->end()) return nullptr;
     return it->second.get();
 }
 
 cps_class_map_node_details_int_t * cps_dict_find_by_key(const cps_api_key_t *key, size_t offset) {
-    cps_class_data_has_been_loaded();
-
+    cps_api_class_map_init();
     cps_class_map_node_details_int_t *ref= nullptr;
 
     const cps_api_key_element_t *_src = cps_api_key_elem_start((cps_api_key_t*)key);
@@ -168,7 +155,7 @@ cps_class_map_node_details_int_t * cps_dict_find_by_key(const cps_api_key_t *key
 
 void cps_dict_walk(void *context, cps_dict_walk_fun fun) {
     std_mutex_simple_lock_guard lg(&lock);
-    cps_class_data_has_been_loaded();
+    cps_api_class_map_init();
     auto it = _class_def->cbegin();
     auto end = _class_def->cend();
     for ( ; it != end ; ++it ) {
@@ -478,7 +465,7 @@ static std::string _escape(std::string data) {
 
 std::string cps_api_object_attr_as_string(cps_api_attr_id_t id, const void * data, size_t len) {
     const char * _raw_name = cps_attr_id_to_name(id);
-    std::string _ret = _raw_name!=nullptr ? _raw_name : cps_string::tostring("%d",(int)id);
+    std::string _ret = _raw_name!=nullptr ? _raw_name : cps_string::sprintf("%d",(int)id);
     std::string _data = cps_api_object_attr_data_to_string(id,data,len);
 
     return _ret + " : " + _escape(_data);

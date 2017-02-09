@@ -403,6 +403,30 @@ bool cps_api_object_attr_delete(cps_api_object_t obj, cps_api_attr_id_t attr_id)
 	return _first_time;
 }
 
+bool cps_api_object_delete_it(cps_api_object_t obj, cps_api_object_it_t *it) {
+    if (!cps_api_object_it_valid(it)) return false;
+
+	cps_api_object_internal_t *_p = (cps_api_object_internal_t*)obj;
+
+    void  *_start = obj_data(_p);
+    void *_end = obj_data_end(_p);
+
+    if (it->attr < _start || it->attr>_end) {
+    	return false;
+    }
+
+    size_t _it_size = std_tlv_total_len(it->attr);
+    char *_it_end = (char*)it->attr + _it_size;
+
+    if (_it_end >_end) return false;
+
+    memmove(it->attr, _it_end, (char*)_end - _it_end);
+
+    _p->remain += _it_size;
+    return true;
+}
+
+
 cps_api_object_attr_t cps_api_object_e_get(cps_api_object_t obj, cps_api_attr_id_t *id,
         size_t id_size) {
     size_t len = obj_used_len((cps_api_object_internal_t*)obj);

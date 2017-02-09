@@ -387,6 +387,37 @@ TEST(cps_api_object,cps_obj_attr) {
 
 }
 
+TEST(cps_api_object,cps_api_object_iterators) {
+    cps_api_object_guard o(cps_api_object_create());
+
+    cps_api_object_attr_add_u32(o.get(),1,1);
+    cps_api_object_attr_add_u32(o.get(),1,2);
+    cps_api_object_attr_add_u32(o.get(),1,3);
+    cps_api_object_attr_add_u32(o.get(),1,4);
+    cps_api_object_attr_add_u32(o.get(),1,5);
+    cps_api_object_attr_add_u32(o.get(),1,6);
+
+    cps_api_object_it_t it;
+    for ( cps_api_object_it_begin(o.get(),&it) ;
+            cps_api_object_it_valid(&it) ;
+            cps_api_object_it_next(&it) ) {
+    	size_t val = cps_api_object_attr_data_u32(it.attr);
+    	if (val&1) {
+			cps_api_object_delete_it(o.get(),&it);
+			cps_api_object_it_begin(o.get(),&it);
+    	}
+    }
+
+    for ( cps_api_object_it_begin(o.get(),&it) ;
+            cps_api_object_it_valid(&it) ;
+            cps_api_object_it_next(&it) ) {
+    	size_t val = cps_api_object_attr_data_u32(it.attr);
+    	ASSERT_EQ(val&1,0) ;
+    }
+    cps_api_object_print(o.get());
+}
+
+
 TEST(cps_api_object,cps_object_attr_merge) {
     //test out object merges
 

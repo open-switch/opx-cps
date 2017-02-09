@@ -311,18 +311,32 @@ class CPSObject:
                  key), val)
         return converted_dict
 
-	def set_error_string(self, return_code, msg, *args ):
+    def set_error_string(self, return_code, msg, *args ):
 		""" 
 		This function will set the error string and erro code within an object.
 		@return_code the return code being set in the object
 		@msg is the string formatting
 		@*args is the variable length list of parameters to the formating
 		"""
-		add_attr(self,"cps/object-group/return-code",return_code)
+		self.add_attr("cps/object-group/return-code",return_code)
 		_str = msg.format(*args)
-		add_attr(self,"cps/object-group/return-string",_str)
+		self.add_attr("cps/object-group/return-string",_str)
 		
+    def set_wildcard(self,enabled):
+    	"""
+    	This function will set the wildcard attribute within an object to the value specified
+    	@enabled is the boolean value to set as wildcard (eg.. True)
+    	""" 
+    	self.add_attr('cps/object-group/wildcard-search',enabled)
 
+    def set_exact_match(self,use_exact_match):
+    	"""
+    	This function will set the exact match attribute within an object triggering behaviour 
+    	that will use the attributes within the object to search/monitor events.
+    	@use_exact_match a boolean value that will be True if exact match filter is needed or false if not    			
+    	"""    	
+    	self.add_attr('cps/object-group/exact-match',use_exact_match)
+    	
 def clone(self, obj):
     """
     Clones a new object from a given object.
