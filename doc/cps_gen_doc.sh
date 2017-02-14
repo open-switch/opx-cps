@@ -26,7 +26,7 @@ echo 'Python API for the OPX Control Plane Services' >>  $PSEUDO_CPS_FILE
 echo '' >> $PSEUDO_CPS_FILE
 echo '"""' >> $PSEUDO_CPS_FILE
 ### extract documentation from C Python bindings
-cat $PYTHON_CPS_CBINDINGS | cps-api/doc/cps_py.awk | sed  's#\\n##g' >> $PSEUDO_CPS_FILE
+cat $PYTHON_CPS_CBINDINGS | ${DOC_DIR}/cps_py.awk | sed  's#\\n##g' >> $PSEUDO_CPS_FILE
 doxygen ${DOC_DIR}/doxygen_python.cfg
 
 
