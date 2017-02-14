@@ -23,10 +23,14 @@ import cps_object
 if __name__ == '__main__':
     if len(sys.argv) == 1:
         print "Missing args.  Please enter a CPS key path and then optional attributes/values separated by ="
-        print "%s qual base-port/physical hardware-port-id=26"
-        print "qual = target,observed,.."
+        print "pass 'db' in the argument list to query the CPS DB"
+        print "qual = target,observed,running,startup,realtime,.."
         print "qual is an optional argument if not specified, target is used by default"
-        print "pass db in the argument list to query the CPS DB"
+        print "Examples:"
+        print "    ", sys.argv[0], "observed base-port/physical hardware-port-id=26"
+        print "  Query DB:"
+        print "    ", sys.argv[0], "target db system/system"
+        print "    ", sys.argv[0], "running db if/interfaces/interface"
         exit(1)
     l = []
     k = []
