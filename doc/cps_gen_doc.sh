@@ -5,9 +5,9 @@ CPS_DOC_DIR="workspace/cps-api-doc"
 DOC_DIR="opx-cps/doc"
 # File used to generate doxygen documentation for CPS C bindings
 PSEUDO_CPS_FILE=workspace/cps.py
-PYTHON_CPS_CBINDINGS=cps-api/src/python_extension/cps_api_python.cpp
+PYTHON_CPS_CBINDINGS=opx-cps/src/python_extension/cps_api_python.cpp
 
-if [ ! -d cps-api ]; then
+if [ ! -d opx-cps ]; then
    echo "Cannot find cps_api directory"
    exit 1
 fi
