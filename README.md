@@ -23,6 +23,14 @@ With the object keys and attributes applications can:
    - Action
 - Register and publish object messages.
 
+##API Documentation
+The CPS API is documented through doxygen. To generate the CPS doxygen content, at the top level of your source directory (one level underneath opx-cps), you can run the command opx-cps/doc/cps_gen_doc.sh.  
+    
+    git clone git@github.com:open-switch/opx-cps.git
+    cd opx-cps
+    (cd .. ; sh -x opx-cps/doc/cps_gen_doc.sh )
+    firefox workspace/cps-api-doc/c-cpp-doc/html/index.html
+
 ##Packages
 libopx-cps1\_*version*\_*arch*.deb — Utility libraries
 
