@@ -288,6 +288,14 @@ void cps_api_object_attr_fill_list(cps_api_object_t obj, size_t base_attr_id, cp
 bool cps_api_object_attr_delete(cps_api_object_t obj, cps_api_attr_id_t attr);
 
 /**
+ * Remove the iterator from the object.  The iterator has to be pointing at a top level attribute (embedded attributes not currently supported).
+ * @param obj the object that contains the attribute to be deleted
+ * @param it the object iterator to remove
+ * @return the function returns true if the iterator is removed otherwise false
+ */
+bool cps_api_object_delete_it(cps_api_object_t obj, cps_api_object_it_t *it);
+
+/**
  * This API is meant for embedded objects - an object that contains objects itself.
  * This API will get an embedded attribute.  The attribute can be embedded many levels
  * deep.

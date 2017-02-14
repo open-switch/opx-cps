@@ -130,7 +130,7 @@ module dell-base-cps {
     leaf return-string {
       description "This field can be used to store a string description (tag) of either an error that occurued during the requested operation or additional
             information to the successful request (less likely).";
-      type uint32;
+      type string;
     }
     leaf get-next {
         description "If this attribute is present in an object, then the caller would like the next object in lexicographic order";
