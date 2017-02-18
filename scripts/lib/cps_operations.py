@@ -98,5 +98,9 @@ class CPSTransaction:
         """
         Commit the transaction list and return the response.
         """
-        cps.transaction(self.tr_list)
-        return self.tr_list
+        if cps.transaction(self.tr_list):
+            return self.tr_list
+        return False
+
+    def get_objects(self):
+       return self.tr_list
