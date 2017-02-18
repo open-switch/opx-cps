@@ -6,7 +6,7 @@ import cps_object
 import cps_unit_test_data
 
 def sync_err_cb(methods, params, err):
-    print "Sync Params: ", params
+    print "Error Params: ", params
     print "Error: ", err
     return True
 
