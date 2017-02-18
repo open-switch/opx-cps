@@ -98,6 +98,5 @@ class CPSTransaction:
         """
         Commit the transaction list and return the response.
         """
-        if cps.transaction(self.tr_list):
-            return self.tr_list
-        return False
+        cps.transaction(self.tr_list)
+        return self.tr_list
