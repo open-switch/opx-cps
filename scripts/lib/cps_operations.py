@@ -106,4 +106,4 @@ class CPSTransaction:
         """
         Get the transaction list
         """
-       return self.tr_list
+        return self.tr_list
