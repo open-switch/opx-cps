@@ -426,7 +426,7 @@ std::string cps_api_object_attr_data_to_string(cps_api_attr_id_t id, const void 
     case CPS_CLASS_DATA_TYPE_T_INT64:
         return cps_string::sprintf("%" PRId64 ,*(uint64_t*)data);
     case CPS_CLASS_DATA_TYPE_T_STRING:
-        return std::string((const char*)data,len);
+        return std::string((const char*)data);
     case CPS_CLASS_DATA_TYPE_T_ENUM:
         {
             const char * _val = cps_class_enum_id(id,*(int*)data);
