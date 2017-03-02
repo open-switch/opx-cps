@@ -336,11 +336,6 @@ static cps_api_return_code_t _write_function(void * context, cps_api_transaction
     py_callbacks_t *cb = (py_callbacks_t*)context;
     PyObject *res = cb->execute("transaction",p);
 
-    if (res==NULL || !PyBool_Check(res) || (Py_False==(res))) {
-        return cps_api_ret_code_ERR;
-    }
-    PyRef ret(res);
-
     PyObject *ch = PyDict_GetItemString(p,"change");
     if (ch==NULL) return cps_api_ret_code_ERR;
 
@@ -356,6 +351,10 @@ static cps_api_return_code_t _write_function(void * context, cps_api_transaction
     if (og.valid()) {
         cps_api_object_clone(prev,og.get());
     }
+    if (res==NULL || !PyBool_Check(res) || (Py_False==(res))) {
+        return cps_api_ret_code_ERR;
+    }
+
     return cps_api_ret_code_OK;
 }
 
@@ -490,7 +489,8 @@ static bool _error_function(void *context, cps_api_db_sync_cb_param_t *params, c
     PyObject *e = PyDict_New();
 
     static const std::map<int,std::string> error = {
-        {cps_api_db_no_connection,"no_connection" }
+        {cps_api_db_no_connection,"no_connection" },
+        {cps_api_db_invalid_address, "invalid_address"}
     };
     py_cps_util_set_item_to_dict(e,"error", PyString_FromString(error.at(err->err_code).c_str()));
 
