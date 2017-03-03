@@ -70,7 +70,7 @@ libopx_cps_api_common_la_SOURCES = \
 
 #current,revision,age version format - currently age 1 revision 1 (0.1)
 libopx_cps_api_common_la_LDFLAGS =  -lpthread -lrt \
-    -lopx_logging -lopx_common -lstdc++  -lsystemd -version-info 1:1:0 -lhiredis
+    -l:libopx_logging.so.1 -lopx_common -lstdc++  -lsystemd -version-info 1:1:0 -lhiredis
 
 libopx_cps_api_common_la_CPPFLAGS = -std=c++11 -I$(top_srcdir)/inc/opx  \
     -I$(top_srcdir)/inc/opx/private/db \
@@ -88,12 +88,12 @@ bin_PROGRAMS = opx_cps_service
 
 opx_cps_service_SOURCES=src/cps_api_service.cpp
 opx_cps_service_CPPFLAGS=-I$(top_srcdir)/inc/opx -I$(includedir)/opx -std=c++11
-opx_cps_service_LDFLAGS= -lpthread -lopx_logging -lsystemd
+opx_cps_service_LDFLAGS= -lpthread -l:libopx_logging.so.1 -lsystemd
 opx_cps_service_LDADD=libopx_cps_api_common.la
 
 #cps module
 pyexec_LTLIBRARIES = cps.la
-cps_la_LDFLAGS = -module -avoid-version -export-symbols-regex initpoppler -lopx_common -lopx_logging -lpython2.7 -lstdc++
+cps_la_LDFLAGS = -module -avoid-version -export-symbols-regex initpoppler -lopx_common -l:libopx_logging.so.1 -lpython2.7 -lstdc++
 cps_la_SOURCES = src/python_extension/cps_api_python.cpp \
     src/python_extension/cps_api_python_db_extension.cpp \
     src/python_extension/cps_api_python_operation.cpp \
