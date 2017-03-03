@@ -157,6 +157,10 @@ class CPSObject:
         if self.generate_path(attr_str) in cps_utils.convert_methods:
             val = cps_utils.convert_methods[self.generate_path(attr_str)](val)
 
+        if val == None:
+            self.obj['data'][self.generate_path(attr_str)] = bytearray(0)
+            return
+
         if isinstance(val, list):
             self.add_list(attr_str, val)
         elif isinstance(val, dict):
@@ -288,6 +292,8 @@ class CPSObject:
                     else:
                         d[key] = types.from_data(key, val)
                 return d
+            elif len(self.obj['data'][attr_path]) == 0:
+                return None
             return types.from_data(self.generate_path(attr),
                                    self.obj['data'][self.generate_path(attr)])
 
@@ -312,7 +318,7 @@ class CPSObject:
         return converted_dict
 
     def set_error_string(self, return_code, msg, *args ):
-		""" 
+		"""
 		This function will set the error string and erro code within an object.
 		@return_code the return code being set in the object
 		@msg is the string formatting
@@ -326,12 +332,12 @@ class CPSObject:
     	"""
     	This function will set the wildcard attribute within an object to the value specified
     	@enabled is the boolean value to set as wildcard (eg.. True)
-    	""" 
+    	"""
     	self.add_attr('cps/object-group/wildcard-search',enabled)
 
     def set_exact_match(self,use_exact_match):
     	"""
-    	This function will set the exact match attribute within an object triggering behaviour 
+    	This function will set the exact match attribute within an object triggering behaviour
     	that will use the attributes within the object to search/monitor events.
     	@use_exact_match a boolean value that will be True if exact match filter is needed or false if not    			
     	"""    	
