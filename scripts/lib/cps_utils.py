@@ -172,6 +172,8 @@ class CPSTypes:
                 self.print_list(k, data[k], log)
             elif isinstance(data[k], dict):
                 self.print_dict(data[k], log)
+            elif len(data[k]) == 0:
+                _log_print(log, k + " = " + '-')
             else:
                 _log_print(log, k + " = " + str(self.from_data(k, data[k])))
 
