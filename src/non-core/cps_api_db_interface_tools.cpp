@@ -67,6 +67,12 @@ cps_api_return_code_t cps_api_sync(void *context, cps_api_object_t dest, cps_api
         _dest_addr = n.addr(params.dest_node);
     }
 
+    if (!_dest_addr || !_src_addr) {
+        er.err_code = cps_api_db_invalid_address;
+        err_cb(context, &params, &er);
+        return cps_api_ret_code_ERR;
+    }
+
     cps_db::connection_request _dest_conn(cps_db::ProcessDBCache(),_dest_addr);
     if (!_dest_conn.valid() || !cps_db::ping(_dest_conn.get())) return cps_api_ret_code_ERR;
 
