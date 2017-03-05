@@ -101,3 +101,9 @@ class CPSTransaction:
         if cps.transaction(self.tr_list):
             return self.tr_list
         return False
+
+    def get_objects(self):
+        """
+        Get the transaction list
+        """
+        return self.tr_list

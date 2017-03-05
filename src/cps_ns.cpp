@@ -61,7 +61,7 @@ using ns_stats = std::unordered_map<uint64_t,uint64_t>;
 static reg_cache registration;
 static ns_stats _stats;
 
-static std::set<int> reg_created_cache;
+static auto reg_created_cache = new std::set<int>;
 static std_mutex_lock_create_static_init_rec(cache_lock);
 
 void cps_api_create_process_address(std_socket_address_t *addr) {
@@ -193,7 +193,7 @@ static bool process_registration(int fd,size_t len) {
         lst->push_back(r);
     }
 
-    reg_created_cache.insert(fd);
+    reg_created_cache->insert(fd);
     }
 
     char buff[CPS_API_KEY_STR_MAX];
@@ -307,7 +307,7 @@ static bool  _client_closed_( void *context, int fd ) {
     std_mutex_simple_lock_guard lg(&cache_lock);
     ++_stats[cps_api_obj_stat_CLOSE_COUNT];
 
-    if (reg_created_cache.find(fd)==reg_created_cache.end()) return true;
+    if (reg_created_cache->find(fd)==reg_created_cache->end()) return true;
 
     ++_stats[cps_api_obj_stat_CLOSE_CLEANUP_RUNS];
 
@@ -355,7 +355,7 @@ static bool  _client_closed_( void *context, int fd ) {
     };
 
     registration.walk(fn);
-    reg_created_cache.erase(fd);
+    reg_created_cache->erase(fd);
     return true;
 }
 
