@@ -165,7 +165,8 @@ cps_api_return_code_t cps_api_reconcile(void *context, cps_api_object_t obj, cps
                 }
 
                 if(is_cb) {
-                	_process_cb_response(_dest_conn_meta.get(), &params, &res,  _key_cache[ix] );
+                	 if((cb(context, &params, &res)))
+                		 _process_cb_response(_dest_conn_meta.get(), &params, &res,  _key_cache[ix] );
                 }
             }
             is_cb = false;
@@ -206,7 +207,8 @@ cps_api_return_code_t cps_api_reconcile(void *context, cps_api_object_t obj, cps
                 params.opcode = cps_api_oper_DELETE;
                 std::vector<char> _k(_key_cache[ix].begin(), _key_cache[ix].end());
                 cps_db::get_object(_dest_conn_cleanup.get(), _k, params.object_dest);
-                _process_cb_response(_dest_conn_cleanup.get(), &params, &res,  _key_cache[ix] );
+                if((cb(context, &params, &res)))
+                	_process_cb_response(_dest_conn_cleanup.get(), &params, &res,  _key_cache[ix] );
            }
        }
        count = 0;
@@ -301,7 +303,8 @@ cps_api_return_code_t cps_api_sync(void *context, cps_api_object_t dest, cps_api
                     continue;
                 }
                 if(is_cb) {
-                	_process_cb_response(_dest_conn_meta.get(), &params, &res,  _key_cache[ix] );
+                	 if((cb(context, &params, &res)))
+                		 _process_cb_response(_dest_conn_meta.get(), &params, &res,  _key_cache[ix] );
                 }
                 is_cb = false;
             }
@@ -345,7 +348,8 @@ cps_api_return_code_t cps_api_sync(void *context, cps_api_object_t dest, cps_api
                 params.opcode = cps_api_oper_DELETE;
                 std::vector<char> _k(_key_cache[ix].begin(), _key_cache[ix].end());
                 cps_db::get_object(_dest_conn_cleanup.get(), _k, params.object_dest);
-                _process_cb_response(_dest_conn_cleanup.get(), &params, &res,  _key_cache[ix] );
+                if((cb(context, &params, &res)))
+                	_process_cb_response(_dest_conn_cleanup.get(), &params, &res,  _key_cache[ix] );
            }
        }
        count = 0;
