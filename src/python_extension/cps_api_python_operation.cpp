@@ -540,8 +540,8 @@ PyObject * py_cps_reconcile(PyObject *self, PyObject *args) {
     PyObject *_dict, *_list=nullptr;
     PyObject *_cb;
 
-    if (! PyArg_ParseTuple( args, "O!O!O!",  &PyDict_Type, &_dict,&PyList_Type, &_list, &PyDict_Type, &_cb)) return NULL;
-    cps_api_object_t src_obj = dict_to_cps_obj(_dict);
+    if (! PyArg_ParseTuple( args, "O!O!O!",  &PyList_Type, &_list, &PyDict_Type, &_dict, &PyDict_Type, &_cb)) return NULL;
+    cps_api_object_t dest_obj = dict_to_cps_obj(_dict);
 
     if (!PyList_Check(_list)) {
         PySys_WriteStdout("Invalid list object");
@@ -567,7 +567,7 @@ PyObject * py_cps_reconcile(PyObject *self, PyObject *args) {
     void *_context = p.get();
 
     cps_api_return_code_t rc;
-    rc = cps_api_reconcile(_context, src_obj, _lg.get(), _sync_function, _error_function);
+    rc = cps_api_reconcile(_context, _lg.get(), dest_obj, _sync_function, _error_function);
     if (rc!=cps_api_ret_code_OK) {
         Py_RETURN_FALSE;
     }

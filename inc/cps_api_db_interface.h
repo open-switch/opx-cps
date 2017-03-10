@@ -173,8 +173,8 @@ cps_api_return_code_t cps_api_sync(void *context, cps_api_object_t dest, cps_api
 /**
 * This API goes through the destination DB indicated by the contents of CPS object and merges them with the source objects.
 * @param context Application specific context to pass to the reconcile API
-* @param obj destination CPS object that will be compared with the source objs
 * @param src_objs list of CPS objects that needs to be compared with destination object
+* @param dest_obj destination CPS object that will be compared with the source objs
 * @param cb sync callback function. This is a single threaded function and will be called in the context of the application. The callback function will be invoked in 3 cases.
          CREATE - where the source object exist and the dest object doesn't exist
          SET - where there are differences in attribute values between the source and dest objects
@@ -182,7 +182,7 @@ cps_api_return_code_t cps_api_sync(void *context, cps_api_object_t dest, cps_api
 * @param err_cb error callback function. Will be invoked if a successful connection to the source DB can't be established
 * @return returns code cps_api_ret_code_OK if successful otherwise an error
 */
-cps_api_return_code_t cps_api_reconcile(void *context, cps_api_object_t obj, cps_api_object_list_t src_objs,  cps_api_sync_callback_t cb, cps_api_sync_error_callback_t err_cb);
+cps_api_return_code_t cps_api_reconcile(void *context, cps_api_object_list_t src_objs,  cps_api_object_t dest_obj, cps_api_sync_callback_t cb, cps_api_sync_error_callback_t err_cb);
 
 
 
