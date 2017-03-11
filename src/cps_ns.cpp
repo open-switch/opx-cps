@@ -201,16 +201,16 @@ static bool process_registration(int fd,size_t len) {
     const char *str = cps_class_string_from_key(&r.details.key, 1);
     const char *qual = cps_class_qual_from_key(&r.details.key);
     if (str!=nullptr)
-      EV_LOG(INFO,DSAPI,0,"NS","%s registration for %s %s at %s",
-            "Added" ,
-            qual,
-            str,
-            r.details.addr.address.str);
+        EV_LOGGING(DSAPI, INFO, "NS", "%s registration for %s %s at %s",
+                   "Added" ,
+                   qual,
+                   str,
+                   r.details.addr.address.str);
     else
-      EV_LOG(INFO,DSAPI,0,"NS","%s registration for %s at %s",
-            "Added" ,
-            cps_api_key_print(&r.details.key,buff,sizeof(buff)-1),
-            r.details.addr.address.str);
+        EV_LOGGING(DSAPI, INFO, "NS", "%s registration for %s at %s",
+                   "Added" ,
+                   cps_api_key_print(&r.details.key,buff,sizeof(buff)-1),
+                   r.details.addr.address.str);
 
     send_out_key_event(&r.details.key,true);
     return true;
