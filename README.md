@@ -33,17 +33,17 @@ The CPS API is documented through doxygen. To generate the CPS doxygen content, 
     firefox workspace/cps-api-doc/c-cpp-doc/html/index.html
 
 ## Packages
-`libopx-cps1\_*version*\_*arch*.deb` — Utility libraries
+libopx-cps1\_*version*\_*arch*.deb — Utility libraries
 
-`libopx-cps-dev\_*version*\_*arch*.deb` — Exported header files
+libopx-cps-dev\_*version*\_*arch*.deb — Exported header files
 
-`python-opx-cps\_*version*\_*arch*.deb` — Python bindings
+python-opx-cps\_*version*\_*arch*.deb — Python bindings
 
-`opx-cps\_*version*\_*arch*.deb` — Service executables, configuration files, tool scripts 
+opx-cps\_*version*\_*arch*.deb — Service executables, configuration files, tool scripts 
 
-`opx-yang-utils-dev\_*version*\_*arch*.deb` — Tools to parse YANG files
+opx-yang-utils-dev\_*version*\_*arch*.deb — Tools to parse YANG files
 
-See [Architecture](https://github.com/open-switch/opx-docs/wiki/Architecture) for more information on the CPS module.
+See [Architecture](https://github.com/open-switch/opx-docs/wiki/Architecture) for more information.
 
 ## Debugging tools
 
