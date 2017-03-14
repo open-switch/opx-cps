@@ -11,7 +11,7 @@ A high-level list of CPS features include:
 - Database-like API (Get, Commit[add,delete,create,modify])
 - Publish/subscribe semantics supported
 
-Lookup and binary to text translation and object introspection is available.
+> **NOTE**: Lookup and binary to text translation and object introspection is available.
 
 Applications define objects through (optionally YANG-based) object models. These object models are converted into binary (C accessible) object keys, and object attributes that can be used in conjunction with the C-based CPS APIs. There are adaptions on top of CPS that allows these objects and APIs to be converted to different languages (example Python).
 
