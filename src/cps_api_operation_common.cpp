@@ -29,10 +29,12 @@
 #include "cps_dictionary.h"
 #include "cps_api_core_utils.h"
 #include "dell-cps.h"
+#include "cps_api_object_tools.h"
 
 #include "cps_api_db_operations.h"
 #include "private/cps_api_client_utils.h"
 #include "private/cps_ns.h"
+
 
 #include <algorithm>
 #include <vector>
@@ -74,6 +76,21 @@ bool cps_api_filter_is_getnext(cps_api_object_t obj) {
     return *p;
 
 }
+
+void cps_api_key_set_qualifier(cps_api_key_t *key, cps_api_qualifier_t qual) {
+    cps_api_key_set(key,CPS_OBJ_KEY_INST_POS,qual);
+}
+
+CPS_CONFIG_TYPE_t cps_api_object_get_config_type(cps_api_object_t obj) {
+    uint32_t *p = (uint32_t*) cps_api_object_get_data(obj,CPS_OBJECT_GROUP_CONFIG_TYPE);
+    if (p==nullptr) return CPS_CONFIG_TYPE_RUNNING_CONFIG;
+    return *(CPS_CONFIG_TYPE_t*)p;
+}
+
+bool cps_api_object_set_config_type(cps_api_object_t obj, CPS_CONFIG_TYPE_t type) {
+    return cps_api_object_attr_add_u32(obj,CPS_OBJECT_GROUP_CONFIG_TYPE,type);
+}
+
 
 void cps_api_key_init(cps_api_key_t * key,
         cps_api_qualifier_t qual,
@@ -125,7 +142,7 @@ static bool _cps_api_get_clone(cps_api_get_params_t * dest, cps_api_get_params_t
     if (src==nullptr || dest==nullptr) return false;
 
     cps_api_object_list_destroy(dest->filters,true);
-    dest->filters = cps_api_object_list_clone(src->filters,true);
+    dest->filters = cps_api_object_list_clone(src->filters,false);
 
     size_t ix = 0;
 
@@ -143,8 +160,34 @@ static bool _cps_api_get_clone(cps_api_get_params_t * dest, cps_api_get_params_t
 }
 
 
-cps_api_return_code_t cps_api_get(cps_api_get_params_t * param) {
+void _filter_list_as_needed(cps_api_object_t obj, cps_api_object_list_t results, size_t from, size_t to) {
+    if (!cps_api_object_get_exact_match_flag(obj)) return;
 
+
+
+    size_t _list_walker = from;
+
+    for ( ; from < to ; ++from ) {
+        cps_api_object_t o = cps_api_object_list_get(results,from);
+        if (o!=nullptr) {
+            if (!cps_api_obj_tool_matches_filter(obj,o,true)) {
+                cps_api_object_list_set(results,from,nullptr,true);
+            }
+        }
+    }
+    size_t _lst_mx = cps_api_object_list_size(results);
+    while (_list_walker< _lst_mx ) {
+        if (cps_api_object_list_get(results,_list_walker)==nullptr) {
+            cps_api_object_list_remove(results,_list_walker);
+            --_lst_mx;
+            continue;
+        }
+        ++_list_walker;
+    }
+
+}
+
+cps_api_return_code_t cps_api_get(cps_api_get_params_t * param) {
     cps_api_return_code_t rc = cps_api_ret_code_ERR;
     cps_api_get_params_t new_req;
 
@@ -170,7 +213,9 @@ cps_api_return_code_t cps_api_get(cps_api_get_params_t * param) {
     size_t mx = cps_api_object_list_size(get_req->filters);
 
     for ( size_t ix = 0 ; ix < mx ; ++ix ) {
+        size_t _cur_lst_len = cps_api_object_list_size(param->list);
         cps_api_object_t o = cps_api_object_list_get(get_req->filters,ix);
+
         STD_ASSERT(o!=nullptr);
         if (cps_api_obj_get_ownership_type(o)!=CPS_API_OBJECT_SERVICE) {
             rc = cps_api_db_operation_get(get_req,ix);
@@ -178,12 +223,16 @@ cps_api_return_code_t cps_api_get(cps_api_get_params_t * param) {
             rc=cps_api_process_get_request(get_req,ix);
         }
         if (rc!=cps_api_ret_code_OK) break;
+
+        _filter_list_as_needed(o,param->list,_cur_lst_len,cps_api_object_list_size(param->list));
     }
 
     if (_copy_param) {
         //based on the return - get the response list
         cps_api_object_list_swap(param->list,new_req.list);
     }
+
+
 
     return rc;
 }
@@ -200,6 +249,10 @@ cps_api_return_code_t cps_api_commit(cps_api_transaction_params_t * param) {
         cps_api_object_t o = cps_api_object_list_get(param->change_list,ix);
         cps_api_object_attr_delete(o,CPS_OBJECT_GROUP_FAILED_NODES);
         STD_ASSERT(o!=nullptr);
+
+        ///TODO until the performance fix is updated - made the temporary fix
+        bool _is_db_handled = cps_api_obj_get_ownership_type(o)!=CPS_API_OBJECT_SERVICE;
+
         if (cps_api_obj_get_ownership_type(o)!=CPS_API_OBJECT_SERVICE) {
             rc = cps_api_db_operation_commit(param,ix);
         } else {
@@ -210,7 +263,7 @@ cps_api_return_code_t cps_api_commit(cps_api_transaction_params_t * param) {
             EV_LOG(ERR,DSAPI,0,"COMMIT","Failed to commit request at %d out of %d",ix, (int)mx);
             break;
         }
-        if (cps_api_obj_has_auto_events(o) && cps_api_object_type_operation(cps_api_object_key(o))!=cps_api_oper_ACTION) {
+        if (!_is_db_handled && cps_api_obj_has_auto_events(o) && cps_api_object_type_operation(cps_api_object_key(o))!=cps_api_oper_ACTION) {
             cps_api_core_publish(o);
         }
     }
@@ -341,12 +394,12 @@ bool cps_api_is_registered(cps_api_key_t *key, cps_api_return_code_t *rc) {
 }
 
 bool cps_api_filter_wildcard_attrs(cps_api_object_t obj, bool has_wildcard_attributes) {
-    while (cps_api_object_attr_delete(obj,CPS_OBJECT_GROUP_EXACT_MATCH)) ;
-    return cps_api_object_attr_add_u32(obj,CPS_OBJECT_GROUP_EXACT_MATCH,has_wildcard_attributes);
+    while (cps_api_object_attr_delete(obj,CPS_OBJECT_GROUP_WILDCARD_SEARCH)) ;
+    return cps_api_object_attr_add_u32(obj,CPS_OBJECT_GROUP_WILDCARD_SEARCH,has_wildcard_attributes);
 }
 
 bool cps_api_filter_has_wildcard_attrs(cps_api_object_t obj) {
-    uint32_t *p = (uint32_t*) cps_api_object_get_data(obj,CPS_OBJECT_GROUP_EXACT_MATCH);
+    uint32_t *p = (uint32_t*) cps_api_object_get_data(obj,CPS_OBJECT_GROUP_WILDCARD_SEARCH);
     if (p==nullptr) return false;
     return *p;
 }
