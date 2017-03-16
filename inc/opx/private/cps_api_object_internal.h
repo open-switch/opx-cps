@@ -46,17 +46,26 @@ typedef struct {
 /**
  * This is the internal structure of the CPS API to manage an object.
  */
-typedef struct {
+typedef struct cps_api_object_internal_t {
     size_t len;    //the total length of the buffer pointed after the cps_api_object_data_t
                 //pointed to by data
     size_t remain;    //the remaining space not used
     bool allocated; //if this buffer is allocated via malloc
-    cps_api_object_data_t * data; // the pointer to the TLV array, etc..
+    ssize_t token;
 
+    cps_api_object_data_t * data; // the pointer to the TLV array, etc..
+    size_t ref_count;
+
+    enum { DUP_REF_ONLY} copy_algorithm = DUP_REF_ONLY;
+
+    struct cps_api_object_internal_t *master;
 } cps_api_object_internal_t;
 
 #define CPS_API_OBJECT_INTERNAL_SPACE_REQ (sizeof(cps_api_object_internal_t) + \
         sizeof(cps_api_object_data_t))
+
+
+cps_api_object_t * cps_api_object_list_to_ptr(cps_api_object_list_t list);
 
 /**
  * @}
