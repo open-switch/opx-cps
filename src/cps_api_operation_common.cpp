@@ -410,7 +410,7 @@ bool cps_api_attr_create_escaped(void *buff, size_t len, const void *attr, size_
 
     size_t count = 0;
     for(size_t ix = 0; ix < len; ++ix, ++count) {
-      if(((char *)buff)[ix] == '*' || ((char *)buff)[ix] == '?') {
+      if(((char *)buff)[ix] == '*' || ((char *)buff)[ix] == '?' || ((char *)buff)[ix] == '[' || ((char *)buff)[ix] == ']' || ((char *)buff)[ix] == '\\') {
         ((char *)attr)[count] = '\\';
         ++count;
       }
