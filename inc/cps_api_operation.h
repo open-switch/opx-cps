@@ -249,6 +249,8 @@ bool cps_api_filter_is_getnext(cps_api_object_t obj);
  */
 bool cps_api_filter_wildcard_attrs(cps_api_object_t obj, bool has_wildcard_attributes);
 
+bool cps_api_attr_create_escaped(void *buff, size_t len, const void *attr, size_t max_len, size_t *attr_len);
+
 
 /**
  * This API will returns the value of the cps_api_filter_wildcard_attrs setting.  If the cps_api_filter_wildcard_attrs has not been

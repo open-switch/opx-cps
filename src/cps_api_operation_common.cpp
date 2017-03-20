@@ -403,3 +403,20 @@ bool cps_api_filter_has_wildcard_attrs(cps_api_object_t obj) {
     if (p==nullptr) return false;
     return *p;
 }
+
+bool cps_api_attr_create_escaped(void *buff, size_t len, const void *attr, size_t max_len, size_t *attr_len) {
+  size_t count = 0;
+  for(size_t ix = 0; ix < len; ++ix, ++count) {
+    if(((char *)buff)[ix] == '*' || ((char *)buff)[ix] == '?') {
+      ((char *)attr)[count] = '\\';
+      ++count;
+    }
+    ((char *)attr)[count] = ((char *)buff)[ix];
+  }
+  *attr_len = count;
+  if(max_len < count)
+    return false;
+
+  return true;
+}
+
