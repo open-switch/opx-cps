@@ -253,11 +253,10 @@ bool cps_api_filter_wildcard_attrs(cps_api_object_t obj, bool has_wildcard_attri
  * This API is used to insert escape characters for CPS attribute values.
  * For example if the name of an interface has a "*" in the name, this "*" should be escaped so that it wont be considered as a wildcard character.
  *
- * @param type Type of the CPS attribute (cps_api_object_ATTR_T_U16/cps_api_object_ATTR_T_U32/cps_api_object_ATTR_T_U64/cps_api_object_ATTR_T_BIN)
+ * @param type Type of the CPS attribute to be escaped as defined by cps_api_object_ATTR_TYPE_t
  * @param buff Input CPS attribute value to be escaped
- * @param len Length of the input buffer.
- *            If the attribute type is cps_api_object_ATTR_T_U16/cps_api_object_ATTR_T_U32/cps_api_object_ATTR_T_U64, then the length is expected to be
- *            uint16_t/uint32_t/uint64_t respectively
+ * @param len Length of the input buffer. It needs to be appropriate as per its type.
+ *            For example if the type of the attribute is cps_api_object_ATTR_T_U32 then the length is expected to be 4 bytes.
  *
  * @param attr Output buffer where the escaped CPS attribute value will be stored.
  * @param attr_len Maximum length of the attr buffer will be passed in to the API. This length should be twice as big as the length (len) of the input buff
