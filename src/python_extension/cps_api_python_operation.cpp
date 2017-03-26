@@ -534,3 +534,4 @@ PyObject * py_cps_sync(PyObject *self, PyObject *args) {
 
     Py_RETURN_TRUE;
 }
+
