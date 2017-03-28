@@ -664,11 +664,26 @@ bool cps_api_object_list_set(cps_api_object_list_t list,size_t ix, cps_api_objec
 
 
 /**
- * Print out the contents of the CPS API object tracker database.
- * @return true if no entries - false if there are elements
+ * Print out the contents of the CPS API object tracker database.  Each entry in the object tracker database has the file, function and line number
+ * where the object was allocated.
+ *
+ * @return true if no objects left to free - false if there are elements allocated but not freed
  */
 bool cps_api_list_debug(void) ;
+
+/**
+ * Return a count of the number of objects that are allocated within the process.
+ *
+ * @return a uint64_t containing the number of objects that have been allocated and not deleted within the process
+ */
+uint64_t cps_api_objects_allocated();
+
+/**
+ * Log the stats about the number of objects allocated and freed within an application.  In addition, also log the number of objects allocated but
+ * not freed.  This can be helpful in searching out memory leaks.
+ */
 void cps_api_list_stats(void);
+
 #ifdef __cplusplus
 }
 #endif

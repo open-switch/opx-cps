@@ -13,20 +13,24 @@ static struct {
 } lst[] = {
 { { cps_api_obj_CAT_CPS,CPS_NODE_GROUP,CPS_NODE_GROUP_NAME,CPS_NODE_GROUP_TYPE }, CPS_NODE_GROUP_TYPE, { "cps/node-group/type", "", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT32 }},
 { { cps_api_obj_CAT_CPS,CPS_OBJECT_GROUP,CPS_OBJECT_GROUP_CONFIG_TYPE }, CPS_OBJECT_GROUP_CONFIG_TYPE, { "cps/object-group/config-type", "", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_ENUM }},
+{ { cps_api_obj_CAT_CPS,CPS_SERVICE_INSTANCE,CPS_SERVICE_INSTANCE_NAME,CPS_SERVICE_INSTANCE_NAME }, CPS_SERVICE_INSTANCE_NAME, { "cps/service-instance/name", "The service name or some type of string representation of the service instance.", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_STRING }},
+{ { cps_api_obj_CAT_CPS,CPS_SERVICE_INSTANCE,CPS_SERVICE_INSTANCE_NAME }, CPS_SERVICE_INSTANCE, { "cps/service-instance", "", true, CPS_CLASS_ATTR_T_LIST, CPS_CLASS_DATA_TYPE_T_BIN }},
 { { cps_api_obj_CAT_CPS,CPS_OBJECT_GROUP,CPS_OBJECT_GROUP_RETURN_CODE }, CPS_OBJECT_GROUP_RETURN_CODE, { "cps/object-group/return-code", "In the event that an API needs to store a return code within an object itself, they can use this field.  This field isleft as an int size.", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT32 }},
 { { cps_api_obj_CAT_CPS,CPS_CONNECTION_ENTRY,CPS_CONNECTION_ENTRY_NAME,CPS_CONNECTION_ENTRY_NAME }, CPS_CONNECTION_ENTRY_NAME, { "cps/connection-entry/name", "", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_STRING }},
 { { cps_api_obj_CAT_CPS,CPS_NODE_DETAILS,CPS_NODE_DETAILS_NAME,CPS_NODE_DETAILS_NAME }, CPS_NODE_DETAILS_NAME, { "cps/node-details/name", "The name to use as a replacement for any of the alias attributes.", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_STRING }},
 { { cps_api_obj_CAT_CPS,CPS_OBJECT_GROUP,CPS_OBJECT_GROUP_GROUP }, CPS_OBJECT_GROUP_GROUP, { "cps/object-group/group", "This attribute holds the group ID if specified.", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_STRING }},
 { { cps_api_obj_CAT_CPS,CPS_CONNECTION_ENTRY,CPS_CONNECTION_ENTRY_NAME,CPS_CONNECTION_ENTRY_IP }, CPS_CONNECTION_ENTRY_IP, { "cps/connection-entry/ip", "", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_STRING }},
 { { cps_api_obj_CAT_CPS,CPS_TUNNEL,CPS_TUNNEL_GROUP,CPS_TUNNEL_NODE_ID,CPS_TUNNEL_IP }, CPS_TUNNEL_IP, { "cps/tunnel/ip", "Ip address of the node.", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_STRING }},
-{ { cps_api_obj_CAT_CPS,CPS_OBJECT_GROUP,CPS_OBJECT_GROUP_RETURN_STRING }, CPS_OBJECT_GROUP_RETURN_STRING, { "cps/object-group/return-string", "This field can be used to store a string description (tag) of either an error that occurued during the requested operation or additionalinformation to the successful request (less likely).", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_STRING }},
+{ { cps_api_obj_CAT_CPS,CPS_NODE_GROUP,CPS_NODE_GROUP_NAME }, CPS_NODE_GROUP, { "cps/node-group", "This object is used to describe the mapping of a group ID to a list of node IP/port combinations.", true, CPS_CLASS_ATTR_T_LIST, CPS_CLASS_DATA_TYPE_T_BIN }},
 { { cps_api_obj_CAT_CPS,CPS_NODE_GROUP,CPS_NODE_GROUP_NAME,CPS_NODE_GROUP_NODE,CPS_NODE_GROUP_NODE_TUNNEL_IP }, CPS_NODE_GROUP_NODE_TUNNEL_IP, { "cps/node-group/node/tunnel-ip", "The IP addres and port of the stunnel client. Valid IP address/portcombinations are IPv4:port or IPv6:port", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_STRING }},
 { { cps_api_obj_CAT_CPS,CPS_OBJECT_GROUP,CPS_OBJECT_GROUP_TRANSACTION }, CPS_OBJECT_GROUP_TRANSACTION, { "cps/object-group/transaction", "In the case of commit operations (and the object is cacheable and doesn't exist at the timedue to a restart, then an Inprogress return code will be provided and this transaction IDcan be used to monitor the state of the transaction.", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_UINT64 }},
 { { cps_api_obj_CAT_CPS,CPS_NODE_DETAILS,CPS_NODE_DETAILS_NAME,CPS_NODE_DETAILS_ALIAS }, CPS_NODE_DETAILS_ALIAS, { "cps/node-details/alias", "A list of alias that can be convered back to the name.", false, CPS_CLASS_ATTR_T_LEAF_LIST, CPS_CLASS_DATA_TYPE_T_STRING }},
 { { cps_api_obj_CAT_CPS,CPS_TUNNEL,CPS_TUNNEL_GROUP,CPS_TUNNEL_NODE_ID,CPS_TUNNEL_GROUP }, CPS_TUNNEL_GROUP, { "cps/tunnel/group", "Group name", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_STRING }},
-{ { cps_api_obj_CAT_CPS,CPS_OBJECT_GROUP,CPS_OBJECT_GROUP_WILDCARD_SEARCH }, CPS_OBJECT_GROUP_WILDCARD_SEARCH, { "cps/object-group/wildcard-search", "This attribute is true if the attributes in the object (primarily used for get requests) contain wildcard characters.For instance if someone was searching for a python interface/vlan object with all names starting with eth, the python dictionarywould appear as follows:{ 'key': 'interface/vlan','data' : { 'interface/vlan/name' : 'eth*',       'cps/object-group/wildcard-search': True }}", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_BOOL }},
+{ { cps_api_obj_CAT_CPS,CPS_SERVICE_INSTANCE,CPS_SERVICE_INSTANCE_NAME,CPS_SERVICE_INSTANCE_REGISTERED_KEY }, CPS_SERVICE_INSTANCE_REGISTERED_KEY, { "cps/service-instance/registered-key", "The registered keys that are associated with the service.", false, CPS_CLASS_ATTR_T_LEAF_LIST, CPS_CLASS_DATA_TYPE_T_STRING }},
+{ { cps_api_obj_CAT_CPS,CPS_SERVICE_INSTANCE,CPS_SERVICE_INSTANCE_NAME,CPS_SERVICE_INSTANCE_CONNECTION_INFORMATION }, CPS_SERVICE_INSTANCE_CONNECTION_INFORMATION, { "cps/service-instance/connection-information", "Protocol specific connection information.  For instance, in the case of a UNIX domain socket connection this is the socket name.", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_STRING }},
+{ { cps_api_obj_CAT_CPS,CPS_OBJECT_GROUP,CPS_OBJECT_GROUP_WILDCARD_SEARCH }, CPS_OBJECT_GROUP_WILDCARD_SEARCH, { "cps/object-group/wildcard-search", "This attribute is true if the attributes in the object (primarily used for get requests) contain wildcard characters.For instance if someone was searching for a python interface/vlan object with all names starting with eth, the python dictionarywould appear as follows:{'key': 'interface/vlan','data' : { 'interface/vlan/name' : 'eth*',      'cps/object-group/wildcard-search': True }}", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_BOOL }},
 { { cps_api_obj_CAT_CPS,CPS_TUNNEL,CPS_TUNNEL_GROUP,CPS_TUNNEL_NODE_ID }, CPS_TUNNEL, { "cps/tunnel", "", true, CPS_CLASS_ATTR_T_LIST, CPS_CLASS_DATA_TYPE_T_BIN }},
-{ { cps_api_obj_CAT_CPS,CPS_NODE_GROUP,CPS_NODE_GROUP_NAME }, CPS_NODE_GROUP, { "cps/node-group", "This object is used to describe the mapping of a group ID to a list of node IP/port combinations.", true, CPS_CLASS_ATTR_T_LIST, CPS_CLASS_DATA_TYPE_T_BIN }},
+{ { cps_api_obj_CAT_CPS,CPS_OBJECT_GROUP,CPS_OBJECT_GROUP_RETURN_STRING }, CPS_OBJECT_GROUP_RETURN_STRING, { "cps/object-group/return-string", "This field can be used to store a string description (tag) of either an error that occurued during the requested operation or additionalinformation to the successful request (less likely).", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_STRING }},
 { { cps_api_obj_CAT_CPS,CPS_OBJECT_GROUP,CPS_OBJECT_GROUP_GET_NEXT }, CPS_OBJECT_GROUP_GET_NEXT, { "cps/object-group/get-next", "If this attribute is present in an object, then the caller would like the next object in lexicographic order", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_BOOL }},
 { { cps_api_obj_CAT_CPS,CPS_OBJECT_GROUP,CPS_OBJECT_GROUP_FAILED_NODES }, CPS_OBJECT_GROUP_FAILED_NODES, { "cps/object-group/failed-nodes", "This attribute is used in an object to indicate which nodes did not process the request due toconnectivity reasons. Nodes are in a single string separated by comma (,).", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_STRING }},
 { { cps_api_obj_CAT_CPS,CPS_NODE_GROUP,CPS_NODE_GROUP_NAME,CPS_NODE_GROUP_NODE }, CPS_NODE_GROUP_NODE, { "cps/node-group/node", "", true, CPS_CLASS_ATTR_T_LIST, CPS_CLASS_DATA_TYPE_T_BIN }},
@@ -52,10 +56,12 @@ static struct {
 
 
 static const size_t lst_len = sizeof(lst)/sizeof(*lst);
+
 t_std_error cps_api_yang_module_init(void) {
-    size_t ix = 0;
-    for ( ; ix < lst_len ; ++ix ) {
-        cps_class_map_init(lst[ix].id,&(lst[ix]._ids[0]),lst[ix]._ids.size(),&lst[ix].details);
-    }
-    return STD_ERR_OK;
+	size_t ix = 0;
+	for ( ; ix < lst_len ; ++ix ) {
+		cps_class_map_init(lst[ix].id,&(lst[ix]._ids[0]),lst[ix]._ids.size(),&lst[ix].details);
+	}
+	return STD_ERR_OK;
 }
+
