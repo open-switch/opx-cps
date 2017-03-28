@@ -676,7 +676,7 @@ bool cps_api_list_debug(void) ;
  *
  * @return a uint64_t containing the number of objects that have been allocated and not deleted within the process
  */
-uint64_t cps_api_objects_allocated();
+uint64_t cps_api_objects_allocated(void);
 
 /**
  * Log the stats about the number of objects allocated and freed within an application.  In addition, also log the number of objects allocated but
