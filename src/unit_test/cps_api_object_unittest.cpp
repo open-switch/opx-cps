@@ -477,6 +477,7 @@ TEST(cps_api_object,cps_object_attr_merge) {
 }
 
 TEST(cps_api_object,cps_obj_escape_chars) {
+    __init_class_map();
     cps_api_object_guard og(cps_api_object_create());
     cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),BASE_IP_IPV6,cps_api_qualifier_TARGET);
     
