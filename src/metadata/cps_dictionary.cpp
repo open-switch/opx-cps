@@ -456,8 +456,8 @@ std::string cps_api_object_attr_data_to_string(cps_api_attr_id_t id, const void 
 static std::string _escape(std::string data) {
     size_t ix = 0;
     while(true) {
-        auto _f = data.find('"',ix);
-        if (_f==std::string::npos) break;
+        ix = data.find('"',ix);
+        if (ix==std::string::npos) break;
         data.insert(ix,"\"");
         ix += 2;
     }
