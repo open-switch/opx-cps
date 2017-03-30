@@ -153,10 +153,15 @@ class TunnelConfigManager():
             f.write("debug = "+default_log_level+"\n")
 
             # Global socket options
-            f.write("socket = l:SO_KEEPALIVE="+default_keepalive_enable+"\n")
-            f.write("socket = l:TCP_KEEPCNT="+default_keepalive_count+"\n")
-            f.write("socket = l:TCP_KEEPINTVL="+default_keepalive_interval+"\n")
-            f.write("socket = l:TCP_KEEPIDLE="+default_keepalive_idle+"\n")
+            f.write("socket = r:SO_KEEPALIVE="+default_keepalive_enable+"\n")
+            f.write("socket = r:TCP_KEEPCNT="+default_keepalive_count+"\n")
+            f.write("socket = r:TCP_KEEPINTVL="+default_keepalive_interval+"\n")
+            f.write("socket = r:TCP_KEEPIDLE="+default_keepalive_idle+"\n")
+
+            f.write("socket = a:SO_KEEPALIVE="+default_keepalive_enable+"\n")
+            f.write("socket = a:TCP_KEEPCNT="+default_keepalive_count+"\n")
+            f.write("socket = a:TCP_KEEPINTVL="+default_keepalive_interval+"\n")
+            f.write("socket = a:TCP_KEEPIDLE="+default_keepalive_idle+"\n")
 
             # Service specific socket options
             f.write("[redis - "+group+" - "+node+" ]\n")
