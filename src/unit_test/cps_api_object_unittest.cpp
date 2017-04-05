@@ -476,6 +476,32 @@ TEST(cps_api_object,cps_object_attr_merge) {
 
 }
 
+TEST(cps_api_object,cps_obj_escape_chars) {
+    __init_class_map();
+    cps_api_object_guard og(cps_api_object_create());
+    cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),BASE_IP_IPV6,cps_api_qualifier_TARGET);
+    
+    char name[20] = "Cliff*ord";
+    char name_escaped[40];
+    size_t name_escaped_len = 40;    
+    cps_api_attr_create_escaped(cps_api_object_ATTR_T_BIN, name, strlen(name), name_escaped, &name_escaped_len);
+    cps_api_object_attr_add(og.get(),BASE_IP_IPV6_NAME,name_escaped,name_escaped_len);
+    
+    char wildcard_val[2] = "*";
+    size_t wildcard_val_len = 1;
+    cps_api_object_attr_add(og.get(),BASE_IP_IPV4_NAME,wildcard_val,wildcard_val_len);
+    
+    
+    uint32_t data = 298;
+    char data_escaped[8];
+    size_t data_escaped_len = 8;    
+    cps_api_attr_create_escaped(cps_api_object_ATTR_T_U32, &data, sizeof(uint32_t), data_escaped, &data_escaped_len);    
+    cps_api_object_attr_add(og.get(),BASE_IP_IPV6_IFINDEX,data_escaped,data_escaped_len);
+    
+    cps_api_filter_wildcard_attrs(og.get(),true);    
+    cps_api_object_print(og.get());    
+}
+
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
