@@ -426,7 +426,7 @@ std::string cps_api_object_attr_data_to_string(cps_api_attr_id_t id, const void 
     case CPS_CLASS_DATA_TYPE_T_INT64:
         return cps_string::sprintf("%" PRId64 ,*(uint64_t*)data);
     case CPS_CLASS_DATA_TYPE_T_STRING:
-        return std::string((const char*)data,len);
+        return std::string((const char*)data);
     case CPS_CLASS_DATA_TYPE_T_ENUM:
         {
             const char * _val = cps_class_enum_id(id,*(int*)data);
@@ -456,9 +456,10 @@ std::string cps_api_object_attr_data_to_string(cps_api_attr_id_t id, const void 
 static std::string _escape(std::string data) {
     size_t ix = 0;
     while(true) {
-        auto _f = data.find('"',ix);
-        if (_f==std::string::npos) break;
+        ix = data.find('"',ix);
+        if (ix==std::string::npos) break;
         data.insert(ix,"\"");
+        ix += 2;
     }
     return std::move(data);
 }
@@ -476,21 +477,21 @@ void cps_api_object_print(cps_api_object_t obj) {
 }
 
 static inline bool __is_in_cps_attr_set(cps_api_attr_id_t id) {
-	static const cps_api_attr_id_t _cps_start_id_range =(cps_api_attr_id_t)(cps_api_obj_CAT_CPS*CPS_ATTR_ID_GEN_ATTR_ID_END);
-	static const cps_api_attr_id_t _cps_end_id_range = (cps_api_attr_id_t)((cps_api_obj_CAT_CPS+1)*CPS_ATTR_ID_GEN_ATTR_ID_END);
-	return id >=_cps_start_id_range && id<_cps_end_id_range;	//return true if the attribute ID is within the CPS attribute space
+    static const cps_api_attr_id_t _cps_start_id_range =(cps_api_attr_id_t)(cps_api_obj_CAT_CPS*CPS_ATTR_ID_GEN_ATTR_ID_END);
+    static const cps_api_attr_id_t _cps_end_id_range = (cps_api_attr_id_t)((cps_api_obj_CAT_CPS+1)*CPS_ATTR_ID_GEN_ATTR_ID_END);
+    return id >=_cps_start_id_range && id<_cps_end_id_range;    //return true if the attribute ID is within the CPS attribute space
 }
 
 bool cps_api_attr_id_is_temporary(cps_api_attr_id_t id) {
-	if (id==CPS_API_OBJ_KEY_ATTRS) return false;
-	if (id==CPS_OBJECT_GROUP_CONFIG_TYPE) return false;
-	if (!__is_in_cps_attr_set(id)) return false;
-	return true;
+    if (id==CPS_API_OBJ_KEY_ATTRS) return false;
+    if (id==CPS_OBJECT_GROUP_CONFIG_TYPE) return false;
+    if (!__is_in_cps_attr_set(id)) return false;
+    return true;
 }
 
 bool cps_api_attr_id_is_cps_reserved(cps_api_attr_id_t id) {
-	if (id<=CPS_API_ATTR_RESERVE_RANGE_END && id >=CPS_API_ATTR_RESERVE_RANGE_START) return true;	//a higher range reserved for keys and embedded objects
-	return __is_in_cps_attr_set(id);
+    if (id<=CPS_API_ATTR_RESERVE_RANGE_END && id >=CPS_API_ATTR_RESERVE_RANGE_START) return true;    //a higher range reserved for keys and embedded objects
+    return __is_in_cps_attr_set(id);
 }
 
 std::string cps_api_object_to_c_string(cps_api_object_t obj) {

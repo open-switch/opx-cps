@@ -116,7 +116,8 @@ static cps_api_event_service_handle_t _thread_handle;
 static std_thread_create_param_t params;
 
 typedef std::vector<cps_api_event_thread_cbs_t> key_list_t;
-static key_list_t cb_map;
+static auto cb_map = new key_list_t;
+
 
 static bool init_event_thread_func() {
     std_mutex_simple_lock_guard l(&mutex);
@@ -134,14 +135,14 @@ static  void * _thread_function_(void * param) {
         if (cps_api_wait_for_event(_thread_handle,obj)==cps_api_ret_code_OK) {
             std_rw_lock_read_guard rg(&rw_lock);
             size_t ix = 0;
-            size_t mx = cb_map.size();
+            size_t mx = cb_map->size();
 
             for ( ; ix < mx ; ++ix ) {
                 cps_api_key_t * obj_key = cps_api_object_key(obj);
-                cps_api_key_t * pref = cps_api_object_key(cb_map[ix].obj);
+                cps_api_key_t * pref = cps_api_object_key((*cb_map)[ix].obj);
                 if (cps_api_key_matches(obj_key,pref,false)==0) {
-                    auto cb = cb_map[ix].cb;
-                    auto param = cb_map[ix].context;
+                    auto cb = (*cb_map)[ix].cb;
+                    auto param = (*cb_map)[ix].context;
                     std_rw_unlock(&rw_lock);
                     bool _stop = (!cb(obj,param));
                     std_rw_rlock(&rw_lock);
@@ -152,7 +153,7 @@ static  void * _thread_function_(void * param) {
                         break;
                     }
 
-                    mx = cb_map.size();
+                    mx = cb_map->size();
                 }
             }
         } else {
@@ -213,7 +214,7 @@ cps_api_return_code_t cps_api_event_thread_reg_object(cps_api_object_list_t obje
             return cps_api_ret_code_ERR;
         }
         std_rw_lock_write_guard wg(&rw_lock);
-        cb_map.push_back(p);
+        cb_map->push_back(p);
     }
 
     return cps_api_ret_code_OK;
@@ -245,6 +246,6 @@ cps_api_return_code_t cps_api_event_thread_shutdown(void) {
     std_thread_destroy_struct(&params);
     is_running=false;
     std_rw_lock_write_guard wg(&rw_lock);
-    cb_map.clear();
+    cb_map->clear();
     return cps_api_ret_code_OK;
 }

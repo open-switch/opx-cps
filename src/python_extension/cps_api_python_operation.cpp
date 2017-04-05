@@ -489,7 +489,8 @@ static bool _error_function(void *context, cps_api_db_sync_cb_param_t *params, c
     PyObject *e = PyDict_New();
 
     static const std::map<int,std::string> error = {
-        {cps_api_db_no_connection,"no_connection" }
+        {cps_api_db_no_connection,"no_connection" },
+        {cps_api_db_invalid_address, "invalid_address"}
     };
     py_cps_util_set_item_to_dict(e,"error", PyString_FromString(error.at(err->err_code).c_str()));
 

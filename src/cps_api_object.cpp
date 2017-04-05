@@ -83,22 +83,29 @@ void db_list_tracker_rm(cps_api_object_t obj) {
     }
 }
 
+uint64_t cps_api_objects_allocated() {
+	std_mutex_simple_lock_guard g(&db_tracker_lock);
+	return trackers.size();
+}
+
 bool cps_api_list_debug() {
     std_mutex_simple_lock_guard g(&db_tracker_lock);
     auto it = trackers.begin();
     auto end = trackers.end();
     if (it==end) return true;
     for ( ; it != end ; ++it ) {
-        printf("Objects still found from %s:%s:%d\n",(it)->second->file,(it)->second->desc,(it)->second->ln);
+    	EV_LOGGING(CPS,NOTICE,"OBJ-TRACKER","Object allocated from %s:%s:%d\n",(it)->second->file,(it)->second->desc,(it)->second->ln);
     }
     return false;
 }
 
 void cps_api_list_stats() {
-    printf("Allocated                 = %" PRIx64 "\n",__allocated_objs);
-    printf("Deallocated             = %" PRIx64 "\n",__deallocated_objs);
-    printf("Remaining                 = %" PRIx64 "\n",(__allocated_objs-__deallocated_objs));
-    printf("Internal remaining         = %" PRIx64 "\n",trackers.size());
+    EV_LOGGING(CPS,NOTICE,"OBJ-STATS","Allocated               = %" PRId64 "\n",__allocated_objs);
+    EV_LOGGING(CPS,NOTICE,"OBJ-STATS","Deallocated             = %" PRId64 "\n",__deallocated_objs);
+    EV_LOGGING(CPS,NOTICE,"OBJ-STATS","Remaining               = %" PRId64 "\n",(__allocated_objs-__deallocated_objs));
+
+    std_mutex_simple_lock_guard g(&db_tracker_lock);
+    EV_LOGGING(CPS,NOTICE,"OBJ-STATS","Internal remaining      = %" PRId64 "\n",trackers.size());
 }
 
 cps_api_object_ATTR_TYPE_t cps_api_object_int_type_for_len(size_t len) {
@@ -562,10 +569,19 @@ bool cps_api_object_e_add(cps_api_object_t obj, cps_api_attr_id_t *id,
 
     switch(type) {
     case cps_api_object_ATTR_T_U16:
+    	if (dlen!=sizeof(un.u16)) {
+    		EV_LOGGING(DSAPI,ERR,"ADD-Invalid","Invalid parameters for add - size mismatch U16 %d vs %d.");
+    	}
         un.u16 = htole16(*(uint16_t*)data); data = &un.u16; break;
     case cps_api_object_ATTR_T_U32:
+    	if (dlen!=sizeof(un.u32)) {
+    		EV_LOGGING(DSAPI,ERR,"ADD-Invalid","Invalid parameters for add - size mismatch U32 %d vs %d.");
+    	}
         un.u32 = htole32(*(uint32_t*)data); data = &un.u32; break;
     case cps_api_object_ATTR_T_U64:
+    	if (dlen!=sizeof(un.u64)) {
+    		EV_LOGGING(DSAPI,ERR,"ADD-Invalid","Invalid parameters for add - size mismatch U64 %d vs %d.");
+    	}
         un.u64 = htole64(*(uint64_t*)data); data = &un.u64; break;
     default:
         //bin;
