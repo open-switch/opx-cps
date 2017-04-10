@@ -77,7 +77,6 @@ base-acl
 if
 base-qos
 base-if-phy
-
 ```
 
 ```
@@ -98,8 +97,6 @@ base-if-phy/hardware-port
 Registered to CPS with qualifier:  target
 
 Process Owner:  base_nas_front_panel_ports.py
-
-
 ```
 
 ```
@@ -124,7 +121,6 @@ Registered to CPS with qualifier:  target
 
 Process Owner:  base_nas
 ```
-
 
 ### 2) cps\_get\_oid.py
 This tool is used to get data from a CPS Object Service provider.
@@ -225,7 +221,6 @@ Operation: create/set/delete
 
 ```
 root@OPX:/opt/dell/os10/bin# cps_send_event.py create observed  dell-base-if-cmn/if/interfaces-state/interface  if/interfaces-state/interface/name=e101-007-0 if/interfaces-state/interface/oper-status=2
-
 ```
 
 (c) 2017 Dell
