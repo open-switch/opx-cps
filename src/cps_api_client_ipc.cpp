@@ -23,6 +23,7 @@
 #include "private/cps_ns.h"
 
 #include "cps_api_object.h"
+#include "cps_api_object_tools.h"
 #include "cps_class_map.h"
 
 #include "event_log.h"
@@ -337,12 +338,10 @@ cps_api_return_code_t cps_api_process_commit_request(cps_api_transaction_params_
     EV_LOG(TRACE,DSAPI,0, "CPS IPC", "Object for commit request: %s ",
                                     cps_api_key_name_print(key, buff, sizeof(buff)));
 
-
     if (!cps_api_get_handle(*key,handle)) {
         EV_LOG(ERR,DSAPI,0,"CPS IPC","No Service");
         return cps_api_ret_code_NO_SERVICE;
     }
-
 
     rc = cps_api_ret_code_ERR;
 
@@ -361,7 +360,6 @@ cps_api_return_code_t cps_api_process_commit_request(cps_api_transaction_params_
             break;
         }
 
-
         uint32_t op;
         size_t len;
         if (param->timeout > 0) {
@@ -377,14 +375,13 @@ cps_api_return_code_t cps_api_process_commit_request(cps_api_transaction_params_
             break;
         }
 
-
         if (op == cps_api_msg_o_COMMIT_OBJECT) {
             cps_api_object_guard og(cps_api_receive_object(handle,len));
             if (!og.valid()) {
                 EV_LOG(ERR,DSAPI,0,"CPS IPC","Transaction response missing cur object..");
                 break;
             }
-            cps_api_object_clone(obj,og.get());
+            cps_api_object_swap(obj,og.get());
 
             if (!cps_api_receive_header(handle,op,len)) {
                 EV_LOG(ERR,DSAPI,0,"CPS IPC","Failed to read the receive header for prev object ");
@@ -402,10 +399,8 @@ cps_api_return_code_t cps_api_process_commit_request(cps_api_transaction_params_
                     EV_LOG(ERR,DSAPI,0,"CPS IPC","Transaction response missing resp object..");
                     break;
                 }
-                obj = cps_api_object_list_get(param->prev,ix);
-
-                if (obj==NULL) { //if there was no previous object passed by client override
-                    if (cps_api_object_list_append(param->prev,og.get())) {
+                if (pre==nullptr) {
+                    if (cps_api_object_list_set(param->prev,ix,og.get(),true)) {
                         og.release();
                         rc = cps_api_ret_code_OK;
                     }
@@ -413,11 +408,14 @@ cps_api_return_code_t cps_api_process_commit_request(cps_api_transaction_params_
                     //take the previous provided by the client if the key is valid
                     //assume that the data is valid too
                     if (cps_api_key_get_len(cps_api_object_key(og.get()))>0) {
-                        cps_api_object_clone(obj,og.get());
+                        cps_api_object_swap(pre,og.get());
                     }
                     rc = cps_api_ret_code_OK;
                 }
             }
+            const t_std_error *_rc = cps_api_object_return_code(obj);
+            if (_rc!=nullptr) rc = *_rc;
+
         }
         if (op == cps_api_msg_o_RETURN_CODE) {
             if (!cps_api_receive_data(handle,&rc,sizeof(rc))) break;

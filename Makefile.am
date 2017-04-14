@@ -54,7 +54,10 @@ libopx_cps_api_common_la_SOURCES = \
   src/db/cps_api_db_response.cpp \
   src/db/cps_api_db_pipeline.cpp \
   src/db/cps_api_core_utils.cpp \
-  src/db/cps_redis.cpp
+  src/db/cps_redis.cpp \
+  src/cps_api_select_utils.cpp \
+  src/non-core/cps_api_db_interface_tools.cpp 
+  
 
 #Unit tests that will be merged into the config file at a later daye
 #src/unit_test/cps_api_operation_unittest.cpp

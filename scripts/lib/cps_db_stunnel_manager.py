@@ -22,6 +22,12 @@ stunnel_config_path = "/tmp/"
 stunnel_path = '/usr/bin/stunnel4 '
 default_timeout_connect = "2"
 default_timeout_busy = "5"
+default_timeout_idle = "-1"
+default_retry = "yes"
+default_keepalive_enable = "1"
+default_keepalive_count = "5"
+default_keepalive_interval = "2"
+default_keepalive_idle = "10"
 
 def get_free_port():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -141,6 +147,12 @@ class TunnelConfigManager():
             return
         try:
             f = open(self.fname,'w')
+            f.write("socket = l:SO_KEEPALIVE="+default_keepalive_enable+"\n")
+            f.write("socket = l:TCP_KEEPCNT="+default_keepalive_count+"\n")
+            f.write("socket = l:TCP_KEEPINTVL="+default_keepalive_interval+"\n")
+            f.write("socket = l:TCP_KEEPIDLE="+default_keepalive_idle+"\n")
+
+
             f.write("[redis - "+group+" - "+node+" ]\n")
             f.write("client = yes \n")
             f.write("accept = :::"+port+" \n")
@@ -148,6 +160,10 @@ class TunnelConfigManager():
             f.write("cert = "+default_cert+"\n")
             f.write("TIMEOUTconnect = "+default_timeout_connect+"\n")
             f.write("TIMEOUTbusy = "+default_timeout_busy+"\n")
+            f.write("TIMEOUTidle = "+default_timeout_idle+"\n")
+            f.write("retry = "+default_retry+"\n")
+            
+
         except Exception as e:
             if os.path.exists(self.fname):
                 os.remove(self.fname)

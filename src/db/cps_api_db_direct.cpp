@@ -124,46 +124,36 @@ cps_api_return_code_t cps_api_db_get_bulk(cps_api_object_list_t objs, const char
 }
 
 namespace {
-    cps_api_return_code_t __one_pre_load_into_prev(std::vector<std::string> &l, cps_api_object_t obj,cps_api_object_t prev) {
+    cps_api_return_code_t __one_pre_load_into_prev(std::vector<std::string> &service_addrs, cps_api_object_t obj,cps_api_object_t prev) {
         if (prev==nullptr) return cps_api_ret_code_OK;
-        for (auto &it : l) {
+
+        std::vector<char> key;
+        if (!cps_db::dbkey_from_instance_key(key,obj,false)) return cps_api_ret_code_ERR;
+
+        for (auto &it : service_addrs) {
             cps_db::connection_request r(cps_db::ProcessDBCache(),it.c_str());
             if (!r.valid()) continue;
-            std::vector<char> key;
-            if (!cps_db::dbkey_from_instance_key(key,obj,false)) return false;
             if (cps_db::get_object(r.get(),key,prev)) {
-                return cps_api_ret_code_OK;
-            }
-        }
-        return cps_api_ret_code_OK;    //ignore merge issue
-    }
-
-    cps_api_return_code_t __one_pre_set(std::vector<std::string> &l, cps_api_object_t obj,cps_api_object_t prev) {
-        cps_api_object_guard og(nullptr);
-        if (prev==nullptr) {
-            og.set(cps_api_object_create());
-            if (og.get()==nullptr) return cps_api_ret_code_ERR;
-            prev = og.get();
-        }
-
-        if (!cps_api_object_clone(prev,obj)) return cps_api_ret_code_ERR;
-
-        auto rc = __one_pre_load_into_prev(l,obj,prev);
-        if (rc!=cps_api_ret_code_OK) return rc;
-        cps_api_object_guard copy(cps_api_object_create());
-
-        if (copy.get()==nullptr) return cps_api_ret_code_ERR;
-
-        if (!cps_api_object_clone(copy.get(),prev)) return cps_api_ret_code_ERR;
-        if (cps_api_object_attr_merge(copy.get(),obj,true)) {
-            if (cps_api_object_clone(obj,copy.get())) {
                 return cps_api_ret_code_OK;
             }
         }
         return cps_api_ret_code_OK;
     }
 
-    cps_api_return_code_t __one_handle_delete(std::vector<std::string> &l, cps_api_object_t obj) {
+    cps_api_return_code_t __one_pre_load_into_prev_for_set(std::vector<std::string> &service_addrs, cps_api_object_t obj,cps_api_object_t prev) {
+    	cps_api_return_code_t rc = __one_pre_load_into_prev(service_addrs,obj,prev);
+    	if (rc!=cps_api_ret_code_OK) return false;
+
+    	//in this case, if there is no valid key in the prev object - it doesn't exist or wasn't retrievable.
+    	if (cps_api_key_matches(cps_api_object_key(obj),cps_api_object_key(prev),true)!=0) {
+    		cps_api_object_guard og(cps_api_object_create());
+    		cps_api_key_copy(cps_api_object_key(og.get()),cps_api_object_key(obj));
+    		cps_api_object_swap(og.get(),prev);
+    	}
+    	return rc;
+    }
+
+    cps_api_return_code_t __one_handle_delete(std::vector<std::string> &l, cps_api_object_t obj,cps_api_object_t prev) {
 
         for (auto &it : l) {
             cps_db::connection_request r(cps_db::ProcessDBCache(),it.c_str());
@@ -172,12 +162,26 @@ namespace {
         }
         return cps_api_ret_code_OK;    //ignore merge issue
     }
-    cps_api_return_code_t __one_handle_create(std::vector<std::string> &l, cps_api_object_t obj) {
+
+    cps_api_return_code_t __one_handle_create(std::vector<std::string> &l, cps_api_object_t obj,cps_api_object_t prev) {
 
         for (auto &it : l) {
             cps_db::connection_request r(cps_db::ProcessDBCache(),it.c_str());
             if (!r.valid()) continue;
             if (!cps_db::store_object(r.get(),obj)) return cps_api_ret_code_ERR;
+        }
+        return cps_api_ret_code_OK;    //ignore merge issue
+    }
+
+    cps_api_return_code_t __one_handle_set(std::vector<std::string> &l, cps_api_object_t obj,cps_api_object_t prev) {
+
+    	cps_api_object_guard merged(cps_api_object_create_clone(prev));
+        if (!cps_api_object_attr_merge(merged.get(),obj,true)) return cps_api_ret_code_ERR;
+
+        for (auto &it : l) {
+            cps_db::connection_request r(cps_db::ProcessDBCache(),it.c_str());
+            if (!r.valid()) continue;
+            if (!cps_db::store_object(r.get(),merged.get())) return cps_api_ret_code_ERR;
         }
         return cps_api_ret_code_OK;    //ignore merge issue
     }
@@ -187,6 +191,9 @@ cps_api_return_code_t cps_api_db_commit_one(cps_api_operation_types_t op,cps_api
 
     if (op>cps_api_oper_SET || op<=cps_api_oper_NULL)
         return cps_api_ret_code_ERR;
+
+    cps_api_object_guard og(prev==nullptr ? cps_api_object_create() : nullptr);
+    prev = prev==nullptr ? og.get() : prev;
 
     std::vector<std::string> lst;
     if (!cps_api_db_get_node_group(cps_api_key_get_group(obj),lst)) {
@@ -198,9 +205,9 @@ cps_api_return_code_t cps_api_db_commit_one(cps_api_operation_types_t op,cps_api
         cps_api_return_code_t (*handle)(std::vector<std::string> &, cps_api_object_t,cps_api_object_t);
     } pre_hook [cps_api_oper_SET+1] = {
             nullptr/*cps_api_oper_NULL*/,
-            __one_pre_load_into_prev,
-            nullptr,
-            __one_pre_set,
+            __one_pre_load_into_prev, 	/*Delete*/
+            nullptr,					/*Create*/
+			__one_pre_load_into_prev_for_set,	/*set*/
     };
     cps_api_return_code_t rc = cps_api_ret_code_OK;
 
@@ -211,15 +218,15 @@ cps_api_return_code_t cps_api_db_commit_one(cps_api_operation_types_t op,cps_api
         return rc;
     }
     struct {
-        cps_api_return_code_t (*handle)(std::vector<std::string> &, cps_api_object_t );
+        cps_api_return_code_t (*handle)(std::vector<std::string> &, cps_api_object_t, cps_api_object_t);
     } handlers [cps_api_oper_SET+1] = {
             nullptr,
             __one_handle_delete,
             __one_handle_create,
-            __one_handle_create
+            __one_handle_set
     };
 
-    if(handlers[op].handle!=nullptr) rc = handlers[op].handle(lst,obj);
+    if(handlers[op].handle!=nullptr) rc = handlers[op].handle(lst,obj,prev);
 
     if (rc!=cps_api_ret_code_OK) {
         EV_LOGGING(DSAPI,ERR,"CPS-DB-IF","Update failed for operation %d",(int)op);
@@ -229,7 +236,7 @@ cps_api_return_code_t cps_api_db_commit_one(cps_api_operation_types_t op,cps_api
     if (publish) {
         bool _first_time = true;
         for ( auto &it : lst ) {
-            cps_db::connection_request r(cps_db::ProcessDBCache(),it);
+            cps_db::connection_request r(cps_db::ProcessDBEvents(),it);
             if (!r.valid()) continue;
             if (_first_time) cps_api_object_set_type_operation(cps_api_object_key(obj),op);
             if (!cps_db::publish(r.get(),obj)) {
@@ -334,7 +341,7 @@ cps_api_return_code_t cps_api_db_commit_bulk(cps_api_db_commit_bulk_t *param) {
         bool _first_time = true;
         for ( auto &it : lst ) {
 
-            cps_db::connection_request r(cps_db::ProcessDBCache(),it);
+            cps_db::connection_request r(cps_db::ProcessDBEvents(),it);
             if (!r.valid()) continue;
             for (size_t ix = 0, mx = cps_api_object_list_size(param->objects); ix < mx ; ++ix ) {
                 cps_api_object_t o = cps_api_object_list_get(param->objects,ix);
