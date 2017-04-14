@@ -1,5 +1,5 @@
 #!/bin/sh
 
-systemctl stop redis-server
+systemctl stop redis-server || true
 
 #DEBHELPER#
