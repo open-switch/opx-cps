@@ -9,8 +9,10 @@ if ! getent passwd  _opx_cps> /dev/null; then
     adduser --quiet --system  --force-badname --no-create-home --ingroup _opx_cps _opx_cps
 fi
 
-systemctl unmask redis-server
-systemctl start redis-server
+# ONIE image installation runs under busybox, not systemd, so ignore any failure when attempting to re-start redis.
+# Note: This will be handled more elegantly in the future.
+systemctl unmask redis-server || true
+systemctl start redis-server || true
 
 #DEBHELPER#
 
