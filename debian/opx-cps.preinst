@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# ONIE image installation runs under busybox, not systemd, so ignore any failure when attempting to stop redis.
+# Note: This will be handled more elegantly in the future.
 systemctl stop redis-server || true
 
 #DEBHELPER#
