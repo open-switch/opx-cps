@@ -9,8 +9,12 @@ if ! getent passwd  _opx_cps> /dev/null; then
     adduser --quiet --system  --force-badname --no-create-home --ingroup _opx_cps _opx_cps
 fi
 
-systemctl unmask redis-server
-systemctl start redis-server
+# Restart redis, ignoring any error
+# (Ignoring error is needed for ONIE installation, during which systemd
+#  is not running -- this will be handled in a more elegant way in the
+#  future)
+systemctl unmask redis-server || true
+systemctl start redis-server || true
 
 #DEBHELPER#
 
