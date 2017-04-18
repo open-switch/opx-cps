@@ -1,5 +1,9 @@
 #!/bin/sh
 
-systemctl stop redis-server
+# Stop redis, ignoring any error
+# (Ignoring error is needed for ONIE installation, during which systemd
+#  is not running -- this will be handled in a more elegant way in the
+#  future)
+systemctl stop redis-server || true
 
 #DEBHELPER#
