@@ -1,3 +1,9 @@
+opx-cps (1.0.2) unstable; urgency=medium
+
+  * Changes to support installation under ONIE
+
+ -- Dell EMC <ops-dev@lists.openswitch.net>  Tue, 18 Apr 2017 16:27:00 -0800
+
 opx-cps (1.0.1) unstable; urgency=medium
 
   * Initial release.
