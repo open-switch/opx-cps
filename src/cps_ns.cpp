@@ -201,16 +201,16 @@ static bool process_registration(int fd,size_t len) {
     const char *str = cps_class_string_from_key(&r.details.key, 1);
     const char *qual = cps_class_qual_from_key(&r.details.key);
     if (str!=nullptr)
-      EV_LOG(INFO,DSAPI,0,"NS","%s registration for %s %s at %s",
-            "Added" ,
-            qual,
-            str,
-            r.details.addr.address.str);
+        EV_LOGGING(DSAPI, NOTICE, "NS", "%s registration for %s %s at %s",
+                   "Added" ,
+                   qual,
+                   str,
+                   r.details.addr.address.str);
     else
-      EV_LOG(INFO,DSAPI,0,"NS","%s registration for %s at %s",
-            "Added" ,
-            cps_api_key_print(&r.details.key,buff,sizeof(buff)-1),
-            r.details.addr.address.str);
+        EV_LOGGING(DSAPI, NOTICE, "NS", "%s registration for %s at %s",
+                   "Added" ,
+                   cps_api_key_print(&r.details.key,buff,sizeof(buff)-1),
+                   r.details.addr.address.str);
 
     send_out_key_event(&r.details.key,true);
     return true;
@@ -326,11 +326,11 @@ static bool  _client_closed_( void *context, int fd ) {
                     const char *str = cps_class_string_from_key(&_one_key.key, 1);
                     const char *qual = cps_class_qual_from_key(&_one_key.key);
                     if (str!=nullptr)
-                        EV_LOG(INFO,DSAPI,0,"NS","Added registration removed for %s %s ",
+                        EV_LOGGING(DSAPI,NOTICE,"NS","Added registration removed for %s %s ",
                                qual,
                                str);
                    else
-                       EV_LOG(INFO,DSAPI,0,"NS","Added registration removed %s",
+                	   EV_LOGGING(DSAPI,NOTICE,"NS","Added registration removed %s",
                               cps_api_key_print(&_one_key.key,buff,sizeof(buff)-1));
 
                     _one_key.data.erase(_one_key.data.begin()+_entry);
@@ -361,6 +361,63 @@ static bool  _client_closed_( void *context, int fd ) {
 
 static std_socket_server_t service_data;
 static std_socket_server_handle_t handle;
+
+static cps_api_operation_handle_t _service_handle;
+
+cps_api_return_code_t _ns_query_function(void * context, cps_api_get_params_t * param, size_t key_ix) {
+	cps_api_object_t obj = cps_api_object_list_get(param->filters,key_ix);
+	if (obj==nullptr) return cps_api_ret_code_ERR;
+
+	const char * name = (const char *) cps_api_object_get_data(obj,CPS_SERVICE_INSTANCE_NAME);
+
+	std::unordered_map<std::string,std::vector<std::string>> _map;
+
+
+    auto fn = [&_map,name](reg_cache::cache_data_iterator &it) -> bool {
+        for ( auto & _key_list : it->second ) {
+            for ( auto & _reg_list : _key_list.data ) {
+            	const char *_reg_name = nullptr;
+        		if (_reg_list.details.addr.type==e_std_sock_UNIX && _reg_list.details.addr.addr_type==e_std_socket_a_t_STRING) {
+        			_reg_name = _reg_list.details.addr.address.str;
+        		}
+            	if (name!=nullptr) {
+            		bool _skip = strcmp(name,_reg_name)!=0;
+            		if (_skip) continue;
+            	}
+            	char _buff[CPS_API_KEY_STR_MAX];
+            	if (cps_api_key_name_print((cps_api_key_t *)&_key_list.key,_buff,sizeof(_buff)-1)!=nullptr) {
+            		_map[_reg_name].push_back(_buff);
+            	} else {
+                	if (cps_api_key_print((cps_api_key_t *)&_key_list.key,_buff,sizeof(_buff)-1)!=nullptr) {
+                		_map[_reg_name].push_back(_buff);
+                	}
+            	}
+
+            }
+        }
+        return true;
+    };
+
+    std_mutex_simple_lock_guard lg(&cache_lock);
+    registration.walk(fn);
+
+    for ( auto _it : _map ) {
+    	cps_api_object_t o = cps_api_object_list_create_obj_and_append(param->list);
+    	if (o==nullptr) {
+    		EV_LOGGING(CPS,ERR,"NS-Query","Unable to allocate object response");
+    		return cps_api_ret_code_ERR;
+    	}
+    	cps_api_key_from_attr_with_qual(cps_api_object_key(o),CPS_SERVICE_INSTANCE,cps_api_qualifier_OBSERVED);
+    	cps_api_object_attr_add(o,CPS_SERVICE_INSTANCE_NAME,_it.first.c_str(),_it.first.length()+1);
+    	cps_api_object_attr_add(o,CPS_SERVICE_INSTANCE_CONNECTION_INFORMATION,_it.first.c_str(),_it.first.length()+1);
+
+    	for (auto _key_it : _it.second) {
+    		cps_api_object_attr_add(o,CPS_SERVICE_INSTANCE_REGISTERED_KEY,_key_it.c_str(),_key_it.length()+1);
+    	}
+    }
+
+	return cps_api_ret_code_OK;
+}
 
 cps_api_return_code_t cps_api_ns_startup() {
 
@@ -397,6 +454,25 @@ cps_api_return_code_t cps_api_ns_startup() {
         return cps_api_ret_code_ERR;
     }
 
+    const static int NUMBER_OF_HANDLER_THREADS = 1;
+    if (cps_api_operation_subsystem_init(&_service_handle,NUMBER_OF_HANDLER_THREADS)!=cps_api_ret_code_OK) {
+    	EV_LOGGING(CPS,ERR,"NS-Startup","Failed to create a service handle for CPS");
+    	return cps_api_ret_code_ERR;
+    }
+
+    cps_api_registration_functions_t _cbs;
+    memset(&_cbs,0,sizeof(_cbs));
+    _cbs.handle = _service_handle;
+    _cbs._read_function =_ns_query_function;
+
+    if (!cps_api_key_from_attr_with_qual(&_cbs.key,CPS_SERVICE_INSTANCE,cps_api_qualifier_OBSERVED)) {
+    	EV_LOGGING(CPS,ERR,"NS-Startup","Failed to translate service instance object key");
+    	return cps_api_ret_code_ERR;
+    }
+    if (cps_api_register(&_cbs)!=cps_api_ret_code_OK) {
+    	EV_LOGGING(CPS,ERR,"NS-Startup","Failed to initialize service instance query object");
+    	return cps_api_ret_code_ERR;
+    }
     return cps_api_ret_code_OK;
 }
 

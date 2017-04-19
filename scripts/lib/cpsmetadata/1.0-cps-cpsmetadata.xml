@@ -49,6 +49,7 @@
 <metadata_entry key="[cps].[cps/object].[cps/object/stat].[cps/object/operations/cleanup_runs]" id="0x80011" name="cps/object/operations/cleanup_runs" desc="Number of clean ups on cache done due to close connections." embedded="false" node-type="leaf" data-type="uint64_t" />
 <metadata_entry key="[cps].[cps/object].[cps/object/stat].[cps/object/operations/events_sent]" id="0x80012" name="cps/object/operations/events_sent" desc="Number of events sent by the name service for registration changes." embedded="false" node-type="leaf" data-type="uint64_t" />
 <metadata_entry key="[cps].[cps/object].[cps/object/stat].[cps/object/operations/process_id]" id="0x80013" name="cps/object/operations/process_id" desc="The process ID of the application registering for object handling." embedded="false" node-type="leaf" data-type="uint64_t" />
+<metadata_entry key="[cps].[cps/object].[cps/object/stat].[cps/object/operations/objects_allocated]" id="0x80014" name="cps/object/operations/objects_allocated" desc="The number of objects that are allocated within the process but not deleted." embedded="false" node-type="leaf" data-type="uint64_t" />
 
 <!-- CPS Node Ownership  -->
 <class_ownership id="cps/node-group" qualifiers="target,observed" owner-type="db" />
