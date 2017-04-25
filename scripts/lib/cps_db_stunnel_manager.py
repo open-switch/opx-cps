@@ -338,10 +338,8 @@ if __name__ == '__main__':
 
     cps.obj_register(handle, cps.key_from_name("target","cps/db-instance"), db_cb)
 
-    # WARNING systemd module not currently installed!!!
-    #         Waiting for legal approval to bring systemd module into OS10.
-    #import systemd.daemon
-    #systemd.daemon.notify("READY=1")
+    import systemd.daemon
+    systemd.daemon.notify("READY=1")
 
     signal.pause()
 
