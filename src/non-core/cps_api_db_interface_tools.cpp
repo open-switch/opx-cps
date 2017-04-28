@@ -1,5 +1,3 @@
-
-
 #include "cps_api_db_interface.h"
 
 #include "cps_api_object_tools.h"
@@ -21,7 +19,7 @@ constexpr static const char * __get_default_node_name() {
 }
 
 constexpr static const char *__get_dirty_field() {
-	return "dirty";
+    return "dirty";
 }
 
 extern "C" {
@@ -53,91 +51,139 @@ cps_api_return_code_t cps_api_db_config_write(cps_api_object_t obj) {
 }
 
 bool _mark_dirty_dbkey(cps_api_object_t obj, cps_db::connection &conn, std::vector<char> key){
-	const char *field = __get_dirty_field();
-	const char *data = "false";
-	if(!cps_db::for_each_store_field(conn, key, field, std::strlen(field), data, std::strlen(data)))
-		return false;
+    const char *field = __get_dirty_field();
+    const char *data = "false";
+    if(!cps_db::for_each_store_field(conn, key, field, std::strlen(field), data, std::strlen(data)))
+        return false;
 
-	return true;
+    return true;
 }
 
 void _process_cb_response(cps_db::connection &conn, cps_api_db_sync_cb_param_t *params, cps_api_db_sync_cb_response_t *res, std::string key ) {
-
-	if(params->opcode == cps_api_oper_DELETE) {
-		const char *_field = __get_dirty_field();
-		if(res->change == cps_api_make_change) {
-			cps_db::delete_object(conn, params->object_dest);
-			if (cps_db::dbkey_field_delete_request(conn, key.c_str(), key.size(),
-					_field, std::strlen(_field))
-				&& cps_db::dbkey_field_delete_response(conn)) {
-				if(res->change_notify == cps_api_raise_event)
-					cps_db::publish(conn, params->object_dest);
-			}
-		}
-	}
-	else {
-		if(res->change == cps_api_make_change) {
-			cps_db::store_object(conn, params->object_src);
-			if(res->change_notify == cps_api_raise_event) {
-				cps_db::publish(conn, params->object_src);
-			}
-		}
-	}
+    if(params->opcode == cps_api_oper_DELETE) {
+        const char *_field = __get_dirty_field();
+        if(res->change == cps_api_make_change) {
+            cps_db::delete_object(conn, params->object_dest);
+            if (cps_db::dbkey_field_delete_request(conn, key.c_str(), key.size(),
+                                              _field, std::strlen(_field))
+                && cps_db::dbkey_field_delete_response(conn)) {
+                if(res->change_notify == cps_api_raise_event)
+                    cps_db::publish(conn, params->object_dest);
+            }
+        }
+    }
+    else {
+        if(res->change == cps_api_make_change) {
+            cps_db::store_object(conn, params->object_src);
+            if(res->change_notify == cps_api_raise_event) {
+                cps_db::publish(conn, params->object_src);
+            }
+        }
+    }
 }
 
 
 void _get_addr_info(cps_api_object_t obj, char **node_name, char **addr, cps_api_nodes &n){
-	if(obj) {
-		*node_name = (char *)cps_api_key_get_node(obj);
-		if(*node_name) {
-			*addr = (char *)(n.addr(*node_name));
-		} else {
-			*node_name = (char *)__get_default_node_name();
-			*addr = (char *)DEFAULT_REDIS_ADDR;
-		}
-	}
-	else {
-		*node_name = (char *)__get_default_node_name();
-		*addr = (char *)DEFAULT_REDIS_ADDR;
-	}
+    if(obj) {
+        *node_name = (char *)cps_api_key_get_node(obj);
+        if(*node_name) {
+            *addr = (char *)(n.addr(*node_name));
+        } else {
+            *node_name = (char *)__get_default_node_name();
+            *addr = (char *)DEFAULT_REDIS_ADDR;
+        }
+    }
+    else {
+        *node_name = (char *)__get_default_node_name();
+        *addr = (char *)DEFAULT_REDIS_ADDR;
+    }
 }
 
+cps_api_return_code_t _handle_delete_case(const char *addr, std::vector<char> &key, cps_api_sync_callback_t cb, void *context,
+                                          cps_api_db_sync_cb_param_t &params, cps_api_db_sync_cb_response_t &res ) {
+
+    cps_db::connection_request _dest_conn(cps_db::ProcessDBCache(),addr);
+    if (!_dest_conn.valid() || !cps_db::ping(_dest_conn.get())) return cps_api_ret_code_ERR;
+
+    cps_db::connection_request _dest_conn_meta(cps_db::ProcessDBCache(),addr);
+    if (!_dest_conn_meta.valid() || !cps_db::ping(_dest_conn_meta.get())) return cps_api_ret_code_ERR;
+
+    cps_db::connection_request _dest_conn_cleanup(cps_db::ProcessDBCache(),addr);
+    if (!_dest_conn_cleanup.valid() || !cps_db::ping(_dest_conn_cleanup.get())) return cps_api_ret_code_ERR;
+
+    size_t count = 0;
+    std::vector<std::string> _key_cache;
+    bool ret = true;
+    bool walked = false;
+
+    const char *field = __get_dirty_field();
+
+    auto _process_get_response = [&]() {
+       for(size_t ix=0; ix < count; ++ix) {
+            std::string val = cps_db::dbkey_field_get_response_string(_dest_conn_meta.get());
+            if(val.compare("")) {
+                //Delete case
+                params.opcode = cps_api_oper_DELETE;
+                std::vector<char> _k(_key_cache[ix].begin(), _key_cache[ix].end());
+                cps_db::get_object(_dest_conn_cleanup.get(), _k, params.object_dest);
+                if((cb(context, &params, &res)))
+                    _process_cb_response(_dest_conn_cleanup.get(), &params, &res,  _key_cache[ix] );
+            }
+       }
+       count = 0;
+       _key_cache.clear();
+    };
+
+    walked = cps_db::walk_keys(_dest_conn.get(), &key[0],key.size(),[&](const void *dest_inst_key, size_t len) {
+    if(!ret) return;
+    if(!cps_db::dbkey_field_get_request(_dest_conn_meta.get(), (char *)dest_inst_key, len, field, std::strlen(field))) {
+        ret = false;
+    } else ++count;
+    _key_cache.push_back(std::string((char*)dest_inst_key,len));
+    if(count < cps_db::IN_THE_PIPE()) return;
+    _process_get_response();
+    });
+
+    if (walked == false || !ret) return cps_api_ret_code_ERR;
+    _process_get_response();
+
+    return cps_api_ret_code_OK;
+}
 
 cps_api_return_code_t cps_api_reconcile(void *context, cps_api_object_list_t src_objs,  cps_api_object_t dest_obj, cps_api_sync_callback_t cb, cps_api_sync_error_callback_t err_cb)
 {
-	cps_api_db_sync_cb_param_t params = {};
-	cps_api_db_sync_cb_response_t res = {cps_api_make_change, cps_api_raise_event};
-	cps_api_db_sync_cb_error_t er;
+    cps_api_db_sync_cb_param_t params = {};
+    cps_api_db_sync_cb_response_t res = {cps_api_make_change, cps_api_raise_event};
+    cps_api_db_sync_cb_error_t er;
 
-	size_t mx = cps_api_object_list_size(src_objs);
-	std::unordered_map<std::string, cps_api_object_t> src_obj_map;
+    size_t mx = cps_api_object_list_size(src_objs);
+    std::unordered_map<std::string, cps_api_object_t> src_obj_map;
 
-	for(size_t ix = 0; ix < mx; ++ix){
-	    cps_api_object_t temp_obj = cps_api_object_list_get(src_objs, ix);
-	    STD_ASSERT(temp_obj!=nullptr);
+    for(size_t ix = 0; ix < mx; ++ix){
+        cps_api_object_t temp_obj = cps_api_object_list_get(src_objs, ix);
+        STD_ASSERT(temp_obj!=nullptr);
 
-	    std::vector<char> src_inst_key;
-	    bool _is_wildcard =false;
-	    if (!cps_db::dbkey_instance_or_wildcard(src_inst_key, temp_obj, _is_wildcard)) return cps_api_ret_code_ERR;
-            std::string k(&src_inst_key[0],src_inst_key.size());
-	    src_obj_map[k] = temp_obj;
-	}
+        std::vector<char> src_inst_key;
+        bool _is_wildcard =false;
+        if (!cps_db::dbkey_instance_or_wildcard(src_inst_key, temp_obj, _is_wildcard)) return cps_api_ret_code_ERR;
+        std::string k(&src_inst_key[0],src_inst_key.size());
+        src_obj_map[k] = temp_obj;
+    }
 
-	const char *_src_addr = nullptr;
-	const char *_dest_addr = nullptr;
+    const char *_src_addr = nullptr;
+    const char *_dest_addr = nullptr;
 
-	cps_api_nodes n;
-	n.load();
+    cps_api_nodes n;
+    n.load();
 
+    _get_addr_info(cps_api_object_list_get(src_objs, 0), (char **)(&params.src_node) , (char **)(&_src_addr), n);
+    _get_addr_info(dest_obj, (char **)(&params.dest_node) , (char **)(&_dest_addr), n);
 
-	_get_addr_info(cps_api_object_list_get(src_objs, 0), (char **)(&params.src_node) , (char **)(&_src_addr), n);
-	_get_addr_info(dest_obj, (char **)(&params.dest_node) , (char **)(&_dest_addr), n);
-
-	if (!_dest_addr || !_src_addr) {
-		er.err_code = cps_api_db_invalid_address;
-		err_cb(context, &params, &er);
-		return cps_api_ret_code_ERR;
-	}
+    if (!_dest_addr || !_src_addr) {
+        er.err_code = cps_api_db_invalid_address;
+        err_cb(context, &params, &er);
+        return cps_api_ret_code_ERR;
+    }
 
 
     cps_db::connection_request _dest_conn(cps_db::ProcessDBCache(),_dest_addr);
@@ -147,10 +193,10 @@ cps_api_return_code_t cps_api_reconcile(void *context, cps_api_object_list_t src
     if (!_dest_conn_meta.valid() || !cps_db::ping(_dest_conn_meta.get())) return cps_api_ret_code_ERR;
 
     std::vector<char> key;
-	bool _is_wildcard = false;
-	if (!cps_db::dbkey_instance_or_wildcard(key, dest_obj, _is_wildcard)) {
-		return cps_api_ret_code_ERR;
-	}
+        bool _is_wildcard = false;
+        if (!cps_db::dbkey_instance_or_wildcard(key, dest_obj, _is_wildcard)) {
+                return cps_api_ret_code_ERR;
+        }
     if(! _mark_dirty_dbkey(dest_obj, _dest_conn_meta.get(), key)) return cps_api_ret_code_ERR;
 
 
@@ -159,12 +205,7 @@ cps_api_return_code_t cps_api_reconcile(void *context, cps_api_object_list_t src
 
     bool is_cb = false;
     size_t count = 0;
-    bool ret = true;
-
     std::vector<std::string> _key_cache;
-    bool walked = false;
-
-
     const char *field = __get_dirty_field();
 
     auto _drain_queue = [&]() {
@@ -186,8 +227,8 @@ cps_api_return_code_t cps_api_reconcile(void *context, cps_api_object_list_t src
                 }
 
                 if(is_cb) {
-                	 if((cb(context, &params, &res)))
-                		 _process_cb_response(_dest_conn_meta.get(), &params, &res,  _key_cache[ix] );
+                    if((cb(context, &params, &res)))
+                        _process_cb_response(_dest_conn_meta.get(), &params, &res,  _key_cache[ix] );
                 }
             }
             is_cb = false;
@@ -204,7 +245,6 @@ cps_api_return_code_t cps_api_reconcile(void *context, cps_api_object_list_t src
         bool _is_wildcard =false;
         if (!cps_db::dbkey_instance_or_wildcard(inst_key,temp_obj,_is_wildcard)) return cps_api_ret_code_ERR;
 
-        if(!ret) return cps_api_ret_code_ERR;
         bool _rc_a = cps_db::get_object_request(_dest_conn.get(), &inst_key[0], inst_key.size()) ;
         if (!_rc_a) continue;
         else ++count;
@@ -213,48 +253,13 @@ cps_api_return_code_t cps_api_reconcile(void *context, cps_api_object_list_t src
         if (count < cps_db::IN_THE_PIPE()) continue;
         _drain_queue();
     }
-    if(!ret) return cps_api_ret_code_ERR;
     _drain_queue();
 
-    count = 0;
-    ret = true;
-
-    cps_db::connection_request _dest_conn_cleanup(cps_db::ProcessDBCache(),DEFAULT_REDIS_ADDR);
-    if (!_dest_conn_cleanup.valid() || !cps_db::ping(_dest_conn_cleanup.get())) return cps_api_ret_code_ERR;
-
-    auto _process_get_response = [&]() {
-       for(size_t ix=0; ix < count; ++ix) {
-           std::string val = cps_db::dbkey_field_get_response_string(_dest_conn_meta.get());
-           if(val.compare("")) {
-               //Delete case
-                params.opcode = cps_api_oper_DELETE;
-                std::vector<char> _k(_key_cache[ix].begin(), _key_cache[ix].end());
-                cps_db::get_object(_dest_conn_cleanup.get(), _k, params.object_dest);
-                if((cb(context, &params, &res)))
-                	_process_cb_response(_dest_conn_cleanup.get(), &params, &res,  _key_cache[ix] );
-           }
-       }
-       count = 0;
-       _key_cache.clear();
-    };
-
-    walked = cps_db::walk_keys(_dest_conn.get(),&key[0],key.size(),[&](const void *dest_inst_key, size_t len) {
-        if(!ret) return;
-        if(!cps_db::dbkey_field_get_request(_dest_conn_meta.get(), (char *)dest_inst_key, len, field, std::strlen(field))) {
-            ret = false;
-        } else ++count;
-        _key_cache.push_back(std::string((char*)dest_inst_key,len));
-        if(count < cps_db::IN_THE_PIPE()) return;
-        _process_get_response();
-    });
-
-    if (walked == false || !ret) return cps_api_ret_code_ERR;
-    _process_get_response();
-
+    cps_api_return_code_t result = _handle_delete_case(_dest_addr, key, cb, context, params, res);
     cps_api_object_delete(params.object_src);
     cps_api_object_delete(params.object_dest);
 
-    return cps_api_ret_code_OK;
+    return result;
 }
 
 cps_api_return_code_t cps_api_sync(void *context, cps_api_object_t dest, cps_api_object_t src,  cps_api_sync_callback_t cb, cps_api_sync_error_callback_t err_cb)
@@ -273,9 +278,9 @@ cps_api_return_code_t cps_api_sync(void *context, cps_api_object_t dest, cps_api
     _get_addr_info(dest, (char **)(&params.dest_node) , (char **)(&_dest_addr), n);
 
     if (!_dest_addr || !_src_addr) {
-    	er.err_code = cps_api_db_invalid_address;
-	err_cb(context, &params, &er);
-	return cps_api_ret_code_ERR;
+        er.err_code = cps_api_db_invalid_address;
+        err_cb(context, &params, &er);
+        return cps_api_ret_code_ERR;
     }
 
     cps_db::connection_request _dest_conn(cps_db::ProcessDBCache(),_dest_addr);
@@ -287,7 +292,7 @@ cps_api_return_code_t cps_api_sync(void *context, cps_api_object_t dest, cps_api
     std::vector<char> key;
     bool _is_wildcard = false;
     if (!cps_db::dbkey_instance_or_wildcard(key, src, _is_wildcard)) {
-	return cps_api_ret_code_ERR;
+        return cps_api_ret_code_ERR;
     }
     if(! _mark_dirty_dbkey(src, _dest_conn_meta.get(), key)) return cps_api_ret_code_ERR;
 
@@ -298,9 +303,7 @@ cps_api_return_code_t cps_api_sync(void *context, cps_api_object_t dest, cps_api
     size_t count = 0;
     bool ret = true;
 
-
     const char *field = __get_dirty_field();
-
     std::vector<std::string> _key_cache;
     bool walked = false;
 
@@ -328,8 +331,8 @@ cps_api_return_code_t cps_api_sync(void *context, cps_api_object_t dest, cps_api
                     continue;
                 }
                 if(is_cb) {
-                	 if((cb(context, &params, &res)))
-                		 _process_cb_response(_dest_conn_meta.get(), &params, &res,  _key_cache[ix] );
+                         if((cb(context, &params, &res)))
+                                 _process_cb_response(_dest_conn_meta.get(), &params, &res,  _key_cache[ix] );
                 }
                 is_cb = false;
             }
@@ -359,44 +362,10 @@ cps_api_return_code_t cps_api_sync(void *context, cps_api_object_t dest, cps_api
         _drain_queue();
     }
 
-    count = 0;
-    ret = true;
-
-    cps_db::connection_request _dest_conn_cleanup(cps_db::ProcessDBCache(),_dest_addr);
-    if (!_dest_conn_cleanup.valid() || !cps_db::ping(_dest_conn_cleanup.get())) return cps_api_ret_code_ERR;
-
-    auto _process_get_response = [&]() {
-       for(size_t ix=0; ix < count; ++ix) {
-           std::string val = cps_db::dbkey_field_get_response_string(_dest_conn_meta.get());
-           if(val.compare("")) {
-               //Delete case
-                params.opcode = cps_api_oper_DELETE;
-                std::vector<char> _k(_key_cache[ix].begin(), _key_cache[ix].end());
-                cps_db::get_object(_dest_conn_cleanup.get(), _k, params.object_dest);
-                if((cb(context, &params, &res)))
-                	_process_cb_response(_dest_conn_cleanup.get(), &params, &res,  _key_cache[ix] );
-           }
-       }
-       count = 0;
-       _key_cache.clear();
-    };
-
-    walked = cps_db::walk_keys(_dest_conn.get(),&key[0],key.size(),[&](const void *inst_key, size_t len) {
-        if(!ret) return;
-        if(!cps_db::dbkey_field_get_request(_dest_conn_meta.get(), (char *)inst_key, len, field, std::strlen(field))) {
-            ret = false;
-        } else ++count;
-        _key_cache.push_back(std::string((char*)inst_key,len));
-        if(count < cps_db::IN_THE_PIPE()) return;
-        _process_get_response();
-    });
-
-    if (walked == false || !ret) return cps_api_ret_code_ERR;
-    _process_get_response();
-
+    cps_api_return_code_t result = _handle_delete_case(_dest_addr, key, cb, context, params, res);
     cps_api_object_delete(params.object_src);
     cps_api_object_delete(params.object_dest);
 
-    return cps_api_ret_code_OK;
+    return result;
 }
 
