@@ -20,14 +20,18 @@
 
 #include "cps_api_object.h"
 #include "cps_api_errors.h"
+#include "std_time_tools.h"
 
 #include <stddef.h>
+
+#include <inttypes.h>
 
 #include <vector>
 #include <string>
 #include <mutex>
 #include <memory>
 #include <list>
+
 #include <unordered_map>
 
 #define DEFAULT_REDIS_PORT 6379
@@ -84,15 +88,21 @@ public:
     bool get_event(response_set &data);
     bool has_event();
 
+    void update_used();
+    bool timedout(uint64_t relative);
+
 private:
     std::string _addr ;
     bool _async=false;
     void * _ctx=nullptr;
 
     std::list<void*> _pending_events;
+    uint64_t _last_used=0;
+
 };
 
 class connection_cache {
+	enum { CONN_TIMEOUT_CHECK=MILLI_TO_MICRO(10*60*1000) };
     std::mutex _mutex;
     using _conn_key = std::tuple<std::string, std::string>;
     struct _conn_key_hash : public std::unary_function<_conn_key,std::size_t>  {
@@ -104,7 +114,7 @@ class connection_cache {
 
     _conn_map _pool;
 public:
-    connection * get(const std::string &name);
+    connection * get(const std::string &name, bool check_alive=true);
 
     void put(const std::string &name, connection* conn);
     void remove(const std::string &name);
