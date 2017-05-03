@@ -49,13 +49,17 @@ bool cps_db::ping(cps_db::connection &conn) {
     }
 
     cps_db::response r = resp.get_response(0);
-    if (r.has_elements()) {
+    const char *ret = NULL;
+    if(r.has_elements()) {
         r = cps_db::response(r.element_at(0));
-        return strcasecmp((const char *)r.get_str(),"PONG")==0 ;
+        ret = r.get_str();
     }
-    return r.is_ok() ?
-            strcasecmp((const char *)r.get_str(),"PONG")==0 :
-            false;
+    else if(r.is_ok()) {
+        ret = r.get_str();
+    }
+
+    if(ret)  return (strcasecmp((const char *)ret,"PONG")==0) ;
+    return false;
 }
 
 
