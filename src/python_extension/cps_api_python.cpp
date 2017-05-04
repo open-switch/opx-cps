@@ -517,7 +517,7 @@ PyDoc_STRVAR(CPS_FN_DOC(py_cps_sync), "sync(dest_obj, src_obj,callbacks)\n\n"
    "@return - True if successful otherwise False");
 
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_reconcile), "reconcile(src_objs,dest_obj,callbacks)\n\n"
-   "Reconcile/compare the list of source objects with entries in local DB\n"
+   "Reconcile/compare the list of source objects with entries in DB\n"
    "@src_objs - List of source objects\n"
    "@dest_obj - Dest object with class key"
    "@callbacks - Python dictionary with 'sync' and 'error' as key\n"

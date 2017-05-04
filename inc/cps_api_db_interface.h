@@ -179,7 +179,7 @@ cps_api_return_code_t cps_api_sync(void *context, cps_api_object_t dest, cps_api
          CREATE - where the source object exist and the dest object doesn't exist
          SET - where there are differences in attribute values between the source and dest objects
          DELETE - where the specific instance of the source object doesn't exist and the dest object exists
-* @param err_cb error callback function. Will be invoked if a successful connection to the source DB can't be established
+* @param err_cb error callback function. Will be invoked if a successful connection to the destination DB can't be established
 * @return returns code cps_api_ret_code_OK if successful otherwise an error
 */
 cps_api_return_code_t cps_api_reconcile(void *context, cps_api_object_list_t src_objs,  cps_api_object_t dest_obj, cps_api_sync_callback_t cb, cps_api_sync_error_callback_t err_cb);
