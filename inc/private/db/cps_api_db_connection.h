@@ -102,7 +102,7 @@ private:
 };
 
 class connection_cache {
-	enum { CONN_TIMEOUT_CHECK=MILLI_TO_MICRO(10*60*1000) };
+    enum { CONN_TIMEOUT_CHECK=MILLI_TO_MICRO(10*60*1000) };
     std::mutex _mutex;
     using _conn_key = std::tuple<std::string, std::string>;
     struct _conn_key_hash : public std::unary_function<_conn_key,std::size_t>  {
@@ -122,8 +122,15 @@ public:
     void flush_pending();
 };
 
+class connection_cache_events : public connection_cache {
+public:
+    connection * get(const std::string &name) {
+        return connection_cache::get(name,false);
+    }
+};
+
 cps_db::connection_cache & ProcessDBCache();
-cps_db::connection_cache & ProcessDBEvents();
+cps_db::connection_cache_events & ProcessDBEvents();
 
 class connection_request {
     std::string _name;
