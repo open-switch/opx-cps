@@ -534,3 +534,45 @@ PyObject * py_cps_sync(PyObject *self, PyObject *args) {
 
     Py_RETURN_TRUE;
 }
+
+PyObject * py_cps_reconcile(PyObject *self, PyObject *args) {
+
+    PyObject *_dict, *_list=nullptr;
+    PyObject *_cb;
+
+    if (! PyArg_ParseTuple( args, "O!O!O!",  &PyList_Type, &_list, &PyDict_Type, &_dict, &PyDict_Type, &_cb)) return NULL;
+    cps_api_object_t dest_obj = dict_to_cps_obj(_dict);
+
+    if (!PyList_Check(_list)) {
+        PySys_WriteStdout("Invalid list object");
+        return PyInt_FromLong(cps_api_ret_code_ERR);
+    }
+    cps_api_object_list_guard _lg(cps_api_object_list_create());
+
+    Py_ssize_t  mx = PyList_GET_SIZE(_list);
+
+    for (Py_ssize_t ix = 0; ix < mx; ++ix) {
+        PyObject *obj_dict = PyList_GetItem(_list, ix);
+        cps_api_object_t obj = dict_to_cps_obj(obj_dict);
+        cps_api_object_list_append(_lg.get(), obj);
+    }
+
+    std::unique_ptr<py_callbacks_t> p (new py_callbacks_t);
+    if (p.get()==NULL) {
+        py_set_error_string("Memory allocation error");
+        return nullptr;
+    }
+    p->_methods = _cb;
+
+    void *_context = p.get();
+
+    cps_api_return_code_t rc;
+    rc = cps_api_reconcile(_context, _lg.get(), dest_obj, _sync_function, _error_function);
+    if (rc!=cps_api_ret_code_OK) {
+        Py_RETURN_FALSE;
+    }
+
+    p.release();
+
+    Py_RETURN_TRUE;
+}

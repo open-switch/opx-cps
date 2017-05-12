@@ -347,6 +347,14 @@ bool cps_db::connection::response(response_set &data_, bool expect_events) {
     return true;
 }
 
+void cps_db::connection::update_used() {
+    _last_used = std_get_uptime(nullptr);
+}
+
+bool cps_db::connection::timedout(uint64_t relative) {
+    return std_time_is_expired(_last_used,relative);
+}
+
 bool cps_db::connection::has_event() {
     void *rep ;
     int rc = REDIS_OK;
@@ -393,11 +401,11 @@ bool cps_db::connection::get_event(response_set &data) {
 
 static pthread_once_t  onceControl = PTHREAD_ONCE_INIT;
 static cps_db::connection_cache * _cache;
-static cps_db::connection_cache * _event_cache;
+static cps_db::connection_cache_events * _event_cache;
 
 void __init(void) {
     _cache = new cps_db::connection_cache;
-    _event_cache = new cps_db::connection_cache;
+    _event_cache = new cps_db::connection_cache_events;
     STD_ASSERT(_cache!=nullptr && _event_cache!=nullptr);
 }
 
@@ -406,12 +414,12 @@ cps_db::connection_cache & cps_db::ProcessDBCache() {
     return *_cache;
 }
 
-cps_db::connection_cache & cps_db::ProcessDBEvents() {
+cps_db::connection_cache_events & cps_db::ProcessDBEvents() {
     pthread_once(&onceControl,__init);
     return *_event_cache;
 }
 
-cps_db::connection * cps_db::connection_cache::get(const std::string &name) {
+cps_db::connection * cps_db::connection_cache::get(const std::string &name, bool check_alive) {
     std::lock_guard<std::mutex> l(_mutex);
 
     const auto &_connect = [] (const std::string &name) -> cps_db::connection *{
@@ -423,11 +431,20 @@ cps_db::connection * cps_db::connection_cache::get(const std::string &name) {
         return _conn;
     };
 
-    auto it = _pool.find(name);
+    while (true) {
+        auto it = _pool.find(name);
+        if (it==_pool.end() || it->second.size()==0) break;
 
-    if (it!=_pool.end() && it->second.size()>0) {
         auto ptr = it->second.back().release();
         it->second.pop_back();
+        if (check_alive && ptr->timedout(CONN_TIMEOUT_CHECK)) {
+            bool rc = cps_db::ping(*ptr);
+            if (!rc) {
+                EV_LOGGING(CPS,WARNING,"CPS-CONN-CACHE","Cache entry for DB connection stale for %s - getting second",it->first.c_str());
+                delete ptr;
+                continue;
+            }
+        }
         return ptr;
     }
     return _connect(name);
@@ -437,6 +454,7 @@ void cps_db::connection_cache::put(const std::string &name, connection* conn) {
     std::lock_guard<std::mutex> l(_mutex);
     const static size_t MAX_OPEN_CONN=3;
     auto _ptr = std::unique_ptr<cps_db::connection>(conn);
+    if (_ptr.get()!=nullptr) _ptr->update_used();
 
     if (_pool[name].size()<MAX_OPEN_CONN) {
         _pool[name].push_back(std::move(_ptr));

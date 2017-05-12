@@ -171,7 +171,7 @@ cps_api_return_code_t cps_class_map_init(cps_api_attr_id_t id, const cps_api_att
     if(ids_len==0) return cps_api_ret_code_ERR;
 
     if (_class_def->find(id)!=_class_def->end()) {
-        EV_LOGGING(DSAPI,WARNING,0,"CPS-META","ID %d is already used by another component - %s failed",id,details->name);
+        EV_LOGGING(DSAPI,WARNING,"CPS-META","ID %d is already used by another component - %s failed",id,details->name);
         return cps_api_ret_code_ERR;
     }
 
