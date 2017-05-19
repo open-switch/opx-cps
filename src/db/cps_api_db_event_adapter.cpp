@@ -261,7 +261,7 @@ static bool __check_connections(cps_api_event_service_handle_t handle) {
     changed = changed || (nodes.size()>0);
 
     for ( auto & it : nodes ) {
-        nd->_connections.erase(it);
+    	nd->disconnect_node(it.c_str());
     }
 
     if (changed) {
