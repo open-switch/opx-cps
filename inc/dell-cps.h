@@ -32,7 +32,9 @@
 #define DELL_BASE_CPS_MODEL_STR "dell-base-cps"
 
 
-/* Object cps/node-group/node */
+
+/* Enumeration cps:config-type */
+
 typedef enum { 
 /*The name of the node entry. (an alias for the ip)*/
 /*type=string*/ 
@@ -163,9 +165,27 @@ information to the successful request (less likely).*/
 /*Provide the number of entries to retrieve at one time to support the concept of range along with the get next attribute*/
 /*type=uint64*/ 
   CPS_OBJECT_GROUP_NUMBER_OF_ENTRIES = 131107,
-
+/*This attribute indicates the storage options for the object if supported.  This storage type can be
+1) Store to running
+2) Store to statup 
+3) Store to both running and startup*/
 /*type=enumeration*/ 
   CPS_OBJECT_GROUP_CONFIG_TYPE = 131108,
+/*This attribute if provided will control the behaviour of CPS in error conditions for 
+both the gets and commits.
+In the case of a commit, if this attribute is present and false, then a rollback will not be performed 
+and the operation will continue.  Errors discovered will be returned within the objects themselves.
+    		
+In the case of a get, if this attribute is present on the filter, all errors in gets will be ignored as well
+and in this case, objects will not be returned.
+    		
+Eg..1 commit transaction with 3 objects and one object fails (with this flag set to false) the CPS layer 
+will continue to perform all three commits and will not rollback.
+    		
+Eg..1 in the get case, with 3 object filters, if there is no results or a failure in the backend component,
+CPS will ignore the error and continue.*/
+/*type=boolean*/ 
+  CPS_OBJECT_GROUP_CONTINUE_ON_FAILURE = 131116,
 } CPS_OBJECT_GROUP_t;
 /* Object cps/node-group */
 
@@ -181,9 +201,9 @@ typedef enum {
   CPS_NODE_GROUP_TYPE = 131090,
 } CPS_NODE_GROUP_t;
 
-/* Object's continued */
+/* Top level objects */
 
-typedef enum{
+typedef enum { 
 /*This object contains a list of aliases for a node.  Any one of the aliases will be converted
 into the name.
 
