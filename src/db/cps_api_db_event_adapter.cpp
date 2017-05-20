@@ -486,6 +486,9 @@ static cps_api_return_code_t _cps_api_wait_for_event(
                         cps_api_object_attr_add(msg,CPS_OBJECT_GROUP_NODE,node_name.c_str(),node_name.size()+1);
                     }
                     return cps_api_ret_code_OK;
+                } else {
+                	nh->disconnect_node(it.first,true);
+                	break;
                 }
             }
         }
