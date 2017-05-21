@@ -15,7 +15,6 @@
  */
 
 
-
 #include "cps_api_node_private.h"
 #include "cps_api_db.h"
 #include "cps_api_db_response.h"
@@ -48,6 +47,7 @@
 
 
 struct db_connection_details {
+	std::string _name;
     static const uint64_t timeout = 60*1000*1000 ; //60 seconds
 
     using cv_hash = cps_utils::vector_hash<char>;
@@ -95,6 +95,7 @@ struct __db_event_handle_t {
     bool object_filter_exists(cps_api_object_t obj);
 
     void update_connection_set() ;
+
     void add_connection_state_event(const char *node, const char *group, bool state) ;
 
     void disconnect_node(const std::string &node, bool update_fd_set=true) ;
@@ -144,18 +145,18 @@ bool __db_event_handle_t::object_add_filter(cps_api_object_t obj) {
 }
 
 void __db_event_handle_t::disconnect_node(const std::string &node, bool update_fd_set) {
+	add_connection_state_event(node.c_str(),"N/A",false);
     _connections.erase(node);
     _connection_mon.erase(node);
     if (update_fd_set) update_connection_set();
-    add_connection_state_event(node.c_str(),node.c_str(),false);
 }
 
 void __db_event_handle_t::add_connection_state_event(const char *node, const char *group, bool state) {
     cps_api_object_t o = cps_api_object_list_create_obj_and_append(_pending_events);
     if (o!=nullptr) {
-        std::string node_name;
-        if(cps_api_db_get_node_from_ip(std::string(node),node_name)){
-            cps_api_object_attr_add(o,CPS_CONNECTION_ENTRY_NAME, node_name.c_str(),strlen(node_name.c_str())+1);
+        auto _it = _connection_mon.find(node);
+        if (_it!=_connection_mon.end()) {
+        	cps_api_object_attr_add(o,CPS_CONNECTION_ENTRY_NAME, _it->second._name.c_str(),_it->second._name.length()+1);
         }
         cps_api_key_from_attr_with_qual(cps_api_object_key(o),CPS_CONNECTION_ENTRY, cps_api_qualifier_TARGET);
         cps_api_object_attr_add(o,CPS_CONNECTION_ENTRY_IP, node,strlen(node)+1);
@@ -237,6 +238,10 @@ static bool __check_connections(cps_api_event_service_handle_t handle) {
                         return true;
                     }
                     if (!cps_db::ping(*c)) return true;
+                    std::string node_name;
+                    if(cps_api_db_get_node_from_ip(std::string(node),node_name)){
+                    	nd->_connection_mon[node]._name = node_name;
+                    }
                     nd->_connection_mon[node].reset();
                     nd->_connection_mon[node].communicated();
                     nd->_connections[node] = std::move(c);
@@ -479,8 +484,8 @@ static cps_api_return_code_t _cps_api_wait_for_event(
 
             if (has_data) {
                 if (get_event(it.second.get(),msg)) {
-                    if (!nh->object_matches_filter(msg)) continue;        //throw out if doesn't match
                     nh->_connection_mon[it.first].communicated();
+                    if (!nh->object_matches_filter(msg)) continue;        //throw out if doesn't match
                     std::string node_name;
                     if(cps_api_db_get_node_from_ip(it.first,node_name)) {
                         cps_api_object_attr_add(msg,CPS_OBJECT_GROUP_NODE,node_name.c_str(),node_name.size()+1);
