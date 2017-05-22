@@ -250,7 +250,7 @@ static void add_to_object(std::vector<cps_api_attr_id_t> &level,
         }
         if (PyString_Check(value)) {
             cps_api_object_e_add(obj,ids,id_len,cps_api_object_ATTR_T_BIN,
-                    PyString_AS_STRING(value), PyString_GET_SIZE(value));
+                    PyString_AS_STRING(value), strlen(PyString_AS_STRING(value))+1);
             continue;
         }
     }
