@@ -86,9 +86,13 @@ struct __db_event_handle_t {
     cps_api_key_cache<std::vector<cps_api_object_t>> _filters;
 
     fd_set _connection_set;
-    ssize_t _max_fd;
+    ssize_t _max_fd=0;
 
     cps_api_object_list_t _pending_events=nullptr;
+
+    __db_event_handle_t() {
+    	FD_ZERO(&_connection_set);
+    }
 
     bool object_matches_filter(cps_api_object_t obj) ;
     bool object_add_filter(cps_api_object_t obj) ;
@@ -423,7 +427,7 @@ static cps_api_return_code_t _cps_api_wait_for_event(
     cps_api_return_code_t __rc = cps_api_ret_code_TIMEOUT;
     while (_waiting_for_event) {
 
-           if (timeout_ms==CPS_API_TIMEDWAIT_NO_TIMEOUT) {
+        if (timeout_ms==CPS_API_TIMEDWAIT_NO_TIMEOUT) {
             _max_wait_time = DEF_SELECT_TIMEOUT_SEC*1000;
         } else {
             _max_wait_time = timeout_ms - ((std_get_uptime(nullptr) - __started_time)/1000);
@@ -468,6 +472,10 @@ static cps_api_return_code_t _cps_api_wait_for_event(
             rc = std_select_ignore_intr(fd_max,&_r_set,nullptr,nullptr,&tv,nullptr);
             nh->_mutex.lock();
             if (rc==-1) {
+            	//test all connections
+            	for ( auto it : nh->_connection_mon ) {
+            		it.second.expired();
+            	}
                 last_checked = 0;    //trigger reconnect evaluation
                 continue;
             }
