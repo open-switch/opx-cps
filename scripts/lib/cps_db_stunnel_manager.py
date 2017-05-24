@@ -21,13 +21,13 @@ redis_server_path = "/usr/bin/redis-server"
 stunnel_config_path = "/tmp/"
 stunnel_path = '/usr/bin/stunnel4 '
 default_timeout_connect = "2"
-default_timeout_busy = "5"
+default_timeout_busy = "4"
 default_timeout_idle = "-1"
 default_retry = "yes"
 default_keepalive_enable = "1"
-default_keepalive_count = "5"
-default_keepalive_interval = "2"
-default_keepalive_idle = "10"
+default_keepalive_count = "4"
+default_keepalive_interval = "1"
+default_keepalive_idle = "2"
 default_log_level = "3"
 
 def get_free_port():
