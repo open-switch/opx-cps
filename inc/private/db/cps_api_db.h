@@ -78,7 +78,7 @@ namespace cps_db {
     bool get_objects(cps_db::connection &conn, cps_api_object_t obj,cps_api_object_list_t obj_list);
 
 
-    bool ping(cps_db::connection &conn);
+    bool ping(cps_db::connection &conn, bool use_select=false);
 
     bool make_slave(cps_db::connection &conn, std::string slave_ip);
     bool remove_slave(cps_db::connection &conn);
