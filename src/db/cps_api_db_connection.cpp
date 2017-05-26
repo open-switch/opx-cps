@@ -355,7 +355,7 @@ bool cps_db::connection::timedout(uint64_t relative) {
     return std_time_is_expired(_last_used,relative);
 }
 
-bool cps_db::connection::has_event() {
+bool cps_db::connection::has_event(bool &err) {
     void *rep ;
     int rc = REDIS_OK;
     do {
@@ -363,6 +363,8 @@ bool cps_db::connection::has_event() {
             if (rep==nullptr) break;
             if (is_event_message(rep)) _pending_events.push_back(rep);
             else freeReplyObject(rep);
+        } else {
+        	err = true;
         }
     } while (rc==REDIS_OK);
     return _pending_events.size()>0;
@@ -370,7 +372,7 @@ bool cps_db::connection::has_event() {
 
 #include "std_select_tools.h"
 
-bool cps_db::connection::get_event(response_set &data) {
+bool cps_db::connection::get_event(response_set &data, bool &err_occured) {
     do {
         if (_pending_events.size() == 0) {
             int rc = 0;
@@ -386,8 +388,11 @@ bool cps_db::connection::get_event(response_set &data) {
                 }
             }
             rc = redisBufferRead(static_cast<redisContext*>(_ctx));
-            if (rc==REDIS_ERR) break;
-            if (!has_event()) break;
+            if (rc==REDIS_ERR) {
+            	err_occured=true;
+            	break;
+            }
+            if (!has_event(err_occured)) break;
 
         }
         if (_pending_events.size()>0) {

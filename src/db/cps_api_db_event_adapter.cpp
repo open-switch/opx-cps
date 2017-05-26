@@ -385,9 +385,10 @@ static cps_api_return_code_t _cps_api_event_service_client_deregister(cps_api_ev
     return cps_api_ret_code_OK;
 }
 
-static bool get_event(cps_db::connection *conn, cps_api_object_t obj) {
+static bool get_event(cps_db::connection *conn, cps_api_object_t obj, bool &has_error) {
     cps_db::response_set set;
-    if (!conn->get_event(set)) {
+
+    if (!conn->get_event(set,has_error)) {
         return false;
     }
     cps_db::response r = set.get_response(0);
@@ -425,8 +426,9 @@ static cps_api_return_code_t _cps_api_wait_for_event(
     bool _waiting_for_event = true;
 
     cps_api_return_code_t __rc = cps_api_ret_code_TIMEOUT;
+    bool _has_error=false;
     while (_waiting_for_event) {
-
+    	_has_error=false;
         if (timeout_ms==CPS_API_TIMEDWAIT_NO_TIMEOUT) {
             _max_wait_time = DEF_SELECT_TIMEOUT_SEC*1000;
         } else {
@@ -459,10 +461,16 @@ static cps_api_return_code_t _cps_api_wait_for_event(
 
         bool pending_event = false;
         for (auto &it : nh->_connections) {
-            if (it.second->has_event()) {
+            if (it.second->has_event(_has_error)) {
                 pending_event = true;
             }
+            if (_has_error) {
+            	nh->disconnect_node(it.first,true);
+            	break;
+            }
         }
+
+        if (_has_error) continue;
 
         if (!pending_event) {
             _r_set = nh->_connection_set;
@@ -487,11 +495,17 @@ static cps_api_return_code_t _cps_api_wait_for_event(
                 EV_LOG(ERR,DSAPI,0,"CPS-EVT-WAIT","Invalid Max FD value %d vs current fd %d",nh->_max_fd,it.second->get_fd());
                 continue;
             }
-            bool has_data = it.second->has_event();
+            bool has_data = it.second->has_event(_has_error);
+
+            if (_has_error) {
+            	nh->disconnect_node(it.first,true);
+            	break;
+            }
+
             has_data |= !pending_event && FD_ISSET(it.second->get_fd(),&_r_set) ;
 
             if (has_data) {
-                if (get_event(it.second.get(),msg)) {
+                if (get_event(it.second.get(),msg,_has_error)) {
                     nh->_connection_mon[it.first].communicated();
                     if (!nh->object_matches_filter(msg)) continue;        //throw out if doesn't match
                     std::string node_name;
@@ -500,8 +514,11 @@ static cps_api_return_code_t _cps_api_wait_for_event(
                     }
                     return cps_api_ret_code_OK;
                 } else {
-                	nh->disconnect_node(it.first,true);
-                	break;
+                	if (_has_error) {
+                		nh->disconnect_node(it.first,true);
+                		break;
+                	}
+                	
                 }
             }
         }
