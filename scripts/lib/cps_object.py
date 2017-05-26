@@ -142,7 +142,14 @@ class CPSObject:
                 sub_map = {}
                 for sub_key in val_map[key]:
                     sub_path = root_path + '/' + sub_key
-                    sub_map[sub_path] = types.to_data(sub_path, val_map[key][sub_key])
+                    if isinstance(val_map[key][sub_key], list):
+                        val_list = val_map[key][sub_key]
+                        ba_val_list = []
+                        for val in val_list:
+                            ba_val_list.append(types.to_data(sub_path, val))
+                        sub_map[sub_path] = ba_val_list
+                    else:
+                        sub_map[sub_path] = types.to_data(sub_path, val_map[key][sub_key])
                 ba_val_map[key] = sub_map
             else:
                 ba_val_map[key] = types.to_data(key, val_map[key])
@@ -283,11 +290,28 @@ class CPSObject:
                         prefix_len = len(path_prefix)
                         sub_map = {}
                         for sub_key,sub_val in val.items():
+                            ll = []
                             if len(sub_key) > prefix_len and sub_key[0:prefix_len] == path_prefix:
                                 sub_path = sub_key[prefix_len:]
                             else:
                                 sub_path = sub_key
-                            sub_map[sub_path] = types.from_data(sub_key, sub_val)
+                            if isinstance(sub_val, list):
+                                for ii in sub_val:
+                                    ll.append(types.from_data(sub_key, ii))
+                                sub_map[sub_path] = ll
+                            elif isinstance(sub_val, dict):
+                                ss_map = {}
+                                for (ss_key, ss_val) in sub_val.items():
+                                    ss_prefix = path_prefix + sub_path + '/'
+                                    ss_len = len(ss_prefix)
+                                    if len(ss_key) > ss_len and ss_key[0:ss_len] == ss_prefix:
+                                        ss_path = ss_key[ss_len:]
+                                    else:
+                                        ss_path = ss_key
+                                    ss_map[ss_path] = types.from_data(ss_key, ss_val)
+                                sub_map[sub_path] = ss_map
+                            else:
+                                sub_map[sub_path] = types.from_data(sub_key, sub_val)
                         d[key] = sub_map
                     else:
                         d[key] = types.from_data(key, val)
