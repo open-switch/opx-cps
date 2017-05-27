@@ -241,7 +241,7 @@ static bool __check_connections(cps_api_event_service_handle_t handle) {
                         EV_LOG(TRACE,DSAPI,0,"CPS-EVT-CONN","Failed to connect to the remote node %s",node.c_str());
                         return true;
                     }
-                    if (!cps_db::ping(*c)) return true;
+                    if (!cps_db::ping(*c,true)) return true;
                     std::string node_name;
                     if(cps_api_db_get_node_from_ip(std::string(node),node_name)){
                     	nd->_connection_mon[node]._name = node_name;
@@ -254,7 +254,7 @@ static bool __check_connections(cps_api_event_service_handle_t handle) {
                     changed = true;
                 }
                 if (nd->_connection_mon[node].expired()) {
-                    if (!cps_db::ping(*nd->_connections[node])) {
+                    if (!cps_db::ping(*nd->_connections[node],true)) {
                         nd->disconnect_node(node.c_str());
                         return true;
                     }
