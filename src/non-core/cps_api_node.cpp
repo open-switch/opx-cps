@@ -373,9 +373,9 @@ bool cps_api_nodes::group_addresses(const std::string &addr, std::vector<std::st
 size_t cps_api_nodes::gen_hash(group_data_t &src) {
     size_t rc = 0;
     for ( auto group_elem : src ) {
-        rc = std::hash<std::string>()(group_elem.first) ^ ( rc << 8 );
+        rc = std::hash<std::string>()(group_elem.first) + ( rc );
         for ( auto node_elem : group_elem.second._addrs ) {
-            rc = std::hash<std::string>()(node_elem) ^ ( rc << 8 );
+            rc = std::hash<std::string>()(node_elem) + ( rc  );
         }
     }
     return rc;

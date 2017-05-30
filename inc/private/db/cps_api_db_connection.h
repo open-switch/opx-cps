@@ -85,8 +85,8 @@ public:
     bool operation(db_operation_atom_t * lst,size_t len, bool force_flush=false);
     bool flush();
 
-    bool get_event(response_set &data);
-    bool has_event();
+    bool get_event(response_set &data,bool &err);
+    bool has_event(bool &err);
 
     void update_used();
     bool timedout(uint64_t relative);

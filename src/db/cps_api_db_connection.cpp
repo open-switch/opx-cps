@@ -124,7 +124,7 @@ bool cps_db::connection::connect(const std::string &s_, const std::string &db_in
         if (setsockopt(fd,SOL_SOCKET,SO_KEEPALIVE,&on,sizeof(on))<0) {
             EV_LOGGING(DSAPI,DEBUG,"CPS-DB-CONN","Failed to set keepalive option on fd %d",fd);
         }
-        int retries = 5;
+        int retries = 4;
         if (setsockopt(fd,SOL_SOCKET,TCP_KEEPCNT,&retries,sizeof(retries))<0) {
             EV_LOGGING(DSAPI,DEBUG,"CPS-DB-CONN","Failed to set keepcount option on fd %d",fd);
         }
@@ -134,7 +134,7 @@ bool cps_db::connection::connect(const std::string &s_, const std::string &db_in
             EV_LOGGING(DSAPI,DEBUG,"CPS-DB-CONN","Failed to set interval option on fd %d",fd);
         }
 
-        int idle = 5;
+        int idle = 2;
         if (setsockopt(fd,SOL_SOCKET,TCP_KEEPIDLE,&idle,sizeof(idle))<0) {
             EV_LOGGING(DSAPI,DEBUG,"CPS-DB-CONN","Failed to set idle time option on fd %d",fd);
         }
@@ -355,7 +355,7 @@ bool cps_db::connection::timedout(uint64_t relative) {
     return std_time_is_expired(_last_used,relative);
 }
 
-bool cps_db::connection::has_event() {
+bool cps_db::connection::has_event(bool &err) {
     void *rep ;
     int rc = REDIS_OK;
     do {
@@ -363,6 +363,8 @@ bool cps_db::connection::has_event() {
             if (rep==nullptr) break;
             if (is_event_message(rep)) _pending_events.push_back(rep);
             else freeReplyObject(rep);
+        } else {
+        	err = true;
         }
     } while (rc==REDIS_OK);
     return _pending_events.size()>0;
@@ -370,7 +372,7 @@ bool cps_db::connection::has_event() {
 
 #include "std_select_tools.h"
 
-bool cps_db::connection::get_event(response_set &data) {
+bool cps_db::connection::get_event(response_set &data, bool &err_occured) {
     do {
         if (_pending_events.size() == 0) {
             int rc = 0;
@@ -386,8 +388,11 @@ bool cps_db::connection::get_event(response_set &data) {
                 }
             }
             rc = redisBufferRead(static_cast<redisContext*>(_ctx));
-            if (rc==REDIS_ERR) break;
-            if (!has_event()) break;
+            if (rc==REDIS_ERR) {
+            	err_occured=true;
+            	break;
+            }
+            if (!has_event(err_occured)) break;
 
         }
         if (_pending_events.size()>0) {
@@ -438,7 +443,7 @@ cps_db::connection * cps_db::connection_cache::get(const std::string &name, bool
         auto ptr = it->second.back().release();
         it->second.pop_back();
         if (check_alive && ptr->timedout(CONN_TIMEOUT_CHECK)) {
-            bool rc = cps_db::ping(*ptr);
+            bool rc = cps_db::ping(*ptr,true);
             if (!rc) {
                 EV_LOGGING(CPS,WARNING,"CPS-CONN-CACHE","Cache entry for DB connection stale for %s - getting second",it->first.c_str());
                 delete ptr;

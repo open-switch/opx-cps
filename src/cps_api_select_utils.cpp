@@ -27,17 +27,17 @@ struct __handle_struct {
 
 namespace {
 
-std::list<__handle_struct*> __select_entries_cache;
+auto *__select_entries_cache = new std::list<__handle_struct*>;
 std::mutex __mutex;
 bool __shutdown = false;
 
 }
 
 bool cps_api_select_utils_init() {
-
     return true;
 }
 void cps_api_select_utils_close() {
+
 }
 
 void cps_api_select_dealloc(cps_api_select_handle_t h) {
@@ -49,7 +49,7 @@ void cps_api_select_dealloc(cps_api_select_handle_t h) {
         return;
     }
     std::lock_guard<std::mutex> _lg(__mutex);
-    __select_entries_cache.push_back(_h.get());
+    __select_entries_cache->push_back(_h.get());
     _h.release();
     return;
 }
@@ -69,9 +69,9 @@ cps_api_select_handle_t cps_api_select_alloc(const cps_api_select_settings &sett
 
     {
     std::lock_guard<std::mutex> _lg(__mutex);
-    if (__select_entries_cache.size()>0) {
-        _handle = __select_entries_cache.front();
-        __select_entries_cache.pop_front();
+    if (__select_entries_cache->size()>0) {
+        _handle = __select_entries_cache->front();
+        __select_entries_cache->pop_front();
     }
     }
     if (_handle==nullptr) {

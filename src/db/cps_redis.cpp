@@ -24,6 +24,8 @@
 #include "cps_api_operation.h"
 
 #include "cps_api_vector_utils.h"
+#include "std_time_tools.h"
+#include "std_select_tools.h"
 #include "event_log.h"
 
 #include <vector>
@@ -37,13 +39,32 @@
 
 static std::mutex _mutex;
 
-bool cps_db::ping(cps_db::connection &conn) {
+bool cps_db::ping(cps_db::connection &conn, bool use_select) {
+	fd_set _fds;
     cps_db::connection::db_operation_atom_t e;
     e.from_string("PING");
     response_set resp;
 
+    if (use_select) {
+    	FD_ZERO(&_fds);
+    	FD_SET(conn.get_fd(),&_fds);
+    	timeval tv={ 0, 1000 };
+    	int fd_max = conn.get_fd()+1;
+		if (std_select_ignore_intr(fd_max,nullptr,&_fds,nullptr,&tv,nullptr)<=0) {
+			return false;
+		}
+    }
     if (!conn.operation(&e,1)) return false;
-
+    if (!conn.flush()) return false;
+    if (use_select) {
+    	FD_ZERO(&_fds);
+    	FD_SET(conn.get_fd(),&_fds);
+    	timeval tv={ 0, MILLI_TO_MICRO(500) };
+    	int fd_max = conn.get_fd()+1;
+		if (std_select_ignore_intr(fd_max,&_fds,nullptr,nullptr,&tv,nullptr)<=0) {
+			return false;
+		}
+    }
     if (!conn.response(resp,true)) {
         return false;
     }
