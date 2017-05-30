@@ -102,7 +102,7 @@ struct __db_event_handle_t {
 
     void add_connection_state_event(const char *node, const char *group, bool state) ;
 
-    void disconnect_node(const std::string &node, bool update_fd_set=true) ;
+    void disconnect_node(std::string node, bool update_fd_set=true) ;
 
     ~__db_event_handle_t() ;
 };
@@ -148,7 +148,7 @@ bool __db_event_handle_t::object_add_filter(cps_api_object_t obj) {
     return true;
 }
 
-void __db_event_handle_t::disconnect_node(const std::string &node, bool update_fd_set) {
+void __db_event_handle_t::disconnect_node(std::string node, bool update_fd_set) {
 	add_connection_state_event(node.c_str(),"N/A",false);
     _connections.erase(node);
     _connection_mon.erase(node);
