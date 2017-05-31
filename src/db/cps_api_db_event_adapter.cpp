@@ -47,7 +47,7 @@
 
 
 struct db_connection_details {
-	std::string _name;
+    std::string _name;
     static const uint64_t timeout = 60*1000*1000 ; //60 seconds
 
     using cv_hash = cps_utils::vector_hash<char>;
@@ -91,7 +91,7 @@ struct __db_event_handle_t {
     cps_api_object_list_t _pending_events=nullptr;
 
     __db_event_handle_t() {
-    	FD_ZERO(&_connection_set);
+        FD_ZERO(&_connection_set);
     }
 
     bool object_matches_filter(cps_api_object_t obj) ;
@@ -149,7 +149,7 @@ bool __db_event_handle_t::object_add_filter(cps_api_object_t obj) {
 }
 
 void __db_event_handle_t::disconnect_node(std::string node, bool update_fd_set) {
-	add_connection_state_event(node.c_str(),"N/A",false);
+    add_connection_state_event(node.c_str(),"N/A",false);
     _connections.erase(node);
     _connection_mon.erase(node);
     if (update_fd_set) update_connection_set();
@@ -160,7 +160,7 @@ void __db_event_handle_t::add_connection_state_event(const char *node, const cha
     if (o!=nullptr) {
         auto _it = _connection_mon.find(node);
         if (_it!=_connection_mon.end()) {
-        	cps_api_object_attr_add(o,CPS_CONNECTION_ENTRY_NAME, _it->second._name.c_str(),_it->second._name.length()+1);
+            cps_api_object_attr_add(o,CPS_CONNECTION_ENTRY_NAME, _it->second._name.c_str(),_it->second._name.length()+1);
         }
         cps_api_key_from_attr_with_qual(cps_api_object_key(o),CPS_CONNECTION_ENTRY, cps_api_qualifier_TARGET);
         cps_api_object_attr_add(o,CPS_CONNECTION_ENTRY_IP, node,strlen(node)+1);
@@ -241,10 +241,10 @@ static bool __check_connections(cps_api_event_service_handle_t handle) {
                         EV_LOG(TRACE,DSAPI,0,"CPS-EVT-CONN","Failed to connect to the remote node %s",node.c_str());
                         return true;
                     }
-                    if (!cps_db::ping(*c,true)) return true;
+                    if (!cps_db::ping(*c)) return true;
                     std::string node_name;
                     if(cps_api_db_get_node_from_ip(std::string(node),node_name)){
-                    	nd->_connection_mon[node]._name = node_name;
+                        nd->_connection_mon[node]._name = node_name;
                     }
                     nd->_connection_mon[node].reset();
                     nd->_connection_mon[node].communicated();
@@ -254,7 +254,7 @@ static bool __check_connections(cps_api_event_service_handle_t handle) {
                     changed = true;
                 }
                 if (nd->_connection_mon[node].expired()) {
-                    if (!cps_db::ping(*nd->_connections[node],true)) {
+                    if (!cps_db::ping(*nd->_connections[node])) {
                         nd->disconnect_node(node.c_str());
                         return true;
                     }
@@ -270,7 +270,7 @@ static bool __check_connections(cps_api_event_service_handle_t handle) {
     changed = changed || (nodes.size()>0);
 
     for ( auto & it : nodes ) {
-    	nd->disconnect_node(it.c_str());
+        nd->disconnect_node(it.c_str());
     }
 
     if (changed) {
@@ -428,7 +428,7 @@ static cps_api_return_code_t _cps_api_wait_for_event(
     cps_api_return_code_t __rc = cps_api_ret_code_TIMEOUT;
     bool _has_error=false;
     while (_waiting_for_event) {
-    	_has_error=false;
+        _has_error=false;
         if (timeout_ms==CPS_API_TIMEDWAIT_NO_TIMEOUT) {
             _max_wait_time = DEF_SELECT_TIMEOUT_SEC*1000;
         } else {
@@ -465,8 +465,8 @@ static cps_api_return_code_t _cps_api_wait_for_event(
                 pending_event = true;
             }
             if (_has_error) {
-            	nh->disconnect_node(it.first,true);
-            	break;
+                nh->disconnect_node(it.first,true);
+                break;
             }
         }
 
@@ -480,10 +480,10 @@ static cps_api_return_code_t _cps_api_wait_for_event(
             rc = std_select_ignore_intr(fd_max,&_r_set,nullptr,nullptr,&tv,nullptr);
             nh->_mutex.lock();
             if (rc==-1) {
-            	//test all connections
-            	for ( auto it : nh->_connection_mon ) {
-            		it.second.expired();
-            	}
+                //test all connections
+                for ( auto it : nh->_connection_mon ) {
+                    it.second.expired();
+                }
                 last_checked = 0;    //trigger reconnect evaluation
                 continue;
             }
@@ -498,8 +498,8 @@ static cps_api_return_code_t _cps_api_wait_for_event(
             bool has_data = it.second->has_event(_has_error);
 
             if (_has_error) {
-            	nh->disconnect_node(it.first,true);
-            	break;
+                nh->disconnect_node(it.first,true);
+                break;
             }
 
             has_data |= !pending_event && FD_ISSET(it.second->get_fd(),&_r_set) ;
@@ -514,11 +514,11 @@ static cps_api_return_code_t _cps_api_wait_for_event(
                     }
                     return cps_api_ret_code_OK;
                 } else {
-                	if (_has_error) {
-                		nh->disconnect_node(it.first,true);
-                		break;
-                	}
-                	
+                    if (_has_error) {
+                        nh->disconnect_node(it.first,true);
+                        break;
+                    }
+
                 }
             }
         }

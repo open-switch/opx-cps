@@ -22,6 +22,8 @@
 #include "cps_api_errors.h"
 #include "std_time_tools.h"
 
+#include "cps_api_select_utils.h"
+
 #include <stddef.h>
 
 #include <inttypes.h>
@@ -43,13 +45,14 @@ class response_set;
 
 //Note.. this is not a multthread safe class - not expected to at this point.
 class connection {
+    static const int _SELECT_MS_WAIT=2000;
 public:
     struct db_operation_atom_t {
         const char *_string=nullptr;
         size_t _len=0;
         cps_api_object_t _object=nullptr;
 
-        enum class obj_fields_t: int {     obj_field_STRING,    /// String or binary data
+        enum class obj_fields_t: int {  obj_field_STRING,    /// String or binary data
                                         obj_field_OBJ_CLASS,/// a class key
                                         obj_field_OBJ_INSTANCE,
                                         obj_field_OBJ_KEY_AND_DATA,
@@ -98,7 +101,6 @@ private:
 
     std::list<void*> _pending_events;
     uint64_t _last_used=0;
-
 };
 
 class connection_cache {
