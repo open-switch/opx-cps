@@ -36,14 +36,14 @@
 
 #include <hiredis/hiredis.h>
 
-
 static std::mutex _mutex;
 
-bool cps_db::ping(cps_db::connection &conn) {
+
+bool cps_db::ping(cps_db::connection &conn, size_t timeoutms) {
     cps_db::connection::db_operation_atom_t e;
     e.from_string("PING");
     response_set resp;
-    if (!conn.command(&e,1,resp)) return false;
+    if (!conn.command(&e,1,resp,timeoutms)) return false;
 
     cps_db::response r = resp.get_response(0);
     const char *ret = NULL;

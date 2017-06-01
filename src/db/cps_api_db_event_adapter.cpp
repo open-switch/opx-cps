@@ -87,6 +87,7 @@ struct __db_event_handle_t {
 
     fd_set _connection_set;
     ssize_t _max_fd=0;
+    size_t _last_checked = 0;
 
     cps_api_object_list_t _pending_events=nullptr;
 
@@ -241,7 +242,8 @@ static bool __check_connections(cps_api_event_service_handle_t handle) {
                         EV_LOG(TRACE,DSAPI,0,"CPS-EVT-CONN","Failed to connect to the remote node %s",node.c_str());
                         return true;
                     }
-                    if (!cps_db::ping(*c)) return true;
+                    const static size_t _NEW_CONNECTION_TO=500;
+                    if (!cps_db::ping(*c,_NEW_CONNECTION_TO)) return true;
                     std::string node_name;
                     if(cps_api_db_get_node_from_ip(std::string(node),node_name)){
                         nd->_connection_mon[node]._name = node_name;
@@ -415,8 +417,6 @@ static cps_api_return_code_t _cps_api_wait_for_event(
     const static int DEF_SELECT_TIMEOUT_SEC = (3);
     __db_event_handle_t *nh = handle_to_data(handle);
 
-    uint64_t last_checked = 0;
-
     int fd_max = -1;
     fd_set _r_set ;
     ssize_t rc = 0;
@@ -448,8 +448,8 @@ static cps_api_return_code_t _cps_api_wait_for_event(
             cps_api_object_clone(msg,og.get());
             return cps_api_ret_code_OK;
         }
-        if (std_time_is_expired(last_checked,MILLI_TO_MICRO(1000*3))) {    //wait for 3 seconds before scanning again
-            last_checked = std_get_uptime(nullptr);
+        if (std_time_is_expired(nh->_last_checked,MILLI_TO_MICRO(1000*3))) {    //wait for 3 seconds before scanning again
+            nh->_last_checked = std_get_uptime(nullptr);
             __maintain_connections(nh);
         }
 
@@ -484,7 +484,7 @@ static cps_api_return_code_t _cps_api_wait_for_event(
                 for ( auto it : nh->_connection_mon ) {
                     it.second.expired();
                 }
-                last_checked = 0;    //trigger reconnect evaluation
+                nh->_last_checked = 0;    //trigger reconnect evaluation
                 continue;
             }
             if (rc==0) continue;

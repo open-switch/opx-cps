@@ -54,8 +54,6 @@ void cps_db::connection::db_operation_atom_t::from_object(cps_api_object_t obj, 
 }
 
 void cps_db::connection::disconnect() {
-    if (static_cast<redisContext*>(_ctx)->fd>=0) {
-    }
     if (_ctx!=nullptr) {
         redisFree(static_cast<redisContext*>(_ctx));
         _ctx = nullptr;
@@ -126,17 +124,17 @@ bool cps_db::connection::connect(const std::string &s_, const std::string &db_in
             EV_LOGGING(DSAPI,DEBUG,"CPS-DB-CONN","Failed to set keepalive option on fd %d",fd);
         }
         int retries = 4;
-        if (setsockopt(fd,SOL_SOCKET,TCP_KEEPCNT,&retries,sizeof(retries))<0) {
+        if (setsockopt(fd,IPPROTO_TCP,TCP_KEEPCNT,&retries,sizeof(retries))<0) {
             EV_LOGGING(DSAPI,DEBUG,"CPS-DB-CONN","Failed to set keepcount option on fd %d",fd);
         }
 
         int interval = 1;
-        if (setsockopt(fd,SOL_SOCKET,TCP_KEEPINTVL,&interval,sizeof(interval))<0) {
+        if (setsockopt(fd,IPPROTO_TCP,TCP_KEEPINTVL,&interval,sizeof(interval))<0) {
             EV_LOGGING(DSAPI,DEBUG,"CPS-DB-CONN","Failed to set interval option on fd %d",fd);
         }
 
         int idle = 2;
-        if (setsockopt(fd,SOL_SOCKET,TCP_KEEPIDLE,&idle,sizeof(idle))<0) {
+        if (setsockopt(fd,IPPROTO_TCP,TCP_KEEPIDLE,&idle,sizeof(idle))<0) {
             EV_LOGGING(DSAPI,DEBUG,"CPS-DB-CONN","Failed to set idle time option on fd %d",fd);
         }
     }
@@ -259,7 +257,7 @@ bool request_walker_contexct_t::set(cps_db::connection::db_operation_atom_t * ls
 
 }
 
-bool cps_db::connection::operation(db_operation_atom_t * lst_,size_t len_, bool force_push) {
+bool cps_db::connection::operation(db_operation_atom_t * lst_,size_t len_, bool force_push,size_t timeoutms) {
     request_walker_contexct_t ctx(lst_,len_);
 
     if (!ctx.valid()) {
@@ -279,23 +277,23 @@ bool cps_db::connection::operation(db_operation_atom_t * lst_,size_t len_, bool 
 
     if (!_success) return false;
     if (!force_push) return true;
-    return flush();
+    return flush(timeoutms);
 }
 
-bool cps_db::connection::flush() {
+bool cps_db::connection::flush(size_t timeoutms) {
     int _is_done=0;
     while (_is_done==0) {
 
-    	struct pollfd _fds;
-    	_fds.fd = get_fd();
-    	_fds.events = POLLOUT;
-    	_fds.revents =0;
-    	if (poll(&_fds,1,_SELECT_MS_WAIT)!=1) {
-			reconnect(); return false;
-    	}
-		if (_fds.revents != POLLOUT) {
-			reconnect(); return false;
-		}
+        struct pollfd _fds;
+        _fds.fd = get_fd();
+        _fds.events = POLLOUT;
+        _fds.revents =0;
+        if (poll(&_fds,1,timeoutms)!=1) {
+            reconnect(); return false;
+        }
+        if (_fds.revents != POLLOUT) {
+            reconnect(); return false;
+        }
 
         if (redisBufferWrite(static_cast<redisContext*>(_ctx),&_is_done)==REDIS_ERR) {
             reconnect();
@@ -318,9 +316,9 @@ static bool is_event_message(void *resp) {
     return false;
 }
 
-bool cps_db::connection::response(response_set &data_, bool expect_events) {
+bool cps_db::connection::response(response_set &data_, bool expect_events,size_t timeoutms) {
     bool _rc = true;
-    if (!flush()) {
+    if (!flush(timeoutms)) {
         _rc=false;
     }
 
@@ -334,16 +332,16 @@ bool cps_db::connection::response(response_set &data_, bool expect_events) {
         }
 
         if (reply==nullptr) {
-        	struct pollfd _fds;
-        	_fds.fd = get_fd();
-        	_fds.events = POLLIN;
-        	_fds.revents =0;
-        	if (poll(&_fds,1,_SELECT_MS_WAIT)!=1) {
-    			_rc=false; continue;
-        	}
-    		if (_fds.revents != POLLIN) {
-    			_rc=false; continue;
-    		}
+            struct pollfd _fds;
+            _fds.fd = get_fd();
+            _fds.events = POLLIN;
+            _fds.revents =0;
+            if (poll(&_fds,1,timeoutms)!=1) {
+                _rc=false; continue;
+            }
+            if (_fds.revents != POLLIN) {
+                _rc=false; continue;
+            }
             if (redisBufferRead(static_cast<redisContext*>(_ctx))!=REDIS_OK) {
                 _rc=false; continue;
             }
@@ -363,11 +361,11 @@ bool cps_db::connection::response(response_set &data_, bool expect_events) {
     return _rc;
 }
 
-bool cps_db::connection::command(db_operation_atom_t * lst,size_t len,response_set &set) {
-    if (!operation(lst,len,true)) {
+bool cps_db::connection::command(db_operation_atom_t * lst,size_t len,response_set &set,size_t timeoutms) {
+    if (!operation(lst,len,true,timeoutms)) {
         return false;
     }
-    return response(set,false);
+    return response(set,false,timeoutms);
 }
 
 
@@ -399,14 +397,14 @@ bool cps_db::connection::has_event(bool &err) {
 bool cps_db::connection::get_event(response_set &data, bool &err_occured) {
     do {
         if (_pending_events.size() == 0) {
-        	struct pollfd _fds;
-        	_fds.fd = get_fd();
-        	_fds.events = POLLIN;
-        	_fds.revents =0;
-        	if (poll(&_fds,1,_SELECT_MS_WAIT)!=1) {
-        		err_occured=true;
-        		break;
-        	}
+            struct pollfd _fds;
+            _fds.fd = get_fd();
+            _fds.events = POLLIN;
+            _fds.revents =0;
+            if (poll(&_fds,1,_SELECT_MS_WAIT)!=1) {
+                err_occured=true;
+                break;
+            }
 
             if (redisBufferRead(static_cast<redisContext*>(_ctx))==REDIS_ERR) {
                 err_occured=true;
