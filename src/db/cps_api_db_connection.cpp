@@ -54,8 +54,6 @@ void cps_db::connection::db_operation_atom_t::from_object(cps_api_object_t obj, 
 }
 
 void cps_db::connection::disconnect() {
-    if (static_cast<redisContext*>(_ctx)->fd>=0) {
-    }
     if (_ctx!=nullptr) {
         redisFree(static_cast<redisContext*>(_ctx));
         _ctx = nullptr;

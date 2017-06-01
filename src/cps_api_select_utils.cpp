@@ -91,10 +91,17 @@ cps_api_select_handle_t cps_api_select_alloc(const cps_api_select_settings &sett
     return _handle;
 }
 
-bool cps_api_select_add_fd(cps_api_select_handle_t handle,int fd) {
+bool cps_api_select_add_fd(cps_api_select_handle_t handle, int fd, bool *read, bool *write) {
     __handle_struct *_h = (__handle_struct*)handle;
+
     epoll_event _settings = _h->_epoll_op_defaults;
+
+    if (read!=nullptr || write!=nullptr) _settings.events = 0;
+    if (read!=nullptr && write==nullptr && *read==true) _settings.events |= EPOLLIN;
+    if (read==nullptr && write!=nullptr && *write==true) _settings.events |= EPOLLOUT;
+
     _settings.data.fd = fd;
+
     return (epoll_ctl(_h->_fd,EPOLL_CTL_ADD,fd,&_settings)>=0);
 }
 
@@ -115,8 +122,8 @@ void cps_api_select_remove_fd(cps_api_select_handle_t handle,int fd) {
     epoll_ctl(_h->_fd,EPOLL_CTL_DEL,fd,nullptr);
 }
 
-bool cps_api_select_guard::add_fd(int fd) {
-    if (!cps_api_select_add_fd(__h,fd)) return false;
+bool cps_api_select_guard::add_fd(int fd, bool *read, bool *write) {
+    if (!cps_api_select_add_fd(__h,fd,read,write)) return false;
     __cleanup_fds.insert(fd);
     return true;
 }

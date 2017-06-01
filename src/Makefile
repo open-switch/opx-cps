@@ -1,11 +1,11 @@
 PROGRAMS= cps_api_service
 LIBRARIES= cps-api-common cps-class-map-util cps-ut-data
 
-CXXFLAGS+=-std=c++11 
+CXXFLAGS+=-std=c++11
 
 
 cps-ut-data_SRCS= unit_test/cps_class_ut_data.cpp
-cps-ut-data_CXXFLAGS+=-I${TOP_SRCDIR}/inc/private -I${TOP_SRCDIR}/inc/private/db
+cps-ut-data_CXXFLAGS += -I${TOP_SRCDIR}/inc/private -I${TOP_SRCDIR}/inc/private/db
 cps-ut-data_LDFLAGS = -levent_log -ldn_common -lpthread -lhiredis
 
 
@@ -13,7 +13,7 @@ cps-class-map-util_SRCS=metadata/cps_class_map_query.cpp
 cps-class-map-util_CXXFLAGS=-std=c++11
 cps-class-map-util_LDFLAGS=-ldn_common -levent_log -lcps-api-common -lpthread
 
-cps-api-common_CXXFLAGS+=-I${TOP_SRCDIR}/inc/private -I${TOP_SRCDIR}/inc/private/db
+CXXFLAGS += -I${TOP_SRCDIR}/inc/private -I${TOP_SRCDIR}/inc/private/db
 
 cps-api-common_SRCS+=cps_api_object.cpp
 cps-api-common_SRCS+=cps_api_events.cpp
