@@ -43,6 +43,7 @@ class response_set;
 
 //Note.. this is not a multthread safe class - not expected to at this point.
 class connection {
+    enum { _SELECT_MS_WAIT = 2000 };
 public:
     struct db_operation_atom_t {
         const char *_string=nullptr;
@@ -78,12 +79,12 @@ public:
     std::string addr() { return _addr; } //make a copy.. since reconnects could change it in the future
 
 
-    bool command(db_operation_atom_t * lst,size_t len,response_set &set);
+    bool command(db_operation_atom_t * lst,size_t len,response_set &set, size_t timeoutms=_SELECT_MS_WAIT);
 
-    bool response(response_set &data, bool expect_events = false);
+    bool response(response_set &data, bool expect_events = false, size_t timeoutms=_SELECT_MS_WAIT);
 
-    bool operation(db_operation_atom_t * lst,size_t len, bool force_flush=false);
-    bool flush();
+    bool operation(db_operation_atom_t * lst,size_t len, bool force_flush=false, size_t timeoutms=_SELECT_MS_WAIT);
+    bool flush(size_t timeoutms=_SELECT_MS_WAIT);
 
     bool get_event(response_set &data,bool &err);
     bool has_event(bool &err);

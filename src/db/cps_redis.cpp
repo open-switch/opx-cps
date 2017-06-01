@@ -36,38 +36,14 @@
 
 #include <hiredis/hiredis.h>
 
-
 static std::mutex _mutex;
 
-bool cps_db::ping(cps_db::connection &conn, bool use_select) {
-	fd_set _fds;
+
+bool cps_db::ping(cps_db::connection &conn, size_t timeoutms) {
     cps_db::connection::db_operation_atom_t e;
     e.from_string("PING");
     response_set resp;
-
-    if (use_select) {
-    	FD_ZERO(&_fds);
-    	FD_SET(conn.get_fd(),&_fds);
-    	timeval tv={ 0, 1000 };
-    	int fd_max = conn.get_fd()+1;
-		if (std_select_ignore_intr(fd_max,nullptr,&_fds,nullptr,&tv,nullptr)<=0) {
-			return false;
-		}
-    }
-    if (!conn.operation(&e,1)) return false;
-    if (!conn.flush()) return false;
-    if (use_select) {
-    	FD_ZERO(&_fds);
-    	FD_SET(conn.get_fd(),&_fds);
-    	timeval tv={ 0, MILLI_TO_MICRO(500) };
-    	int fd_max = conn.get_fd()+1;
-		if (std_select_ignore_intr(fd_max,&_fds,nullptr,nullptr,&tv,nullptr)<=0) {
-			return false;
-		}
-    }
-    if (!conn.response(resp,true)) {
-        return false;
-    }
+    if (!conn.command(&e,1,resp,timeoutms)) return false;
 
     cps_db::response r = resp.get_response(0);
     const char *ret = NULL;
