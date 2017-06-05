@@ -66,10 +66,16 @@ class COutputFormat:
         node = model.context['enum'][name]
         enum = node.find('enumeration')
 
+        print ""
         self.print_comment('Enumeration '+name)
+        for i in [node,enum]:            
+            if i == None: continue
+            _txt = self.get_comment(model, i)            
+            if _txt!=None and len(_txt)>0:
+                print _txt
 
         print "typedef enum { "
-
+                
         min_value = None
         max_value = None
 
@@ -191,10 +197,10 @@ class COutputFormat:
             self.print_comment('No objects defined..')
             return
 
-        self.print_comment('Object\'s continued')
+        self.print_comment('Top level objects')
 
         subcat_name = model.module.name() + "_objects"
-        print "typedef enum{"
+        print "typedef enum { "
         for c in model.container_map[model.module.name()]:
             comment = ""
 

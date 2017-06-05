@@ -24,6 +24,8 @@
 #include "cps_api_operation.h"
 
 #include "cps_api_vector_utils.h"
+#include "std_time_tools.h"
+#include "std_select_tools.h"
 #include "event_log.h"
 
 #include <vector>
@@ -34,19 +36,14 @@
 
 #include <hiredis/hiredis.h>
 
-
 static std::mutex _mutex;
 
-bool cps_db::ping(cps_db::connection &conn) {
+
+bool cps_db::ping(cps_db::connection &conn, size_t timeoutms) {
     cps_db::connection::db_operation_atom_t e;
     e.from_string("PING");
     response_set resp;
-
-    if (!conn.operation(&e,1)) return false;
-
-    if (!conn.response(resp,true)) {
-        return false;
-    }
+    if (!conn.command(&e,1,resp,timeoutms)) return false;
 
     cps_db::response r = resp.get_response(0);
     const char *ret = NULL;
