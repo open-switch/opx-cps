@@ -113,12 +113,11 @@ class Language:
 
 
     def change_prefix(self, name, model):
-        prefix = model.module.prefix
+        prefix = model.module.prefix()        
         loc = name.find(prefix)
         if loc != 0:
             return name
-        name = model.module.module + name[len(prefix):]
-        return name
+        return name.replace(prefix,model.module.model_name())
 
     def name_to_cms_name(self, name):
         name = name.replace('/', '_')
@@ -133,7 +132,7 @@ class Language:
             name = self.name_to_cms_name(self.change_prefix(k,self.model))
             self.names[k] = name
             self.names[name]=k
-            if k.startswith(self.model.module.prefix):
+            if k.startswith(self.model.module.prefix()):
                 aug_name = self.change_name_for_augment(k)
                 if aug_name != None:
                     aug_name = self.name_to_cms_name(self.change_prefix(aug_name,self.model))
@@ -145,7 +144,7 @@ class Language:
         if self.module_obj.get_if_augments() is True:
             for model in self.model.augment_list:
                for k in self.all_node_map:
-                   if k is model.module.prefix:
+                   if k is model.module.prefix():
                        continue
                    name = self.name_to_cms_name(self.change_prefix(k,model))
                    self.names[k] = name
@@ -251,8 +250,8 @@ class Language:
             self.cb_node_keys_data[self.names[k]] = keys
 
     def setup(self, model):
-        self.model = model
-        self.prefix = self.model.module.prefix
+        self.model = self.context.get_model(model)
+        self.prefix = self.model.module.prefix()
         self.module = self.model.module.module
         self.module_obj = self.model.module
 

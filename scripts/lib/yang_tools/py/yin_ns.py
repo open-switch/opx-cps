@@ -35,21 +35,53 @@ def set_mod_name(ns, node):
 
 
 class Module:
+    
+    def __init__(self, filename, node):
+        """
+        Initialize the module namespace.  
+        
+        self.mod_ns is the actual namespace of the file eg.. {urn:abcdefg}
+        self.module is the module name of the yang file
+        self.augments indicates if the file is an augment of another file
+        self.prefix holds the model's prefix
+        self.module_name will either be the prefix or if the prefix is not available, the module 
+        """
+        self.filename = filename
+        self.augments = False
+        self.mod_ns = get_namespace(node)
+        self.module = self.get_module(node)
+        
+        #sets the self.prefix to the discovered prefix or belongs-to value
+        self.update_prefix(self.get_prefix(node))
+    
+    def update_prefix(self,__prefix):
+        self.__prefix = __prefix
+        if len(self.__prefix) > 0:
+            self.module_name = self.__prefix
+        else:
+            self.module_name = self.module
+        if len(self.module_name) == 0:
+            raise Exception('Invalid module name/prefix')
 
+    def field_name(self,name):
+        return self.mod_ns + name
+    
     def get_prefix(self, node):
-        n = node.find(self.mod_ns + 'prefix')
+        __prefix = self.field_name('prefix')
+        n = node.find(__prefix)
         if n is None:
-            n = node.find(self.mod_ns + 'belongs-to')
+            n = node.find(self.field_name('belongs-to'))
             if n is not None:
-                n = n.find(self.mod_ns + 'prefix')
+                n = n.find(__prefix)
             if n is None:
                 return ""
 
         return n.get('value')
 
     def get_module(self, node):
-        if node.tag != self.mod_ns + 'module':
-            node = node.find(self.mod_ns + 'module')
+        __mod_tag = self.field_name('module')
+        if node.tag != __mod_tag:
+            node = node.find(__mod_tag)
 
         if node is not None:
             return node.get('name')
@@ -61,34 +93,17 @@ class Module:
     def get_if_augments(self):
         return self.augments
 
-    def __init__(self, filename, node):
-        self.filename = filename
-        self.augments = False
-        self.mod_ns = get_namespace(node)	
-        self.module = self.get_module(node)
-        self.update_prefix(self.get_prefix(node))
-
-
     def filter_ns(self, name):
         return name[len(self.mod_ns):]
 
     def get_file(self):
         return os.path.basename(self.filename)
 
-    def update_prefix(self,__prefix):
-        self.prefix = __prefix
-        if len(self.prefix) > 0:
-            self.module_name = self.prefix
-        else:
-            self.module_name = self.module
-        if len(self.module_name) == 0:
-            raise Exception('Invalid module name/prefix')
-
     def ns(self):
         return self.mod_ns
 
     def prefix(self):
-        return self.prefix
+        return self.__prefix
 
     def name(self):
         return self.module_name
@@ -98,7 +113,7 @@ class Module:
 
     def add_prefix(self,node_name):
         if node_name.find(':')==-1:
-            return self.prefix + ':' + node_name
+            return self.__prefix + ':' + node_name
         return node_name
 
     def strip_prefix(self,node_name):

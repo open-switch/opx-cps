@@ -198,13 +198,17 @@ class Language:
         return _main_history
         
     def setup(self, model):
-        self.model = model
-
-        self.category = "cps_api_obj_CAT_" + to_string(model.module.name())
+        self.__key = model
+        self.model = self.context.get_model(model)
+        
+        self.category = "cps_api_obj_CAT_" + to_string(self.context.get_cat(self.__key))
         self.init_names()
-        hist_file_name = self.get_yang_history_file_name(model.module.model_name())
+        
+        __name = self.context.get_hist_name(self.__key)
+        hist_file_name = self.context.get_config_path(__name)
+        
 
-        self.history = object_history.init(
+        self.history = object_history.YangHistory_HistoryFile(
             self.context,
             hist_file_name,
             self.category)
@@ -239,7 +243,7 @@ class Language:
         class_type = self.context['output'][type]['cps']
 
         old_stdout = sys.stdout
-        with open(self.context['args']['cps' + type], "w") as sys.stdout:
+        with open(self.context.get_arg('cps' + type), "w") as sys.stdout:
             class_type.COutputFormat(self.context).show(self.model)
         sys.stdout = old_stdout
 

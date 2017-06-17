@@ -83,15 +83,16 @@ class COutputFormat:
             if model.module.filter_ns(i.tag) == 'enum':
                 en_name = self.lang.to_string(name + "_" + i.get('name'))
                 value = self.get_value(model, i)
-                value = str(history.get_enum(en_name, value, parent=name))
+                if value!=None: value = long(value)
+                value = history.add_enum(name,en_name, value)
 
-                if min_value == None or int(min_value) > int(value):
+                if min_value == None or min_value > value:
                     min_value = value
-                if max_value == None or int(max_value) < int(value):
+                if max_value == None or max_value < value:
                     max_value = value
 
                 comment = self.get_comment(model, i)
-                print "  " + en_name + " = " + value + ", " + comment
+                print "  " + en_name + " = " + str(value) + ", " + comment
 
         print ("  %s_%s=%s,"%(self.lang.to_string(name),'MIN',min_value))
         print ("  %s_%s=%s,"%(self.lang.to_string(name),'MAX',max_value))
@@ -151,6 +152,7 @@ class COutputFormat:
 
     def print_container(self, model):
         history = self.lang.history
+        __category = self.lang.get_category()
 
         for name in model.container_map.keys():
             if name == model.module.name():
@@ -179,13 +181,13 @@ class COutputFormat:
                     if en_name in _set:
                         en_name = en_name +'_'+str(_count)
                     _set.add(en_name)
-                    value = str(history.get_enum(en_name, None))
+                    value = str(history.add_enum(__category,en_name, None))
                     print "/*type=" + _name[1] + "*/ "
                     print "  " + en_name + " = " + value + ","
 
                 if self.lang.to_string(c.name) not in _set:
                     en_name = self.lang.to_string(c.name)
-                    value = str(history.get_enum(en_name, None))
+                    value = str(history.add_enum(__category,en_name, None))
                     print "  " + en_name + " = " + value + ","
 
 
@@ -214,9 +216,9 @@ class COutputFormat:
             __en_name = self.lang.names[c.name]
 
             if not __en_alias == '':
-                __en_value = str(history.get_enum(__en_alias, None))
+                __en_value = str(history.add_enum(__category,__en_alias, None))
             else:
-                __en_value = str(history.get_enum(__en_name, None))
+                __en_value = str(history.add_enum(__category,__en_name, None))
 
             if c.name in model.container_map:
                 node = model.container_map[c.name]
@@ -334,7 +336,8 @@ class COutputFormat:
         self.header_file_open(model, sys.stdout)
 
         print ""
-        id = self.lang.history.get_global(self.lang.get_category())
+        id = self.context['history']['category'].get_category(self.lang.get_category())
+        
 
         print "#define " + self.lang.get_category() + " (" + str(id) + ") "
 

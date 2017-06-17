@@ -24,6 +24,7 @@ import copy
 import xml.etree.ElementTree as ET
 
 import tempfile
+from operator import __setitem__
 
 
 class CPSContainerElement:
@@ -31,6 +32,23 @@ class CPSContainerElement:
     def __init__(self, name, node):
         self.name = name
         self.node = node
+
+
+class element_container:
+    def __init__(self):
+        self.__dict = {}
+        
+    def __getitem__(self,key):
+        return self.__dict[key]    
+    def __iter__(self):
+        return self.__dict.__iter__()    
+    def __setitem__(self,key,value):
+        self.__dict[key] = value
+        return self.__dict[key]
+    __setattr__ = __setitem__
+    __getattr__ = __getitem__
+
+    
 
 
 class CPSParser:
@@ -46,11 +64,15 @@ class CPSParser:
 
     __supports_duplicate_entries= ['augment']
 
-    def __init__(self, context, filename):
+    def __init__(self, context, model_name, filename):
         ET.register_namespace("ywx", "http://localhost/dontcare")
-
+        
         self.context = context
+        self.model_name = model_name
+        self.__my_key = model_name
         self.filename = filename
+                
+        self.context['models'][self.__my_key] = {}
 
         self.key_elements = {}
 
@@ -63,6 +85,15 @@ class CPSParser:
 
         self.parent = {}
 
+    def get_key(self):
+        return self.__my_key
+    
+    def __ns_field(self,field_name):
+        return self.context.get_ns(self.get_key()).field_name(field_name)
+    
+    def __nodes(self):
+        return self.context.get_nodes(self.get_key())
+    
     def get_key_elements(self,key,node):
 
         if key.find('/') == -1:    #if not root node
@@ -87,7 +118,7 @@ class CPSParser:
 
         __key += key + ' '
 
-        key_entry = node.find(self.module.ns() + 'key')
+        key_entry = node.find(self.__ns_field('key'))
 
         if key_entry is not None:
             for key_node in key_entry.get('value').split():
@@ -108,49 +139,45 @@ class CPSParser:
         Loads a specific yang file and all contained yang files.
         To perform the load of imported models, the loader class was created.
         """
-        _file = ''
-        with open(self.filename, 'r') as f:
-            _file = f.read()
-
-        if _file.find('<module ') != -1 and _file.find('xmlns:ywx=') == -1:
-            pos = _file.find('<module ') + len('<module ')
-            lhs = _file[:pos] + 'xmlns:ywx="http://localhost/ignore/" '
-            rhs = _file[pos:]
-            _file = lhs + rhs
-
-        try:
-            self.root_node = ET.fromstring(_file)
-        except Exception as ex:
-            print "Failed to process ", self.filename
-            print ex
-            sys.exit(1)
-
-        self.module = yin_ns.Module(self.filename, self.root_node)
-
+                
+        self.context.set_nodes(self.get_key(),
+                self.context.get_yang_nodes(self.filename))
+        
+        self.context.add_ns(self.get_key(),yin_ns.Module(self.filename, self.__nodes()))
+        self.module = self.context.get_ns(self.get_key())
+                        
         if prefix is not None:
             self.module.update_prefix(prefix)
 
+        self.context.add_cat(self.get_key(),self.module.name())        
+        self.context.set_hist_name(self.get_key(),self.module.model_name()+'.yhist')
+        
         self.imports = {}
         self.imports['module'] = list()
         self.imports['prefix'] = list()
-
-        for i in self.root_node.findall(self.module.ns() + "import"):
-            prefix = i.find(self.module.ns() + 'prefix')
+        self.imports['map']={}
+        
+        for i in self.__nodes().findall(self.__ns_field("import")):
+            prefix = i.find(self.__ns_field('prefix'))
             if prefix is not None:
                 prefix = prefix.get('value')
             if prefix is not None:
                 self.imports['prefix'].append(prefix)
-            print "Loading module with prefix %s" % prefix
-            self.context['file-finder'].load(
-                i.get('module') + ".yang",
-                prefix=prefix)
+            
+            __import_name = i.get('module') + ".yang"
+            __import_prefix = prefix
+                        
+            print("Loading module %s with prefix %s" % (__import_name,__import_prefix))
+            
+            self.context['loader'].load(__import_name, prefix=prefix)                    
             self.imports['module'].append(i.get('module'))
+            self.imports['map'][__import_name] = __import_prefix
 
-        self.has_children_nodes = self.module.prepend_ns_to_list(
+        self.has_children_nodes = self.context.get_ns(self.get_key()).prepend_ns_to_list(
             self.supported_list_containing_children)
-        self.has_attr_ids = self.module.prepend_ns_to_list(
+        
+        self.has_attr_ids = self.context.get_ns(self.get_key()).prepend_ns_to_list(
             self.supported_list_of_leaves_have_attr_ids)
-
 
     def close(self):
         object_history.close(self.history)
@@ -160,18 +187,21 @@ class CPSParser:
             return
 
         self.container_map[self.module.name()] = list()
-        self.all_node_map[self.module.name()] = self.root_node
+        self.all_node_map[self.module.name()] = self.__nodes()
         self.container_keys[self.module.name()] = self.module.name() + " "
-        self.handle_augments(self.root_node, self.module.name() + ':')
-
+        self.pre_parse_augments(self.__nodes(), self.module.name() + ':')
+        
         print "Creating type mapping..."
-        self.parse_types(self.root_node, self.module.name() + ':')
-
+        self.parse_types(self.__nodes(), self.module.name() + ':')
+ 
         print "Updating prefix (%s) related mapping" % self.module.name()
-        self.update_node_prefixes(self.root_node)
+        self.update_node_prefixes(self.__nodes())
 
         print "Parsing Yang Model %s" % (self.module.name())
-        self.walk_nodes(self.root_node, self.module.name())
+        self.walk_nodes(self.__nodes(), self.module.name())
+
+        self.handle_augments(self.__nodes(), self.module.name() + ':')
+        
         self.handle_keys()
         self.fix_enums()
         print "Yang parsing complete"
@@ -221,40 +251,58 @@ class CPSParser:
             i.set('target-namespace',ns)
 
 
-    def handle_augments(self,parent,path):
+    def pre_parse_augments(self,parent,path):
         for i in parent:
             tag = self.module.filter_ns(i.tag)
 
             #if type is augment.. then set the items 'name' to the augmented class
             if tag == 'augment':
-                _tgt_node = i.get('target-node')
+                _tgt_node = i.get('target-node') 
 
                 if _tgt_node[:1] == '/':
                     _tgt_node = _tgt_node[1:]
 
                 if _tgt_node.find(':')==-1:
-                    print("Failed to find prefix in augment for %s." % _tgt_node )
-                    __ns = self.module.ns
+                    print("Missing prefix in augment for %s." % _tgt_node )
+                    __ns = self.context.get_ns(self.get_key()).prefix()
                 else:
                     __ns = _tgt_node[:_tgt_node.find(':')]
 
                 _tgt_node = _tgt_node.replace(__ns+':','')
-                _tgt_node = __ns +"/" +_tgt_node
-                _key_model = self.context['loader'].yin_map[self.context['model-names'][__ns]]
-                __key_path =  _key_model.get_key_elements(_tgt_node,i.get('augment'))
-                __key_path =  self.module.name()+ ' ' +__key_path
-                __augmented_node = _key_model.all_node_map[_tgt_node]
+                
+                if __ns != self.context.get_ns(self.get_key()).prefix():
+                    _tgt_node = __ns +"/" +_tgt_node
+                
+                i.set('target-namespace',__ns)
+                i.set('name',_tgt_node)
+                i.set('augmented', True)
+                self. stamp_augmented_children(i, __ns)
 
+    def handle_augments(self,parent,path):
+        for i in parent:
+            tag = self.module.filter_ns(i.tag)
+
+            #if type is augment.. then set the items 'name' to the augmented class
+            if tag == 'augment':                
+                _tgt_node = i.get('name')
+                __ns = i.get('target-namespace')
+                
+                if __ns == self.context.get_ns(self.get_key()).prefix():
+                    _key_model = self
+                    __key_path =  _key_model.get_key_elements(_tgt_node,i.get('augment'))
+                    __augmented_node = _key_model.all_node_map[__ns+'/'+_tgt_node]
+                else:
+                    _key_model = self.context['loader'].yin_map[self.context['model-names'][__ns]]
+                    __key_path =  _key_model.get_key_elements(_tgt_node,i.get('augment'))
+                    __key_path =  self.module.name()+ ' ' +__key_path
+                    __augmented_node = _key_model.all_node_map[_tgt_node]
+                                    
                 self.module.set_if_augments()
                 if _key_model not in self.augment_list:
                     self.augment_list.append(_key_model)
-                i.set('target-namespace',__ns)
-                i.set('name',_tgt_node)
                 i.set('model',_key_model)
                 i.set('augment',__augmented_node)
                 i.set('key-path',__key_path)
-                i.set('augmented', True)
-                self. stamp_augmented_children(i, __ns)
 
 
     def parse_types(self, parent, path):
@@ -270,7 +318,12 @@ class CPSParser:
             tag = self.module.filter_ns(i.tag)
 
             id = tag
-
+            if tag == 'config':
+                parent.set('read-only',True)
+                continue
+            if tag == 'must':
+                continue
+            
             if i.get('name') is not None:
                 id = i.get('name')
 
@@ -348,6 +401,7 @@ class CPSParser:
         else:
             return (False,None)
 
+    __tags_to_ingore_walk_nodes = [ 'config', 'must', 'uses', 'description','mandatory','max-elements','min-elements','range','value','when','default' ]
     def walk_nodes(self, node, path):
         nodes = list(node)
         parent = path  # container path to parent
@@ -356,10 +410,15 @@ class CPSParser:
 
         for i in nodes:
             tag = self.module.filter_ns(i.tag)
-
+            
+            if tag in self.__tags_to_ingore_walk_nodes:
+                continue
+            
             if i.get('name') is not None:
                 n_path = path + "/" + i.get('name')
             else:
+                if tag == 'augment':
+                    pass 
                 n_path = path + "/" + tag
 
             id = self.module.name() + ':' + tag
