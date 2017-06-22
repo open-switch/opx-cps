@@ -82,7 +82,7 @@ class CPSObject:
         @param name is the name of the attribute
         @param value is the value for the attribute
         """
-        if value==None:
+        if value is None:
             del self.properties[name]
         else:
             self.properties[name] = value

@@ -15,13 +15,9 @@
 # permissions and limitations under the License.
 #
 
-import sys
 import cps
 import cps_utils
 import cps_object
-import time
-
-import argparse
 
 if __name__ == '__main__':
 

@@ -15,7 +15,6 @@
 # permissions and limitations under the License.
 #
 
-import sys
 import cps
 import cps_utils
 import cps_object
@@ -38,4 +37,4 @@ if __name__ == '__main__':
             print('\n============%s==========' % _cur_key)
 
         cps_utils.print_obj(o.get(),show_key=False)
-        print ""
+        print "------------------------------------------------"
