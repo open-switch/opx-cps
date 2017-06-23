@@ -403,3 +403,43 @@ bool cps_api_filter_has_wildcard_attrs(cps_api_object_t obj) {
     if (p==nullptr) return false;
     return *p;
 }
+
+bool cps_api_attr_create_escaped(cps_api_object_ATTR_TYPE_t type, void *buff, size_t len, const void *attr, size_t *attr_len) {
+    if(*attr_len < 2*len)
+      return false;
+
+    union {
+        uint16_t u16;
+        uint32_t u32;
+        uint64_t u64;
+    } un;
+
+    switch(type) {
+        case cps_api_object_ATTR_T_U16:
+            if(len != sizeof(uint16_t))
+                return false; 
+            un.u16 = htole16(*(uint16_t*)buff); *((uint16_t *)buff) = un.u16; break;
+        case cps_api_object_ATTR_T_U32:
+            if(len != sizeof(uint32_t))
+                return false;
+            un.u32 = htole32(*(uint32_t*)buff); *((uint32_t *)buff) = un.u32; break;
+        case cps_api_object_ATTR_T_U64:
+            if(len != sizeof(uint64_t))
+                return false;
+            un.u64 = htole64(*(uint64_t*)buff); *((uint64_t *)buff) = un.u64; break;
+        default:
+            break;
+    }
+    size_t count = 0;
+    for(size_t ix = 0; ix < len; ++ix, ++count) {
+      if(((char *)buff)[ix] == '*' || ((char *)buff)[ix] == '?' || ((char *)buff)[ix] == '[' || ((char *)buff)[ix] == ']' || ((char *)buff)[ix] == '\\') {
+        ((char *)attr)[count] = '\\';
+        ++count;
+      }
+      ((char *)attr)[count] = ((char *)buff)[ix];
+    }
+    *attr_len = count;
+
+    return true;
+}
+

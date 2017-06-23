@@ -3,6 +3,15 @@ module dell-base-cps {
   prefix "cps";
 
   typedef config-type {
+    description " This enum range is designed to help with the configuration of objects in the system.  A application can set the following enums
+  on any objects that they perform a commit operation on (set/delete/create).
+ 
+  Using this information (configuration type), an application can make changes to:
+  1) Running configuration - used for warm restart or application/process restart
+  2) Startup configuration - used in the case that the system goes through a full cold start process
+  3) Running configuration only - used in the case that an application is dynamically changing the system based on observations or
+          other actions that should not be stored for cold starts (eg.. iscsi auto provisioning, temporary IP address, etc..)";
+          
     type enumeration {
       enum "startup-config" {
         value 1;
@@ -202,4 +211,24 @@ module dell-base-cps {
         description "System port where tunneling from DB to other node occurs.";
     }
   }
+
+  list service-instance {
+    description "This service is registered by the CPS infra and can be used to provide details about active registrations in the system.";
+    config false;
+    key "name";
+    
+    leaf name {
+        type string;
+        description "The service name or some type of string representation of the service instance.";
+    }
+    leaf connection-information {
+        type string;
+        description "Protocol specific connection information.  For instance, in the case of a UNIX domain socket connection this is the socket name.";        
+    }
+    leaf-list registered-key {
+        type string;
+        description "The registered keys that are associated with the service.";        
+    }
+        
+  }  
 }

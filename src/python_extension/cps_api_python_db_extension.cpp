@@ -31,7 +31,6 @@
 #include <vector>
 #include <functional>
 
-
 PyObject * py_cps_api_db_commit(PyObject *self, PyObject *args, PyObject *_keydict) {
     PyObject *__obj=nullptr,*__prev=nullptr,*__pub=nullptr;
 

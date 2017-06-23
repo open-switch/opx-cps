@@ -115,6 +115,7 @@ public:
 cps_db::connection_cache & ProcessDBCache();
 cps_db::connection_cache & ProcessDBEvents();
 
+
 class connection_request {
     std::string _name;
     cps_db::connection *_conn;

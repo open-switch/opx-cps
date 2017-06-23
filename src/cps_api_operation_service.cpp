@@ -357,6 +357,15 @@ static bool cps_api_handle_stats(cps_api_operation_data_t *op, int fd, size_t le
     }
     cps_api_object_attr_add_u64(og.get(),cps_api_obj_stat_PROCESS_ID,std_process_id_get());
 
+    auto _allocated = cps_api_objects_allocated();
+
+    if (_allocated > 0) {
+    	cps_api_list_stats();
+    	cps_api_list_debug();
+    }
+
+    cps_api_object_attr_add_u64(og.get(),cps_api_obj_stat_OBJECTS_ALLOCATED,_allocated);
+
     if (!cps_api_send_one_object(fd,cps_api_msg_o_STATS,og.get())) return false;
 
     return true;
@@ -364,7 +373,6 @@ static bool cps_api_handle_stats(cps_api_operation_data_t *op, int fd, size_t le
 
 static bool  _some_data_( void *context, int fd ) {
     cps_api_operation_data_t *p = (cps_api_operation_data_t *)context;
-
     uint32_t op;
     size_t len;
 

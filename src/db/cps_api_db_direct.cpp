@@ -185,6 +185,7 @@ namespace {
         }
         return cps_api_ret_code_OK;    //ignore merge issue
     }
+
 }
 
 cps_api_return_code_t cps_api_db_commit_one(cps_api_operation_types_t op,cps_api_object_t obj,cps_api_object_t prev, bool publish) {

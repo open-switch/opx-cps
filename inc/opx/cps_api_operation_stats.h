@@ -68,6 +68,7 @@ typedef enum {
     cps_api_obj_stat_CLOSE_CLEANUP_RUNS,//!<number of times that the cleanup has run on registrations
     cps_api_obj_stat_EVENT_SEND,//!<number of events sent
     cps_api_obj_stat_PROCESS_ID, //!< the process ID of the component that handles the request
+	cps_api_obj_stat_OBJECTS_ALLOCATED, //!< contains the number of objects that are allocated but not deleted within the process
     cps_api_obj_stat_MAX
 } cps_api_obj_stats_type_t;
 

@@ -51,26 +51,26 @@ static bool _cps_class_data(const char *name, std_dir_file_TYPE_t type,void *con
 
     std::string _dup_check = name;
     if ((context!=nullptr) && _dup_check.find((const char*)context)==std::string::npos) {
-   	 return true;
+        return true;
     }
 
-     struct stat _stats;
-     if (stat(name,&_stats)!=0) {
-         memset(&_stats,0,sizeof(_stats));
-     }
-     auto _loc = _dup_check.rfind('/');
-     if (_loc!=std::string::npos) {
-    	 _dup_check = _dup_check.substr(_loc+1);
-     }
+    struct stat _stats;
+    if (stat(name,&_stats)!=0) {
+        memset(&_stats,0,sizeof(_stats));
+    }
+    
+    auto _loc = _dup_check.rfind('/');
+    if (_loc!=std::string::npos) {
+        _dup_check = _dup_check.substr(_loc+1);
+    }
 
-	_loc = _dup_check.find('.');
+    _loc = _dup_check.find('.');
 
-     if (_loc!=std::string::npos) {
-    	 _dup_check = _dup_check.substr(0,_loc);
-     }
+    if (_loc!=std::string::npos) {
+        _dup_check = _dup_check.substr(0,_loc);
+    }
 
-
-     std_mutex_simple_lock_guard lg(&lock);
+    std_mutex_simple_lock_guard lg(&lock);
 
     //avoid duplicate loaded libs..
     if (_loaded_libs.find(_dup_check)!=_loaded_libs.end()) {
@@ -137,3 +137,4 @@ void cps_api_class_map_init(void) {
     }
     _cps_api_class_map_init();
 }
+
