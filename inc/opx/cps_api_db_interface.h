@@ -114,6 +114,7 @@ typedef enum {
 
 typedef enum {
     cps_api_db_no_connection,
+    cps_api_db_invalid_address,
 }cps_api_db_errorcode_t;
 
 typedef struct {

@@ -36,12 +36,14 @@
 #include <stdlib.h>             /* EXIT_SUCCESS */
 
 static int signo_caught = -1;
+static bool __running = true;
 static void sigterm_handler(int signo) {
     signo_caught = signo;
+    if (signo==SIGTERM) __running = false;
 }
 
 int main(int argc, char**argv) {
-    sd_journal_print(LOG_DEBUG, "Entering CPS API Service");
+    EV_LOGGING(CPS,ERR,"SERVICE", "Entering CPS API Service");
 
     // Enable core dumps
     static const struct rlimit rlim = { .rlim_cur = ~0U, .rlim_max = ~0U };
@@ -70,26 +72,17 @@ int main(int argc, char**argv) {
         return cps_api_ret_code_ERR;
     }
 
-    sd_journal_print(LOG_DEBUG, "Sending READY to systemd");
+    EV_LOGGING(CPS,DEBUG,"SERVICE","Sending READY to systemd");
     sd_notify(0, "READY=1");
 
-    sd_journal_print(LOG_DEBUG, "Entering main loop (i.e. wait forever for signals)");
-    (void)pause(); // Wait for signals to be caught by sig_handler()
-
-    /* Per manual pages:
-
-       pause() only returns when a signal was caught and the signal-catching
-       function returned. In this case pause() returns -1, and errno is set
-       to EINTR.
-
-       So if we reached this point it means that that SIGTERM has been issued
-       since that's the only signal this daemon will catch the signal-catching
-       function.
-    */
+    EV_LOGGING(CPS,DEBUG,"SERVICE", "Entering main loop (i.e. wait forever for signals)");
+    while (__running) {
+        (void)pause(); // Wait for signals to be caught by sig_handler()
+    }
 
     /* ADD SHUTDOWN CODE HERE (IF NEEDED) */
 
-    sd_journal_print(LOG_DEBUG, "Signal %d received - Shutting down now!",
+    EV_LOGGING(CPS,DEBUG,"SERVICE","Signal %d received - Shutting down now!",
                      signo_caught);
 
     exit(EXIT_SUCCESS);

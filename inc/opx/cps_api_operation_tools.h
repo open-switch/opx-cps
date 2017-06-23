@@ -34,6 +34,7 @@
 extern "C" {
 #endif
 
+
 /**
  * Update, Delete, Create a single object.  This API hides all of the transaction details and also allows
  * the user to specify a retry count.
@@ -58,6 +59,7 @@ cps_api_return_code_t cps_api_commit_one(cps_api_operation_types_t type, cps_api
  * @return cps_api_ret_code_OK on success otherwise a failure
  */
 cps_api_return_code_t cps_api_get_objs(cps_api_object_t filt, cps_api_object_list_t obj_list, size_t retry_count, size_t ms_delay_between);
+
 
 #ifdef __cplusplus
 }
