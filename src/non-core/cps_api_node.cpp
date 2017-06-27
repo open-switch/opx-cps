@@ -483,7 +483,11 @@ bool cps_api_nodes::load_groups() {
         }
         nd.type = *_type;
         cps_api_object_attr_t _node_group = cps_api_object_attr_get(o,CPS_NODE_GROUP_NODE);
-        if (_node_group==nullptr) continue; ///TODO log
+        if (_node_group==nullptr) {
+            cpy[name] = nd;
+            EV_LOGGING(DSAPI, DEBUG, "NODE-LOAD", "Empty node list for group %s", name);
+            continue;
+        }
 
         cps_api_object_it_t it;
         cps_api_object_it_from_attr(_node_group,&it);
