@@ -159,6 +159,9 @@ void __db_event_handle_t::disconnect_node(std::string node, bool update_fd_set) 
 void __db_event_handle_t::add_connection_state_event(const char *node, const char *group, bool state) {
     cps_api_object_t o = cps_api_object_list_create_obj_and_append(_pending_events);
     if (o!=nullptr) {
+
+    	EV_LOGGING(CPS-DB-EV-CONN,DEBUG,state? "CONN": "DISCON","Connection event provided");
+
         auto _it = _connection_mon.find(node);
         if (_it!=_connection_mon.end()) {
             cps_api_object_attr_add(o,CPS_CONNECTION_ENTRY_NAME, _it->second._name.c_str(),_it->second._name.length()+1);

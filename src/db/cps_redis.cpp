@@ -223,7 +223,7 @@ bool cps_db::dbkey_field_get_request(cps_db::connection &conn, const char *key, 
 
 std::string cps_db::dbkey_field_get_response_string(cps_db::connection &conn) {
     response_set resp;
-    if (conn.response(resp,false)) {
+    if (conn.response(resp)) {
         cps_db::response r = resp.get_response(0);
         if(r.is_str()) {
             return r.get_str();
@@ -292,7 +292,7 @@ bool cps_db::set_object_response(cps_db::connection &conn) {
     cps_db::response_set rs;
     cps_db::response_set resp;
 
-    if (conn.response(resp,false)) {
+    if (conn.response(resp)) {
         //this level of validation is really not needed since all respnses are valid (no fail besides connection)
         cps_db::response r = resp.get_response(0);
         return r.is_int() && (r.get_int()==0 || r.get_int()==1);
@@ -312,7 +312,7 @@ bool cps_db::get_object_request(cps_db::connection &conn, const char*key, size_t
 bool cps_db::get_object_response(cps_db::connection &conn, cps_api_object_t obj) {
     cps_db::response_set resp;
 
-    if (conn.response(resp,false)) {
+    if (conn.response(resp)) {
         response r = resp.get_response(0);
         if (r.is_str() && cps_api_array_to_object(r.get_str(),r.get_str_len(),obj)) {
             return true;

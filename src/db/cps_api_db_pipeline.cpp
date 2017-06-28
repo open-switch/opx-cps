@@ -68,7 +68,7 @@ bool cps_db::store_objects(cps_db::connection &conn, cps_api_object_list_t objs)
             }
             for ( size_t ix = start; ix < mx ; ++ix ) {
                 cps_db::response_set resp;
-                if (conn.response(resp,false)) {
+                if (conn.response(resp)) {
                     response r = resp.get_response(0);
                     if (!r.valid()) {
                         EV_LOGGING(DSAPI,ERR,"CPS-DB-PIPE","Failed to HSET");
@@ -208,7 +208,7 @@ bool cps_db::delete_object_list(cps_db::connection &conn,cps_api_object_list_t o
             }
             for ( size_t ix = start; ix < mx ; ++ix ) {
                 cps_db::response_set resp;
-                if (conn.response(resp,false)) {
+                if (conn.response(resp)) {
                     continue; ///TODO ignore errors and therefore this is essentially useless - but would like to leave
                 }
             }
