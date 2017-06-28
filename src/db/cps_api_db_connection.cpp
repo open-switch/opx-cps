@@ -58,6 +58,11 @@ void cps_db::connection::disconnect() {
         redisFree(static_cast<redisContext*>(_ctx));
         _ctx = nullptr;
     }
+    _event_connection = false;
+    for ( auto & it : _pending_events) {
+    	freeReplyObject(it);
+    }
+    _pending_events.clear();
 }
 
 bool cps_db::connection::reconnect() {
@@ -316,7 +321,7 @@ static bool is_event_message(void *resp) {
     return false;
 }
 
-bool cps_db::connection::response(response_set &data_, bool expect_events,size_t timeoutms) {
+bool cps_db::connection::response(response_set &data_, size_t timeoutms) {
     bool _rc = true;
     if (!flush(timeoutms)) {
         _rc=false;
@@ -348,8 +353,9 @@ bool cps_db::connection::response(response_set &data_, bool expect_events,size_t
             continue;
         }
 
-        if (expect_events && is_event_message(reply)) {
+        if (_event_connection && is_event_message(reply)) {
             _pending_events.push_back(reply);
+            EV_LOGGING(CPS-DB-EV-INTERLEAVE,DEBUG,"RESP","Interleaved message received");
             continue;
         }
         data_.add(reply);
@@ -365,7 +371,7 @@ bool cps_db::connection::command(db_operation_atom_t * lst,size_t len,response_s
     if (!operation(lst,len,true,timeoutms)) {
         return false;
     }
-    return response(set,false,timeoutms);
+    return response(set,timeoutms);
 }
 
 

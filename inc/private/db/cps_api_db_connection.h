@@ -80,8 +80,7 @@ public:
 
 
     bool command(db_operation_atom_t * lst,size_t len,response_set &set, size_t timeoutms=_SELECT_MS_WAIT);
-
-    bool response(response_set &data, bool expect_events = false, size_t timeoutms=_SELECT_MS_WAIT);
+    bool response(response_set &data, size_t timeoutms=_SELECT_MS_WAIT);
 
     bool operation(db_operation_atom_t * lst,size_t len, bool force_flush=false, size_t timeoutms=_SELECT_MS_WAIT);
     bool flush(size_t timeoutms=_SELECT_MS_WAIT);
@@ -92,14 +91,19 @@ public:
     void update_used();
     bool timedout(uint64_t relative);
 
+    void used_for_events() { _event_connection = true; }
+
 private:
+
     std::string _addr ;
     bool _async=false;
     void * _ctx=nullptr;
 
     std::list<void*> _pending_events;
+
     uint64_t _last_used=0;
 
+    bool _event_connection = false;
 };
 
 class connection_cache {

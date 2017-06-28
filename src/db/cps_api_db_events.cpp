@@ -58,6 +58,9 @@ bool cps_db::subscribe(cps_db::connection &conn, std::vector<char> &key) {
     if (key[key.size()-1]!='*') cps_utils::cps_api_vector_util_append(key,"*",1);
     e[1].from_string(&key[0],key.size());
 
+    //set the flag on the connection indicating that it will be used to handle events
+    conn.used_for_events();
+
     response_set resp;
     if (!conn.command(e,2,resp)) {
         EV_LOG(ERR,DSAPI,0,"CPS-DB-SUB","Subscribe failed to return response");
@@ -108,7 +111,7 @@ bool _drain_connection(cps_db::connection &conn) {
 
     while (sg.get_event(0)) {
         cps_db::response_set resp;
-        if (!conn.response(resp,false)) {
+        if (!conn.response(resp)) {
             conn.reconnect();
             return false;
         }
