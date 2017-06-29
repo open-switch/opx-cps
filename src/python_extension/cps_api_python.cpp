@@ -600,6 +600,30 @@ PyMODINIT_FUNC initcps(void) {
         PyEval_InitThreads();
     }
 
+    PyModule_AddStringConstant(m,"PATH_SEP","/");
+
+    PyObject *_lst = PyList_New(0);
+    cps_api_qualifier_t _qual = cps_api_qualifier_NULL;
+    while (_qual<cps_api_qualifier_MAX) {
+        const char *_str = cps_class_qual_to_string(_qual);
+        if (_str!=nullptr) {
+            PyList_Append(_lst,PyString_FromString(_str));
+        }
+        _qual=(cps_api_qualifier_t)(_qual+1);
+    }
+    PyModule_AddObject(m,"QUALIFIERS",_lst);
+
+    _lst = PyList_New(0);
+    cps_api_operation_types_t _ops = cps_api_oper_NULL;
+    while (_ops<=cps_api_oper_ACTION) {
+        const char *_str = cps_operation_type_to_string(_ops);
+        if (_str!=nullptr) {
+            PyList_Append(_lst,PyString_FromString(_str));
+        }
+        _ops=(cps_api_operation_types_t)(_ops+1);
+    }
+    PyModule_AddObject(m,"OPERATIONS",_lst);
+
     cps_error_exception = PyErr_NewException((char*)"cps.error", NULL, NULL);
     Py_INCREF(cps_error_exception);
     PyModule_AddObject(m, "error", cps_error_exception);

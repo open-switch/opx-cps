@@ -177,9 +177,10 @@ class CPSTypes:
             else:
                 _log_print(log, k + " = " + str(self.from_data(k, data[k])))
 
-    def print_object(self, obj, log=None):
+    def print_object(self, obj, log=None, show_key=True):
         data = obj['data']
-        _log_print(log, "Key: " + obj['key'])
+        if show_key:
+            _log_print(log, "Key: " + obj['key'])
         if len(data.keys()) == 0:
             return
         module = "/".join(data.keys()[0].split("/")[0:-1])
@@ -282,15 +283,15 @@ def add_attr_type(attr_str, dtype):
     cps_attr_types_map.add_type(attr_str, dtype)
 
 
-def print_obj(obj):
+def print_obj(obj,show_key=True):
     """
     Print the cps object in a user-friendly format
     @obj - cps object to be printed
     """
     if 'change' in obj:
-        cps_attr_types_map.print_object(obj['change'], log=None)
+        cps_attr_types_map.print_object(obj['change'], log=None,show_key=show_key)
     else:
-        cps_attr_types_map.print_object(obj, log=None)
+        cps_attr_types_map.print_object(obj, log=None,show_key=show_key)
 
 def log_obj(obj, log_level):
     """
