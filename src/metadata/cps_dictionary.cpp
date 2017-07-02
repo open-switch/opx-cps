@@ -289,6 +289,34 @@ const char * cps_class_string_from_key(cps_api_key_t *key, size_t offset) {
     return it->full_path.c_str();
 }
 
+bool cps_class_key_from_string(const char *name, cps_api_key_t *key) {
+    bool _key_parsed = false;
+
+    do {
+        const char * _sep = strchr(name,'/');
+        static const ssize_t _MAX_QUAL_SIZE=100;
+        if (_sep==nullptr) break;
+
+        ssize_t _qual_len =(_sep - name) + 1;
+        if ((_qual_len) > _MAX_QUAL_SIZE) break;
+        char _qual[_qual_len];
+        memcpy(_qual,name,_qual_len-1);
+        _qual[_qual_len-1]='\0';
+        const cps_api_qualifier_t *_qual_id = cps_class_qual_from_string(_qual);
+        if (_qual_id==nullptr) break;
+
+        const cps_api_attr_id_t *_id = cps_api_attr_name_to_id(_sep+1);
+        if (_id==nullptr) break;
+
+        _key_parsed = cps_api_key_from_attr_with_qual(key,*_id,*_qual_id);
+    } while (0);
+
+    if (!_key_parsed) {
+        _key_parsed = cps_api_key_from_string(key,name);
+    }
+
+    return (_key_parsed);
+}
 
 cps_api_return_code_t cps_class_map_enum_reg(const char *enum_name, const char *field, int value, const char * descr) {
     auto it = _enum_map->find(enum_name);

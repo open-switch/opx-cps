@@ -50,6 +50,7 @@ class CPSObject:
         self.obj = {'key': '', 'data': {}}
         self.root_path = ""
         self.embed_dict = {}
+        self.properties = {}
 
         if module:
             self.root_path = module + "/"
