@@ -448,7 +448,13 @@ def object_from_parameters(prog,description, optional_fields=[]):
         if i.find('=')==-1:
             continue
         _data = i.split('=', 1)
-        obj.add_attr(_data[0],_data[1])
+        # For embedded attribute check if comma seperated attribute list is given
+        # then add it as embedded
+        embed_attrs = _data[0].split(',')
+        if len(embed_attrs) == 3:
+            obj.add_embed_attr(embed_attrs,_data[1])
+        else:
+            obj.add_attr(_data[0],_data[1])
 
     if 'db' in _args and _args['db']:
         if 'd' in _args and _args['d']:
