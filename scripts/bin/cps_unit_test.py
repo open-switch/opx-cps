@@ -68,7 +68,7 @@ def main():
     app_sos = find_subdir(buildroot,relative+'_sos')
     app_apps = find_subdir(buildroot,relative+'_apps')
     
-    _lib_path=app_sos+":"+app_sysroot_lib+":"+sysroot_dev+"/usr/lib/x86_64-linux-gnu"+':'+sysroot+"/opt/dell/os10/lib"+':'+sysroot+'/opt/dell/os10/lib/cpsmetadata'
+    _lib_path=app_sos+":"+app_sysroot_lib+":"+sysroot_dev+"/usr/lib/x86_64-linux-gnu"+':'+sysroot+"/usr/lib/opx"+':'+sysroot+'/usr/lib/opx/cpsmetadata'
 
     print('Libs... '+_lib_path)
     
