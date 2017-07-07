@@ -65,6 +65,7 @@ public:
     bool get_group_info(std::string group,std::unordered_set<std::string> & node_list);
     bool add_group_info(std::string group,std::unordered_set<std::string> & node_list);
     bool is_master_set(std::string group);
+    bool group_exists(const std::string &group);
     void mark_master_set(std::string group){ _master_set.insert(group); }
     void remove_master_set(std::string group) { _master_set.erase(group);}
     bool get_port_info(const char *name,_db_node_data *nd);
