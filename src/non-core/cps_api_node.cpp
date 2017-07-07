@@ -660,10 +660,7 @@ bool cps_api_nodes::get_group_type(const std::string &group,cps_api_node_data_ty
 
 bool cps_api_nodes::group_exists(const std::string &group){
     auto it = _groups.find(group);
-    if(it != _groups.end()){
-        return true;
-    }
-    return false;
+    return (it != _groups.end());
 }
 
 bool cps_api_nodes::is_master_set(std::string group){

@@ -151,7 +151,7 @@ bool cps_api_db_get_node_group(const std::string &group,std::vector<std::string>
     (void)load_groups();
 
     // If group doesn't exist, return
-    if(!_nodes->group_exists(group)) return true;
+    if(!_nodes->group_exists(group)) { lst.clear(); return true; }
 
     cps_api_node_data_type_t type;
     if(!_nodes->get_group_type(group,type)){
