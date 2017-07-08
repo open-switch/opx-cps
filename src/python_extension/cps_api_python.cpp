@@ -501,6 +501,11 @@ PyDoc_STRVAR(CPS_FN_DOC(py_cps_node_set_master), "node_set_master(group_name,nod
     "@node_name - name of the node which is part of the group\n"
     "@return - True if successful otherwise False");
 
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_node_set_auto_event), "set_auto_commit_event(key,type)\n\n"
+    "Attempts to force the auto-commit event to the value specified.  This change will be local and not effect other processes in the system\n"
+    "@param key - key for the obejct in either OID format or string \n"
+    "@param type - the boolean value that is desired - true if want auto-commit events otherwise false\n"
+    "@return - True if successful otherwise False");
 
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_node_set_ownership_type), "set_ownership_type(key,type)\n\n"
     "Sets the object owership of the given key.\n"
@@ -582,6 +587,7 @@ static PyMethodDef cps_methods[] = {
     {"node_delete_group",  py_cps_node_delete_group, METH_VARARGS, CPS_FN_DOC(py_cps_node_delete_group)},
     {"node_set_master",  py_cps_node_set_master, METH_VARARGS, CPS_FN_DOC(py_cps_node_set_master)},
     {"set_ownership_type",  py_cps_node_set_ownership_type, METH_VARARGS, CPS_FN_DOC(py_cps_node_set_ownership_type)},
+    {"set_auto_commit_event",  py_cps_node_set_auto_event, METH_VARARGS, CPS_FN_DOC(py_cps_node_set_auto_event)},
     {"sync",  py_cps_sync, METH_VARARGS, CPS_FN_DOC(py_cps_sync)},
     {"reconcile",  py_cps_reconcile, METH_VARARGS, CPS_FN_DOC(py_cps_reconcile)},
 
