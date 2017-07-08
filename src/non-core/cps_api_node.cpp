@@ -658,6 +658,11 @@ bool cps_api_nodes::get_group_type(const std::string &group,cps_api_node_data_ty
     return false;
 }
 
+bool cps_api_nodes::group_exists(const std::string &group){
+    auto it = _groups.find(group);
+    return (it != _groups.end());
+}
+
 bool cps_api_nodes::is_master_set(std::string group){
     auto it = _master_set.find(group);
     if(it != _master_set.end()){
