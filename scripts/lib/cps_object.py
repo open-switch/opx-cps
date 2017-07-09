@@ -366,6 +366,14 @@ class CPSObject:
     	@use_exact_match a boolean value that will be True if exact match filter is needed or false if not    			
     	"""    	
     	self.add_attr('cps/object-group/exact-match',use_exact_match)
+
+    def set_number_of_entries(self,count):
+        """
+        This function will set the number of entries attribute within an object to the specified value
+        @count number of entries required to be set
+        """
+        self.add_attr('cps/object-group/number-of-entries',count)
+
     	
 def clone(self, obj):
     """
