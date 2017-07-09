@@ -18,7 +18,7 @@
 
 #include "cps_api_python.h"
 
-
+#include "cps_class_map.h"
 #include "cps_api_node.h"
 #include "cps_api_operation_tools.h"
 #include "cps_api_db_interface.h"
