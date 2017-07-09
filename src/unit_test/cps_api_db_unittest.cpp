@@ -23,6 +23,8 @@
 #include "cps_api_db_interface.h"
 #include "cps_api_object_tools.h"
 
+#include "cps_api_db_connection_tools.h"
+
 #include "cps_api_operation_tools.h"
 #include "cps_dictionary.h"
 
@@ -78,7 +80,7 @@ TEST(cps_api_db,internal_db_inc_cntr) {
     cps_db::dbkey_from_instance_key(_buff,obj,false);
     std::cout << "DB instance data " << cps_string::tostring(&_buff[0],_buff.size());
 
-    ASSERT_TRUE(con.connect(DEFAULT_REDIS_ADDR,"0",false));
+    ASSERT_TRUE(con.connect(DEFAULT_REDIS_ADDR,"0"));
 
     ssize_t cntr=0;
 
@@ -107,7 +109,7 @@ TEST(cps_api_db,internal_db_set_obj) {
     cps_api_object_guard og2(clone);
     cps_api_object_clone(clone,obj);
 
-    ASSERT_TRUE(con.connect(DEFAULT_REDIS_ADDR,"0",false));
+    ASSERT_TRUE(con.connect(DEFAULT_REDIS_ADDR,"0"));
 
     cps_db::delete_object(con,obj);
 

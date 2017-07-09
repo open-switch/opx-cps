@@ -18,7 +18,7 @@
 #include "cps_api_node_private.h"
 #include "cps_api_node_set.h"
 #include "cps_api_node.h"
-#include "cps_api_db_connection.h"
+#include "cps_api_db_connection_tools.h"
 #include "cps_api_db.h"
 #include "cps_class_map.h"
 #include "cps_api_object_key.h"

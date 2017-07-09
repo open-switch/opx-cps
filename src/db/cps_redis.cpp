@@ -18,6 +18,8 @@
 #include "cps_api_key.h"
 #include "cps_api_object_key.h"
 
+#include "cps_api_db_connection_tools.h"
+
 #include "cps_api_db.h"
 #include "cps_api_db_response.h"
 #include "cps_string_utils.h"
@@ -154,12 +156,14 @@ bool cps_db::get_objects(cps_db::connection &conn, cps_api_object_t obj,cps_api_
     return false;
 }
 
-
-cps_db::response_set::~response_set() {
+void cps_db::response_set::clear() {
     for ( size_t ix = 0; ix < _used ; ++ix ) {
         freeReplyObject((redisReply*)_data[ix]);
     }
     _used = 0;
+}
+cps_db::response_set::~response_set() {
+    clear();
 }
 
 
@@ -289,7 +293,7 @@ bool cps_db::set_object_request(cps_db::connection &conn, cps_api_object_t obj, 
 }
 
 bool cps_db::set_object_response(cps_db::connection &conn) {
-    cps_db::response_set rs;
+
     cps_db::response_set resp;
 
     if (conn.response(resp)) {

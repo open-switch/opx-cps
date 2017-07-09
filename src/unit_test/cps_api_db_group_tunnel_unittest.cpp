@@ -20,6 +20,7 @@
 #include "cps_api_db.h"
 #include "cps_string_utils.h"
 
+#include "cps_api_db_connection_tools.h"
 #include "cps_api_object_tools.h"
 
 #include "cps_api_operation_tools.h"

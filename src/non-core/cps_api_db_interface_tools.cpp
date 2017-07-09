@@ -5,7 +5,7 @@
 
 #include "cps_api_node.h"
 #include "cps_api_node_private.h"
-#include "cps_api_db_connection.h"
+#include "cps_api_db_connection_tools.h"
 #include "cps_api_db.h"
 #include "dell-cps.h"
 
@@ -123,13 +123,13 @@ static bool _get_obj_dbkey_map(cps_api_object_list_t src_objs, cps_dbkey_obj_map
     return true;
 }
 
-static bool _handle_create_set_case(const char *_dest_addr, const char *key, size_t key_len, cps_api_db_sync_cb_param_t &params, 
+static bool _handle_create_set_case(const char *_dest_addr, const char *key, size_t key_len, cps_api_db_sync_cb_param_t &params,
                                     bool &cb, bool src=false, bool dst=false)
 {
 
     const char *field = __get_dirty_field();
     cps_db::connection_request _dest_conn_meta(cps_db::ProcessDBCache(),_dest_addr);
-    if (!_dest_conn_meta.valid() || !cps_db::ping(_dest_conn_meta.get())) return cps_api_ret_code_ERR;
+    if (!_dest_conn_meta.valid()) return cps_api_ret_code_ERR;
 
     if (src  && dst) {
         //Set case
@@ -146,7 +146,7 @@ static bool _handle_create_set_case(const char *_dest_addr, const char *key, siz
         cb = true;
 
         return true;
-     } 
+     }
 
      return false;
 }
@@ -155,13 +155,13 @@ static cps_api_return_code_t _handle_delete_case(const char *addr, cps_api_objec
                                           cps_api_db_sync_cb_param_t &params, cps_api_db_sync_cb_response_t &res ) {
 
     cps_db::connection_request _dest_conn(cps_db::ProcessDBCache(),addr);
-    if (!_dest_conn.valid() || !cps_db::ping(_dest_conn.get())) return cps_api_ret_code_ERR;
+    if (!_dest_conn.valid()) return cps_api_ret_code_ERR;
 
     cps_db::connection_request _dest_conn_meta(cps_db::ProcessDBCache(),addr);
-    if (!_dest_conn_meta.valid() || !cps_db::ping(_dest_conn_meta.get())) return cps_api_ret_code_ERR;
+    if (!_dest_conn_meta.valid()) return cps_api_ret_code_ERR;
 
     cps_db::connection_request _dest_conn_cleanup(cps_db::ProcessDBCache(),addr);
-    if (!_dest_conn_cleanup.valid() || !cps_db::ping(_dest_conn_cleanup.get())) return cps_api_ret_code_ERR;
+    if (!_dest_conn_cleanup.valid()) return cps_api_ret_code_ERR;
 
     std::vector<char> key;
     bool _is_wildcard = false;
@@ -234,10 +234,10 @@ cps_api_return_code_t cps_api_reconcile(void *context, cps_api_object_list_t src
 
 
     cps_db::connection_request _dest_conn(cps_db::ProcessDBCache(),_dest_addr);
-    if (!_dest_conn.valid() || !cps_db::ping(_dest_conn.get())) return cps_api_ret_code_ERR;
+    if (!_dest_conn.valid()) return cps_api_ret_code_ERR;
 
     cps_db::connection_request _dest_conn_meta(cps_db::ProcessDBCache(),_dest_addr);
-    if (!_dest_conn_meta.valid() || !cps_db::ping(_dest_conn_meta.get())) return cps_api_ret_code_ERR;
+    if (!_dest_conn_meta.valid()) return cps_api_ret_code_ERR;
 
     if(! _mark_dirty_dbkey(dest_obj, _dest_conn_meta.get())) return cps_api_ret_code_ERR;
 
@@ -315,10 +315,10 @@ cps_api_return_code_t cps_api_sync(void *context, cps_api_object_t dest, cps_api
     }
 
     cps_db::connection_request _dest_conn(cps_db::ProcessDBCache(),_dest_addr);
-    if (!_dest_conn.valid() || !cps_db::ping(_dest_conn.get())) return cps_api_ret_code_ERR;
+    if (!_dest_conn.valid()) return cps_api_ret_code_ERR;
 
     cps_db::connection_request _dest_conn_meta(cps_db::ProcessDBCache(),_dest_addr);
-    if (!_dest_conn_meta.valid() || !cps_db::ping(_dest_conn_meta.get())) return cps_api_ret_code_ERR;
+    if (!_dest_conn_meta.valid()) return cps_api_ret_code_ERR;
 
     if(! _mark_dirty_dbkey(src, _dest_conn_meta.get())) return cps_api_ret_code_ERR;
 
@@ -339,7 +339,7 @@ cps_api_return_code_t cps_api_sync(void *context, cps_api_object_t dest, cps_api
 
     {
         cps_db::connection_request _source_get(cps_db::ProcessDBCache(),_src_addr);
-        if (!_source_get.valid() || !cps_db::ping(_source_get.get())) {
+        if (!_source_get.valid() ) {
             return cps_api_ret_code_ERR;
         }
         auto _drain_queue = [&]() {

@@ -60,7 +60,7 @@ void cps_db::connection::disconnect() {
     }
     _event_connection = false;
     for ( auto & it : _pending_events) {
-    	freeReplyObject(it);
+        freeReplyObject(it);
     }
     _pending_events.clear();
 }
@@ -83,7 +83,7 @@ bool cps_db::connection::clone(connection &conn) {
     return conn.connect(_addr);
 }
 
-bool cps_db::connection::connect(const std::string &s_, const std::string &db_instance_, bool async_) {
+bool cps_db::connection::connect(const std::string &s_, const std::string &db_instance_) {
     size_t _port_pos = s_.rfind(":");
     if (_port_pos==std::string::npos) {
         EV_LOG(INFO,DSAPI,0,"RED-CON","Failed to connect to server... bad address (%s)",s_.c_str());
@@ -106,16 +106,11 @@ bool cps_db::connection::connect(const std::string &s_, const std::string &db_in
         }
     }
     _addr = s_;
-    _async = async_;
 
     _ip = s_.substr(_start_ip,_end_ip);
 
-    if (_async) {
-        _ctx = redisAsyncConnect(_ip.c_str(), _port);
-    } else {
-        timeval tv = { 2 /*Second */ , 0 };
-        _ctx = redisConnectWithTimeout(_ip.c_str(), _port,tv);
-    }
+    timeval tv = { 2 /*Second */ , 0 };
+    _ctx = redisConnectWithTimeout(_ip.c_str(), _port,tv);
 
     if (db_instance_.size()!=0) {
         select_db(*this,db_instance_);
@@ -125,6 +120,16 @@ bool cps_db::connection::connect(const std::string &s_, const std::string &db_in
         auto fd = ((redisContext*)_ctx)->fd;
         int on = 1;
 
+        //set up poll structures for later use
+        _rd.fd = fd;
+        _rd.events = POLLIN;
+        _rd.revents =0;
+
+        _wr.fd = fd;
+        _wr.events = POLLOUT;
+        _wr.revents =0;
+
+        //attempt to set socket options for keepalive
         if (setsockopt(fd,SOL_SOCKET,SO_KEEPALIVE,&on,sizeof(on))<0) {
             EV_LOGGING(DSAPI,DEBUG,"CPS-DB-CONN","Failed to set keepalive option on fd %d",fd);
         }
@@ -143,7 +148,7 @@ bool cps_db::connection::connect(const std::string &s_, const std::string &db_in
             EV_LOGGING(DSAPI,DEBUG,"CPS-DB-CONN","Failed to set idle time option on fd %d",fd);
         }
     }
-
+    _last_used = 0;
     return _ctx !=nullptr;
 }
 
@@ -262,6 +267,15 @@ bool request_walker_contexct_t::set(cps_db::connection::db_operation_atom_t * ls
 
 }
 
+bool cps_db::connection::writable(size_t timeoutms) {
+    int _rc = poll(&_wr,1,timeoutms);
+    return _rc==1 && (_wr.revents&POLLOUT)!=0;
+}
+
+bool cps_db::connection::readable(size_t timeoutms) {
+    return poll(&_rd,1,timeoutms)==1 && (_rd.revents&POLLIN)!=0;
+}
+
 bool cps_db::connection::operation(db_operation_atom_t * lst_,size_t len_, bool force_push,size_t timeoutms) {
     request_walker_contexct_t ctx(lst_,len_);
 
@@ -288,15 +302,7 @@ bool cps_db::connection::operation(db_operation_atom_t * lst_,size_t len_, bool 
 bool cps_db::connection::flush(size_t timeoutms) {
     int _is_done=0;
     while (_is_done==0) {
-
-        struct pollfd _fds;
-        _fds.fd = get_fd();
-        _fds.events = POLLOUT;
-        _fds.revents =0;
-        if (poll(&_fds,1,timeoutms)!=1) {
-            reconnect(); return false;
-        }
-        if (_fds.revents != POLLOUT) {
+        if (!writable(timeoutms)) {
             reconnect(); return false;
         }
 
@@ -304,6 +310,7 @@ bool cps_db::connection::flush(size_t timeoutms) {
             reconnect();
             return false;
         }
+        update_used();
     }
     return true;
 }
@@ -326,7 +333,8 @@ bool cps_db::connection::response(response_set &data_, size_t timeoutms) {
     if (!flush(timeoutms)) {
         _rc=false;
     }
-
+    //clear all previous entries
+    data_.clear();
     while (_rc) {
         void *reply;
 
@@ -337,19 +345,13 @@ bool cps_db::connection::response(response_set &data_, size_t timeoutms) {
         }
 
         if (reply==nullptr) {
-            struct pollfd _fds;
-            _fds.fd = get_fd();
-            _fds.events = POLLIN;
-            _fds.revents =0;
-            if (poll(&_fds,1,timeoutms)!=1) {
-                _rc=false; continue;
-            }
-            if (_fds.revents != POLLIN) {
+            if (!readable(timeoutms)) {
                 _rc=false; continue;
             }
             if (redisBufferRead(static_cast<redisContext*>(_ctx))!=REDIS_OK) {
                 _rc=false; continue;
             }
+            update_used();
             continue;
         }
 
@@ -374,12 +376,11 @@ bool cps_db::connection::command(db_operation_atom_t * lst,size_t len,response_s
     return response(set,timeoutms);
 }
 
-
 void cps_db::connection::update_used() {
     _last_used = std_get_uptime(nullptr);
 }
 
-bool cps_db::connection::timedout(uint64_t relative) {
+bool cps_db::connection::used_within(uint64_t relative) {
     return std_time_is_expired(_last_used,relative);
 }
 
@@ -387,6 +388,7 @@ bool cps_db::connection::has_event(bool &err) {
     void *rep ;
     int rc = REDIS_OK;
     do {
+        //check redis contexct for already read in data
         if ((rc=redisReaderGetReply(static_cast<redisContext*>(_ctx)->reader,&rep))==REDIS_OK) {
             if (rep==nullptr) break;
             if (is_event_message(rep)) _pending_events.push_back(rep);
@@ -401,13 +403,10 @@ bool cps_db::connection::has_event(bool &err) {
 #include "std_select_tools.h"
 
 bool cps_db::connection::get_event(response_set &data, bool &err_occured) {
+    data.clear();
     do {
         if (_pending_events.size() == 0) {
-            struct pollfd _fds;
-            _fds.fd = get_fd();
-            _fds.events = POLLIN;
-            _fds.revents =0;
-            if (poll(&_fds,1,_SELECT_MS_WAIT)!=1) {
+            if (!readable(_SELECT_MS_WAIT)) {
                 err_occured=true;
                 break;
             }
@@ -416,6 +415,7 @@ bool cps_db::connection::get_event(response_set &data, bool &err_occured) {
                 err_occured=true;
                 break;
             }
+            update_used();
             if (!has_event(err_occured)) break;
 
         }
@@ -427,85 +427,5 @@ bool cps_db::connection::get_event(response_set &data, bool &err_occured) {
     } while (0);
     return false;
 }
-
-static pthread_once_t  onceControl = PTHREAD_ONCE_INIT;
-static cps_db::connection_cache * _cache;
-static cps_db::connection_cache_events * _event_cache;
-
-void __init(void) {
-    _cache = new cps_db::connection_cache;
-    _event_cache = new cps_db::connection_cache_events;
-    STD_ASSERT(_cache!=nullptr && _event_cache!=nullptr);
-}
-
-cps_db::connection_cache & cps_db::ProcessDBCache() {
-    pthread_once(&onceControl,__init);
-    return *_cache;
-}
-
-cps_db::connection_cache_events & cps_db::ProcessDBEvents() {
-    pthread_once(&onceControl,__init);
-    return *_event_cache;
-}
-
-cps_db::connection * cps_db::connection_cache::get(const std::string &name, bool check_alive) {
-    std::lock_guard<std::mutex> l(_mutex);
-
-    const auto &_connect = [] (const std::string &name) -> cps_db::connection *{
-        auto *_conn = new cps_db::connection;
-        if (!_conn->connect(name)) {
-            delete _conn;
-            _conn  = nullptr;
-        }
-        return _conn;
-    };
-
-    while (true) {
-        auto it = _pool.find(name);
-        if (it==_pool.end() || it->second.size()==0) break;
-
-        auto ptr = it->second.back().release();
-        it->second.pop_back();
-        if (check_alive && ptr->timedout(CONN_TIMEOUT_CHECK)) {
-            bool rc = cps_db::ping(*ptr);
-            if (!rc) {
-                EV_LOGGING(CPS,WARNING,"CPS-CONN-CACHE","Cache entry for DB connection stale for %s - getting second",it->first.c_str());
-                delete ptr;
-                continue;
-            }
-        }
-        return ptr;
-    }
-    return _connect(name);
-}
-
-void cps_db::connection_cache::put(const std::string &name, connection* conn) {
-    std::lock_guard<std::mutex> l(_mutex);
-    const static size_t MAX_OPEN_CONN=3;
-    auto _ptr = std::unique_ptr<cps_db::connection>(conn);
-    if (_ptr.get()!=nullptr) _ptr->update_used();
-
-    if (_pool[name].size()<MAX_OPEN_CONN) {
-        _pool[name].push_back(std::move(_ptr));
-    }
-}
-
-void cps_db::connection_cache::remove(const std::string &name) {
-    std::lock_guard<std::mutex> l(_mutex);
-    _pool.erase(name);
-}
-
-cps_db::connection_request::connection_request(cps_db::connection_cache & cache,const char *addr) : _cache(cache) {
-    _name = addr;
-    _conn = _cache.get(addr);
-}
-
-cps_db::connection_request::~connection_request() {
-    if(_conn!=nullptr) {
-        _cache.put(_name,_conn);
-        _conn = nullptr;
-    }
-}
-
 
 
