@@ -201,7 +201,6 @@ void _remove_x_events(size_t ix, size_t mx, _cps_event_queue_list_t &events) {
 
 void __thread_main_loop() {
     std::unique_lock<std::mutex> l(__mutex);
-    //uint32_t _rapid_timeout=0;
 
     size_t _MAX_TIMEOUT=1000;
     size_t _current_timeout=_MAX_TIMEOUT;
