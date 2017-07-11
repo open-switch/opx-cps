@@ -24,6 +24,7 @@
 
 #include "dell-cps.h"
 
+#include "cps_api_db_connection_tools.h"
 #include "cps_class_map.h"
 #include "cps_api_key_cache.h"
 #include "cps_string_utils.h"
@@ -55,23 +56,9 @@ struct db_connection_details {
 
     std::unordered_map<std::string,bool> _group_reg;
 
-    uint64_t _last_msg;
-
     void reset() {
         _group_reg.clear();
         _keys.clear();
-        _last_msg = 0;
-    }
-
-    void communicated() {
-        _last_msg = std_get_uptime(nullptr);
-    }
-    bool expired(bool update =true) {
-        if (std_time_is_expired(_last_msg,timeout)) {
-            if (update) communicated();
-            return true;
-        }
-        return false;
     }
 };
 
@@ -160,7 +147,7 @@ void __db_event_handle_t::add_connection_state_event(const char *node, const cha
     cps_api_object_t o = cps_api_object_list_create_obj_and_append(_pending_events);
     if (o!=nullptr) {
 
-    	EV_LOGGING(CPS-DB-EV-CONN,DEBUG,state? "CONN": "DISCON","Connection event provided");
+        EV_LOGGING(CPS-DB-EV-CONN,DEBUG,state? "CONN": "DISCON","Connection event provided");
 
         auto _it = _connection_mon.find(node);
         if (_it!=_connection_mon.end()) {
@@ -214,7 +201,6 @@ static void __resync_regs(cps_api_event_service_handle_t handle) {
                     return true;
                 }
                 nd->_connection_mon[node]._keys.insert(reg_it);
-                nd->_connection_mon[node].communicated();
             }
             nd->_connection_mon[node]._group_reg[it.first] = true;
             return true;
@@ -240,26 +226,21 @@ static bool __check_connections(cps_api_event_service_handle_t handle) {
                 auto con_it = nd->_connections.find(node);
 
                 if (con_it==nd->_connections.end()) {
-                    std::unique_ptr<cps_db::connection> c(new cps_db::connection);
-                    if (!c->connect(node)) {
-                        EV_LOG(TRACE,DSAPI,0,"CPS-EVT-CONN","Failed to connect to the remote node %s",node.c_str());
-                        return true;
-                    }
-                    const static size_t _NEW_CONNECTION_TO=500;
-                    if (!cps_db::ping(*c,_NEW_CONNECTION_TO)) return true;
+                    std::unique_ptr<cps_db::connection> c(cps_db::cps_api_db_create_validated_connection(node.c_str()));
+                    if (c.get()==nullptr) return true;    //if invalid connection nothing else to do
+
                     std::string node_name;
                     if(cps_api_db_get_node_from_ip(std::string(node),node_name)){
                         nd->_connection_mon[node]._name = node_name;
                     }
                     nd->_connection_mon[node].reset();
-                    nd->_connection_mon[node].communicated();
                     nd->_connections[node] = std::move(c);
                     nd->add_connection_state_event(node.c_str(),it.first.c_str(),true);
 
                     changed = true;
                 }
-                if (nd->_connection_mon[node].expired()) {
-                    if (!cps_db::ping(*nd->_connections[node])) {
+                if (nd->_connections[node]->used_within(db_connection_details::timeout)) {
+                    if (!cps_api_db_validate_connection(nd->_connections[node].get())) {
                         nd->disconnect_node(node.c_str());
                         return true;
                     }
@@ -484,8 +465,10 @@ static cps_api_return_code_t _cps_api_wait_for_event(
             nh->_mutex.lock();
             if (rc==-1) {
                 //test all connections
-                for ( auto it : nh->_connection_mon ) {
-                    it.second.expired();
+                auto _it = nh->_connections.begin();
+                auto _end = nh->_connections.end();
+                for ( ; _it != _end ; ++_it) {
+                    _it->second->reset_last_used();
                 }
                 nh->_last_checked = 0;    //trigger reconnect evaluation
                 continue;
@@ -509,7 +492,6 @@ static cps_api_return_code_t _cps_api_wait_for_event(
 
             if (has_data) {
                 if (get_event(it.second.get(),msg,_has_error)) {
-                    nh->_connection_mon[it.first].communicated();
                     if (!nh->object_matches_filter(msg)) continue;        //throw out if doesn't match
                     std::string node_name;
                     if(cps_api_db_get_node_from_ip(it.first,node_name)) {
@@ -521,7 +503,6 @@ static cps_api_return_code_t _cps_api_wait_for_event(
                         nh->disconnect_node(it.first,true);
                         break;
                     }
-
                 }
             }
         }

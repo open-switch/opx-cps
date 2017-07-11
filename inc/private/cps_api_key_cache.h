@@ -197,13 +197,14 @@ template <typename walking_function>
 void cps_api_key_cache<data_type>::walk(walking_function cb) {
     auto it = _cache.begin();
     auto end = _cache.end();
-    for ( ; it != end ; ++it ) {
+    while ( it != end ) {
         bool res = cb(it);
         if (!res || it->second.size()==0) {
             _cache.erase(it);
             it = _cache.begin();
+            continue;
         }
-
+        ++it;
     }
 }
 

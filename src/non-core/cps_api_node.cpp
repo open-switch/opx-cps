@@ -18,7 +18,7 @@
 #include "cps_api_node_private.h"
 #include "cps_api_node_set.h"
 #include "cps_api_db.h"
-#include "cps_api_db_connection.h"
+#include "cps_api_db_connection_tools.h"
 #include "cps_api_object.h"
 #include "cps_api_object_tools.h"
 #include "cps_api_operation_tools.h"
@@ -109,7 +109,7 @@ cps_api_return_code_t cps_api_delete_node_group(const char *grp) {
 
     cps_api_object_attr_add(og.get(),CPS_NODE_GROUP_NAME,grp,strlen(grp)+1);
 
-    cps_db::connection_request b(cps_db::ProcessDBEvents(),DEFAULT_REDIS_ADDR);
+    cps_db::connection_request b(cps_db::ProcessDBCache(),DEFAULT_REDIS_ADDR);
     if (!b.valid()) return cps_api_ret_code_ERR;
     bool rc = false;
     if ((rc=cps_db::delete_object(b.get(),og.get()))) {
@@ -309,7 +309,7 @@ cps_api_return_code_t cps_api_set_node_group(cps_api_node_group_t *group) {
 
     cps_api_object_attr_add(og.get(),CPS_NODE_GROUP_TYPE,&group->data_type,sizeof(group->data_type));
 
-    cps_db::connection_request b(cps_db::ProcessDBEvents(),DEFAULT_REDIS_ADDR);
+    cps_db::connection_request b(cps_db::ProcessDBCache(),DEFAULT_REDIS_ADDR);
     if (!b.valid()) {
         return cps_api_ret_code_ERR;
     }
@@ -608,16 +608,9 @@ bool cps_api_nodes::part_of(const char *group, const char *addr) {
 }
 
 const char * cps_api_nodes::addr(const char *addr) {
-    const char *_ret = nullptr;
-
-    do {
-        auto it = _alias_map.find(addr);
-        if (it==_alias_map.end()) break;
-        _ret = it->second.c_str();
-        addr = _ret;
-        continue;
-    } while (0);
-    return _ret;
+    auto it = _alias_map.find(addr);
+    if (it==_alias_map.end()) return nullptr;
+    return it->second.c_str();
 }
 
 void cps_api_key_del_node_attrs(cps_api_object_t obj) {
@@ -626,7 +619,7 @@ void cps_api_key_del_node_attrs(cps_api_object_t obj) {
 }
 
 bool cps_api_key_set_group(cps_api_object_t obj,const char *group) {
-	cps_api_object_attr_delete(obj,CPS_OBJECT_GROUP_GROUP);
+    cps_api_object_attr_delete(obj,CPS_OBJECT_GROUP_GROUP);
     return cps_api_object_attr_add(obj,CPS_OBJECT_GROUP_GROUP,group,strlen(group)+1);
 }
 
@@ -641,7 +634,7 @@ const char * cps_api_key_get_group(cps_api_object_t obj) {
 }
 
 bool cps_api_key_set_node(cps_api_object_t obj, const char *node) {
-	cps_api_object_attr_delete(obj,CPS_OBJECT_GROUP_NODE);
+    cps_api_object_attr_delete(obj,CPS_OBJECT_GROUP_NODE);
     return cps_api_object_attr_add(obj,CPS_OBJECT_GROUP_NODE,node,strlen(node)+1);
 }
 

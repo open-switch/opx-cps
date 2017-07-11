@@ -18,7 +18,7 @@
 #include "cps_api_node_private.h"
 #include "cps_api_node_set.h"
 #include "cps_api_node.h"
-#include "cps_api_db_connection.h"
+#include "cps_api_db_connection_tools.h"
 #include "cps_api_db.h"
 #include "cps_class_map.h"
 #include "cps_api_object_key.h"
@@ -38,8 +38,8 @@ static std::unordered_map<std::string,std::string> _ip_to_node_map;
 static bool load_groups() {
     std::lock_guard<std::recursive_mutex> lg(_nodes->get_lock());
    if (std_time_is_expired(_last_loaded,MILLI_TO_MICRO(5*1000))) {
-	   _last_loaded = std_get_uptime(nullptr);
-	   return _nodes->load();
+       _last_loaded = std_get_uptime(nullptr);
+       return _nodes->load();
    }
    return false;
 }
@@ -150,22 +150,24 @@ bool cps_api_db_get_node_group(const std::string &group,std::vector<std::string>
     std::lock_guard<std::recursive_mutex> lg(_nodes->get_lock());
     (void)load_groups();
 
-    // If group doesn't exist, return
-    if(!_nodes->group_exists(group)) { lst.clear(); return true; }
-
-    cps_api_node_data_type_t type;
-    if(!_nodes->get_group_type(group,type)){
+    // If group doesn't exist, check to see if the name exists and return the node itself
+    if(!_nodes->group_exists(group)) {
+        lst.clear();
         const char * _alias = _nodes->addr(group);
         if (_alias!=nullptr) {
             lst.push_back(_alias);
-            return true;
         }
+        //legal to query for a group that doesn't exist (return code becomes less valuable)
+        return true;
+    }
+
+    cps_api_node_data_type_t type;
+    if(!_nodes->get_group_type(group,type)){
         EV_LOGGING(DSAPI,ERR,"GET-NODE-GRUOP","Failed to get group type for %s",group.c_str());
         return false;
     }
 
     if((type == cps_api_node_data_1_PLUS_1_REDUNDENCY) && (_nodes->is_master_set(group))){
-
         auto it = _nodes->_master.find(group);
         if(it == _nodes->_master.end()){
              EV_LOGGING(DSAPI,ERR,"GET-NODE-GRUOP","Master not set for %s",group.c_str());

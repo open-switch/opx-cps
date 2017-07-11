@@ -52,6 +52,7 @@ cps-api-common_SRCS+=db/cps_api_db_response.cpp
 cps-api-common_SRCS+=db/cps_api_db_object_key.cpp
 cps-api-common_SRCS+=db/cps_api_db_init.cpp db/cps_api_db_node_set.cpp
 cps-api-common_SRCS+=db/cps_api_db_event_adapter.cpp db/cps_api_db_operations.cpp
+cps-api-common_SRCS+=db/cps_api_db_connection_tools.cpp
 
 cps-api-common_LDFLAGS = -levent_log -ldn_common -lpthread -lhiredis
 
