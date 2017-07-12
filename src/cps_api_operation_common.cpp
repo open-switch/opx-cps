@@ -47,7 +47,7 @@
 typedef std::vector<cps_api_object_category_types_t> processed_objs_t;
 
 bool cps_api_filter_set_count(cps_api_object_t obj, size_t obj_count) {
-    return cps_api_object_attr_add_u64(obj,CPS_OBJECT_GROUP_NUMBER_OF_ENTRIES,true);
+    return cps_api_object_attr_add_u64(obj,CPS_OBJECT_GROUP_NUMBER_OF_ENTRIES,(uint64_t)obj_count);
 }
 
 bool cps_api_filter_get_count(cps_api_object_t obj, size_t *obj_count) {
