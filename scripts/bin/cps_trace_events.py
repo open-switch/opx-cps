@@ -22,7 +22,7 @@ import cps_utils
 def cps_trace_usage():
     print ""
     print "Usage: cps_trace_events.py <qualifier> [object]"
-    print "   qualifier (mandatory): observed,target,proposed or realtime"
+    print "   qualifier (mandatory): ", cps.QUALIFIERS
     print "   object (optional): if object is not given all the event related to the qualifier will be captured"
     print "Example: cps_trace_events.py observed base-pas/media OR cps_trace_events.py observed"
     print ""
@@ -31,22 +31,22 @@ def cps_trace_usage():
 
 if __name__ == '__main__':
 
-    _qual = ["target", "observed", "proposed", "realtime"]
-
     if (len(sys.argv) < 2) or (len(sys.argv) > 3):
          cps_trace_usage()
          exit(1)
 
     in_qual = sys.argv[1].lower();
-    if in_qual not in _qual:
+    if in_qual not in cps.QUALIFIERS:
          print "\nCheck the qualifier, not a valid qualifier "
          cps_trace_usage()
          exit(1)
 
     if len(sys.argv) > 2:
        _key = cps.key_from_name(in_qual, sys.argv[2])
+       message = " Registering for " + in_qual + " " + sys.argv[2]
     else:
        _key = cps.key_from_qual(in_qual)
+       message = " Registering for " + in_qual
 
     print "Key : " + _key
 
@@ -54,10 +54,7 @@ if __name__ == '__main__':
         print "Check the object name, not a valid object\n"
         exit(1)
 
-    if len(sys.argv) > 2:
-        print " Registering for " + in_qual + " " + sys.argv[2]
-    else:
-        print " Registering for " + in_qual
+    print message
 
     handle = cps.event_connect()
 
@@ -69,3 +66,4 @@ if __name__ == '__main__':
         if 'operation' in ev:
             print "Operation : ", ev['operation']
         cps_utils.print_obj(ev)
+        print "----------------------------------------------"
