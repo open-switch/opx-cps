@@ -366,6 +366,22 @@ class CPSObject:
     	@use_exact_match a boolean value that will be True if exact match filter is needed or false if not    			
     	"""    	
     	self.add_attr('cps/object-group/exact-match',use_exact_match)
+
+    def set_get_next(self,use_get_next):
+        """
+        This function will set the get next attribute within an object to the specified value
+        @use_get_next a boolean value that will be True if get next filter is needed or false if not
+
+        """
+        self.add_attr('cps/object-group/get-next',use_get_next)
+
+    def set_number_of_entries(self,count):
+        """
+        This function will set the number of entries attribute within an object to the specified value
+        @count number of entries required to be set
+        """
+        self.add_attr('cps/object-group/number-of-entries',count)
+
     	
 def clone(self, obj):
     """

@@ -44,26 +44,16 @@
 #include <stdarg.h>
 #include <memory>
 
-#define CPS_API_ATTR_INFO (CPS_API_ATTR_RESERVE_RANGE_END-2)
-
-typedef enum {
-    cps_api_ATTR_Q_COUNT=1
-}cps_api_ATTR_QUERY_t;
-
-
 typedef std::vector<cps_api_object_category_types_t> processed_objs_t;
 
 bool cps_api_filter_set_count(cps_api_object_t obj, size_t obj_count) {
-    cps_api_attr_id_t ids[] = { CPS_API_ATTR_INFO, cps_api_ATTR_Q_COUNT};
-    uint64_t count = (uint64_t)obj_count;
-    return cps_api_object_e_add_int(obj,ids,sizeof(ids)/sizeof(*ids),&count,sizeof(count));
+    return cps_api_object_attr_add_u64(obj,CPS_OBJECT_GROUP_NUMBER_OF_ENTRIES,(uint64_t)obj_count);
 }
 
 bool cps_api_filter_get_count(cps_api_object_t obj, size_t *obj_count) {
-    cps_api_attr_id_t ids[] = { CPS_API_ATTR_INFO, cps_api_ATTR_Q_COUNT};
-    cps_api_object_attr_t attr = cps_api_object_e_get(obj,ids,sizeof(ids)/sizeof(*ids));
-    if (attr==NULL) return false;
-    *obj_count = (size_t)cps_api_object_attr_data_u64(attr);
+    uint64_t *p = (uint64_t*) cps_api_object_get_data(obj,CPS_OBJECT_GROUP_NUMBER_OF_ENTRIES);
+    if (p==nullptr) return false;
+    *obj_count = *p;
     return true;
 }
 
