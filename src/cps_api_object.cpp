@@ -311,7 +311,12 @@ void __delete_repeated_attributes(cps_api_object_t d, cps_api_object_t s) {
 
 bool cps_api_object_attr_merge(cps_api_object_t d, cps_api_object_t s, bool remove_dup) {
     cps_api_object_internal_t *dest = (cps_api_object_internal_t*)d;
-    cps_api_object_internal_t *src = (cps_api_object_internal_t*)s;
+
+    cps_api_object_guard og(cps_api_object_create());
+    if (og.get()==nullptr) return false;
+    cps_api_object_clone(og.get(), s);
+
+    cps_api_object_internal_t *src = (cps_api_object_internal_t*)og.get();
 
     size_t _cur = obj_used_len(dest);
     size_t _amt = obj_used_len(src);
@@ -320,7 +325,7 @@ bool cps_api_object_attr_merge(cps_api_object_t d, cps_api_object_t s, bool remo
 
     if (remove_dup && (_cur>0)) {
         //@TODO optimize in the case of zero attributes
-        __delete_repeated_attributes(d,s);
+        __delete_repeated_attributes(d,og.get());
         _cur = obj_used_len(dest);
         _amt = obj_used_len(src);
     }
