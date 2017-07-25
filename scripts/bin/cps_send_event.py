@@ -15,7 +15,6 @@
 # permissions and limitations under the License.
 #
 
-import sys
 import cps
 import cps_object
 import cps_utils
