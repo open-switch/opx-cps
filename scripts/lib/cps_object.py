@@ -470,7 +470,11 @@ def object_from_parameters(prog,description, optional_fields=[]):
         if len(embed_attrs) == 3:
             obj.add_embed_attr(embed_attrs,_data[1])
         else:
-            obj.add_attr(_data[0],_data[1])
+            val_list = _data[1].split(',')
+            if len(val_list) == 1:
+                obj.add_attr(_data[0],_data[1])
+            else:
+                obj.add_attr(_data[0],val_list)
 
     if 'db' in _args and _args['db']:
         if 'd' in _args and _args['d']:
