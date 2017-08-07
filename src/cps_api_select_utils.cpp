@@ -54,16 +54,6 @@ void cps_api_select_dealloc(cps_api_select_handle_t h) {
     return;
 }
 
-namespace {
-
-void cleanup(cps_api_select_handle_t h) {
-    __handle_struct *p = (__handle_struct*)h;
-    if (p->_fd!=-1) ::close(p->_fd);
-    delete p;
-}
-
-}
-
 cps_api_select_handle_t cps_api_select_alloc(const cps_api_select_settings &settings) {
     __handle_struct * _handle = nullptr;
 
