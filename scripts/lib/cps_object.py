@@ -466,9 +466,9 @@ def object_from_parameters(prog,description, optional_fields=[]):
         _data = i.split('=', 1)
 
         # When value for attribute is empty, use None to indicate attribute delete
-	_val = None
-	if len(_data[1]) != 0:
-	    _val = _data[1]
+        _val = None
+        if len(_data[1]) != 0:
+            _val = _data[1]
 
         # For embedded attribute check if comma seperated attribute list is given
         # then add it as embedded
