@@ -464,15 +464,23 @@ def object_from_parameters(prog,description, optional_fields=[]):
         if i.find('=')==-1:
             continue
         _data = i.split('=', 1)
+
+        # When value for attribute is empty, use None to indicate attribute delete
+        _val = None
+        if len(_data[1]) != 0:
+            _val = _data[1]
+
         # For embedded attribute check if comma seperated attribute list is given
         # then add it as embedded
         embed_attrs = _data[0].split(',')
         if len(embed_attrs) == 3:
-            obj.add_embed_attr(embed_attrs,_data[1])
+            obj.add_embed_attr(embed_attrs,_val)
         else:
             val_list = _data[1].split(',')
-            if len(val_list) == 1:
-                obj.add_attr(_data[0],_data[1])
+            # Treat as leaf list if value contains ',' but is not
+            # enclosed within {}
+            if len(val_list) == 1 or _data[1][0] == '{':
+                obj.add_attr(_data[0],_val)
             else:
                 obj.add_attr(_data[0],val_list)
 

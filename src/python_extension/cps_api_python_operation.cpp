@@ -165,7 +165,8 @@ static bool py_add_object_to_trans( cps_api_transaction_params_t *tr, PyObject *
             {"delete",cps_api_delete },
             {"create",cps_api_create},
             {"set",cps_api_set},
-            {"rpc",cps_api_action}
+            {"rpc",cps_api_action},
+            {"action", cps_api_action}
     };
 
     if (trans.find(PyString_AsString(_op))==trans.end()) {
