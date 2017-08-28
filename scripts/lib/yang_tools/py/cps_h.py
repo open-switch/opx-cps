@@ -68,14 +68,14 @@ class COutputFormat:
 
         print ""
         self.print_comment('Enumeration '+name)
-        for i in [node,enum]:            
+        for i in [node,enum]:
             if i == None: continue
-            _txt = self.get_comment(model, i)            
+            _txt = self.get_comment(model, i)
             if _txt!=None and len(_txt)>0:
                 print _txt
 
         print "typedef enum { "
-                
+
         min_value = None
         max_value = None
 
@@ -253,7 +253,7 @@ class COutputFormat:
                 continue  # not printable
 
             if node.tag == model.module.ns() + 'identity':
-                en_name = self.lang.to_string(node.get('__identity__'))                
+                en_name = self.lang.to_string(node.get('__identity__'))
                 comment = self.get_comment(model, node)
 
                 if len(comment) > 0:
@@ -281,39 +281,8 @@ class COutputFormat:
                 print "*/\n"
         print ""
 
-    def header_file_open(self, model, stream):
-        mod_name = model.module.name()
-        model_name = model.module.model_name()
-
-        stream.write("\n")
-        stream.write("/*\n")
-        stream.write( "* source file : "+ model_name +".h\n")
-        stream.write("*/" + "\n")
+    def header_file_includes(self, model, stream):
         stream.write("" + "\n")
-        stream.write(
-'''
-/*
-* Copyright (c) 2015 Dell Inc.
-*
-* Licensed under the Apache License, Version 2.0 (the "License"); you may
-* not use this file except in compliance with the License. You may obtain
-* a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
-*
-* THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR
-* CONDITIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT
-* LIMITATION ANY IMPLIED WARRANTIES OR CONDITIONS OF TITLE, FITNESS
-* FOR A PARTICULAR PURPOSE, MERCHANTABLITY OR NON-INFRINGEMENT.
-*
-* See the Apache Version 2.0 License for specific language governing
-* permissions and limitations under the License.
-*/
-'''
-                     )
-
-        stream.write("#ifndef " + self.lang.to_string(model_name + "_H") + "\n")
-        stream.write("#define " + self.lang.to_string(model_name + "_H") + "\n")
-        stream.write("" + "\n")
-        stream.write("#include \"cps_api_operation.h\"\n")
 
         module = model.imports['module']
 
@@ -323,19 +292,17 @@ class COutputFormat:
                     continue
             stream.write("#include \"" + i + ".h\"\n")
 
-        stream.write("#include <stdint.h>\n")
-        stream.write("#include <stdbool.h>\n")
         stream.write("" + "\n")
 
-    def header_file_close(self, stream):
-        stream.write("#endif" + "\n")
 
     def show(self, model):
-        self.header_file_open(model, sys.stdout)
+        import c_utils
+        c_utils.header_file_open(model.module.model_name(), model.module.model_name(),sys.stdout)
+        self.header_file_includes(model, sys.stdout)
 
         print ""
         id = self.context['history']['category'].get_category(self.lang.get_category())
-        
+
 
         print "#define " + self.lang.get_category() + " (" + str(id) + ") "
 
@@ -345,4 +312,4 @@ class COutputFormat:
         self.print_enums(model)
         self.print_container(model)
 
-        self.header_file_close(sys.stdout)
+        c_utils.header_file_close(sys.stdout)

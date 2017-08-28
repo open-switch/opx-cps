@@ -31,7 +31,7 @@ class yin_files:
         self.__map = {}
         self.__context = context
         self.__nodes={}
-        
+
     def __yin_name(self,yang_name):
         """
         Take a file name and return a path to a yin file.  If none exists.. create
@@ -39,31 +39,31 @@ class yin_files:
         """
         yang_name = os.path.basename(yang_name)
         return self.__context.get_tmp_filename(yang_name.replace('.yang','.yin'))
-        
+
     def get(self,yang_file):
         if yang_file in self.__map:
             return self.__map[yang_file]
         __yin_file = self.__yin_name(yang_file)
-                
+
         #throws exceptions if necessary
         create_yin_file(yang_file,__yin_file)
-                
-        self.__map[yang_file] = __yin_file
-        
-        return self.__map[yang_file]    
 
-    
+        self.__map[yang_file] = __yin_file
+
+        return self.__map[yang_file]
+
+
     def __copy_nodes(self,yang_file):
         return copy.deepcopy(self.__nodes[yang_file])
-    
+
     def nodes(self,yang_file):
-        '@type yang_file: string'    
-        '@rtype ET.Element'    
+        '@type yang_file: string'
+        '@rtype ET.Element'
         if yang_file in self.__nodes:
             return self.__copy_nodes(yang_file)
-        
+
         _file = self.get(yang_file)
-        
+
         with open(_file, 'r') as f:
             _file = f.read()
 
@@ -80,14 +80,14 @@ class yin_files:
             print ex
             sys.exit(1)
         return self.__copy_nodes(yang_file)
-        
+
 
 def search_path_for_file(filename):
     path = os.getenv('YANG_MODPATH', '')
     __full_name = file_utils.search_path_for_file(filename,path)
     if __full_name!=None:
         return __full_name
-    
+
     raise Exception(
         "Missing file " +
         filename +
@@ -137,15 +137,6 @@ def node_get_type(module, node):
     if s is None:
         s = "Und"
     return s
-
-
-
-
-# Create a string that can be used is C programs
-def string_to_c_formatted_name(s):
-    s = s.replace('-', '_')
-    s = s.replace(':', '_')
-    return s.upper()
 
 # walk through all of the children of nodes and find nodes of the type
 # mentioned
@@ -199,7 +190,7 @@ def get_prefix_tuple(name):
     if _ix == -1:
         return ('',name)
     return (name[:_ix],name[_ix+1:])
-    
+
 class IndexTracker:
     ix = 0
     begin = 0
