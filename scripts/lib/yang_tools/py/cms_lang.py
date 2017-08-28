@@ -276,18 +276,23 @@ class Language:
         return True
 
     def is_parent_tree_read_only(self, cb_node):
+        _original_path = self.names[cb_node]
         real_path = self.names[cb_node]
+        
         model = self.model
         while real_path.find('/') != -1:
             node = self.all_node_map[real_path]
-            if "augment" in node.tag:
-                 model = node.get('model')
-                 #splice augmenting prefix from real_path
-                 slash_index = real_path.find('/')
-                 real_path = real_path[slash_index+1:]
-                 node = self.all_node_map[real_path]
+            model = self.context.get_model_for_key(real_path)
+            if "augment" in node.tag:            
+                 #splice augmenting prefix from real_path                 
+                 real_path = real_path[real_path.find('/')+1:]                                  
+                 continue
             if self.rw_access(node) == False:
                 return True
+            if model == None:
+                raise Exception('Can not locate %s in model in node' % node.get('name'))
+            if real_path not in model.parent:
+                raise Exception('Can not locate %s in model' % real_path)
             real_path = model.parent[real_path]
         return False
 

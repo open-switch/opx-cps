@@ -107,13 +107,26 @@ class context:
     def __check_and_add_to_model(self,key,sub_key,value):
         if key not in self.__details['models-by-key']:
             self.__details['models-by-key'][key]={}            
-        self.__details['models-by-key'][key][sub_key]=value        
+        self.__details['models-by-key'][key][sub_key]=value
+           
     def __get_model_attr(self,key,sub_key):
         try:
             return self.__details['models-by-key'][key][sub_key]
         except:
             pass
         return None
+    
+    def get_model_for_key(self,key):
+        _key_prefix = key.split('/',1)
+        _key_prefix = _key_prefix[0]
+        if len(_key_prefix)<2:
+            raise Exception('Missing prefix in key %s - model can\'t be located' % key)
+        if _key_prefix not in self.__details['model-names']:
+            raise Exception('Prefix unknown for key %s' % key)
+        _model_full_name = self.__details['model-names'][_key_prefix]
+        if _model_full_name not in self.__details['models-by-key']:
+            raise Exception('Full model not found %s' % _model_full_name)
+        return self.__details['models-by-key'][_model_full_name]['model']
     
     def get_model_name(self,key):
         return self.__get_model_attr(key,'filename')

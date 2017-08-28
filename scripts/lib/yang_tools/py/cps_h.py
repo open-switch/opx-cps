@@ -253,9 +253,7 @@ class COutputFormat:
                 continue  # not printable
 
             if node.tag == model.module.ns() + 'identity':
-                en_name = self.lang.to_string(node.get('__identity__'))
-
-                en_value = str(history.get_enum(en_name, None))
+                en_name = self.lang.to_string(node.get('__identity__'))                
                 comment = self.get_comment(model, node)
 
                 if len(comment) > 0:

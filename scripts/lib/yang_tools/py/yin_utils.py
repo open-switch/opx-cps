@@ -194,6 +194,12 @@ def get_node_path(module, node, root_node):
 # generate an index for a node.
 
 
+def get_prefix_tuple(name):
+    _ix = name.find(':')
+    if _ix == -1:
+        return ('',name)
+    return (name[:_ix],name[_ix+1:])
+    
 class IndexTracker:
     ix = 0
     begin = 0

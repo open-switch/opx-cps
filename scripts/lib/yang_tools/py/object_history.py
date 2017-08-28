@@ -158,8 +158,8 @@ class YangHistory_ConfigFile_Base:
     def empty_config_file():
         _d={}
         _d['global']={}
-        _d['global']['range-start'] = 0 
-        _d['global']['range-end'] = 0
+        _d['global']['range-start'] = 0 #start range of folder
+        _d['global']['range-end'] = 0 #end range of folder 
         _d['global']['category'] = ""
         _d['items']={}
         return _d
@@ -396,7 +396,30 @@ class YangHistory_CategoryParser:
         _config.optionxform = str
         return _config
     
-    def __init__(self, context, filename):
+    def _load_file_values(self):
+        _config = YangHistory_CategoryParser.__get_cfg_parser()
+
+        _config.read(self.__filename)
+                
+        self.__range_start = long(_config.get('range','start'))
+        self.__range_end = long(_config.get('range','end'))
+        
+        for _elem,_value in  _config.items('reserved'):
+            self.__index.add_element(_elem, long(_value))
+        try:
+            self._auto_gen_enums = bool(_config.get('range','auto-generate'))
+        except:
+            self._auto_gen_enums = False
+        
+        self.__modified = False
+        
+    def _init_file_values(self):
+        YangHistory_CategoryParser.init_file(self.__filename,0,0,{},True)
+        self._load_file_values()
+    
+        self.__modified = True
+                 
+    def __init__(self, context, filename, fail_if_missing=True):
         """
         This will initialize the module history file. 
         @context contains the context of the appliation.  Essentially a map of objects that contain application details
@@ -406,23 +429,17 @@ class YangHistory_CategoryParser:
         self.__categories = {}
         self.__index = Model_Element_IndexTracker(self.__categories,'global',0)
         self.__context = context
-        self.__filename = filename
+        self.__filename = filename    
         
         if not os.path.exists(filename):
-            raise Exception('Could not open configuration file %s for reading' % filename)
-        _config = YangHistory_CategoryParser.__get_cfg_parser()
-        _config.read(self.__filename)
-        
-        self.__range_start = long(_config.get('range','start'))
-        self.__range_end = long(_config.get('range','end'))
-        
-        for _elem,_value in  _config.items('reserved'):
-            self.__index.add_element(_elem, long(_value))
-    
-        self.__modified = False
-        
+            if fail_if_missing:
+                raise Exception('Could not open configuration file %s for reading' % filename)
+            self._init_file_values()
+        else:
+            self._load_file_values()
+               
     @staticmethod
-    def init_file(filename,range_start,range_end,values):
+    def init_file(filename,range_start,range_end,values, auto_gen_enums):
         """
         Initialize a file from a range start, range end and list/iteratiable tuples(name,value)
         Generally speaking - one category is reserved per yang file
@@ -437,7 +454,7 @@ class YangHistory_CategoryParser:
         
         _config.set('range', 'start',range_start)
         _config.set('range', 'end',range_end)
-        
+        _config.set('range','auto-generate',auto_gen_enums)
         for _elem,_value in values:
             _config.set('reserved', _elem,str(_value))
         
@@ -445,6 +462,13 @@ class YangHistory_CategoryParser:
             _config.write(f)
 
     def __get_next_free(self):
+        if self._auto_gen_enums:
+            _max = 0
+            if i in self.__categories.itervalues(): 
+                if i > _max :
+                    _max = i
+            return max+1
+        
         for i in range(self.__range_start,self.__range_end):
             if i in self.__categories.itervalues(): continue
             return i
@@ -455,7 +479,7 @@ class YangHistory_CategoryParser:
 
         if self.__modified == True:        
             YangHistory_CategoryParser.init_file(self.__filename, 
-                        self.__range_start, self.__range_end, self.__categories.iteritems())
+                        self.__range_start, self.__range_end, self.__categories.iteritems(),self._auto_gen_enums)
         else:
             if self.__context['debug']:
                 print ("Indexes haven't changed and therefore no output")
