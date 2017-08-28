@@ -147,7 +147,7 @@ void __db_event_handle_t::add_connection_state_event(const char *node, const cha
     cps_api_object_t o = cps_api_object_list_create_obj_and_append(_pending_events);
     if (o!=nullptr) {
 
-        EV_LOGGING(CPS-DB-EV-CONN,DEBUG,state? "CONN": "DISCON","Connection event provided");
+        EV_LOGGING(CPS-DB-EV-CONN,DEBUG,state? "CONN": "DISCON","Connection event occured for %s", node!=nullptr?node:"");
 
         auto _it = _connection_mon.find(node);
         if (_it!=_connection_mon.end()) {
@@ -196,6 +196,7 @@ static void __resync_regs(cps_api_event_service_handle_t handle) {
                     continue;
                 }
                 if (!cps_db::subscribe(*con_it->second,reg_it)) {
+                    EV_LOGGING(CPS-DB-EV-CONN,ERR,"REG","Not able to subscript for event from node %s",node.c_str());
                     nd->disconnect_node(node.c_str());
                     _connections_changed = true;
                     return true;
@@ -241,6 +242,7 @@ static bool __check_connections(cps_api_event_service_handle_t handle) {
                 }
                 if (nd->_connections[node]->used_within(db_connection_details::timeout)) {
                     if (!cps_api_db_validate_connection(nd->_connections[node].get())) {
+                        EV_LOGGING(CPS-DB-EV-CONN,DEBUG,"DISCON","Connection not validated %s",node.c_str());
                         nd->disconnect_node(node.c_str());
                         return true;
                     }
@@ -256,6 +258,7 @@ static bool __check_connections(cps_api_event_service_handle_t handle) {
     changed = changed || (nodes.size()>0);
 
     for ( auto & it : nodes ) {
+        EV_LOGGING(CPS-DB-EV-CONN,DEBUG,"DISCON","removing node from connection set %s",it.c_str());
         nd->disconnect_node(it.c_str());
     }
 
@@ -375,6 +378,10 @@ static bool get_event(cps_db::connection *conn, cps_api_object_t obj, bool &has_
     cps_db::response_set set;
 
     if (!conn->get_event(set,has_error)) {
+        if(has_error) {
+            //error logged elsewhere
+            EV_LOGGING(CPS-DB-EV-CONN,DEBUG,"DISCON","Error on get_event");
+        }
         return false;
     }
     cps_db::response r = set.get_response(0);
@@ -449,6 +456,8 @@ static cps_api_return_code_t _cps_api_wait_for_event(
                 pending_event = true;
             }
             if (_has_error) {
+                //error logged elsewhere
+                EV_LOGGING(CPS-DB-EV-CONN,DEBUG,"DISCON","Error on has_event");
                 nh->disconnect_node(it.first,true);
                 break;
             }
@@ -484,6 +493,8 @@ static cps_api_return_code_t _cps_api_wait_for_event(
             bool has_data = it.second->has_event(_has_error);
 
             if (_has_error) {
+                //error logged elsewhere
+                EV_LOGGING(CPS-DB-EV-CONN,DEBUG,"DISCON","Error on has_event");
                 nh->disconnect_node(it.first,true);
                 break;
             }
@@ -500,6 +511,8 @@ static cps_api_return_code_t _cps_api_wait_for_event(
                     return cps_api_ret_code_OK;
                 } else {
                     if (_has_error) {
+                        //error logged elsewhere
+                        EV_LOGGING(CPS-DB-EV-CONN,DEBUG,"DISCON","Error on the get_event");
                         nh->disconnect_node(it.first,true);
                         break;
                     }
