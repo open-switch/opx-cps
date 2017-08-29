@@ -21,7 +21,6 @@ import sys
 import yin_utils
 from os import walk
 import os
-from wstools import XMLname
 
 class IndexTracker:
     """
