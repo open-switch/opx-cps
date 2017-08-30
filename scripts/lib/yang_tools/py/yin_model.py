@@ -34,7 +34,7 @@ class CPSYinFiles:
     yin_map = dict()
     yin_parsed_map = dict()
 
-    def __init__(self, context):        
+    def __init__(self, context):
         self.tmpdir = context['temp-dir']
         self.context = context
 
@@ -44,9 +44,9 @@ class CPSYinFiles:
     def check_deps_loaded(self, module, context):
         if module not in self.context['module']:
             return False
-        
+
         __mod = self.context['module']
-                
+
         for i in __mod.imports:
             i = os.path.splitext(i)[0]
             if not i in context['current_depends']:
@@ -70,31 +70,31 @@ class CPSYinFiles:
 
         context['current_depends'].append(module)
 
-    def get_parsed_yin(self, filename, prefix):        
+    def get_parsed_yin(self, filename, prefix):
         _key= filename
         _key = _key.replace('.yang','')
-                        
+
         if prefix is not None:
-            _key += ":" + prefix        
-        
+            _key += ":" + prefix
+
         self.context.add_model_name(_key,filename)
-                    
+
         _model = self.context.get_model(_key)
-        
-        if _model == None:                                      
+
+        if _model is None:
             _model = yin_cps.CPSParser(self.context, _key,filename)
-                                                                            
+
             _model.load(prefix=prefix)
             _model.walk()
-            
+
             self.context.add_model(_key,_model)
-            
+
             self.context['model-names'][self.context.get_model(_key).module.name()] = _key
             self.context['model-names'][self.context.get_model(_key).module.name()+'_model_'] = self.context.get_model(_key)
-            
+
             #TODO remove
             self.yin_map[_key] = self.context.get_model(_key)
-            
+
         return _model
 
 
@@ -125,36 +125,36 @@ class CPSYinFiles:
 
 import cps_context
 
-class CPSYangModel:                
-                 
+class CPSYangModel:
+
     def __init__(self, args):
         self.model = None
         self.context = cps_context.context(args)
 
-        self.filename = self.context.get_arg('file')                  
+        self.filename = self.context.get_arg('file')
         if len(self.filename)==0:
             print('Missing parameters.  Please specify file=[target file], eg file=zzz.yang')
             sys.exit(1)
-        
+
         self.coutput = None
-                
-        #These are the output plugins for this parser                    
-        self.context['output']['language'] = { 
-            'cps' : cps_c_lang.Language(self.context), 
+
+        #These are the output plugins for this parser
+        self.context['output']['language'] = {
+            'cps' : cps_c_lang.Language(self.context),
             'cms' : cms_lang.Language(self.context) }
-         
-        __cat_file_name = self.context.get_config_path('category.yconf')         
+
+        __cat_file_name = self.context.get_config_path('category.yconf')
         self.context['history']['category'] = \
             object_history.YangHistory_CategoryParser(self.context,__cat_file_name,False)
-        
+
         #Filled in during initialization the root yang model parser
-        #self.context['history']['file'] 
-                
-        #delete next cleanup  
+        #self.context['history']['file']
+
+        #delete next cleanup
         self.context['loader'] = CPSYinFiles(self.context)
 
         self.model = self.context['loader'].load(self.filename)
-        
+
         #assume order independent modules
         for i in self.context['output']['language'].values():
             i.setup(self.model.get_key())
@@ -162,7 +162,7 @@ class CPSYangModel:
         for plugin in self.context.get_arg('output').split(','):
             if plugin in self.context['output']['language'].keys():
                 self.context['output']['language'][plugin].write()
-            
+
 
     def write_details(self, key):
         class_type = self.context['output'][key]
@@ -176,9 +176,9 @@ class CPSYangModel:
         for i in self.context['output']['language']:
             self.context['output']['language'][i].close()
         self.context['history']['category'].write()
-        
+
     def __enter__(self):
         return self
-    
+
     def __exit__(self, exc_type, exc_value, traceback):
        self.context.clear()

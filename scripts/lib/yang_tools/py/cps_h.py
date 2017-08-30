@@ -69,9 +69,9 @@ class COutputFormat:
         print ""
         self.print_comment('Enumeration '+name)
         for i in [node,enum]:
-            if i == None: continue
+            if i is None: continue
             _txt = self.get_comment(model, i)
-            if _txt!=None and len(_txt)>0:
+            if _txt is not None and len(_txt)>0:
                 print _txt
 
         print "typedef enum { "
@@ -83,12 +83,12 @@ class COutputFormat:
             if model.module.filter_ns(i.tag) == 'enum':
                 en_name = self.lang.to_string(name + "_" + i.get('name'))
                 value = self.get_value(model, i)
-                if value!=None: value = long(value)
+                if value is not None: value = long(value)
                 value = history.add_enum(name,en_name, value)
 
-                if min_value == None or min_value > value:
+                if min_value is None or min_value > value:
                     min_value = value
-                if max_value == None or max_value < value:
+                if max_value is None or max_value < value:
                     max_value = value
 
                 comment = self.get_comment(model, i)
@@ -125,7 +125,7 @@ class COutputFormat:
 
         _node_type_inst = node.find(model.module.ns() + 'type')
 
-        if _node_type_inst == None:
+        if _node_type_inst is None:
             return [(name,'binary')]
 
         _node_type = _node_type_inst.get('name')
@@ -133,7 +133,7 @@ class COutputFormat:
         if _node_type == 'union':
             for _types in _node_type_inst.findall(model.module.ns() + 'type'):
                 _new_name = name
-                if _types.get('name') != None:
+                if _types.get('name') is not None:
                     _new_name = _new_name + '/' +_types.get('name')
                     if _types.get('name') in self.context['types']:
                         _found_names = _found_names + \
@@ -142,10 +142,10 @@ class COutputFormat:
                         _found_names = _found_names+[(_new_name,_new_name)]
             return _found_names
 
-        if _node_type!=None and _node_type in self.context['types']:
+        if _node_type is not None and _node_type in self.context['types']:
            return _found_names + self.resolve_node_names(model,self.context['types'][_node_type],name)
 
-        if _node_type!=None:
+        if _node_type is not None:
             return _found_names + [(name,_node_type)]
 
         return _found_names

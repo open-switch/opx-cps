@@ -76,10 +76,10 @@ class IndexTracker:
         @value_must_be_unique if this is true, check to see if the value has already been used
         """
 
-        if name in self._name_map and value==None:
+        if name in self._name_map and value is None:
             value = self._name_map[name]
 
-        if value_must_be_unique and value!=None:
+        if value_must_be_unique and value is not None:
             __name = self.get_element_name(value)
 
             if len(__name)>0 and __name!=name:
@@ -92,7 +92,7 @@ class IndexTracker:
                 "Adding element - found duplicate names %s - values are %d and %d" %
                     (name,value,self._name_map[name]))
 
-        if value == None:
+        if value is None:
             value = self.get_free_enum()
 
         self._name_map[name] = value
@@ -213,7 +213,7 @@ class YangHistory_ConfigFile_v1:
                     else:
                         _d['items'][_name][line[0]] = long(line[1])
 
-        if _category!= None and _category in _d['items']:
+        if _category is not None and _category in _d['items']:
             for _entry in _d['items'][_category].keys():
                 _d['items'][_category][_entry] += _d['global']['range-start']
         return _d
@@ -297,7 +297,7 @@ class YangHistory_HistoryFile:
                         _close+=1
                     if '[global]' in l:
                         _file_version = 2
-                if _file_version==None and (_open==_close and _open>0):
+                if _file_version is None and (_open==_close and _open>0):
                     _file_version = 1
             if _file_version == 2:
                 #version 2 and beyond are ini file formats
@@ -307,7 +307,7 @@ class YangHistory_HistoryFile:
         except:
             pass
 
-        if _file_version == None:
+        if _file_version is None:
             return YangHistory_HistoryFile.LATEST_FILE_VERSION
 
         return _file_version
@@ -487,10 +487,10 @@ class YangHistory_CategoryParser:
 
 
     def set_category(self,name,value):
-        if value == None and name not in self.__categories:
+        if value is None and name not in self.__categories:
             value = self.__get_next_free()
 
-        if name not in self.__categories and value!=None:
+        if name not in self.__categories and value is not None:
             self.__modified = True
             self.__categories[name] = value
 

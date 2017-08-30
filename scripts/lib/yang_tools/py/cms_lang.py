@@ -113,7 +113,7 @@ class Language:
 
 
     def change_prefix(self, name, model):
-        prefix = model.module.prefix()        
+        prefix = model.module.prefix()
         loc = name.find(prefix)
         if loc != 0:
             return name
@@ -134,7 +134,7 @@ class Language:
             self.names[name]=k
             if k.startswith(self.model.module.prefix()):
                 aug_name = self.change_name_for_augment(k)
-                if aug_name != None:
+                if aug_name is not None:
                     aug_name = self.name_to_cms_name(self.change_prefix(aug_name,self.model))
                 else:
                     aug_name = name
@@ -278,18 +278,18 @@ class Language:
     def is_parent_tree_read_only(self, cb_node):
         _original_path = self.names[cb_node]
         real_path = self.names[cb_node]
-        
+
         model = self.model
         while real_path.find('/') != -1:
             node = self.all_node_map[real_path]
             model = self.context.get_model_for_key(real_path)
-            if "augment" in node.tag:            
-                 #splice augmenting prefix from real_path                 
-                 real_path = real_path[real_path.find('/')+1:]                                  
+            if "augment" in node.tag:
+                 #splice augmenting prefix from real_path
+                 real_path = real_path[real_path.find('/')+1:]
                  continue
             if self.rw_access(node) == False:
                 return True
-            if model == None:
+            if model is None:
                 raise Exception('Can not locate %s in model in node' % node.get('name'))
             if real_path not in model.parent:
                 raise Exception('Can not locate %s in model' % real_path)

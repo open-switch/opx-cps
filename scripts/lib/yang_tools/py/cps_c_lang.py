@@ -182,31 +182,31 @@ class Language:
             en_name = self.to_string(c.name)
             self.names[c.name] = en_name
 
-    def get_yang_history_file_name(self,module_name):        
+    def get_yang_history_file_name(self,module_name):
         _model = module_name + '.yhist'
-        
+
         _main_history = os.path.join(self.context['history']['output'],_model)
-        
+
         if os.path.exists(_main_history):
             return _main_history
-        
+
         try:
             return yin_utils.search_path_for_file(_model)
         except:
             pass
         #if not found return default location
         return _main_history
-        
+
     def setup(self, model):
         self.__key = model
         self.model = self.context.get_model(model)
-        
+
         self.category = "cps_api_obj_CAT_" + to_string(self.context.get_cat(self.__key))
         self.init_names()
-        
+
         __name = self.context.get_hist_name(self.__key)
         hist_file_name = self.context.get_config_path(__name)
-        
+
 
         self.history = object_history.YangHistory_HistoryFile(
             self.context,
@@ -239,11 +239,11 @@ class Language:
         self.write_details('header')
         self.write_details('src')
 
-    def write_details(self, type):
-        class_type = self.context['output'][type]['cps']
+    def write_details(self, output_type):
+        class_type = self.context['output'][output_type]['cps']
 
         old_stdout = sys.stdout
-        with open(self.context.get_arg('cps' + type), "w") as sys.stdout:
+        with open(self.context.get_arg('cps' + output_type), "w") as sys.stdout:
             class_type.COutputFormat(self.context).show(self.model)
         sys.stdout = old_stdout
 

@@ -14,7 +14,6 @@
 # permissions and limitations under the License.
 #
 
-import os
 import sys
 
 import yin_utils
@@ -33,7 +32,7 @@ class COutputFormat:
     def create_map_src(self):
         c_utils.add_copyright_to_file(sys.stdout)
         print "/*"
-        print self.context['model-names'][self.model.module.name()]        
+        print self.context['model-names'][self.model.module.name()]
         print "*/"
         print "#include \"" + self.context['model-names'][self.model.module.name()] + ".h\""
         print "#include \"cps_class_map.h\""
