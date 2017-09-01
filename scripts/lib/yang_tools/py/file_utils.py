@@ -5,27 +5,19 @@ import os
 import yin_cps
 import yin_utils
 import tempfile
-import cps_c_lang
-import cms_lang
-import sys
 import shutil
-import argparse
-
-def change_file_extn(name,now_extn,new_extn):
-    return name.replace(now_extn,new_extn)
 
 def search_path_for_file(filename, path):
     for i in path.split(':'):
         f = os.path.join(i, filename)
         if os.path.exists(f):
             return f
-    
     return None
 
 
 class Locator:
-    
-    def __init__(self, dirs_as_string):
+
+    def __init__(self, context, dirs_as_string):
         self.tmpdir = tempfile.mkdtemp()
         self.context = context
 
@@ -48,13 +40,13 @@ class Locator:
         if yin_key not in self.yin_map:
             f = self.get_yin_file(filename)
             self.yin_map[yin_key] = yin_cps.CPSParser(self.context, f)
-            _cps_parser = self.yin_map[yin_key]            
+            _cps_parser = self.yin_map[yin_key]
             _cps_parser.load(prefix=prefix)
             _cps_parser.walk()
 
             self.context['model-names'][_cps_parser.module.name()] = yin_key
             self.context['model-names'][_cps_parser.module.name()+'_model_'] = _cps_parser
-            
+
         return self.yin_map[yin_key]
 
     def check_deps_loaded(self, module, context):

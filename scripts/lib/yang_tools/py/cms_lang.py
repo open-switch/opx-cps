@@ -117,7 +117,7 @@ class Language:
         loc = name.find(prefix)
         if loc != 0:
             return name
-        return name.replace(prefix,model.module.model_name())
+        return name.replace(prefix,model.module.model_name(),1)
 
     def name_to_cms_name(self, name):
         name = name.replace('/', '_')
