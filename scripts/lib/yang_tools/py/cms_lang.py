@@ -276,10 +276,8 @@ class Language:
         return True
 
     def is_parent_tree_read_only(self, cb_node):
-        _original_path = self.names[cb_node]
         real_path = self.names[cb_node]
 
-        model = self.model
         while real_path.find('/') != -1:
             node = self.all_node_map[real_path]
             model = self.context.get_model_for_key(real_path)

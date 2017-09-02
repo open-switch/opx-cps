@@ -78,26 +78,5 @@ class Locator:
         """Convert the yang file to a yin file and load the model"""
         return self.get_parsed_yin(yang_file, prefix)
 
-    def seed(self, filename):
-        s = set()
-        l = list()
-        l.append(filename)
-        while len(l) > 0:
-            f = l.pop()
-            p = self.get_parsed_yin(f)
-            for n in p.imports:
-                if n not in l:
-                    l.append(n)
-        # parse based on dependencies
-        context = dict()
-        context['current_depends'] = list()
-        for i in self.yin_map.keys():
-            self.load_depends(i, context)
-
-        print context['current_depends']
-
-        for i in context['current_depends']:
-            self.yin_map[i].parse()
-
     def cleanup(self):
         shutil.rmtree(self.tmpdir)

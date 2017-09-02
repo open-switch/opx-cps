@@ -221,7 +221,6 @@ class COutputFormat:
                 __en_value = str(history.add_enum(__category,__en_name, None))
 
             if c.name in model.container_map:
-                node = model.container_map[c.name]
                 comment = self.get_comment(model, c.node)
             if len(comment) > 0:
                 print comment
@@ -262,21 +261,21 @@ class COutputFormat:
                 print('#define ' + en_name + '  \"' + model.module.name()+':'+node.get('name')+'\"')
                 continue
 
-            type = self.lang.get_type(node)
+            _type = self.lang.get_type(node)
 
 
-            if self.lang.valid_lang_type(type):
+            if self.lang.valid_lang_type(_type):
                 comments = self.get_comment(model, node, enclose=False)
                 if len(comments) > 0:
                     print "/*"
                     print "Comments:" + comments
                     print "*/"
-                print 'typedef ' + self.lang.type_to_lang_type(type) + ' ' + self.lang.to_string(i) + "_t;"
+                print 'typedef ' + self.lang.type_to_lang_type(_type) + ' ' + self.lang.to_string(i) + "_t;"
             else:
                 print "/* "
                 print "Name: " + i
-                if type is not None:
-                    print "Type:" + type
+                if _type is not None:
+                    print "Type:" + _type
                 print "Comments:" + self.get_comment(model, node, enclose=False)
                 print "*/\n"
         print ""

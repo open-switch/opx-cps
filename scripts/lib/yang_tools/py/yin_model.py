@@ -14,21 +14,15 @@
 # permissions and limitations under the License.
 #
 
+import sys
 import os
+
 import yin_cps
-import yin_utils
-import tempfile
 import cps_c_lang
 import cms_lang
-import sys
-import shutil
-import argparse
-
 import cps_context
-
-import temp_elements
 import object_history
-import general_utils
+
 
 class CPSYinFiles:
     yin_map = dict()
@@ -37,9 +31,6 @@ class CPSYinFiles:
     def __init__(self, context):
         self.tmpdir = context['temp-dir']
         self.context = context
-
-    def get_or_create_yin(self, filename):
-        return context['yin-files'].get(filename)
 
     def check_deps_loaded(self, module, context):
         if module not in self.context['module']:
@@ -102,26 +93,6 @@ class CPSYinFiles:
         """Convert the yang file to a yin file and load the model"""
         return self.get_parsed_yin(yang_file, prefix)
 
-    def seed(self, filename):
-        s = set()
-        l = list()
-        l.append(filename)
-        while len(l) > 0:
-            f = l.pop()
-            p = self.get_parsed_yin(f)
-            for n in p.imports:
-                if n not in l:
-                    l.append(n)
-        # parse based on dependencies
-        context = dict()
-        context['current_depends'] = list()
-        for i in self.yin_map.keys():
-            self.load_depends(i, context)
-
-        print context['current_depends']
-
-        for i in context['current_depends']:
-            self.yin_map[i].parse()
 
 import cps_context
 
