@@ -28,6 +28,7 @@ class context:
         context['history'] = {}
         context['identity'] = {}
 
+        context['grouping'] = {}
         context['types'] = {}
         context['enum'] = {}
         context['union'] = {}

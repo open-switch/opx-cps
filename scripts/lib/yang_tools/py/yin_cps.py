@@ -15,16 +15,9 @@
 #
 
 import yin_ns
-import yin_utils
-import sys
 import object_history
-import os
-import copy
-
 import xml.etree.ElementTree as ET
-
-import tempfile
-from operator import __setitem__
+import yin_utils
 
 
 class CPSContainerElement:
@@ -189,15 +182,15 @@ class CPSParser:
         self.fix_enums()
         print "Yang parsing complete"
 
-    def add_module_fb_mapping(self, dict, key):
-        """ add the entry in the dict to both prefix/ and prefix: based  """
+    def add_module_fb_mapping(self, container, key):
+        """ add the entry in the container to both prefix/ and prefix: based  """
         _prefix_a = self.module.name() + "/"
         _prefix_b = self.module.name() + ":"
         if key.find(_prefix_a) != 0:
             return
 
         _alias =  _prefix_b+key[len(_prefix_a):]
-        dict[_alias] = dict[key]
+        container[_alias] = container[key]
 
     def fix_enums(self):
         for i in self.context['enum'].keys():
@@ -211,23 +204,22 @@ class CPSParser:
         """
         for i in node.iter():
             tag = self.module.filter_ns(i.tag)
-            n = None
+
+            _name = i.get('name')
+            if _name is None:
+                continue;
+
+            _prefix_and_name = self.module.add_prefix(_name)
 
             if tag == 'uses':
-                n = i.get('name')
+                i.set('name', _prefix_and_name)
 
             if tag == 'type':
-                name = i.get('name')
-                #make sure it is a type we want
-                if name is not None and self.module.name() + ':' + name in self.context['types']:
-                    n = name
+                if _prefix_and_name in self.context['types'] :
+                    i.set('name', _prefix_and_name)
 
-            if n is not None: # any yypes refer to local types by default
-                n = self.module.add_prefix(n)
-                i.set('name', n)
 
     def stamp_augmented_children(self, parent, ns):
-        lst = list()
         for i in list(parent):
             self.stamp_augmented_children(i, ns)
             i.set('augmented', True)
@@ -266,12 +258,18 @@ class CPSParser:
 
         _result = ''
 
+
+        def _add_slash(list_of_items):
+            return '/'.join(list_of_items)
+
         for i in range(0,len(_ns_entries)):
             if len(_result)>0 and _result[0] != '/':
                 _result = '/'+_result
             _result=_ns_lst[i] + _result
+
             for ent in _ns_entries[i]:
                 _result += '/'+ent
+
         if _result[0] == '/': _result = _result[1:]
         return _result
 
@@ -358,7 +356,11 @@ class CPSParser:
                 self.parse_types(i, full_name)
 
             if tag == 'grouping':
-                tag = 'typedef'
+                if type_name in self.context['grouping']:
+                    print('Discovered multiple references to %s - ignoring' % type_name)
+                    continue
+                self.context['grouping'][type_name] = i
+                continue
 
             if tag == 'leaf' or tag == 'leaf-list':
                 type = i.find(self.module.ns() + 'type')
@@ -440,10 +442,6 @@ class CPSParser:
                     pass
                 n_path = path + "/" + tag
 
-            id = self.module.name() + ':' + tag
-
-            if i.get('name') is not None:
-                id = self.module.name() + ':' + i.get('name')
 
             #can have repeated nodes for some classes (augment)
             if tag not in self.__supports_duplicate_entries:
@@ -457,11 +455,8 @@ class CPSParser:
             #fill in parent
             self.parent[n_path] = path
 
-            if tag == 'grouping':
-                tag = 'typedef'
-
-            if tag == 'typedef':
-                continue
+            if tag == 'grouping' or tag == 'typedef':
+                continue;
 
             # in the case tht the parent tag is a choice and you parsing a non-case... then add a case for the standard
             # As a shorthand, the "case" statement can be omitted if the branch contains a single "anyxml", "container",
@@ -527,9 +522,9 @@ class CPSParser:
             if tag == 'leaf' or tag == 'leaf-list' or tag == 'enum':
                 self.container_map[path].append(CPSContainerElement(n_path, i))
 
-                type = i.find(self.module.ns() + 'type')
-                if type is not None:
-                    if type.get('name') == 'enumeration':
+                _type = i.find(self.module.ns() + '_type')
+                if _type is not None:
+                    if _type.get('name') == 'enumeration':
                         self.context['enum'][n_path] = i
                         self.walk_nodes(i, n_path)
 
@@ -537,22 +532,22 @@ class CPSParser:
                 type_name = i.get('name')
                 if type_name.find(':') == -1:
                     raise Exception(
-                        "Missing type name... should already be specified")
+                        "Missing _type name... should already be specified")
 
-                if not type_name in self.context['types']:
-                    print self.context['types'].keys()
+                if not type_name in self.context['grouping']:
+                    print self.context['grouping'].keys()
                     print type_name
                     raise Exception("Missing " + type_name)
 
-                type = self.context['types'][type_name]
+                _type = self.context['grouping'][type_name]
                 (ret_val,ret_node) =  self.is_augmented(path)
                 if ret_val:
-                    self.stamp_augmented_children(type,ret_node.get('target-namespace'))
-                type_tag = self.module.filter_ns(type.tag)
+                    self.stamp_augmented_children(_type,ret_node.get('target-namespace'))
+                type_tag = self.module.filter_ns(_type.tag)
                 if type_tag == 'grouping':
-                    self.walk_nodes(type, path)
+                    self.walk_nodes(_type, path)
                     continue
-                print type
+                print _type
                 raise Exception("Invalid grouping specified ")
 
     def handle_keys(self):
