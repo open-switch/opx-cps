@@ -18,20 +18,19 @@
 import ConfigParser
 
 import sys
-import yin_utils
-from os import walk
+
 import os
 
 class IndexTracker:
     """
     Holds a max enum value and a list of names to values.
     """
-    def __init__(self, map,start):
+    def __init__(self, name_map,start):
         """Take a start index as the newest possible value.
         @start this is the start range for this set of values
         """
         self._last_index = 0
-        self._name_map = map
+        self._name_map = name_map
 
         if start is not None:
             self.last_index = start
@@ -122,9 +121,9 @@ class IndexTracker:
             handler(context,_name,_value)
 
 class Model_Element_IndexTracker(IndexTracker):
-    def __init__(self,map,name,start):
+    def __init__(self,name_map,name,start):
         self.__name = name
-        IndexTracker.__init__(self,map,start)
+        IndexTracker.__init__(self,name_map,start)
 
     def add_element(self,name,value):
         return IndexTracker.add_element(self,name, value, True)
@@ -133,9 +132,9 @@ class Model_Element_IndexTracker(IndexTracker):
         return IndexTracker.replace_element(self,name, value,True)
 
 class Model_Enum_IndexTracker(IndexTracker):
-    def __init__(self,map,name,start):
+    def __init__(self,name_map,name,start):
         self.name = name;
-        IndexTracker.__init__(self,map,start)
+        IndexTracker.__init__(self,name_map,start)
 
     def add_element(self,name,value):
         return IndexTracker.add_element(self,name, value, False)
@@ -223,7 +222,7 @@ class YangHistory_ConfigFile_v2:
     def __init__(self,filename):
         self._filename = filename
 
-    def store(self, data, filter):
+    def store(self, data, filter_function):
         _config = YangHistory_ConfigFile_Base.get_cfg_parser()
         _config.add_section('global')
 
@@ -236,7 +235,7 @@ class YangHistory_ConfigFile_v2:
         for _section in data['items'].keys():
             _config.add_section(_section)
             for _key, _value in sorted(data['items'][_section].iteritems(), key=lambda (k,v): (v,k)):
-                if filter(_key): continue
+                if filter_function(_key): continue
 
                 if _section == data['global']['category']:
                     _value = str(_value)+' '+str(_value - data['global']['range-start'])
@@ -300,7 +299,7 @@ class YangHistory_HistoryFile:
                     _file_version = 1
             if _file_version == 2:
                 #version 2 and beyond are ini file formats
-                _config = YangHistory_ConfigFile.__get_cfg_parser()
+                _config = YangHistory_ConfigFile_Base.get_cfg_parser()
                 _config.read(self.__filename)
                 _file_version = _config.getint('global','file-version')
         except:
