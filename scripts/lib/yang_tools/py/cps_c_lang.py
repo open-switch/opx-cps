@@ -59,16 +59,31 @@ map_types = {
     'string': 'CPS_CLASS_DATA_TYPE_T_STRING',
     'binary': 'CPS_CLASS_DATA_TYPE_T_BIN',
     'counter32': 'CPS_CLASS_DATA_TYPE_T_UINT32',
+    'yang:timeticks': 'CPS_CLASS_DATA_TYPE_T_UINT32',
+    'yang:timestamp': 'CPS_CLASS_DATA_TYPE_T_UINT32',
+    'yang:counter32': 'CPS_CLASS_DATA_TYPE_T_UINT32',
     'zero-based-counter32': 'CPS_CLASS_DATA_TYPE_T_UINT32',
+    'yang:zero-based-counter32': 'CPS_CLASS_DATA_TYPE_T_UINT32',
+    'yang:counter64': 'CPS_CLASS_DATA_TYPE_T_UINT64',
     'counter64': 'CPS_CLASS_DATA_TYPE_T_UINT64',
+    'yang:zero-based-counter64': 'CPS_CLASS_DATA_TYPE_T_UINT64',
     'zero-based-counter64': 'CPS_CLASS_DATA_TYPE_T_UINT64',
     'guage32': 'CPS_CLASS_DATA_TYPE_T_UINT32',
     'guage64': 'CPS_CLASS_DATA_TYPE_T_UINT64',
+    'yang:guage32': 'CPS_CLASS_DATA_TYPE_T_UINT32',
+    'yang:guage64': 'CPS_CLASS_DATA_TYPE_T_UINT64',
     'object-identifier': 'CPS_CLASS_DATA_TYPE_T_OBJ_ID',
     'object-identifier-128': 'CPS_CLASS_DATA_TYPE_T_OBJ_ID',
+    'yang:object-identifier': 'CPS_CLASS_DATA_TYPE_T_OBJ_ID',
+    'yang:object-identifier-128': 'CPS_CLASS_DATA_TYPE_T_OBJ_ID',
+    'yang:yang-identifier': 'CPS_CLASS_DATA_TYPE_T_STRING',
     'date-and-time': 'CPS_CLASS_DATA_TYPE_T_DATE',
+    'yang:date-and-time': 'CPS_CLASS_DATA_TYPE_T_DATE',
     'phy-address': 'CPS_CLASS_DATA_TYPE_T_BIN',
+    'yang:phy-address': 'CPS_CLASS_DATA_TYPE_T_BIN',
+    'yang:dotted-quad': 'CPS_CLASS_DATA_TYPE_T_STRING',
     'mac-address': 'CPS_CLASS_DATA_TYPE_T_BIN',
+    'yang:mac-address': 'CPS_CLASS_DATA_TYPE_T_BIN',
     'ip-version': 'CPS_CLASS_DATA_TYPE_T_ENUM',
     'port-number': 'CPS_CLASS_DATA_TYPE_T_UINT16',
     'ip-address': 'CPS_CLASS_DATA_TYPE_T_IP',
@@ -109,13 +124,24 @@ class Language:
         global valid_types
         return str in valid_types
 
-    def cps_map_type(self, global_types, elem):
+    def cps_map_type(self, context, elem):
         global map_types
+
+        _types = context['types']
+        _enums = context['enum']
+        _unions = context['union'];
+
         type_str = self.get_type(elem)
 
-        while type_str not in map_types and type_str in global_types:
-            elem = global_types[type_str]
+        while type_str not in map_types and (type_str in _types or type_str in _enums or type_str in _unions):
+            if type_str in _enums:
+                elem = _enums[type_str]
+            elif type_str in _types:
+                elem = _types[type_str]
+            else:
+                elem = _unions[type_str]
             type_str = self.get_type(elem)
+
 
         if not type_str in map_types:
             raise Exception(

@@ -64,6 +64,9 @@ class COutputFormat:
         history = self.lang.history
 
         node = model.context['enum'][name]
+        if model.module.filter_ns(node.tag) != 'typedef':
+            node = node.find(model.module.ns() + 'type')
+
         enum = node.find('enumeration')
 
         print ""

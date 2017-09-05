@@ -215,7 +215,8 @@ class CPSParser:
                 i.set('name', _prefix_and_name)
 
             if tag == 'type':
-                if _prefix_and_name in self.context['types'] :
+                #use the names that have been discovered already - otherwise could be a base type.
+                if _prefix_and_name in self.context['types'] or _prefix_and_name in self.context['enum'] or _prefix_and_name in self.context['union']:
                     i.set('name', _prefix_and_name)
 
 
@@ -367,22 +368,22 @@ class CPSParser:
                 if type.get('name') == 'enumeration':
                     tag = 'typedef'
 
-            if tag in valid_types:
-                if type_name in self.context['types']:
-                    continue
-                    # raise Exception("Duplicate entry in type name
-                    # database..."+id)
-
-                self.context['types'][type_name] = i
-
             if tag == 'typedef':
                 type = i.find(self.module.ns() + 'type')
                 if type is not None:
                     if type.get('name') == 'enumeration':
                         self.context['enum'][full_name] = i
+                        continue
                     if type.get('name') == 'union':
                         self.context['union'][full_name] = i
-                continue
+                        continue
+
+            if tag in valid_types:
+                if type_name in self.context['types']:
+                    continue
+
+                self.context['types'][type_name] = i
+
 
             if tag == 'identity':
                 _base = i.find(self.module.ns()+'base')
