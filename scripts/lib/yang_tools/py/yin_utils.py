@@ -26,6 +26,54 @@ import copy
 
 import xml.etree.ElementTree as ET
 
+
+class Locator:
+    def __init__(self, context, dirs_as_string=None):
+        if dirs_as_string:
+            self.tmpdir = dirs_as_string
+        else:
+            self.tmpdir = tempfile.mkdtemp()
+
+        self.context = context
+        self._loaded_nodes = {}
+
+    def get_yin_file(self, filename):
+        yin_file = os.path.join(
+            self.tmpdir,
+            os.path.splitext(os.path.basename(filename))[0] + ".yin")
+        if not os.path.exists(yin_file):
+            create_yin_file(filename, yin_file)
+        return yin_file
+
+    def _nodes_from_yin(self,filename):
+        '@type yang_file: string'
+        '@rtype ET.Element'
+
+        _file = None
+        with open(filename, 'r') as f:
+            _file = f.read()
+
+        if _file.find('<module ') != -1 and _file.find('xmlns:ywx=') == -1:
+            pos = _file.find('<module ') + len('<module ')
+            lhs = _file[:pos] + 'xmlns:ywx="http://localhost/ignore/" '
+            rhs = _file[pos:]
+            _file = lhs + rhs
+
+        try:
+            return ET.fromstring(_file)
+        except Exception as ex:
+            pass
+        return None
+
+    def get_yin_nodes(self,filename):
+        """
+        Given a yin file name - load it and store in dictionary
+        """
+        if filename not in self._loaded_nodes:
+            self._loaded_nodes[filename] = self._nodes_from_yin(filename)
+        return copy.deepcopy(self._loaded_nodes[filename])
+
+
 class yin_files:
     def __init__(self,context):
         self.__map = {}
@@ -40,46 +88,10 @@ class yin_files:
         yang_name = os.path.basename(yang_name)
         return self.__context.get_tmp_filename(yang_name.replace('.yang','.yin'))
 
-    def get(self,yang_file):
-        if yang_file in self.__map:
-            return self.__map[yang_file]
-        __yin_file = self.__yin_name(yang_file)
-
-        #throws exceptions if necessary
-        create_yin_file(yang_file,__yin_file)
-
-        self.__map[yang_file] = __yin_file
-
-        return self.__map[yang_file]
-
 
     def __copy_nodes(self,yang_file):
         return copy.deepcopy(self.__nodes[yang_file])
 
-    def nodes(self,yang_file):
-        '@type yang_file: string'
-        '@rtype ET.Element'
-        if yang_file in self.__nodes:
-            return self.__copy_nodes(yang_file)
-
-        _file = self.get(yang_file)
-
-        with open(_file, 'r') as f:
-            _file = f.read()
-
-        if _file.find('<module ') != -1 and _file.find('xmlns:ywx=') == -1:
-            pos = _file.find('<module ') + len('<module ')
-            lhs = _file[:pos] + 'xmlns:ywx="http://localhost/ignore/" '
-            rhs = _file[pos:]
-            _file = lhs + rhs
-
-        try:
-            self.__nodes[yang_file] = ET.fromstring(_file)
-        except Exception as ex:
-            print "Failed to process ", yang_file
-            print ex
-            sys.exit(1)
-        return self.__copy_nodes(yang_file)
 
 
 def search_path_for_file(filename):
@@ -96,7 +108,6 @@ def search_path_for_file(filename):
 
 def create_yin_file(yang_file, yin_file):
     yang_file = search_path_for_file(yang_file)
-    # print "converting "+yang_file+" to "+ yin_file
     general_utils.run_cmd(['pyang', '-o', yin_file, '-f', 'yin', yang_file])
 
 

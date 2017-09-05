@@ -50,8 +50,6 @@ class context:
         #provide a list of imports for a given model
         context['key-to-imports']={}
 
-        context['yang-loader']=yin_utils.yin_files(self)
-
         context['models'] = {} #list of all files (nodes) and module mappings
         context['model-names'] = {}
 
@@ -79,6 +77,7 @@ class context:
             context['temp-dir-obj'] = temp_elements.Directory()
 
         context['temp-dir'] = context['temp-dir-obj'].get_path()
+        context['yin-loader'] = yin_utils.Locator(context,context['temp-dir'])
 
         context['debug'] = 0
         if len(self.get_arg('debug'))>0:
@@ -97,7 +96,8 @@ class context:
 
 
     def get_yang_nodes(self,yang_file):
-        return self.__details['yang-loader'].nodes(yang_file)
+        _yin_file = self.__details['yin-loader'].get_yin_file(yang_file)
+        return self.__details['yin-loader'].get_yin_nodes(_yin_file)
 
     def log(self,msg_type,msg, *args):
         __lvl = self.__log_level_to_number(msg_type)
