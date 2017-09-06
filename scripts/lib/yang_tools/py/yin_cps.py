@@ -165,6 +165,7 @@ class CPSParser:
         self.container_map[self.module.name()] = list()
         self.all_node_map[self.module.name()] = self.__nodes()
         self.container_keys[self.module.name()] = self.module.name() + " "
+
         self.pre_parse_augments(self.__nodes(), self.module.name() + ':')
 
         print "Creating type mapping..."
@@ -439,8 +440,6 @@ class CPSParser:
             if i.get('name') is not None:
                 n_path = path + "/" + i.get('name')
             else:
-                if tag == 'augment':
-                    pass
                 n_path = path + "/" + tag
 
 
@@ -523,7 +522,7 @@ class CPSParser:
             if tag == 'leaf' or tag == 'leaf-list' or tag == 'enum':
                 self.container_map[path].append(CPSContainerElement(n_path, i))
 
-                _type = i.find(self.module.ns() + '_type')
+                _type = i.find(self.module.ns() + 'type')
                 if _type is not None:
                     if _type.get('name') == 'enumeration':
                         self.context['enum'][n_path] = i
@@ -531,6 +530,7 @@ class CPSParser:
 
             if tag == 'uses':
                 type_name = i.get('name')
+
                 if type_name.find(':') == -1:
                     raise Exception(
                         "Missing _type name... should already be specified")
