@@ -99,6 +99,14 @@ class context:
                 name in self.__details['enum'] or \
                 name in self.__details['union']
 
+    def get_tyoe_node(self,name):
+        if name in self.__details['types']:
+            return self.__details['types'][name]
+        elif name in self.__details['enum']:
+            return self.__details['enum'][name]
+        return self.__details['union'][name]
+
+
     def resolve_type(self,type_elem, get_type_name=True):
 
         if type_elem is None:

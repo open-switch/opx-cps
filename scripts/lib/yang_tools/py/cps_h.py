@@ -140,7 +140,7 @@ class COutputFormat:
                     _new_name = _new_name + '/' +_types.get('name')
                     if self.context.name_is_a_type(_types.get('name')):
                         _found_names = _found_names + \
-                            self.resolve_node_names(model,self.context['types'][_types.get('name')],_new_name)
+                            self.resolve_node_names(model,self.context.get_tyoe_node(_types.get('name')),_new_name)
                     else:
                         _found_names = _found_names+[(_new_name,_new_name)]
             return _found_names
