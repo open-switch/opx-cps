@@ -285,7 +285,7 @@ class YangHistory_HistoryFile:
         """
         _file_version = None
         try:
-            with open(self.__filename, "r") as _file:
+            with open(self._filename, "r") as _file:
                 _open = 0
                 _close = 0
                 for l in _file:
@@ -300,7 +300,7 @@ class YangHistory_HistoryFile:
             if _file_version == 2:
                 #version 2 and beyond are ini file formats
                 _config = YangHistory_ConfigFile_Base.get_cfg_parser()
-                _config.read(self.__filename)
+                _config.read(self._filename)
                 _file_version = _config.getint('global','file-version')
         except:
             pass
@@ -317,57 +317,57 @@ class YangHistory_HistoryFile:
             @filename the name of the file to load or write
             @category the category of this file
         """
-        self.__context = context
-        self.__filename = filename
-        self.__category = category
-        self.__data=YangHistory_ConfigFile_Base.empty_config_file()
+        self._context = context
+        self._filename = filename
+        self._category = category
+        self._data=YangHistory_ConfigFile_Base.empty_config_file()
 
-        self.__filename_version = self.__get_hist_version()
+        self._filename_version = self.__get_hist_version()
 
-        if self.__filename_version == 1:
-            _cfg = YangHistory_ConfigFile_v1(self.__filename)
+        if self._filename_version == 1:
+            _cfg = YangHistory_ConfigFile_v1(self._filename)
         else:
-            _cfg = YangHistory_ConfigFile_v2(self.__filename)
+            _cfg = YangHistory_ConfigFile_v2(self._filename)
 
-        self.__data = _cfg.get()
+        self._data = _cfg.get()
 
-        if self.__data['global']['range-start'] == 0:
-            self.__category_value = self.__context['history']['category'].get_category(category)
-            self.__data['global']['id'] = self.__category_value
-            self.__data['global']['range-start'] = self.__category_value << 16
-            self.__data['global']['range-end'] = (self.__category_value+1) << 16
+        if self._data['global']['range-start'] == 0:
+            self._category_value = self._context['history']['category'].get_category(category)
+            self._data['global']['id'] = self._category_value
+            self._data['global']['range-start'] = self._category_value << 16
+            self._data['global']['range-end'] = (self._category_value+1) << 16
         else:
-            self.__category_value = self.__data['global']['id']
-            self.__context['history']['category'].set_category(category,self.__category_value)
+            self._category_value = self._data['global']['id']
+            self._context['history']['category'].set_category(category,self._category_value)
 
         self.__modified = False
 
-        for _enum_type in self.__data['items'].keys():
-            for _enum_name in self.__data['items'][_enum_type].keys():
+        for _enum_type in self._data['items'].keys():
+            for _enum_name in self._data['items'][_enum_type].keys():
                 self.add_enum(_enum_type, _enum_name, None)
 
 
     def __get_indexer(self,enum_type):
-        if enum_type == self.__category:
-            return Model_Element_IndexTracker(self.__data['items'][enum_type],self.__category, self.__data['global']['range-start'])
+        if enum_type == self._category:
+            return Model_Element_IndexTracker(self._data['items'][enum_type],self._category, self._data['global']['range-start'])
 
-        return Model_Enum_IndexTracker(self.__data['items'][enum_type],self.__category, self.__data['global']['range-start'])
+        return Model_Enum_IndexTracker(self._data['items'][enum_type],self._category,0)
 
     def __valid_value(self,enum_type,enum_name):
-        value = self.__data['items'][enum_type][enum_name]
+        value = self._data['items'][enum_type][enum_name]
 
-        if enum_type==self.__category:
-            if value < self.__data['global']['range-start'] or value >= self.__data['global']['range-end']:
+        if enum_type==self._category:
+            if value < self._data['global']['range-start'] or value >= self._data['global']['range-end']:
                 raise Exception("Invalid value %d for enum %s " % (value,enum_type))
 
     def add_enum(self,enum_type,enum_name,enum_value):
-        if enum_type not in self.__data['items']:
-            self.__data['items'][enum_type]={}
+        if enum_type not in self._data['items']:
+            self._data['items'][enum_type]={}
 
-        if '..indexer..' not in self.__data['items'][enum_type]:
-            self.__data['items'][enum_type]['..indexer..'] = self.__get_indexer(enum_type)
+        if '..indexer..' not in self._data['items'][enum_type]:
+            self._data['items'][enum_type]['..indexer..'] = self.__get_indexer(enum_type)
 
-        _indexer = self.__data['items'][enum_type]['..indexer..']
+        _indexer = self._data['items'][enum_type]['..indexer..']
 
         __current_value = _indexer.get_element_value(enum_name)
 
@@ -380,11 +380,11 @@ class YangHistory_HistoryFile:
 
     def write(self):
         if self.__modified:
-            _cfg = YangHistory_ConfigFile_v2(self.__filename);
-            _cfg.store(self.__data,lambda key: key == '..indexer..')
+            _cfg = YangHistory_ConfigFile_v2(self._filename);
+            _cfg.store(self._data,lambda key: key == '..indexer..')
             self.__modified = False
         else:
-            if self.__context['debug']:
+            if self._context['debug']:
                 print ("Indexes haven't changed and therefore no output")
 
 class YangHistory_CategoryParser:
@@ -397,7 +397,7 @@ class YangHistory_CategoryParser:
     def _load_file_values(self):
         _config = YangHistory_CategoryParser.__get_cfg_parser()
 
-        _config.read(self.__filename)
+        _config.read(self._filename)
 
         self.__range_start = long(_config.get('range','start'))
         self.__range_end = long(_config.get('range','end'))
@@ -412,10 +412,11 @@ class YangHistory_CategoryParser:
         self.__modified = False
 
     def _init_file_values(self):
-        YangHistory_CategoryParser.init_file(self.__filename,0,0,{},True)
-        self._load_file_values()
-
-        self.__modified = True
+        self.__range_start = 0
+        self.__range_end = 0
+        self._auto_gen_enums = True
+        self.__modified = False
+        self._write_file = False
 
     def __init__(self, context, filename, fail_if_missing=True):
         """
@@ -426,8 +427,8 @@ class YangHistory_CategoryParser:
         """
         self.__categories = {}
         self.__index = Model_Element_IndexTracker(self.__categories,'global',0)
-        self.__context = context
-        self.__filename = filename
+        self._context = context
+        self._filename = filename
 
         if not os.path.exists(filename):
             if fail_if_missing:
@@ -471,16 +472,18 @@ class YangHistory_CategoryParser:
         for i in range(self.__range_start,self.__range_end):
             if i in self.__categories.itervalues(): continue
             return i
-        raise Exception('No space left in category range for model.  Please specify manually or update %s' % self.__filename)
+        raise Exception('No space left in category range for model.  Please specify manually or update %s' % self._filename)
 
     def write(self):
         """Write out the category tracker file"""
+        if self._write_file is False:
+            return
 
-        if self.__modified == True:
-            YangHistory_CategoryParser.init_file(self.__filename,
+        if self.__modified is True:
+            YangHistory_CategoryParser.init_file(self._filename,
                         self.__range_start, self.__range_end, self.__categories.iteritems(),self._auto_gen_enums)
         else:
-            if self.__context['debug']:
+            if self._context['debug']:
                 print ("Indexes haven't changed and therefore no output")
 
 
