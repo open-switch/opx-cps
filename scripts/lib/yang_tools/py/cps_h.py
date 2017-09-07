@@ -124,34 +124,31 @@ class COutputFormat:
         return l
 
     def resolve_node_names(self,model,node,name):
-        _found_names = []
 
         _node_type_inst = node.find(model.module.ns() + 'type')
+        _node_type = self.context.resolve_type(_node_type_inst)
 
-        if _node_type_inst is None:
+        if _node_type is None:
             return [(name,'binary')]
 
-        _node_type = _node_type_inst.get('name')
-
         if _node_type == 'union':
+            _node_type_inst = self.context.resolve_type(_node_type_inst,False)
+            _found_names = []
             for _types in _node_type_inst.findall(model.module.ns() + 'type'):
                 _new_name = name
                 if _types.get('name') is not None:
                     _new_name = _new_name + '/' +_types.get('name')
-                    if _types.get('name') in self.context['types']:
+                    if self.context.name_is_a_type(_types.get('name')):
                         _found_names = _found_names + \
                             self.resolve_node_names(model,self.context['types'][_types.get('name')],_new_name)
                     else:
                         _found_names = _found_names+[(_new_name,_new_name)]
             return _found_names
 
-        if _node_type is not None and _node_type in self.context['types']:
-           return _found_names + self.resolve_node_names(model,self.context['types'][_node_type],name)
-
         if _node_type is not None:
-            return _found_names + [(name,_node_type)]
+            return [(name,_node_type)]
 
-        return _found_names
+        return []
 
     def print_container(self, model):
         history = self.lang.history

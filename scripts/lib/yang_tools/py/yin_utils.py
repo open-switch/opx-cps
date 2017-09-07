@@ -105,6 +105,13 @@ def search_path_for_file(filename):
         filename +
         " please set path in YANG_MODPATH.  eg YANG_MODPATH=DIR1:DIR2")
 
+def get_type(node):
+    _type_len = len('type')
+    for i in node:
+        _pos = i.tag.rfind('type')
+        if _pos == (len(i.tag) - _type_len):
+            return i
+    return None
 
 def create_yin_file(yang_file, yin_file):
     yang_file = search_path_for_file(yang_file)

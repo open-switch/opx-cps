@@ -154,7 +154,7 @@ class Language:
         return type_to_lang_type(str)
 
     def get_type(self, node):
-        type = node.find(self.model.module.ns() + 'type')
+        type = yin_utils.get_type(node)
         if type is None:
             return 'binary'
         return type.get('name')

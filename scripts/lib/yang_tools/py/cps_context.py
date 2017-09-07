@@ -94,6 +94,36 @@ class context:
 
         context['standard-copyright'] = __standard_copyright
 
+    def name_is_a_type(self,name):
+        return  name in self.__details['types'] or \
+                name in self.__details['enum'] or \
+                name in self.__details['union']
+
+    def resolve_type(self,type_elem, get_type_name=True):
+
+        if type_elem is None:
+            return None
+
+        _type_name = type_elem.get('name')
+
+        _types = self.__details['types']
+        _enums = self.__details['enum']
+        _unions = self.__details['union'];
+
+        _type = type_elem
+
+        while _type_name in _types or _type_name in _enums or _type_name in _unions:
+            if _type_name in _enums:
+                _elem = _enums[_type_name]
+            elif _type_name in _types:
+                _elem = _types[_type_name]
+            else:
+                _elem = _unions[_type_name]
+            _type = yin_utils.get_type(_elem)
+            _type_name = _type.get('name')
+
+        if get_type_name: return _type_name
+        return _type
 
     def get_yang_nodes(self,yang_file):
         _yin_file = self.__details['yin-loader'].get_yin_file(yang_file)

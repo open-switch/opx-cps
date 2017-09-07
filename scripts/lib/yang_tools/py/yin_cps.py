@@ -198,6 +198,8 @@ class CPSParser:
             self.add_module_fb_mapping(self.context['enum'], i)
         for i in self.context['types'].keys():
             self.add_module_fb_mapping(self.context['types'], i)
+        for i in self.context['union'].keys():
+            self.add_module_fb_mapping(self.context['types'], i)
 
     def update_node_prefixes(self, node):
         """
@@ -217,7 +219,7 @@ class CPSParser:
 
             if tag == 'type':
                 #use the names that have been discovered already - otherwise could be a base type.
-                if _prefix_and_name in self.context['types'] or _prefix_and_name in self.context['enum'] or _prefix_and_name in self.context['union']:
+                if self.context.name_is_a_type(_prefix_and_name):
                     i.set('name', _prefix_and_name)
 
 
