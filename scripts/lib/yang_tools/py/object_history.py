@@ -412,11 +412,11 @@ class YangHistory_CategoryParser:
         self.__modified = False
 
     def _init_file_values(self):
-        self.__range_start = 0
+        self.__range_start = 10
         self.__range_end = 0
         self._auto_gen_enums = True
         self.__modified = False
-        self._write_file = False
+        self._write_file = True
 
     def __init__(self, context, filename, fail_if_missing=True):
         """
@@ -429,6 +429,7 @@ class YangHistory_CategoryParser:
         self.__index = Model_Element_IndexTracker(self.__categories,'global',0)
         self._context = context
         self._filename = filename
+        self._write_file = True
 
         if not os.path.exists(filename):
             if fail_if_missing:
