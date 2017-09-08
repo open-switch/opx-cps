@@ -115,8 +115,8 @@ class CPSYangModel:
             'cms' : cms_lang.Language(self.context) }
 
         __cat_file_name = self.context.get_config_path('category.yconf')
-        self.context['history']['category'] = \
-            object_history.YangHistory_CategoryParser(self.context,__cat_file_name,False)
+
+        object_history.YangHistory_CategoryParser(self.context,__cat_file_name,False)
 
         #Filled in during initialization the root yang model parser
         #self.context['history']['file']

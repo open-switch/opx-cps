@@ -310,7 +310,7 @@ class YangHistory_HistoryFile:
 
         return _file_version
 
-    def __init__(self, context, filename, category):
+    def __init__(self, context, filename, category=None):
         """
             Create a history object loaded from a file provided.
             @context contains program details/context
@@ -330,6 +330,12 @@ class YangHistory_HistoryFile:
             _cfg = YangHistory_ConfigFile_v2(self._filename)
 
         self._data = _cfg.get()
+
+        if 'category' in self._data['global'] and category == None:
+            self._category = self._data['global']['category']
+
+        if self._category is None:
+            raise Exception('No category provided - for %s' % filename)
 
         if self._data['global']['range-start'] == 0:
             self._category_value = self._context['history']['category'].get_category(category)
@@ -416,7 +422,13 @@ class YangHistory_CategoryParser:
         self.__range_end = 0
         self._auto_gen_enums = True
         self.__modified = False
-        self._write_file = True
+        self._write_file = False
+
+        for i in os.listdir(self._context['history']['sources']):
+            if '.yhist' not in i: continue
+            _file = os.path.join(self._context['history']['sources'],i)
+
+            _hist = YangHistory_HistoryFile(self._context,_file)
 
     def __init__(self, context, filename, fail_if_missing=True):
         """
@@ -430,6 +442,7 @@ class YangHistory_CategoryParser:
         self._context = context
         self._filename = filename
         self._write_file = True
+        self._context['history']['category'] = self
 
         if not os.path.exists(filename):
             if fail_if_missing:
