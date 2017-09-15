@@ -298,6 +298,25 @@ class CPSParser:
                 i.set('augmented', True)
                 self. stamp_augmented_children(i, _ns)
 
+                _tgt_node = _cps_name
+                _ns = i.get('target-namespace')
+                
+                if _ns == self.context.get_ns(self.get_key()).prefix():
+                    _key_model = self
+                    _key_path =  _key_model.get_key_elements(_tgt_node,i.get('augment'))
+                    _augmented_node = _key_model.all_node_map[_ns+'/'+_tgt_node]
+                else:
+                    _key_model = self.context['loader'].yin_map[self.context['model-names'][_ns]]
+                    _key_path =  _key_model.get_key_elements(_tgt_node,i)
+                    _key_path =  self.module.name()+ ' ' +_key_path
+                    if _tgt_node not in _key_model.all_node_map:
+                        raise Exception('Missing key mapping for augment node %s' % _tgt_node)
+                    _augmented_node = _key_model.all_node_map[_tgt_node]
+                
+                i.set('key-path',_key_path)
+                i.set('augment',_augmented_node)
+
+
     def handle_augments(self,parent,path):
         for i in parent:
             tag = self.module.filter_ns(i.tag)
