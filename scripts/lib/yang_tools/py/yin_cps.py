@@ -21,22 +21,24 @@ import yin_utils
 
 
 class CPSContainerElement:
+
     def __init__(self, name, node):
         self.name = name
         self.node = node
+
 
 class CPSParser:
     supported_ids_at_root = [
         "list", "container", "rpc", 'augment']
 
     supported_list_containing_children = [
-        'augment',"container", "grouping", "choice", "list", "rpc", "case", "module", "type", "typedef", "input", "output"]
+        'augment', "container", "grouping", "choice", "list", "rpc", "case", "module", "type", "typedef", "input", "output"]
 
     augment_list = []
     supported_list_of_leaves_have_attr_ids = [
-        'augment',"container", "case", "list", "leaf", "leaf-list", "rpc", "choice", "input", "output"]
+        'augment', "container", "case", "list", "leaf", "leaf-list", "rpc", "choice", "input", "output"]
 
-    __supports_duplicate_entries= ['augment']
+    __supports_duplicate_entries = ['augment']
 
     def __init__(self, context, model_name, filename):
         ET.register_namespace("ywx", "http://localhost/dontcare")
@@ -59,20 +61,19 @@ class CPSParser:
 
         self.parent = {}
 
-
     def get_key(self):
         return self.__my_key
 
-    def __ns_field(self,field_name):
+    def __ns_field(self, field_name):
         return self.context.get_ns(self.get_key()).field_name(field_name)
 
     def __nodes(self):
         return self.context.get_nodes(self.get_key())
 
-    def get_key_elements(self,key,node):
+    def get_key_elements(self, key, node):
         if node is None:
             raise Exception('Invalid not passed in for key %s' % key)
-        if key.find('/') == -1:    #if not root node
+        if key.find('/') == -1:  # if not root node
             return key
 
         if key in self.key_elements:
@@ -85,12 +86,15 @@ class CPSParser:
         _key = ""
 
         if key in self.parent:
-             __par_name = self.parent[key]
-             if __par_name not in self.key_elements:
+            __par_name = self.parent[key]
+            if __par_name not in self.key_elements:
                 self.key_elements[__par_name] = \
-                    self.get_key_elements(__par_name,self.all_node_map[__par_name])
-             _key = self.key_elements[__par_name].rstrip()
-             if len(_key) > 0: _key+=' '
+                    self.get_key_elements(
+                        __par_name,
+                        self.all_node_map[__par_name])
+            _key = self.key_elements[__par_name].rstrip()
+            if len(_key) > 0:
+                _key += ' '
 
         _key += key + ' '
 
@@ -117,21 +121,26 @@ class CPSParser:
         """
 
         self.context.set_nodes(self.get_key(),
-                self.context.get_yang_nodes(self.filename))
+                               self.context.get_yang_nodes(self.filename))
 
-        self.context.add_ns(self.get_key(),yin_ns.Module(self.filename, self.__nodes()))
+        self.context.add_ns(
+            self.get_key(),
+            yin_ns.Module(self.filename,
+                          self.__nodes()))
         self.module = self.context.get_ns(self.get_key())
 
         if prefix is not None:
             self.module.update_prefix(prefix)
 
-        self.context.add_cat(self.get_key(),self.module.name())
-        self.context.set_hist_name(self.get_key(),self.module.model_name()+'.yhist')
+        self.context.add_cat(self.get_key(), self.module.name())
+        self.context.set_hist_name(
+            self.get_key(),
+            self.module.model_name() + '.yhist')
 
         self.imports = {}
         self.imports['module'] = list()
         self.imports['prefix'] = list()
-        self.imports['map']={}
+        self.imports['map'] = {}
 
         for i in self.__nodes().findall(self.__ns_field("import")):
             prefix = i.find(self.__ns_field('prefix'))
@@ -143,7 +152,9 @@ class CPSParser:
             _import_name = i.get('module') + ".yang"
             _import_prefix = prefix
 
-            print("Loading module %s with prefix %s" % (_import_name,_import_prefix))
+            print(
+                "Loading module %s with prefix %s" %
+                (_import_name, _import_prefix))
 
             self.context['loader'].load(_import_name, prefix=prefix)
             self.imports['module'].append(i.get('module'))
@@ -190,7 +201,7 @@ class CPSParser:
         if key.find(_prefix_a) != 0:
             return
 
-        _alias =  _prefix_b+key[len(_prefix_a):]
+        _alias = _prefix_b + key[len(_prefix_a):]
         container[_alias] = container[key]
 
     def fix_enums(self):
@@ -210,7 +221,7 @@ class CPSParser:
 
             _name = i.get('name')
             if _name is None:
-                continue;
+                continue
 
             _prefix_and_name = self.module.add_prefix(_name)
 
@@ -218,18 +229,18 @@ class CPSParser:
                 i.set('name', _prefix_and_name)
 
             if tag == 'type':
-                #use the names that have been discovered already - otherwise could be a base type.
+                # use the names that have been discovered already - otherwise
+                # could be a base type.
                 if self.context.name_is_a_type(_prefix_and_name):
                     i.set('name', _prefix_and_name)
-
 
     def stamp_augmented_children(self, parent, ns):
         for i in list(parent):
             self.stamp_augmented_children(i, ns)
             i.set('augmented', True)
-            i.set('target-namespace',ns)
+            i.set('target-namespace', ns)
 
-    def _generate_augment_key(self,augment_key):
+    def _generate_augment_key(self, augment_key):
         """
         Input is in form of /if:interfaces/if:interface/ip:ipv4/ip:address and result should be
                             ip/if/interfaces/interface/ipv4/address
@@ -239,7 +250,8 @@ class CPSParser:
                             ns/ip/if/interfaces/interface/ipv4/address/name
         """
         _lst = augment_key.split('/')
-        if _lst[0]=='': _lst = _lst[1:]
+        if _lst[0] == '':
+            _lst = _lst[1:]
         _result = ''
 
         _last_ns = ''
@@ -248,10 +260,10 @@ class CPSParser:
         _ns_lst = []
         _ns_entries = []
 
-        for i in range(0,len(_lst)):
+        for i in range(0, len(_lst)):
             _comp = yin_utils.get_prefix_tuple(_lst[i])
 
-            if _comp[0]!=_last_ns:
+            if _comp[0] != _last_ns:
                 _last_entry_list = []
                 _ns_entries.append(_last_entry_list)
 
@@ -262,88 +274,98 @@ class CPSParser:
 
         _result = ''
 
-
         def _add_slash(list_of_items):
             return '/'.join(list_of_items)
 
-        for i in range(0,len(_ns_entries)):
-            if len(_result)>0 and _result[0] != '/':
-                _result = '/'+_result
-            _result=_ns_lst[i] + _result
+        for i in range(0, len(_ns_entries)):
+            if len(_result) > 0 and _result[0] != '/':
+                _result = '/' + _result
+            _result = _ns_lst[i] + _result
 
             for ent in _ns_entries[i]:
-                _result += '/'+ent
+                _result += '/' + ent
 
-        if _result[0] == '/': _result = _result[1:]
+        if _result[0] == '/':
+            _result = _result[1:]
         return _result
 
-    def pre_parse_augments(self,parent,path):
+    def pre_parse_augments(self, parent, path):
         for i in parent:
             tag = self.module.filter_ns(i.tag)
 
-            #if type is augment.. then set the items 'name' to the augmented class
+            # if type is augment.. then set the items 'name' to the augmented
+            # class
             if tag == 'augment':
                 _tgt_node = i.get('target-node')
 
                 _cps_name = self._generate_augment_key(_tgt_node)
-                _prefix = _cps_name.split('/',1)[0]
+                _prefix = _cps_name.split('/', 1)[0]
 
-                if _cps_name.find('/')==-1:
+                if _cps_name.find('/') == -1:
                     _ns = self.context.get_ns(self.get_key()).prefix()
                 else:
                     _ns = _prefix
 
-                i.set('target-namespace',_ns)
-                i.set('name',_cps_name)
+                i.set('target-namespace', _ns)
+                i.set('name', _cps_name)
                 i.set('augmented', True)
                 self. stamp_augmented_children(i, _ns)
 
                 _tgt_node = _cps_name
                 _ns = i.get('target-namespace')
-                
+
                 if _ns == self.context.get_ns(self.get_key()).prefix():
                     _key_model = self
-                    _key_path =  _key_model.get_key_elements(_tgt_node,i.get('augment'))
-                    _augmented_node = _key_model.all_node_map[_ns+'/'+_tgt_node]
+                    _key_path = _key_model.get_key_elements(
+                        _tgt_node, i.get('augment'))
+                    _augmented_node = _key_model.all_node_map[
+                        _ns + '/' + _tgt_node]
                 else:
-                    _key_model = self.context['loader'].yin_map[self.context['model-names'][_ns]]
-                    _key_path =  _key_model.get_key_elements(_tgt_node,i)
-                    _key_path =  self.module.name()+ ' ' +_key_path
+                    _key_model = self.context['loader'].yin_map[
+                        self.context['model-names'][_ns]]
+                    _key_path = _key_model.get_key_elements(_tgt_node, i)
+                    _key_path = self.module.name() + ' ' + _key_path
                     if _tgt_node not in _key_model.all_node_map:
-                        raise Exception('Missing key mapping for augment node %s' % _tgt_node)
+                        raise Exception(
+                            'Missing key mapping for augment node %s' %
+                            _tgt_node)
                     _augmented_node = _key_model.all_node_map[_tgt_node]
-                
-                i.set('key-path',_key_path)
-                i.set('augment',_augmented_node)
 
+                i.set('key-path', _key_path)
+                i.set('augment', _augmented_node)
 
-    def handle_augments(self,parent,path):
+    def handle_augments(self, parent, path):
         for i in parent:
             tag = self.module.filter_ns(i.tag)
 
-            #if type is augment.. then set the items 'name' to the augmented class
+            # if type is augment.. then set the items 'name' to the augmented
+            # class
             if tag == 'augment':
                 _tgt_node = i.get('name')
                 _ns = i.get('target-namespace')
 
                 if _ns == self.context.get_ns(self.get_key()).prefix():
                     _key_model = self
-                    _key_path =  _key_model.get_key_elements(_tgt_node,i.get('augment'))
-                    _augmented_node = _key_model.all_node_map[_ns+'/'+_tgt_node]
+                    _key_path = _key_model.get_key_elements(
+                        _tgt_node, i.get('augment'))
+                    _augmented_node = _key_model.all_node_map[
+                        _ns + '/' + _tgt_node]
                 else:
-                    _key_model = self.context['loader'].yin_map[self.context['model-names'][_ns]]
-                    _key_path =  _key_model.get_key_elements(_tgt_node,i)
-                    _key_path =  self.module.name()+ ' ' +_key_path
+                    _key_model = self.context['loader'].yin_map[
+                        self.context['model-names'][_ns]]
+                    _key_path = _key_model.get_key_elements(_tgt_node, i)
+                    _key_path = self.module.name() + ' ' + _key_path
                     if _tgt_node not in _key_model.all_node_map:
-                        raise Exception('Missing key mapping for augment node %s' % _tgt_node)
+                        raise Exception(
+                            'Missing key mapping for augment node %s' %
+                            _tgt_node)
                     _augmented_node = _key_model.all_node_map[_tgt_node]
 
                 self.module.set_if_augments()
                 if _key_model not in self.augment_list:
                     self.augment_list.append(_key_model)
-                i.set('augment',_augmented_node)
-                i.set('key-path',_key_path)
-
+                i.set('augment', _augmented_node)
+                i.set('key-path', _key_path)
 
     def parse_types(self, parent, path):
         """
@@ -352,14 +374,15 @@ class CPSParser:
 
             eg.. self.parse_types(root_node,'/somewhere')
         """
-        valid_types = ['typedef','identity' ] #two nodes that can be part of types
+        valid_types = ['typedef', 'identity']
+            #two nodes that can be part of types
 
         for i in parent:
             tag = self.module.filter_ns(i.tag)
 
             id = tag
             if tag == 'config':
-                parent.set('read-only',True)
+                parent.set('read-only', True)
                 continue
             if tag == 'must':
                 continue
@@ -368,19 +391,21 @@ class CPSParser:
                 id = i.get('name')
 
             full_name = path
-            #if "entry:" then skip the / eg.. entry:/ = bad
+            # if "entry:" then skip the / eg.. entry:/ = bad
             if full_name[len(full_name) - 1] != ':':
                 full_name += "/"
             full_name += id
             type_name = self.module.name() + ':' + id
 
-            #recurse children
+            # recurse children
             if len(i) > 0:
                 self.parse_types(i, full_name)
 
             if tag == 'grouping':
                 if type_name in self.context['grouping']:
-                    print('Discovered multiple references to %s - ignoring' % type_name)
+                    print(
+                        'Discovered multiple references to %s - ignoring' %
+                        type_name)
                     continue
                 self.context['grouping'][type_name] = i
                 continue
@@ -406,12 +431,12 @@ class CPSParser:
 
                 self.context['types'][type_name] = i
 
-
             if tag == 'identity':
-                _base = i.find(self.module.ns()+'base')
+                _base = i.find(self.module.ns() + 'base')
                 _identity_ = ""
 
-                #resolve the base to an attribute called _identity_ including base idents
+                # resolve the base to an attribute called _identity_ including
+                # base idents
                 if _base is not None:
                     _base = self.module.add_prefix(_base.get('name'))
 
@@ -421,31 +446,50 @@ class CPSParser:
                     _base_node = self.context['types'][_base]
 
                     _identity_ = _base_node.get('__identity__')
-                    if  _base_node.get('__children__') is not None:
-                        _base_node.set('__children__',_base_node.get('__children__')+' '+type_name)
+                    if _base_node.get('__children__') is not None:
+                        _base_node.set(
+                            '__children__',
+                            _base_node.get(
+                                '__children__') +
+                            ' ' +
+                            type_name)
                     else:
-                        _base_node.set('__children__',type_name)
+                        _base_node.set('__children__', type_name)
 
-                    if _identity_ is None: _identity_ = ''
+                    if _identity_ is None:
+                        _identity_ = ''
 
-                    if len(_identity_)>0:
-                        _identity_+='/'
+                    if len(_identity_) > 0:
+                        _identity_ += '/'
 
-                _identity_+=type_name
+                _identity_ += type_name
 
-                i.set('__identity__',_identity_)
+                i.set('__identity__', _identity_)
 
-    def is_augmented(self,path):
+    def is_augmented(self, path):
         parent_path = "/".join(path.split("/")[:-1])
         if parent_path in self.all_node_map:
             if self.module.filter_ns(self.all_node_map[parent_path].tag) == "augment":
-                return (True,self.all_node_map[parent_path])
+                return (True, self.all_node_map[parent_path])
             else:
                 return self.is_augmented(parent_path)
         else:
-            return (False,None)
+            return (False, None)
 
-    __tags_to_ingore_walk_nodes = [ 'config','key', 'must', 'description','mandatory','max-elements','min-elements','range','value','when','default','feature' ]
+    __tags_to_ingore_walk_nodes = [
+        'config',
+        'key',
+        'must',
+        'description',
+        'mandatory',
+        'max-elements',
+        'min-elements',
+        'range',
+        'value',
+        'when',
+        'default',
+        'feature']
+
     def walk_nodes(self, node, path):
         nodes = list(node)
         parent = path  # container path to parent
@@ -463,21 +507,21 @@ class CPSParser:
             else:
                 n_path = path + "/" + tag
 
-
-            #can have repeated nodes for some classes (augment)
+            # can have repeated nodes for some classes (augment)
             if tag not in self.__supports_duplicate_entries:
                 if n_path in self.all_node_map:
-                    # Handle the case of leaf named description and description element already existing at this level
+                    # Handle the case of leaf named description and description
+                    # element already existing at this level
                     if (self.all_node_map[n_path].tag.find('description')) and (i.get('name') == 'description'):
                         print "description leaf and description tag found"
                     else:
                         continue
 
-            #fill in parent
+            # fill in parent
             self.parent[n_path] = path
 
             if tag == 'grouping' or tag == 'typedef':
-                continue;
+                continue
 
             # in the case tht the parent tag is a choice and you parsing a non-case... then add a case for the standard
             # As a shorthand, the "case" statement can be omitted if the branch contains a single "anyxml", "container",
@@ -507,25 +551,28 @@ class CPSParser:
                 n_path = self.all_node_map[path]
                 tag = 'container'
 
-            if tag == 'container' or tag == 'list' or tag == 'rpc' or tag=='augment':
+            if tag == 'container' or tag == 'list' or tag == 'rpc' or tag == 'augment':
 
                 __add_ = True
 
-                #in the case of dup entries possible don't add if already a node exists
+                # in the case of dup entries possible don't add if already a
+                # node exists
                 if tag in self.__supports_duplicate_entries:
                     if n_path in self.containers:
                         __add_ = False
 
-                if __add_==True:
+                if __add_:
                     self.containers[n_path] = i
                     self.container_map[n_path] = list()
                 else:
-                    #add the children of this node the previous node
+                    # add the children of this node the previous node
                     self.containers[n_path].extend(list(i))
 
-                #if the augment is there, then append and add a key path if necessary
-                if __add_==True:
-                    self.container_map[path].append(CPSContainerElement(n_path, i))
+                # if the augment is there, then append and add a key path if
+                # necessary
+                if __add_:
+                    self.container_map[path].append(
+                        CPSContainerElement(n_path, i))
 
                     _key_node = i
                     _key_prefix = n_path
@@ -534,7 +581,8 @@ class CPSParser:
                     _key_path = i.get('key-path')
 
                     if _key_path is None:
-                        _key_path = _key_model.get_key_elements(_key_prefix,_key_node)
+                        _key_path = _key_model.get_key_elements(
+                            _key_prefix, _key_node)
 
                     self.container_keys[n_path] = _key_path
 
@@ -562,9 +610,11 @@ class CPSParser:
                     raise Exception("Missing " + type_name)
 
                 _type = self.context['grouping'][type_name]
-                (ret_val,ret_node) =  self.is_augmented(path)
+                (ret_val, ret_node) = self.is_augmented(path)
                 if ret_val:
-                    self.stamp_augmented_children(_type,ret_node.get('target-namespace'))
+                    self.stamp_augmented_children(
+                        _type,
+                        ret_node.get('target-namespace'))
                 type_tag = self.module.filter_ns(_type.tag)
                 if type_tag == 'grouping':
                     self.walk_nodes(_type, path)
@@ -582,9 +632,10 @@ class CPSParser:
 
         self.keys = {}
         for k in self.all_node_map:
-            if self.all_node_map[k].tag not in self.has_attr_ids: continue
+            if self.all_node_map[k].tag not in self.has_attr_ids:
+                continue
             if k not in self.key_elements:
-                self.key_elements[k] = self.get_key_elements(k,self.all_node_map[k])
+                self.key_elements[k] = self.get_key_elements(
+                    k, self.all_node_map[k])
 
         self.keys = self.key_elements
-

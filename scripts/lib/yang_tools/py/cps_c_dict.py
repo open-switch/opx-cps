@@ -19,6 +19,7 @@ import sys
 import yin_utils
 import c_utils
 
+
 class COutputFormat:
 
     def __init__(self, context):

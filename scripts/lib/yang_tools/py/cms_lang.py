@@ -68,56 +68,54 @@ class Language:
     ]
 
     type_extractor_map = {
-      'int8':'CMA_GET_INT8',
-      'int16':'CMA_GET_INT16',
-      'int32':'CMA_GET_INT32',
-      'int64':'CMA_GET_INT64',
-      'uint8':'CMA_GET_INT8',
-      'uint16':'CMA_GET_INT16',
-      'uint32':'CMA_GET_INT32',
-      'uint64':'CMA_GET_INT64',
-      'boolean':'CMA_GET_BOOL',
-      'enumeration':'CMA_GET_ENUM',
-      'string':'CMA_GET_STR',
-      'idref':'CMA_GET_STR'
+        'int8': 'CMA_GET_INT8',
+        'int16': 'CMA_GET_INT16',
+        'int32': 'CMA_GET_INT32',
+        'int64': 'CMA_GET_INT64',
+        'uint8': 'CMA_GET_INT8',
+        'uint16': 'CMA_GET_INT16',
+        'uint32': 'CMA_GET_INT32',
+        'uint64': 'CMA_GET_INT64',
+        'boolean': 'CMA_GET_BOOL',
+        'enumeration': 'CMA_GET_ENUM',
+        'string': 'CMA_GET_STR',
+        'idref': 'CMA_GET_STR'
     }
     type_formatter_map = {
-      'int8':'%d',
-      'int16':'%d',
-      'int32':'%d',
-      'int64':'%ll',
-      'uint8':'%u',
-      'uint16':'%u',
-      'uint32':'%u',
-      'uint64':'%ul',
-      'boolean':'%d',
-      'enumeration':'%d',
-      'string':'%s',
-      'idref':'%s'
+        'int8': '%d',
+        'int16': '%d',
+        'int32': '%d',
+        'int64': '%ll',
+        'uint8': '%u',
+        'uint16': '%u',
+        'uint32': '%u',
+        'uint64': '%ul',
+        'boolean': '%d',
+        'enumeration': '%d',
+        'string': '%s',
+        'idref': '%s'
     }
-
 
     def __init__(self, context):
         self.context = context
 
     def change_name_for_augment(self, name):
 
-        if self.all_node_map[name].get('augmented') ==True:
-             ns = self.all_node_map[name].get('target-namespace')
-             ns_index = str.find(name, "/" + ns + "/")
-             if ns_index:
-                  name1 = name[:ns_index]
-                  name2= name[ns_index+len(ns)+1:]
-                  name = name1+name2
-                  return name
-
+        if self.all_node_map[name].get('augmented'):
+            ns = self.all_node_map[name].get('target-namespace')
+            ns_index = str.find(name, "/" + ns + "/")
+            if ns_index:
+                name1 = name[:ns_index]
+                name2 = name[ns_index + len(ns) + 1:]
+                name = name1 + name2
+                return name
 
     def change_prefix(self, name, model):
         prefix = model.module.prefix()
         loc = name.find(prefix)
         if loc != 0:
             return name
-        return name.replace(prefix,model.module.model_name(),1)
+        return name.replace(prefix, model.module.model_name(), 1)
 
     def name_to_cms_name(self, name):
         name = name.replace('/', '_')
@@ -129,37 +127,43 @@ class Language:
         self.names = {}
         self.aug_names = {}
         for k in self.all_node_map:
-            name = self.name_to_cms_name(self.change_prefix(k,self.model))
+            name = self.name_to_cms_name(self.change_prefix(k, self.model))
             self.names[k] = name
-            self.names[name]=k
+            self.names[name] = k
             if k.startswith(self.model.module.prefix()):
                 aug_name = self.change_name_for_augment(k)
                 if aug_name is not None:
-                    aug_name = self.name_to_cms_name(self.change_prefix(aug_name,self.model))
+                    aug_name = self.name_to_cms_name(
+                        self.change_prefix(aug_name, self.model))
                 else:
                     aug_name = name
-                self.aug_names[k]=aug_name
+                self.aug_names[k] = aug_name
 
-        #go through the list of modules augmented and setup names for nodes
+        # go through the list of modules augmented and setup names for nodes
         if self.module_obj.get_if_augments() is True:
             for model in self.model.augment_list:
-               for k in self.all_node_map:
-                   if k is model.module.prefix():
-                       continue
-                   name = self.name_to_cms_name(self.change_prefix(k,model))
-                   self.names[k] = name
-                   self.names[name] = k
-
+                for k in self.all_node_map:
+                    if k is model.module.prefix():
+                        continue
+                    name = self.name_to_cms_name(self.change_prefix(k, model))
+                    self.names[k] = name
+                    self.names[name] = k
 
         for k in self.model.key_elements:
             for key_element in self.model.key_elements[k].split():
-                if key_element in self.names: continue
+                if key_element in self.names:
+                    continue
                 name = ''
-                #get the name from the CPS model since we don't have a mapping here
+                # get the name from the CPS model since we don't have a mapping
+                # here
                 if key_element not in self.context['output']['language']['cps'].names:
                     continue
 
-                name = self.context['output']['language']['cps'].names[key_element]
+                name = self.context[
+                    'output'][
+                    'language'][
+                    'cps'].names[
+                    key_element]
 
                 self.names[key_element] = name
                 self.names[name] = key_element
@@ -213,7 +217,6 @@ class Language:
                     keys_raw = self.model.container_keys[k]
                     node = ""
 
-
             keys = ""
             keys_raw = keys_raw.split()
             if self.all_node_map[k].get('augmented') is True:
@@ -226,7 +229,6 @@ class Language:
                 keys = keys[:-1]
             else:
                 keys += self.names[k]
-
 
             self.cb_node_keys[self.names[k]] = keys
 
@@ -257,7 +259,8 @@ class Language:
 
         __combined_map = {}
         for mod in self.model.context['loader'].yin_map.keys():
-            __all_node_map = self.model.context['loader'].yin_map[mod].all_node_map
+            __all_node_map = self.model.context[
+                'loader'].yin_map[mod].all_node_map
             __combined_map.update(__all_node_map)
         self.all_node_map = __combined_map
 
@@ -266,7 +269,6 @@ class Language:
 
         self.setup_names()
         self.find_cb_nodes()
-
 
     def rw_access(self, yin_node):
         config_access = yin_node.find(self.model.module.ns() + 'config')
@@ -282,13 +284,15 @@ class Language:
             node = self.all_node_map[real_path]
             model = self.context.get_model_for_key(real_path)
             if "augment" in node.tag:
-                 #splice augmenting prefix from real_path
-                 real_path = real_path[real_path.find('/')+1:]
-                 continue
+                # splice augmenting prefix from real_path
+                real_path = real_path[real_path.find('/') + 1:]
+                continue
             if self.rw_access(node) == False:
                 return True
             if model is None:
-                raise Exception('Can not locate %s in model in node' % node.get('name'))
+                raise Exception(
+                    'Can not locate %s in model in node' %
+                    node.get('name'))
             if real_path not in model.parent:
                 raise Exception('Can not locate %s in model' % real_path)
             real_path = model.parent[real_path]
@@ -412,7 +416,7 @@ class Language:
             print "       * value will be null. Check whether it is null by calling"
             print "       * val_is_null() before using it */"
             print "      switch(id) {"
-        leaf_present=False
+        leaf_present = False
         for leaf in self.get_node_leaves_based_on_access(cb_node, read_only):
             if self.all_node_map[leaf].tag == self.model.module.ns() + 'leaf-list':
                 if function.find('get') != -1:
@@ -435,7 +439,9 @@ class Language:
                     leaf_present = True
                     print "          case " + self.aug_names[leaf] + ":"
                     print "              if(cma_get_data_from_it(&it,&val)) {"
-                    typ = yin_utils.node_get_type(self.module_obj, self.model.all_node_map[leaf])
+                    typ = yin_utils.node_get_type(
+                        self.module_obj,
+                        self.model.all_node_map[leaf])
                     node = self.all_node_map[leaf]
                     def_node = node.find(self.module_obj.ns() + "default")
                     if def_node is None:
@@ -454,7 +460,7 @@ class Language:
                     print "  const bool " + self.names_short[self.names[leaf]] + "_val_valid = " + function + "(obj," + self.aug_names[leaf] + ",&" + self.names_short[self.names[leaf]] + "_val);"
                     print "  (void)" + self.names_short[self.names[leaf]] + "_val_valid;"
                     print ""
-        if function.find('get') != -1  and leaf_present==True:
+        if function.find('get') != -1 and leaf_present:
             print "          default:"
             print "             break;"
             print "      }"
@@ -548,14 +554,14 @@ class Language:
         module_us = self.name_to_cms_name(self.module)
         print "#ifndef _" + module_us + "_init_h_"
         print "#define _" + module_us + "_init_h_"
-        print "void " +  module_us + "_init();"
+        print "void " + module_us + "_init();"
         print "#endif"
 
     def write_main_c(self):
         module_us = self.name_to_cms_name(self.module)
         for elem in self.cb_node_keys:
             if "augment" not in self.all_node_map[self.names[elem]].tag:
-                print "#include  \""+ self.get_aug_key_for_key(elem) + ".h\""
+                print "#include  \"" + self.get_aug_key_for_key(elem) + ".h\""
         print "#include  \"" + self.module + ".h\""
         print "#include  \"" + module_us + "_init.h\""
         print "#include  \"cma_init.h\""
@@ -565,17 +571,17 @@ class Language:
         print ""
         if self.module_obj.get_if_augments() != True:
             print "static cma_cms_reg_t modreg[] = {"
-            print "  { .module_name =" +  module_us.upper() +  "_MODEL_STR,.module_revision = \"\", .has_default_db = false }"
+            print "  { .module_name =" + module_us.upper() + "_MODEL_STR,.module_revision = \"\", .has_default_db = false }"
             print "};"
             print ""
         print ""
-        print "void " +  module_us + "_init()"
+        print "void " + module_us + "_init()"
         print ""
         print "{"
         print ""
         for elem in self.cb_node_keys:
             if "augment" not in self.all_node_map[self.names[elem]].tag:
-                print "    " +  "cma_init_" + self.get_aug_key_for_key(elem) +"();"
+                print "    " + "cma_init_" + self.get_aug_key_for_key(elem) + "();"
         #  If the model only augments, there is no need to register
         if self.module_obj.get_if_augments() != True:
             print "    /* Register with CMS to get the startup config replayed */"
@@ -594,16 +600,17 @@ class Language:
             aug_key = self.aug_names[name]
             return aug_key
         else:
-           return key
+            return key
 
     def write_init(self, elem, read_res, write_res, rpc_res):
-        print "void cma_init_"  + self.get_aug_key_for_key(elem) + "(void) {"
+        print "void cma_init_" + self.get_aug_key_for_key(elem) + "(void) {"
         print "  cps_api_registration_functions_t f;"
 
         print "  memset(&f,0,sizeof(f));"
         print "  "
         line = ""
-        line += "cps_api_key_from_attr_with_qual(&f.key," + self.get_aug_key_for_key(elem) + ",cps_api_qualifier_TARGET);"
+        line += "cps_api_key_from_attr_with_qual(&f.key," + self.get_aug_key_for_key(
+            elem) + ",cps_api_qualifier_TARGET);"
         print "  " + line
         print ""
         if read_res:
@@ -625,7 +632,7 @@ class Language:
         print cma_gen_file_c_includes
         print "#include \"" + self.module + "_xmltag.h\""
         node = self.model.all_node_map[self.names[elem]]
-        if node.get('augmented') == True:
+        if node.get('augmented'):
             for aug_mod in self.model.augment_list:
                 print "#include \"" + aug_mod.module.module + "_xmltag.h\""
 
@@ -758,7 +765,6 @@ void init_""" + self.name_to_cms_name(self.module) + """_xmltag(std::unordered_m
                     if (not ro_node) and rw_elems:
                         self.write_cb_node(elem)
                         write_res = True
-
 
                     if "augment" not in self.model.all_node_map[self.names[elem]].tag:
                         self.write_init(elem, read_res, write_res, rpc_res)

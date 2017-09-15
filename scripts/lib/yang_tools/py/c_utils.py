@@ -1,10 +1,9 @@
 
 
-
-__use_standard_copyright=False
+__use_standard_copyright = False
 
 __standard_copyright = \
-"""
+    """
 
 /*
 * (c) Copyright 2017 Dell Inc. All Rights Reserved.
@@ -13,7 +12,7 @@ __standard_copyright = \
 """
 
 __open_source_license = \
-'''
+    '''
 /*
 * Copyright (c) 2017 Dell Inc.
 *
@@ -37,6 +36,7 @@ def string_to_c_formatted_name(s):
     s = s.replace('-', '_')
     s = s.replace(':', '_')
     return s.upper()
+
 
 def add_copyright_to_file(stream):
     """
@@ -78,11 +78,11 @@ def header_file_open(src_file, mod_name, stream):
     stream.write("" + "\n")
     stream.write("" + "\n")
 
-    #hmmmm... not sure why cps_api_operation.h needs to be included...
+    # hmmmm... not sure why cps_api_operation.h needs to be included...
     stream.write("#include \"cps_api_operation.h\"\n")
     stream.write("#include <stdint.h>\n")
     stream.write("#include <stdbool.h>\n")
 
+
 def header_file_close(stream):
     stream.write("#endif" + "\n")
-

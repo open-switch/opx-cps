@@ -101,7 +101,7 @@ map_types = {
     'bits': 'CPS_CLASS_DATA_TYPE_T_BIN',
     'empty': 'CPS_CLASS_DATA_TYPE_T_BOOL',
     'leafref': 'CPS_CLASS_DATA_TYPE_T_STRING',
-    'identityref':'CPS_CLASS_DATA_TYPE_T_STRING',
+    'identityref': 'CPS_CLASS_DATA_TYPE_T_STRING',
 }
 
 
@@ -129,7 +129,7 @@ class Language:
 
         _types = context['types']
         _enums = context['enum']
-        _unions = context['union'];
+        _unions = context['union']
 
         type_str = self.get_type(elem)
 
@@ -141,7 +141,6 @@ class Language:
             else:
                 elem = _unions[type_str]
             type_str = self.get_type(elem)
-
 
         if not type_str in map_types:
             raise Exception(
@@ -182,20 +181,20 @@ class Language:
             self.names[i] = self.to_string(i)
             self.names[self.names[i]] = i
 
-        #parse all possible keys
+        # parse all possible keys
         for i in self.model.key_elements:
             for n in self.model.key_elements[i].split():
-                if n in self.names: continue
+                if n in self.names:
+                    continue
 
                 __conv = ''
-                if n.find('/')!=-1:
-                    __conv= self.to_string(n)
-                else :
-                    __conv = 'cps_api_obj_CAT_'+self.to_string(n)
+                if n.find('/') != -1:
+                    __conv = self.to_string(n)
+                else:
+                    __conv = 'cps_api_obj_CAT_' + self.to_string(n)
 
                 self.names[n] = __conv
                 self.names[__conv] = n
-
 
         self.names[self.model.module.name()] = self.category
 
@@ -203,15 +202,15 @@ class Language:
             if c.name == self.model.module.name():
                 continue
             en_name = self.to_string(c.name + "_obj")
-            self.names[c.name+'_##alias'] = en_name
+            self.names[c.name + '_##alias'] = en_name
 
             en_name = self.to_string(c.name)
             self.names[c.name] = en_name
 
-    def get_yang_history_file_name(self,module_name):
+    def get_yang_history_file_name(self, module_name):
         _model = module_name + '.yhist'
 
-        _main_history = os.path.join(self.context['history']['output'],_model)
+        _main_history = os.path.join(self.context['history']['output'], _model)
 
         if os.path.exists(_main_history):
             return _main_history
@@ -220,19 +219,19 @@ class Language:
             return yin_utils.search_path_for_file(_model)
         except:
             pass
-        #if not found return default location
+        # if not found return default location
         return _main_history
 
     def setup(self, model):
         self.__key = model
         self.model = self.context.get_model(model)
 
-        self.category = "cps_api_obj_CAT_" + to_string(self.context.get_cat(self.__key))
+        self.category = "cps_api_obj_CAT_" + \
+            to_string(self.context.get_cat(self.__key))
         self.init_names()
 
         __name = self.context.get_hist_name(self.__key)
         hist_file_name = self.context.get_config_path(__name)
-
 
         self.history = object_history.YangHistory_HistoryFile(
             self.context,
