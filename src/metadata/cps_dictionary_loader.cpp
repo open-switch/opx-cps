@@ -39,11 +39,11 @@
 
 #include <sys/stat.h>
 #include <string>
-#include <map>
+#include <unordered_map>
 #include <mutex>
 
 static std_mutex_lock_create_static_init_rec(lock);
-static std::map<std::string,struct stat> _loaded_libs;
+static std::unordered_map<std::string,struct stat> _loaded_libs;
 
 static bool _cps_class_data(const char *name, std_dir_file_TYPE_t type,void *context) {
     if (name==nullptr) return true;
@@ -58,7 +58,7 @@ static bool _cps_class_data(const char *name, std_dir_file_TYPE_t type,void *con
     if (stat(name,&_stats)!=0) {
         memset(&_stats,0,sizeof(_stats));
     }
-    
+
     auto _loc = _dup_check.rfind('/');
     if (_loc!=std::string::npos) {
         _dup_check = _dup_check.substr(_loc+1);

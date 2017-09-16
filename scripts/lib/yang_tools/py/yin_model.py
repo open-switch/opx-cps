@@ -14,15 +14,14 @@
 # permissions and limitations under the License.
 #
 
+import sys
 import os
+
 import yin_cps
-import yin_utils
-import tempfile
 import cps_c_lang
 import cms_lang
-import sys
-import shutil
-import argparse
+import cps_context
+import object_history
 
 
 class CPSYinFiles:
@@ -30,40 +29,16 @@ class CPSYinFiles:
     yin_parsed_map = dict()
 
     def __init__(self, context):
-        self.tmpdir = tempfile.mkdtemp()
+        self.tmpdir = context['temp-dir']
         self.context = context
 
-    def get_yin_file(self, filename):
-        yin_file = os.path.join(
-            self.tmpdir,
-            os.path.splitext(os.path.basename(filename))[0] + ".yin")
-        if not os.path.exists(yin_file):
-            yin_utils.create_yin_file(filename, yin_file)
-        return yin_file
-
-    def get_parsed_yin(self, filename, prefix):
-        key_name = os.path.splitext(filename)[0]
-        key_name = os.path.split(key_name)[1]
-
-        yin_key = key_name
-        if prefix is not None:
-            yin_key += ":" + prefix
-
-        if yin_key not in self.yin_map:
-            f = self.get_yin_file(filename)
-            self.yin_map[yin_key] = yin_cps.CPSParser(self.context, f)
-            _cps_parser = self.yin_map[yin_key]            
-            _cps_parser.load(prefix=prefix)
-            _cps_parser.walk()
-
-            self.context['model-names'][_cps_parser.module.name()] = yin_key
-            self.context['model-names'][_cps_parser.module.name()+'_model_'] = _cps_parser
-            
-        return self.yin_map[yin_key]
-
     def check_deps_loaded(self, module, context):
-        entry = self.yin_map[module]
-        for i in entry.imports:
+        if module not in self.context['module']:
+            return False
+
+        __mod = self.context['module']
+
+        for i in __mod.imports:
             i = os.path.splitext(i)[0]
             if not i in context['current_depends']:
                 return False
@@ -86,80 +61,79 @@ class CPSYinFiles:
 
         context['current_depends'].append(module)
 
+    def get_parsed_yin(self, filename, prefix):
+        _key= filename
+        _key = _key.replace('.yang','')
+
+        if prefix is not None:
+            _key += ":" + prefix
+
+        self.context.add_model_name(_key,filename)
+
+        _model = self.context.get_model(_key)
+
+        if _model is None:
+            _model = yin_cps.CPSParser(self.context, _key,filename)
+
+            _model.load(prefix=prefix)
+            _model.walk()
+
+            self.context.add_model(_key,_model)
+
+            self.context['model-names'][self.context.get_model(_key).module.name()] = _key
+            self.context['model-names'][self.context.get_model(_key).module.name()+'_model_'] = self.context.get_model(_key)
+
+            #TODO remove
+            self.yin_map[_key] = self.context.get_model(_key)
+
+        return _model
+
+
     def load(self, yang_file, prefix=None):
         """Convert the yang file to a yin file and load the model"""
         return self.get_parsed_yin(yang_file, prefix)
 
-    def seed(self, filename):
-        s = set()
-        l = list()
-        l.append(filename)
-        while len(l) > 0:
-            f = l.pop()
-            p = self.get_parsed_yin(f)
-            for n in p.imports:
-                if n not in l:
-                    l.append(n)
-        # parse based on dependencies
-        context = dict()
-        context['current_depends'] = list()
-        for i in self.yin_map.keys():
-            self.load_depends(i, context)
 
-        print context['current_depends']
-
-        for i in context['current_depends']:
-            self.yin_map[i].parse()
-
-    def cleanup(self):
-        shutil.rmtree(self.tmpdir)
-
-
+import cps_context
 
 class CPSYangModel:
-    model = None
-    coutput = None
-                
-    def _default_ctx(self):
-                        
-        context = dict()
-        context['output'] = {}
-        context['output']['header'] = {}
-        context['output']['src'] = {}        
-        context['history'] = {}
-        context['identity'] = {}
-        context['types'] = {}
-        context['enum'] = {}
-        context['union'] = {}
-        context['model-names'] = {}
-        return context
-               
-    def __init__(self, args):                
-        self.filename = args['file']
-        self.context = self._default_ctx()
-        
-        ctx = self.context
-        ctx['args'] = args
-        
-        _modules_ = { 'cps' : cps_c_lang.Language(ctx), 'cms' : cms_lang.Language(ctx) }
-        
-        ctx['output']['language'] = _modules_ #not really a language.. more of output plugins
-        ctx['history']['output'] = ctx['args']['history']
-        ctx['file-finder'] = CPSYinFiles(ctx)
-        
-        #delete next cleanup  
-        ctx['loader'] = self.context['file-finder']
 
-        self.model = ctx['file-finder'].load(self.filename)
-        
+    def __init__(self, args):
+        self.model = None
+        self.context = cps_context.context(args)
+
+        self.filename = self.context.get_arg('file')
+        if len(self.filename)==0:
+            print('Missing parameters.  Please specify file=[target file], eg file=zzz.yang')
+            sys.exit(1)
+
+        self.coutput = None
+
+        #These are the output plugins for this parser
+        self.context['output']['language'] = {
+            'cps' : cps_c_lang.Language(self.context),
+            'cms' : cms_lang.Language(self.context) }
+
+        __cat_file_name = self.context.get_config_path('category.yconf')
+
+        object_history.YangHistory_CategoryParser(self.context,__cat_file_name,False)
+
+        #Filled in during initialization the root yang model parser
+        #self.context['history']['file']
+
+        #delete next cleanup
+        self.context['loader'] = CPSYinFiles(self.context)
+
+        self.model = self.context['loader'].load(self.filename)
+
         #assume order independent modules
-        for i in _modules_.values():
-            i.setup(self.model)
+        for i in self.context['output']['language'].values():
+            i.setup(self.model.get_key())
 
-        for plugin in ctx['args']['output'].split(','):
-            if plugin in _modules_:
-                _modules_[plugin].write()
-            
+        for plugin in self.context.get_arg('output').split(','):
+            if plugin in self.context['output']['language'].keys():
+                self.context['output']['language'][plugin].write()
+
 
     def write_details(self, key):
         class_type = self.context['output'][key]
@@ -172,5 +146,10 @@ class CPSYangModel:
     def close(self):
         for i in self.context['output']['language']:
             self.context['output']['language'][i].close()
+        self.context['history']['category'].write()
 
-        self.context['loader'].cleanup()
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+       self.context.clear()
