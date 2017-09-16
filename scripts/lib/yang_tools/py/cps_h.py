@@ -303,7 +303,7 @@ class COutputFormat:
         module = model.imports['module']
 
         for i in module:
-            if i.find('dell') == -1:
+            if i.find('dell') == -1 and i.find('opx') == -1:
                 if i.find('ietf-ip') == -1 and i.find('ietf-interfaces') == -1:
                     continue
             stream.write("#include \"" + i + ".h\"\n")
