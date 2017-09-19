@@ -283,6 +283,7 @@ class YangHistory_ConfigFile_v2:
                 for _elem, _value in _config.items(_section):
                     d['items'][_section][_elem] = long(_value.split(' ')[0])
         except:
+            #ignore any error
             pass
 
         return d
@@ -465,7 +466,8 @@ class YangHistory_CategoryParser:
                 continue
             _file = os.path.join(self._context['history']['sources'], i)
 
-            _hist = YangHistory_HistoryFile(self._context, _file)
+            #use parsed history file to update the category mapping
+            YangHistory_HistoryFile(self._context, _file)
 
 
     def __init__(self, context, filename, fail_if_missing=True):
