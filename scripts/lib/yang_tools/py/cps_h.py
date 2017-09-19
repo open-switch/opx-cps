@@ -299,7 +299,6 @@ class COutputFormat:
 
     def header_file_includes(self, model, stream):
         stream.write("" + "\n")
-
         module = model.imports['module']
 
         for i in module:
@@ -309,7 +308,8 @@ class COutputFormat:
                 #will have this either passed in by command line or removed in the future
                 if i.find('ietf-ip') == -1 \
                     and i.find('ietf-interfaces') == -1 \
-                    and i.find('ietf-routing')==-1 :
+                    and i.find('ietf-routing') == -1 \
+                    and i.find('ietf-network-instance') == -1:                    
                     continue
             stream.write("#include \"" + i + ".h\"\n")
 
