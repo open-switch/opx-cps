@@ -271,6 +271,11 @@ class YangHistory_ConfigFile_v2:
             d['global']['category'] = _config.get('global', 'category')
             d['global']['id'] = long(_config.get('global', 'id'))
 
+            if len(d['global']['category'])==0:
+                for i in _config.sections():
+                    if i.find('cps_api_obj_CAT_')==0:
+                        d['global']['category'] = i
+
             for _section in _config.sections():
                 if _section == 'global':
                     continue
@@ -350,10 +355,13 @@ class YangHistory_HistoryFile:
 
         if 'category' in self._data['global'] and category is None:
             self._category = self._data['global']['category']
+            category = self._category
 
         if self._category is None:
             raise Exception('No category provided - for %s' % filename)
-
+        
+        self._data['global']['category'] = self._category
+        
         if self._data['global']['range-start'] == 0:
             self._category_value = self._context[
                 'history']['category'].get_category(category)
@@ -361,6 +369,7 @@ class YangHistory_HistoryFile:
             self._data['global']['range-start'] = self._category_value << 16
             self._data['global']['range-end'] = (
                 self._category_value + 1) << 16
+            
         else:
             self._category_value = self._data['global']['id']
             self._context[
@@ -368,7 +377,7 @@ class YangHistory_HistoryFile:
                     'category'].set_category(
                         category,
                         self._category_value)
-
+        
         self.__modified = False
 
         for _enum_type in self._data['items'].keys():
@@ -457,6 +466,7 @@ class YangHistory_CategoryParser:
             _file = os.path.join(self._context['history']['sources'], i)
 
             _hist = YangHistory_HistoryFile(self._context, _file)
+
 
     def __init__(self, context, filename, fail_if_missing=True):
         """

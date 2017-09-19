@@ -304,7 +304,12 @@ class COutputFormat:
 
         for i in module:
             if i.find('dell') == -1 and i.find('opx') == -1:
-                if i.find('ietf-ip') == -1 and i.find('ietf-interfaces') == -1:
+                #for now as not all models are being built 
+                #have to customize the list of included headers - reducing to the following set
+                #will have this either passed in by command line or removed in the future
+                if i.find('ietf-ip') == -1 \
+                    and i.find('ietf-interfaces') == -1 \
+                    and i.find('ietf-routing')==-1 :
                     continue
             stream.write("#include \"" + i + ".h\"\n")
 
