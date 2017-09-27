@@ -152,7 +152,6 @@ base-if-phy/physical/loopback = 0
 root@OPX:~#                             
 ```
 
-
 ### 3) cps\_set\_oid.py
 This tool is used to do transactions on a given CPS object.
 
@@ -223,4 +222,4 @@ Operation: create/set/delete
 root@OPX:/opt/dell/os10/bin# cps_send_event.py create observed  dell-base-if-cmn/if/interfaces-state/interface  if/interfaces-state/interface/name=e101-007-0 if/interfaces-state/interface/oper-status=2
 ```
 
-(c) 2017 Dell
+© 2017 Dell EMC
