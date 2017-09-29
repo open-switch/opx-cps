@@ -207,6 +207,15 @@ bool cps_class_string_to_key(const char *str, cps_api_attr_id_t *ids, size_t *ma
  */
 const char * cps_class_string_from_key(cps_api_key_t *key, size_t offset);
 
+/**
+ * A mechanism to take all existing formats of the key and translate them to a binary CPS key.
+ * This includes both formats of x/x/x/x and 1.2.3.4
+ *
+ * @param string the key in one of the two supported formats mentioned above
+ * @param key the destination key
+ * @return true if successful otherwise false
+ */
+bool cps_class_key_from_string(const char *string, cps_api_key_t *key);
 
 /**
  * Take a CPS key, search the CPS qualifier and return the qualifier as a string if found
@@ -249,7 +258,8 @@ bool cps_api_key_from_attr_with_qual(cps_api_key_t *key,cps_api_attr_id_t id,
 
 /**
  * Search through all of the available class maps on the system and load them.
- * The class map will by default also search through all of the LD_LIBRARY_PATHS
+ * The class map will by default also search through all of the LD_LIBRARY_PATHS along with the
+ * /usr/lib/opx folder if it exists
  */
 void cps_api_class_map_init(void);
 

@@ -55,6 +55,7 @@ libopx_cps_api_common_la_SOURCES = \
   src/db/cps_api_db_pipeline.cpp \
   src/db/cps_api_core_utils.cpp \
   src/db/cps_redis.cpp \
+  src/db/cps_api_db_connection_tools.cpp \
   src/cps_api_select_utils.cpp \
   src/non-core/cps_api_db_interface_tools.cpp 
   

@@ -14,9 +14,10 @@
 # permissions and limitations under the License.
 #
 
-import os
 import sys
+
 import yin_utils
+import c_utils
 
 
 class COutputFormat:
@@ -30,6 +31,7 @@ class COutputFormat:
         self.create_map_src()
 
     def create_map_src(self):
+        c_utils.add_copyright_to_file(sys.stdout)
         print "/*"
         print self.context['model-names'][self.model.module.name()]
         print "*/"
@@ -85,7 +87,7 @@ class COutputFormat:
             elif tag == 'list':
                 _n_attr_type = "CPS_CLASS_ATTR_T_LIST"
 
-            _n_data_type = self.lang.cps_map_type(self.context['types'], ele)
+            _n_data_type = self.lang.cps_map_type(self.context, ele)
 
             line += "{ \"%s\", \"%s\", %s, %s, %s }" % (
                 _n_name,

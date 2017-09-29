@@ -31,6 +31,8 @@
 #include "dell-cps.h"
 #include "cps_api_object_tools.h"
 
+#include "cps_api_object_tools_internal.h"
+
 #include "cps_api_db_operations.h"
 #include "private/cps_api_client_utils.h"
 #include "private/cps_ns.h"
@@ -42,26 +44,16 @@
 #include <stdarg.h>
 #include <memory>
 
-#define CPS_API_ATTR_INFO (CPS_API_ATTR_RESERVE_RANGE_END-2)
-
-typedef enum {
-    cps_api_ATTR_Q_COUNT=1
-}cps_api_ATTR_QUERY_t;
-
-
 typedef std::vector<cps_api_object_category_types_t> processed_objs_t;
 
 bool cps_api_filter_set_count(cps_api_object_t obj, size_t obj_count) {
-    cps_api_attr_id_t ids[] = { CPS_API_ATTR_INFO, cps_api_ATTR_Q_COUNT};
-    uint64_t count = (uint64_t)obj_count;
-    return cps_api_object_e_add_int(obj,ids,sizeof(ids)/sizeof(*ids),&count,sizeof(count));
+    return cps_api_object_attr_add_u64(obj,CPS_OBJECT_GROUP_NUMBER_OF_ENTRIES,(uint64_t)obj_count);
 }
 
 bool cps_api_filter_get_count(cps_api_object_t obj, size_t *obj_count) {
-    cps_api_attr_id_t ids[] = { CPS_API_ATTR_INFO, cps_api_ATTR_Q_COUNT};
-    cps_api_object_attr_t attr = cps_api_object_e_get(obj,ids,sizeof(ids)/sizeof(*ids));
-    if (attr==NULL) return false;
-    *obj_count = (size_t)cps_api_object_attr_data_u64(attr);
+    uint64_t *p = (uint64_t*) cps_api_object_get_data(obj,CPS_OBJECT_GROUP_NUMBER_OF_ENTRIES);
+    if (p==nullptr) return false;
+    *obj_count = *p;
     return true;
 }
 
@@ -90,7 +82,6 @@ CPS_CONFIG_TYPE_t cps_api_object_get_config_type(cps_api_object_t obj) {
 bool cps_api_object_set_config_type(cps_api_object_t obj, CPS_CONFIG_TYPE_t type) {
     return cps_api_object_attr_add_u32(obj,CPS_OBJECT_GROUP_CONFIG_TYPE,type);
 }
-
 
 void cps_api_key_init(cps_api_key_t * key,
         cps_api_qualifier_t qual,
@@ -163,8 +154,6 @@ static bool _cps_api_get_clone(cps_api_get_params_t * dest, cps_api_get_params_t
 void _filter_list_as_needed(cps_api_object_t obj, cps_api_object_list_t results, size_t from, size_t to) {
     if (!cps_api_object_get_exact_match_flag(obj)) return;
 
-
-
     size_t _list_walker = from;
 
     for ( ; from < to ; ++from ) {
@@ -209,7 +198,6 @@ cps_api_return_code_t cps_api_get(cps_api_get_params_t * param) {
 
     cps_api_get_params_t * get_req = _copy_param ? &new_req : param;
 
-
     size_t mx = cps_api_object_list_size(get_req->filters);
 
     for ( size_t ix = 0 ; ix < mx ; ++ix ) {
@@ -222,8 +210,11 @@ cps_api_return_code_t cps_api_get(cps_api_get_params_t * param) {
         } else {
             rc=cps_api_process_get_request(get_req,ix);
         }
-        if (rc!=cps_api_ret_code_OK) break;
-
+        if (rc!=cps_api_ret_code_OK) {
+        	if (!cps_api_obj_attr_get_bool(o,CPS_OBJECT_GROUP_CONTINUE_ON_FAILURE)) {
+        		break;
+        	}
+        }
         _filter_list_as_needed(o,param->list,_cur_lst_len,cps_api_object_list_size(param->list));
     }
 
@@ -231,8 +222,6 @@ cps_api_return_code_t cps_api_get(cps_api_get_params_t * param) {
         //based on the return - get the response list
         cps_api_object_list_swap(param->list,new_req.list);
     }
-
-
 
     return rc;
 }
@@ -259,12 +248,19 @@ cps_api_return_code_t cps_api_commit(cps_api_transaction_params_t * param) {
             rc=cps_api_process_commit_request(param,ix);
         }
 
+        //trickly logic start... if the operation failed... and if want to continue - reset the return code to OK
         if (rc!=cps_api_ret_code_OK) {
             EV_LOG(ERR,DSAPI,0,"COMMIT","Failed to commit request at %d out of %d",ix, (int)mx);
-            break;
-        }
-        if (!_is_db_handled && cps_api_obj_has_auto_events(o) && cps_api_object_type_operation(cps_api_object_key(o))!=cps_api_oper_ACTION) {
-            cps_api_core_publish(o);
+        	if (!cps_api_obj_attr_get_bool(o,CPS_OBJECT_GROUP_CONTINUE_ON_FAILURE)) {
+        		break;
+        	} else {
+        		rc=cps_api_ret_code_OK;
+        	}
+        } else {
+        	//if return was ok, publish event
+        	if (!_is_db_handled && cps_api_obj_has_auto_events(o) && cps_api_object_type_operation(cps_api_object_key(o))!=cps_api_oper_ACTION) {
+        		cps_api_core_publish(o);
+        	}
         }
     }
     if (rc!=cps_api_ret_code_OK) {

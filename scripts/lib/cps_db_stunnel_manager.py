@@ -21,13 +21,13 @@ redis_server_path = "/usr/bin/redis-server"
 stunnel_config_path = "/tmp/"
 stunnel_path = '/usr/bin/stunnel4 '
 default_timeout_connect = "2"
-default_timeout_busy = "5"
+default_timeout_busy = "4"
 default_timeout_idle = "-1"
 default_retry = "yes"
 default_keepalive_enable = "1"
-default_keepalive_count = "5"
-default_keepalive_interval = "2"
-default_keepalive_idle = "10"
+default_keepalive_count = "4"
+default_keepalive_interval = "1"
+default_keepalive_idle = "2"
 default_log_level = "3"
 
 def get_free_port():
@@ -173,7 +173,6 @@ class TunnelConfigManager():
             f.write("TIMEOUTbusy = "+default_timeout_busy+"\n")
             f.write("TIMEOUTidle = "+default_timeout_idle+"\n")
             f.write("retry = "+default_retry+"\n")
-            
 
         except Exception as e:
             if os.path.exists(self.fname):
@@ -339,10 +338,8 @@ if __name__ == '__main__':
 
     cps.obj_register(handle, cps.key_from_name("target","cps/db-instance"), db_cb)
 
-    # WARNING systemd module not currently installed!!!
-    #         Waiting for legal approval to bring systemd module into OS10.
-    #import systemd.daemon
-    #systemd.daemon.notify("READY=1")
+    import systemd.daemon
+    systemd.daemon.notify("READY=1")
 
     signal.pause()
 

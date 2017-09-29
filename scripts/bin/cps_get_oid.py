@@ -15,40 +15,26 @@
 # permissions and limitations under the License.
 #
 
-import sys
 import cps
 import cps_utils
 import cps_object
 
 if __name__ == '__main__':
-    if len(sys.argv) == 1:
-        print "Missing args.  Please enter a CPS key path and then optional attributes/values separated by ="
-        print "%s qual base-port/physical hardware-port-id=26"
-        print "qual = target,observed,.."
-        print "qual is an optional argument if not specified, target is used by default"
-        exit(1)
-    l = []
-    k = []
-    cur_obj = None
-    qual = "target"
-    qual_list = ["target","observed","proposed","realtime"]
-    for e in sys.argv[1:]:
-        if e in qual_list:
-            qual = e
-            continue
-        if e.find('=') == -1:
-            if (cur_obj is None):
-                cur_obj = cps_object.CPSObject(qual=qual,module=e)
-            else:
-                k.append(cur_obj.get())
-                cur_obj = cps_object.CPSObject(qual=qual,module=e)
-        else:
-            res = e.split('=', 1)
-            cur_obj.add_attr(res[0], res[1])
+    _obj = cps_object.object_from_parameters(prog='cps_get_oid', description='This process \
+                    will perform a CPS get and return the results.  \
+        The command line supports getting a single object with many attributes.  \
+        An example is: %(prog)s cps/node-group -attr name=\'localhost\'')
 
-    k.append(cur_obj.get())
+    k=[_obj.get()]
+    l=[]
 
+    _cur_key = ''
     cps.get(k, l)
     for entry in l:
-        print ""
-        cps_utils.print_obj(entry)
+        o = cps_object.CPSObject(obj=entry)
+        if (_cur_key!=o.get_key()):
+            _cur_key = o.get_key()
+            print('\n============%s==========' % _cur_key)
+
+        cps_utils.print_obj(o.get(),show_key=False)
+        print "------------------------------------------------"

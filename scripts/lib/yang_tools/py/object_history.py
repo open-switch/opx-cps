@@ -14,229 +14,647 @@
 # permissions and limitations under the License.
 #
 
+# parser for global variable reservation
+import ConfigParser
+
 import sys
-import yin_utils
-from os import walk
+
 import os
-
-
-class enum_tracker_int:
-
-    def __init__(self, indexer, name):
-        self.the_dict = dict()
-        self.indexer = indexer
-        self.the_name = name
-
-    def add_enum(self, name, index):
-        if index > int('ffff', 16):
-            raise Exception("Invalid id detected " + str(index))
-
-        self.indexer.use_enum(index)
-        self.the_dict[name] = index
-
-    def get_name(self):
-        return self.the_name
-
-    def get_value(self, name, requested):
-        if not name in self.the_dict.keys():
-            if requested is not None:
-                ix = int(requested)
-            else:
-                ix = self.indexer.get_free_enum()
-            self.add_enum(name, ix)
-        if requested is not None:
-            self.the_dict[name] = int(requested)
-        return self.the_dict[name]
-
-    def setup(self, dic, must_be_unique=False):
-        for en in dic:
-
-            val = int(dic[en]) & int("ffff", 16)
-            if must_be_unique:
-                for e in self.the_dict:
-                    if self.the_dict[e] == val:
-                        raise Exception(
-                            "Found duplicate entries... " + str(
-                                val) + " A:" + e + " B:" + en)
-            self.add_enum(en, val)
-
-
-class IndexFile:
-
-    def __init__(self, file):
-        self.file = file
-
-    def write(self, enum):
-        file = self.file
-        file.write("++obj " + enum.the_name + "\n")
-        for k in sorted(enum.the_dict.keys()):
-            file.write(k + "=" + str(enum.the_dict[k]) + "\n")
-        file.write("--obj " + enum.the_name + " end\n")
-
-    def get(self):
-        file = self.file
-        for l in file:
-            if l.find("#") == 0:
-                continue
-            if l.find("++obj ") == -1:
-                continue
-            line = l.split()
-            if len(line) < 2:
-                print("Invalid line in file " + l)
-                sys.exit(1)
-
-            the_name = line[1]
-            d = {'name': line[1]}
-            d['list'] = {}
-            for el in file:
-                if el.find("--obj ") != -1:
-                    break
-                if el.find("=") == -1:
-                    continue
-                line = el.split("=")
-                if len(line) < 2:
-                    print("Badly formatted line " + line)
-                    sys.exit(1)
-                d['list'][line[0]] = line[1]
-
-            return d
-        return {}
 
 
 class IndexTracker:
 
-    def __init__(self, start):
-        self.last_index = 0
+    """
+    Holds a max enum value and a list of names to values.
+    """
+
+    def __init__(self, name_map, start):
+        """Take a start index as the newest possible value.
+        @start this is the start range for this set of values
+        """
+        self._last_index = 0
+        self._name_map = name_map
+
         if start is not None:
             self.last_index = start
 
     def get_free_enum(self):
-        return self.last_index
+        """
+        Return the next valid index
+        """
+        _last_index = self.last_index
+        self.last_index += 1
+        return _last_index
 
-    def use_enum(self, index):
-        if int(self.last_index) < index + 1:
-            self.last_index = index + 1
-        return index
+    def get_element_name(self, value):
+        """
+        Return the name that owns the value
+        @value find the name for the given value
+        """
+        # more speedy check to see if value added
+        if not value in self._name_map.itervalues():
+            return ""
+
+        for _name, _value in self._name_map.iteritems():
+            if _value == value:
+                return _name
+        return ""
+
+    def get_element_value(self, name):
+        """
+        Find the value for the given name.  Throw the exception on error
+        @name the item being searched for
+        """
+        if name in self._name_map:
+            return self._name_map[name]
+        return None
+
+    def add_element(self, name, value, value_must_be_unique=False,override_if_exists=False):
+        """
+        Add the name/value combination to the map
+        @name is the name of the element
+        @value is the value for the element
+        @value_must_be_unique if this is true, check to see if the value has already been used
+        @override_if_exists if this is true and if there is a discovered cfg element already - don't overwrite it
+        """
+
+        if name in self._name_map and value is None:
+            value = self._name_map[name]
+
+        if name in self._name_map and value is not None \
+            and value != self._name_map[name] and override_if_exists:
+            self._name_map[name] = value
+
+        if name in self._name_map and value is not None \
+            and value == self._name_map[name]:
+            return value
+
+        if value_must_be_unique and value is not None:
+            _name = self.get_element_name(value)
+
+            if len(_name) > 0 and _name != name:
+                raise Exception(
+                    "Adding element - found duplicate names for value %d - %s and %s " %
+                    (value, name, _name))
+
+        if name in self._name_map and self._name_map[name] != value:
+            raise Exception(
+                "Adding element - found duplicate names %s - values are %d and %d" %
+                (name, value, self._name_map[name]))
+
+        if value is None:
+            value = self.get_free_enum()
+
+        self._name_map[name] = value
+
+        if self.last_index < value + 1:
+            self.last_index = value + 1
+        return value
+
+    def replace_element(self, name, value, value_must_be_unique=False):
+        """
+        Replace the existing name (if exists) with a new value.  Report if the value is already used
+        @name the name of the element
+        @value the value for the element
+        """
+        if name in self._name_map:
+            del self._name_map[name]
+
+        return self.add_element(name, value, value_must_be_unique)
+
+    def walk_elements(self, handler, context):
+        """
+        For each element call the handler passing in the name, value and the user supplied context
+        @handler a callback that takes three parameters - context, name, value
+        @context the context passed to the handler
+        """
+        for _value in self._enum_map:
+            _name = self._name_map[_value]
+            handler(context, _name, _value)
 
 
-class history:
-    the_file = None
-    the_name = ""
-    the_dict = None
-    object_cat = []
-    parsed_files = set()
+class Model_Element_IndexTracker(IndexTracker):
 
+    def __init__(self, name_map, name, start):
+        self.__name = name
+        IndexTracker.__init__(self, name_map, start)
+
+    def add_element(self, name, value,override_if_exists=False):
+        return IndexTracker.add_element(self, name, value, True,override_if_exists)
+
+    def replace_element(self, name, value):
+        return IndexTracker.replace_element(self, name, value, True)
+
+
+class Model_Enum_IndexTracker(IndexTracker):
+
+    def __init__(self, name_map, name, start):
+        self.name = name;
+        IndexTracker.__init__(self, name_map, start)
+
+    def add_element(self, name, value):
+        return IndexTracker.add_element(self, name, value, False)
+
+    def replace_element(self, name, value):
+        return IndexTracker.replace_element(self, name, False)
+
+
+class YangHistory_ConfigFile_Base:
     GLOBAL_SECTION = "global"
-    MODULE_SECTION = "module"
 
-    GLOBAL_enums = enum_tracker_int(IndexTracker(10), "global")
+    @staticmethod
+    def get_cfg_parser():
+        _config = ConfigParser.ConfigParser()
+        _config.optionxform = str
+        return _config
 
-    def get_global_enums(self, filename):
-        with open(filename, "r") as f:
-            ix_reader = IndexFile(f)
-            while True:
-                d = ix_reader.get()
-                if 'name' not in d:
-                    break
-                if d['name'] != self.GLOBAL_SECTION:
+    @staticmethod
+    def empty_config_file():
+        _d = {}
+        _d['global'] = {}
+        _d['global']['range-start'] = 0  # start range of folder
+        _d['global']['range-end'] = 0  # end range of folder
+        _d['global']['category'] = ""
+        _d['items'] = {}
+        return _d
+
+
+class YangHistory_ConfigFile_v1:
+
+    """
+    Read an index file and
+    """
+    GLOBAL_SECTION = "global"
+
+    def __init__(self, filename):
+        self._filename = filename
+
+    def get(self):
+        _category = None
+        _d = YangHistory_ConfigFile_Base.empty_config_file()
+        with open(self._filename, 'r') as file:
+            for l in file:
+                if l.find("#") == 0:
+                    continue
+                if l.find("++obj ") == -1:
+                    continue
+                line = l.split()
+                if len(line) < 2:
+                    print("Invalid line in file " + l)
+                    sys.exit(1)
+
+                _name = line[1]
+
+#                d['name'].append(_name)
+#                d[_name] = {}
+
+                if _name != 'global' and _name not in _d['items']:
+                    _d['items'][_name] = {}
+
+                for el in file:
+                    if el.find("--obj ") != -1:
+                        break
+                    if el.find("=") == -1:
+                        continue
+                    line = el.split("=")
+                    if len(line) < 2:
+                        print("Badly formatted line " + line)
+                        sys.exit(1)
+
+                    if _name == 'global':
+                        _d['global']['category'] = _category = line[0]
+                        _d['global']['range-start'] = long(line[1]) << 16
+                        _d['global']['range-end'] = (long(line[1]) + 1) << 16
+                        _d['global']['id'] = long(line[1])
+                    else:
+                        _d['items'][_name][line[0]] = long(line[1])
+
+        if _category is not None and _category in _d['items']:
+            for _entry in _d['items'][_category].keys():
+                _d['items'][_category][_entry] += _d['global']['range-start']
+        return _d
+
+
+class YangHistory_ConfigFile_v2:
+    GLOBAL_SECTION = "global"
+
+    def __init__(self, filename):
+        self._filename = filename
+
+    def store(self, data, filter_function):
+        _config = YangHistory_ConfigFile_Base.get_cfg_parser()
+        _config.add_section('global')
+
+        _config.set('global', 'category', data['global']['category'])
+        _config.set('global', 'range-start', data['global']['range-start'])
+        _config.set('global', 'range-end', data['global']['range-end'])
+        _config.set('global', 'id', data['global']['id'])
+
+        for _section in data['items'].keys():
+            _config.add_section(_section)
+            for _key, _value in sorted(data['items'][_section].iteritems(), key=lambda k_v: (k_v[1], k_v[0])):
+                if filter_function(_key):
                     continue
 
-                self.GLOBAL_enums.setup(d['list'], must_be_unique=True)
+                if _section == data['global']['category']:
+                    _value = str(
+                        _value) + ' ' + str(
+                        _value - data[
+                            'global'][
+                        'range-start'])
+                _config.set(_section, _key, str(_value))
 
-                cur_enums = self.GLOBAL_enums.the_dict
+        with open(self._filename, 'w') as file:
+            _config.write(file)
 
-                break
+    def get(self):
+        _config = YangHistory_ConfigFile_Base.get_cfg_parser()
+        _config.read(self._filename)
 
-    def load_all_globals(self):
-        l = []
-        path = self.context['history']['output']
-        f = []
-        found_names = []
-        for i in path.split(':'):
-            for (dirpath, dirnames, filenames) in os.walk(i):
-                for filename in filenames:
-                    if filename.find('.yhist') == -1:
-                        continue
-
-                    if filename in found_names:
-                        continue
-                        # print("Error.. found two instances of " + filename + " at "+dirpath)
-                        # print("other files found are:")
-                        # print f
-                        # sys.exit(1)
-
-                    f.append(os.path.join(dirpath, filename))
-                    found_names.append(filename)
-        for i in f:
-            self.get_global_enums(i)
-
-    staticmethod(get_global_enums)
-    staticmethod(load_all_globals)
-
-    def __init__(self, context, filename, category):
-        """This will initialize the module history file. """
-        self.context = context
-        self.the_name = filename
-        self.output_file = os.path.join(self.context['history']['output'],os.path.basename(filename))
-        self.the_dict = dict()
-        self.module = IndexTracker(1)
-
-        self.load_all_globals()
-        self.category = category
-        self.the_dict[category] = enum_tracker_int(self.module, category)
-        self.the_dict[self.GLOBAL_SECTION] = enum_tracker_int(
-            self.GLOBAL_enums.indexer, self.GLOBAL_SECTION)
+        d = YangHistory_ConfigFile_Base.empty_config_file()
 
         try:
-            with open(self.the_name, "r") as the_file:
-                ix_reader = IndexFile(the_file)
-                while True:
-                    d = ix_reader.get()
-                    if not 'name' in d:
-                        break
-                    if not d['name'] in self.the_dict:
-                        self.the_dict[d['name']] = enum_tracker_int(
-                            IndexTracker(None), d['name'])
-    
-                    self.the_dict[d['name']].setup(d['list'], must_be_unique=True)
+            d['global']['range-start'] = long(
+                _config.get('global', 'range-start'))
+            d['global']['range-end'] = long(_config.get('global', 'range-end'))
+            d['global']['category'] = _config.get('global', 'category')
+            d['global']['id'] = long(_config.get('global', 'id'))
+
+            if len(d['global']['category'])==0:
+                for i in _config.sections():
+                    if i.find('cps_api_obj_CAT_')==0:
+                        d['global']['category'] = i
+
+            for _section in _config.sections():
+                if _section == 'global':
+                    continue
+                d['items'][_section] = {}
+                for _elem, _value in _config.items(_section):
+                    d['items'][_section][_elem] = long(_value.split(' ')[0])
+        except:
+            #ignore any error
+            pass
+
+        return d
+
+
+class YangHistory_HistoryFile:
+
+    """
+    Responsible fro opening loading, adding to and closing yang history files.
+
+    The history files maintain the previously allocated IDs.
+    """
+
+    LATEST_FILE_VERSION = 2
+
+    def __get_hist_version(self):
+        """
+        This function will find a way to determine the version of the yhist file.
+
+        note: implemention of the actual version check could be placed as a static function
+        of the class for the appropriate version
+        """
+        _file_version = None
+        try:
+            with open(self._filename, "r") as _file:
+                _open = 0
+                _close = 0
+                for l in _file:
+                    if '++obj' in l:
+                        _open += 1
+                    if '--obj' in l:
+                        _close += 1
+                    if '[global]' in l:
+                        _file_version = 2
+                if _file_version is None and (_open == _close and _open > 0):
+                    _file_version = 1
+            if _file_version == 2:
+                # version 2 and beyond are ini file formats
+                _config = YangHistory_ConfigFile_Base.get_cfg_parser()
+                _config.read(self._filename)
+                _file_version = _config.getint('global', 'file-version')
         except:
             pass
 
+        if _file_version is None:
+            return YangHistory_HistoryFile.LATEST_FILE_VERSION
 
-    def get_global(self, name):
-        return self.the_dict[self.GLOBAL_SECTION].get_value(name, None)
+        return _file_version
 
-    def get_enum(self, name, requested, parent=None):
-        if parent is None:
-            parent = self.category
+    def __init__(self, context, filename, category=None):
+        """
+            Create a history object loaded from a file provided.
+            @context contains program details/context
+            @filename the name of the file to load or write
+            @category the category of this file
+        """
+        self._context = context
+        self._filename = filename
+        self._category = category
+        self._data = YangHistory_ConfigFile_Base.empty_config_file()
+
+        self._filename_version = self.__get_hist_version()
+
+        if self._filename_version == 1:
+            _cfg = YangHistory_ConfigFile_v1(self._filename)
         else:
-            if parent not in self.the_dict:
-                self.the_dict[parent] = enum_tracker_int(
-                    IndexTracker(None), parent)
+            _cfg = YangHistory_ConfigFile_v2(self._filename)
 
-        res = self.the_dict[parent].get_value(name, requested)
-        if parent == self.category:
-            res += (self.get_global(self.category) << 16)
+        self._data = _cfg.get()
 
-        return res
+        if 'category' in self._data['global'] and category is None:
+            self._category = self._data['global']['category']
+            category = self._category
+
+        if self._category is None:
+            raise Exception('No category provided - for %s' % filename)
+
+        self._data['global']['category'] = self._category
+
+        if self._data['global']['range-start'] != 0:
+            self._category_value = self._data['global']['id']
+            _cat = self._context['history'][
+                    'category'].set_category(
+                        category, self._category_value,False)
+            if _cat != self._category_value:
+                self._data['global']['range-start'] = 0;
+
+        if self._data['global']['range-start'] == 0:
+            self._category_value = self._context[
+                'history']['category'].get_category(category)
+            self._data['global']['id'] = self._category_value
+            self._data['global']['range-start'] = self._category_value << 16
+            self._data['global']['range-end'] = (
+                self._category_value + 1) << 16
+            self._data['items'].clear()
+            self._modified = True
+        else:
+            self._modified = False
+
+        for _enum_type in self._data['items'].keys():
+            for _enum_name in self._data['items'][_enum_type].keys():
+                self.add_enum(_enum_type, _enum_name, None)
+
+    def __get_indexer(self, enum_type):
+        if enum_type == self._category:
+            return Model_Element_IndexTracker(self._data['items'][enum_type], self._category, self._data['global']['range-start'])
+
+        return Model_Enum_IndexTracker(self._data['items'][enum_type], self._category, 0)
+
+    def __valid_value(self, enum_type, enum_name):
+        value = self._data['items'][enum_type][enum_name]
+
+        if enum_type == self._category:
+            if value < self._data['global']['range-start'] or value >= self._data['global']['range-end']:
+                raise Exception(
+                    "Invalid value %d for enum %s " %
+                    (value, enum_type))
+
+    def add_enum(self, enum_type, enum_name, enum_value):
+        if enum_type not in self._data['items']:
+            self._data['items'][enum_type] = {}
+
+        if '..indexer..' not in self._data['items'][enum_type]:
+            self._data['items'][enum_type][
+                '..indexer..'] = self.__get_indexer(enum_type)
+
+        _indexer = self._data['items'][enum_type]['..indexer..']
+
+        __current_value = _indexer.get_element_value(enum_name)
+
+        _value = _indexer.add_element(enum_name, enum_value)
+
+        self.__valid_value(enum_type, enum_name)
+        if _value != __current_value:
+            self._modified = True
+        return _value
 
     def write(self):
-        self.the_name = self.output_file
-        print "Writing history to " + self.the_name
-        with open(self.the_name, "w") as f:
-            f.write("# writing " + self.the_name + "\n")
-            writer = IndexFile(f)
-            for k in sorted(self.the_dict.keys()):
-                writer.write(self.the_dict[k])
+        if self._modified:
+            _cfg = YangHistory_ConfigFile_v2(self._filename);
+            _cfg.store(self._data, lambda key: key == '..indexer..')
+            self._modified = False
+        else:
+            if self._context['debug']:
+                print ("Indexes haven't changed and therefore no output")
+
+
+import collections
+
+class YangHistory_CategoryParser:
+
+    @staticmethod
+    def __get_cfg_parser():
+        _config = ConfigParser.ConfigParser(None,collections.OrderedDict)
+        _config.optionxform = str
+        return _config
+
+    def _scan_hist(self):
+        for i in os.listdir(self._context['history']['sources']):
+            if '.yhist' not in i:
+                continue
+            _file = os.path.join(self._context['history']['sources'], i)
+
+            #use parsed history file to update the category mapping
+            YangHistory_HistoryFile(self._context, _file)
+
+    def _load_file_values(self):
+        _config = YangHistory_CategoryParser.__get_cfg_parser()
+
+        _config.read(self._filename)
+
+        self.__range_start = long(_config.get('range', 'start'))
+        self.__range_end = long(_config.get('range', 'end'))
+
+        for _elem, _value in _config.items('reserved'):
+            self._index.add_element(_elem, long(_value),False)
+        try:
+            self._auto_gen_enums = bool(_config.get('range', 'auto-generate'))
+        except:
+            self._auto_gen_enums = False
+
+        self._modified = False
+
+        #now load any history files
+        self._scan_hist()
+
+    def _init_file_values(self):
+        self.__range_start = 0
+        self.__range_end = 0
+        self._auto_gen_enums = True
+        self._modified = False
+
+    def __init__(self, context, filename, fail_if_missing=False):
+        """
+        This will initialize the module history file.
+        @context contains the context of the appliation.  Essentially a map of objects that contain application details
+        @filename the name of the history file to parse
+        @catagory the catagory if known
+        """
+        self._categories = {}
+        self._index = Model_Element_IndexTracker(
+            self._categories, 'global', 0)
+        self._context = context
+        self._filename = filename
+        self._write_file = True
+        self._context['history']['category'] = self
+
+        _init_file = not os.path.exists(filename)
+
+        _write_override = self._write_file
+
+        if fail_if_missing == False and _init_file == True:
+            self._write_file = False
+
+        #if the file exists.. see if we should regen it
+        if not _init_file:
+            _stat = os.stat(filename)
+            if _stat.st_size == 0:
+                _init_file = True
+                fail_if_missing = False
+
+        if _init_file:
+            if fail_if_missing:
+                raise Exception(
+                    'Could not open configuration file %s for reading' %
+                    filename)
+            self._init_file_values()
+        else:
+            self._load_file_values()
+
+        self._scan_hist()
+
+    @staticmethod
+    def init_file(filename, range_start, range_end, values, auto_gen_enums):
+        """
+        Initialize a file from a range start, range end and list/iteratiable tuples(name,value)
+        Generally speaking - one category is reserved per yang file
+        @range_start the start of the range of numbers
+        @range_end the last number in the available range
+        @values an interatable set of tuples (name,value)
+        """
+        _config = YangHistory_CategoryParser.__get_cfg_parser()
+
+        _config.add_section('range')
+        _config.add_section('reserved')
+
+        _min = -1
+        _max = -1
+
+        for _elem, _value in values:
+            if _value < _min and i>=0: _min = _value
+            if _value > _max: _max = _value
+            if len(_elem)>0: _config.set('reserved', _elem, str(_value))
+
+        if range_start == 0 and _min != -1:
+            range_start = _min
+        if range_end < _max and _max != -1:
+            range_end = _max
+
+        _config.set('range', 'start', range_start)
+        _config.set('range', 'end', range_end)
+        _config.set('range', 'auto-generate', auto_gen_enums)
+
+        with open(filename, 'w') as f:
+            _config.write(f)
+
+    def _get_next_free(self):
+        if self._auto_gen_enums:
+            _max = 0
+            for i in self._categories.itervalues():
+                i = int(i)
+                if i > _max:
+                    _max = i
+            return _max + 1
+
+        for i in range(self.__range_start, self.__range_end):
+            if i in self._categories.itervalues():
+                continue
+            return i
+        raise Exception(
+            'No space left in category range for model.  Please specify manually or update %s' %
+            self._filename)
+
+    def write(self):
+        """Write out the category tracker file"""
+        if self._write_file is False:
+            return
+
+        if self._modified is True:
+            YangHistory_CategoryParser.init_file(self._filename,
+                        self.__range_start, self.__range_end, self._categories.iteritems(), self._auto_gen_enums)
+        else:
+            if self._context['debug']:
+                print ("Indexes haven't changed and therefore no output")
+
+    def set_category(self, name, value, overwrite_if_exists=True):
+        if value is None and name not in self._categories:
+            value = self._get_next_free()
+
+        #default to the config file before previously requested
+        if value is not None:
+            if ( name not in self._categories ) or \
+                    ( name in self._categories  and \
+                      self._categories[name] != value ):
+                #if overwriting enabled
+                if overwrite_if_exists or name not in self._categories:
+                    self._modified = True
+                    self._categories[name] = value
+
+        return self._categories[name]
+
+    def get_category(self, name):
+        """
+        Get the existing value for a category or create a new entry and use the category value
+        """
+        if name in self._categories:
+            return self._categories[name]
+
+        return self.set_category(name, None)
 
 
 def init(context, file, category):
-    h = history(context, file, category)
+    h = YangHistory_HistoryFile(context, file, category)
     return h
 
 
-def close(hist):
-    hist.write()
+def close(h):
+    h.write()
 
 if __name__ == '__main__':
-    hf = history(sys.argv[1])
+    # hf = history(sys.argv[1])
+    __context = {}
+    __context['history'] = {}
+    __context['history']['category'] = YangHistory_CategoryParser(
+        __context, '/tmp/category.txt')
+    __init_values = [('ONE', 1), ('TWO', 2)]
+
+    _category_test = __context['history']['category']
+
+    for _name, _value in __init_values:
+        _tmp_val = _category_test.set_category(_name, _value)
+
+    __added_values = []
+    for i in range(0, 30):
+        __added_values.append(
+            ('entry_' + str(i), _category_test.get_category('entry_' + str(i))))
+
+    _category_test.write()
+
+    __context['history']['category'] = YangHistory_CategoryParser(
+        __context, '/tmp/category.txt')
+    _category_test = __context['history']['category']
+
+    for t in __added_values:
+        if t[1] != _category_test.get_category(t[0]):
+            raise Exception('Invalid value... - test failed')
+
+    _hist = YangHistory_HistoryFile(
+        __context,
+        '/tmp/dell-base-cps.yhist',
+        'cps_api_obj_CAT_CPS');
+
+    _hist.add_enum('cps_api_obj_CAT_CPS', "Cliff", None)
+    _hist.write()
+    _category_test.write()

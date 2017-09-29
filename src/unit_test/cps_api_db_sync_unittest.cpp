@@ -55,7 +55,7 @@ bool test_sync_error_cb(void *context, cps_api_db_sync_cb_param_t *params, cps_a
     return true;
 }
 
-TEST(cps_api_db_sync, objsync) {
+TEST(cps_api_db_obj_comp, objsync) {
    __init_class_map();
 
    cps_api_node_ident ids[2] = { {"NODE1", "127.0.0.1:6379"}, {"NODE2","10.11.63.118:6379"} };
@@ -82,6 +82,20 @@ TEST(cps_api_db_sync, objsync) {
    std::cout << ret << std::endl;
 
 }
+
+TEST(cps_api_db_obj_comp, objreconcile) {
+   __init_class_map();
+
+   cps_api_object_list_t objs = Get10();
+
+   cps_api_object_guard dst_og(cps_api_object_create());
+   cps_api_key_from_attr_with_qual(cps_api_object_key(dst_og.get()),BASE_IP_IPV6,cps_api_qualifier_TARGET);
+
+   cps_api_return_code_t ret = cps_api_reconcile(NULL, objs, dst_og.get(), test_sync_cb , test_sync_error_cb);
+   std::cout << ret << std::endl;
+
+}
+
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);

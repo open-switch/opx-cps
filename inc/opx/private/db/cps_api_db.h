@@ -29,6 +29,7 @@
 
 #define CPS_DB_MAX_ITEMS_PER_SCAN "1000"
 #define CPS_DB_MAX_ITEMS_PER_PIPELINE 200
+#define CPS_DB_INITIAL_PING_TIME (2000)
 
 namespace cps_db {
     static constexpr size_t IN_THE_PIPE() { return 500; }
@@ -52,13 +53,13 @@ namespace cps_db {
     bool atomic_count_set(cps_db::connection &conn,const char *key, size_t key_len, int64_t data);
     bool atomic_count_change(cps_db::connection &conn,bool inc, const char *key, size_t key_len,
             int64_t &data);
-    bool dbkey_field_set_request(cps_db::connection &conn, const char *key, size_t key_len, 
+    bool dbkey_field_set_request(cps_db::connection &conn, const char *key, size_t key_len,
             const char *field, size_t field_len, const char *data, size_t data_len);
     bool dbkey_field_set_response(cps_db::connection &conn);
-    bool dbkey_field_get_request(cps_db::connection &conn, const char *key, size_t key_len, 
+    bool dbkey_field_get_request(cps_db::connection &conn, const char *key, size_t key_len,
                    const char *field, size_t field_len);
     std::string dbkey_field_get_response_string(cps_db::connection &conn);
-    bool dbkey_field_delete_request(cps_db::connection &conn, const char *key, size_t key_len, 
+    bool dbkey_field_delete_request(cps_db::connection &conn, const char *key, size_t key_len,
             const char * field, size_t field_len);
     bool dbkey_field_delete_response(cps_db::connection &conn);
 
@@ -78,7 +79,7 @@ namespace cps_db {
     bool get_objects(cps_db::connection &conn, cps_api_object_t obj,cps_api_object_list_t obj_list);
 
 
-    bool ping(cps_db::connection &conn);
+    bool ping(cps_db::connection &conn, size_t timeoutms=CPS_DB_INITIAL_PING_TIME);
 
     bool make_slave(cps_db::connection &conn, std::string slave_ip);
     bool remove_slave(cps_db::connection &conn);

@@ -59,16 +59,31 @@ map_types = {
     'string': 'CPS_CLASS_DATA_TYPE_T_STRING',
     'binary': 'CPS_CLASS_DATA_TYPE_T_BIN',
     'counter32': 'CPS_CLASS_DATA_TYPE_T_UINT32',
+    'yang:timeticks': 'CPS_CLASS_DATA_TYPE_T_UINT32',
+    'yang:timestamp': 'CPS_CLASS_DATA_TYPE_T_UINT32',
+    'yang:counter32': 'CPS_CLASS_DATA_TYPE_T_UINT32',
     'zero-based-counter32': 'CPS_CLASS_DATA_TYPE_T_UINT32',
+    'yang:zero-based-counter32': 'CPS_CLASS_DATA_TYPE_T_UINT32',
+    'yang:counter64': 'CPS_CLASS_DATA_TYPE_T_UINT64',
     'counter64': 'CPS_CLASS_DATA_TYPE_T_UINT64',
+    'yang:zero-based-counter64': 'CPS_CLASS_DATA_TYPE_T_UINT64',
     'zero-based-counter64': 'CPS_CLASS_DATA_TYPE_T_UINT64',
     'guage32': 'CPS_CLASS_DATA_TYPE_T_UINT32',
     'guage64': 'CPS_CLASS_DATA_TYPE_T_UINT64',
+    'yang:guage32': 'CPS_CLASS_DATA_TYPE_T_UINT32',
+    'yang:guage64': 'CPS_CLASS_DATA_TYPE_T_UINT64',
     'object-identifier': 'CPS_CLASS_DATA_TYPE_T_OBJ_ID',
     'object-identifier-128': 'CPS_CLASS_DATA_TYPE_T_OBJ_ID',
+    'yang:object-identifier': 'CPS_CLASS_DATA_TYPE_T_OBJ_ID',
+    'yang:object-identifier-128': 'CPS_CLASS_DATA_TYPE_T_OBJ_ID',
+    'yang:yang-identifier': 'CPS_CLASS_DATA_TYPE_T_STRING',
     'date-and-time': 'CPS_CLASS_DATA_TYPE_T_DATE',
+    'yang:date-and-time': 'CPS_CLASS_DATA_TYPE_T_DATE',
     'phy-address': 'CPS_CLASS_DATA_TYPE_T_BIN',
+    'yang:phy-address': 'CPS_CLASS_DATA_TYPE_T_BIN',
+    'yang:dotted-quad': 'CPS_CLASS_DATA_TYPE_T_STRING',
     'mac-address': 'CPS_CLASS_DATA_TYPE_T_BIN',
+    'yang:mac-address': 'CPS_CLASS_DATA_TYPE_T_BIN',
     'ip-version': 'CPS_CLASS_DATA_TYPE_T_ENUM',
     'port-number': 'CPS_CLASS_DATA_TYPE_T_UINT16',
     'ip-address': 'CPS_CLASS_DATA_TYPE_T_IP',
@@ -86,7 +101,7 @@ map_types = {
     'bits': 'CPS_CLASS_DATA_TYPE_T_BIN',
     'empty': 'CPS_CLASS_DATA_TYPE_T_BOOL',
     'leafref': 'CPS_CLASS_DATA_TYPE_T_STRING',
-    'identityref':'CPS_CLASS_DATA_TYPE_T_STRING',
+    'identityref': 'CPS_CLASS_DATA_TYPE_T_STRING',
 }
 
 
@@ -109,12 +124,22 @@ class Language:
         global valid_types
         return str in valid_types
 
-    def cps_map_type(self, global_types, elem):
+    def cps_map_type(self, context, elem):
         global map_types
+
+        _types = context['types']
+        _enums = context['enum']
+        _unions = context['union']
+
         type_str = self.get_type(elem)
 
-        while type_str not in map_types and type_str in global_types:
-            elem = global_types[type_str]
+        while type_str not in map_types and (type_str in _types or type_str in _enums or type_str in _unions):
+            if type_str in _enums:
+                elem = _enums[type_str]
+            elif type_str in _types:
+                elem = _types[type_str]
+            else:
+                elem = _unions[type_str]
             type_str = self.get_type(elem)
 
         if not type_str in map_types:
@@ -128,7 +153,7 @@ class Language:
         return type_to_lang_type(str)
 
     def get_type(self, node):
-        type = node.find(self.model.module.ns() + 'type')
+        type = yin_utils.get_type(node)
         if type is None:
             return 'binary'
         return type.get('name')
@@ -156,20 +181,20 @@ class Language:
             self.names[i] = self.to_string(i)
             self.names[self.names[i]] = i
 
-        #parse all possible keys
+        # parse all possible keys
         for i in self.model.key_elements:
             for n in self.model.key_elements[i].split():
-                if n in self.names: continue
+                if n in self.names:
+                    continue
 
                 __conv = ''
-                if n.find('/')!=-1:
-                    __conv= self.to_string(n)
-                else :
-                    __conv = 'cps_api_obj_CAT_'+self.to_string(n)
+                if n.find('/') != -1:
+                    __conv = self.to_string(n)
+                else:
+                    __conv = 'cps_api_obj_CAT_' + self.to_string(n)
 
                 self.names[n] = __conv
                 self.names[__conv] = n
-
 
         self.names[self.model.module.name()] = self.category
 
@@ -177,34 +202,38 @@ class Language:
             if c.name == self.model.module.name():
                 continue
             en_name = self.to_string(c.name + "_obj")
-            self.names[c.name+'_##alias'] = en_name
+            self.names[c.name + '_##alias'] = en_name
 
             en_name = self.to_string(c.name)
             self.names[c.name] = en_name
 
-    def get_yang_history_file_name(self,module_name):        
+    def get_yang_history_file_name(self, module_name):
         _model = module_name + '.yhist'
-        
-        _main_history = os.path.join(self.context['history']['output'],_model)
-        
+
+        _main_history = os.path.join(self.context['history']['output'], _model)
+
         if os.path.exists(_main_history):
             return _main_history
-        
+
         try:
             return yin_utils.search_path_for_file(_model)
         except:
             pass
-        #if not found return default location
+        # if not found return default location
         return _main_history
-        
+
     def setup(self, model):
-        self.model = model
+        self.__key = model
+        self.model = self.context.get_model(model)
 
-        self.category = "cps_api_obj_CAT_" + to_string(model.module.name())
+        self.category = "cps_api_obj_CAT_" + \
+            to_string(self.context.get_cat(self.__key))
         self.init_names()
-        hist_file_name = self.get_yang_history_file_name(model.module.model_name())
 
-        self.history = object_history.init(
+        __name = self.context.get_hist_name(self.__key)
+        hist_file_name = self.context.get_config_path(__name)
+
+        self.history = object_history.YangHistory_HistoryFile(
             self.context,
             hist_file_name,
             self.category)
@@ -235,11 +264,11 @@ class Language:
         self.write_details('header')
         self.write_details('src')
 
-    def write_details(self, type):
-        class_type = self.context['output'][type]['cps']
+    def write_details(self, output_type):
+        class_type = self.context['output'][output_type]['cps']
 
         old_stdout = sys.stdout
-        with open(self.context['args']['cps' + type], "w") as sys.stdout:
+        with open(self.context.get_arg('cps' + output_type), "w") as sys.stdout:
             class_type.COutputFormat(self.context).show(self.model)
         sys.stdout = old_stdout
 

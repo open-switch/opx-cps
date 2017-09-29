@@ -28,6 +28,7 @@ Defines the CPS Object class. Can be accessed by importing module 'cps_utils'.
 import cps
 from copy import deepcopy
 import cps_utils
+import argparse
 
 types = cps_utils.cps_attr_types_map
 
@@ -49,6 +50,7 @@ class CPSObject:
         self.obj = {'key': '', 'data': {}}
         self.root_path = ""
         self.embed_dict = {}
+        self.properties = {}
 
         if module:
             self.root_path = module + "/"
@@ -71,6 +73,28 @@ class CPSObject:
         if not self.obj['key']:
             raise ValueError(
                 "Invalid Module Name or object doesn't have the key")
+
+    def set_property(self,name,value):
+        """
+        Store some additional meta properties in the object that will not be used in the backend but can be used
+        for other application level development
+
+        Eg.. application scratch pad
+        @param name is the name of the attribute
+        @param value is the value for the attribute
+        """
+        if value is None:
+            del self.properties[name]
+        else:
+            self.properties[name] = value
+
+    def get_property(self,name):
+        """
+        Check the object and see if the propery exists. If exsts, return it otherwise return None
+        """
+        if name in self.properties:
+            return self.properties[name]
+        return None
 
     def set_key(self, key):
         """
@@ -342,6 +366,22 @@ class CPSObject:
     	@use_exact_match a boolean value that will be True if exact match filter is needed or false if not    			
     	"""    	
     	self.add_attr('cps/object-group/exact-match',use_exact_match)
+
+    def set_get_next(self,use_get_next):
+        """
+        This function will set the get next attribute within an object to the specified value
+        @use_get_next a boolean value that will be True if get next filter is needed or false if not
+
+        """
+        self.add_attr('cps/object-group/get-next',use_get_next)
+
+    def set_number_of_entries(self,count):
+        """
+        This function will set the number of entries attribute within an object to the specified value
+        @count number of entries required to be set
+        """
+        self.add_attr('cps/object-group/number-of-entries',count)
+
     	
 def clone(self, obj):
     """
@@ -349,3 +389,116 @@ def clone(self, obj):
     @obj - object to clone
     """
     return deepcopy(obj)
+
+def object_from_parameters(prog,description, optional_fields=[]):
+    """
+    Uses Argparse to parse the program's command line arguments into an object.
+    @param prog the name of the program (passed into argparse)
+    @param description of the program (also passed to argparse)
+    @param list_of_required_fields is used to determine which field is mandatory/not required valid values include "mod","qual","oper","attr"
+    """
+
+    _qualifiers = cps.QUALIFIERS
+
+    parser = argparse.ArgumentParser(prog=prog, description=description)
+
+    parser.add_argument('module',help='The object\'s name and optional qualifier.  For instance: cps/node-group or if/interfaces/interface.  A qualifier can optionally be placed at the beginning')
+    parser.add_argument('additional',help='This field can contain a series of object attributes in the form of attr=value combinations',action='append',nargs='*')
+
+    parser.add_argument('-mod',help='An alternate way to specify the module name', metavar='module',required=False,action='store',nargs=1)
+    parser.add_argument('-d',help='Print some additional details about the objects parsed and sent to the backend', required=False, action='store_true')
+
+    parser.add_argument('-qua',choices=cps.QUALIFIERS,help='The object\'s qualifier',required=False,action='store')
+    parser.add_argument('-attr',help='Object attributes in the form of attr=value', required=False,action='append')
+
+    parser.add_argument('-db',help='Attempt to use the db directly to satisfy the request instad of the normally registered object', required=False,action='store_true')
+
+    if 'oper' in optional_fields :
+        parser.add_argument('-oper',choices=cps.OPERATIONS, help='The operation types.  This is only used in CPS commit operations', required=True,action='store')
+
+    if 'commit-event' in optional_fields :
+        parser.add_argument('-commit-event',help='This flag will try to force the default state of the auto-commit event to true.  This is only used in CPS commit operations', required=False,action='store_true')
+
+    _args = vars(parser.parse_args())
+    if 'd' in _args and _args['d']:
+        print _args
+
+    _qual_list = cps.QUALIFIERS
+    _class_name = _args['module']
+    _attrs=[]
+
+    qual = _qual_list[0]
+
+    if len(_class_name) > 0:
+        _lst = _class_name.split(cps.PATH_SEP,1);
+
+        if len(_lst)>0 and _lst[0] in _qual_list:
+            _class_name = _lst[1]
+            qual = _lst[0]
+
+    if 'additional' in  _args and _args['additional']!=None:
+        _lst = _args['additional'][0]
+        for i in range(0,len(_lst)):
+            if _lst[i] in _qual_list:
+                qual = _lst[i]
+            else:
+                _attrs.append(_lst[i])
+
+    if 'attr' in _args and _args['attr']!=None :
+        for i in _args['attr']:
+            _attrs.append(i)
+
+    if 'qua' in _args and _args['qua']!=None:
+        qual = _args['qua']
+
+    if len(_class_name)>0 and _class_name[len(_class_name)-1]=='/':
+        _class_name = _class_name[0:-1]
+
+    obj = CPSObject(_class_name,qual)
+
+    if 'oper' in _args and _args['oper']!=None:
+        if 'd' in _args and _args['d']: print('Operation type is: %s' %_args['oper'])
+        obj.set_property('oper',_args['oper'])
+
+    for i in _attrs:
+        if i.find('=')==-1:
+            continue
+        _data = i.split('=', 1)
+
+        # When value for attribute is empty, use None to indicate attribute delete
+        _val = None
+        if len(_data[1]) != 0:
+            _val = _data[1]
+
+        # For embedded attribute check if comma seperated attribute list is given
+        # then add it as embedded
+        embed_attrs = _data[0].split(',')
+        if len(embed_attrs) == 3:
+            obj.add_embed_attr(embed_attrs,_val)
+        else:
+            val_list = _data[1].split(',')
+            # Treat as leaf list if value contains ',' but is not
+            # enclosed within {}
+            if len(val_list) == 1 or _data[1][0] == '{':
+                obj.add_attr(_data[0],_val)
+            else:
+                obj.add_attr(_data[0],val_list)
+
+    if 'db' in _args and _args['db']:
+        if 'd' in _args and _args['d']:
+            print('Attempt to force database use')
+        cps.set_ownership_type(obj.get_key(),'db')
+        obj.set_property('db',True)
+    else:
+        obj.set_property('db',False)
+
+    if 'commit_event' in _args and _args['commit_event']:
+        if 'd' in _args and _args['d']:
+            print('Attempt to force use of auto-event for requested change on %s' % obj.get_key())
+
+        cps.set_auto_commit_event(obj.get_key(),True)
+        obj.set_property('commit-event',True)
+
+    if 'd' in _args and _args['d']:
+        print obj.get()
+    return obj

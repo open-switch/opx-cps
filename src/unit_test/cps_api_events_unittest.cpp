@@ -91,6 +91,41 @@ TEST(cps_api_events,epoll_trial_20000) {
 }
 
 
+TEST(cps_api_events,basic_clients_jumbo) {
+    cps_api_event_service_handle_t handle;
+    ASSERT_TRUE(cps_api_event_client_connect(&handle)==cps_api_ret_code_OK);
+
+    cps_api_event_reg_t reg;
+    reg.priority = 0;
+
+    cps_api_key_t key;
+    ASSERT_TRUE(cps_api_key_from_attr_with_qual(&key,BASE_IP_IPV6_ADDRESS,cps_api_qualifier_TARGET));
+
+    reg.objects = &key;
+    reg.number_of_objects =1;
+
+    ASSERT_TRUE(cps_api_event_client_register(handle,&reg)==cps_api_ret_code_OK) ;
+    
+    cps_api_object_guard og(cps_api_object_create());
+    //wait for connection event...       
+    ASSERT_TRUE(cps_api_wait_for_event(handle,og.get())==cps_api_ret_code_OK);
+        
+    int cnt=5;
+    while(--cnt > 0) {
+    	og.set(cps_api_object_create());
+
+        ASSERT_TRUE(cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),BASE_IP_IPV6_ADDRESS,cps_api_qualifier_TARGET));
+        for (size_t cnt=0,mx=1000; cnt < mx ; ++cnt ) {
+			cps_api_object_attr_add( og.get(),BASE_IP_IPV6_ADDRESS_IP,"10.10.10.10",12);
+			cps_api_object_attr_add( og.get(),BASE_IP_IPV6_ADDRESS_PREFIX_LENGTH,"24",3);
+        }
+        printf("Sending...\n");        
+        cps_api_event_publish(handle,og.get());
+        ASSERT_TRUE(cps_api_wait_for_event(handle,og.get())==cps_api_ret_code_OK);
+        printf("Received...\n");        
+    }
+    cps_api_event_client_disconnect(handle);
+}
 
 TEST(cps_api_events,basic_clients) {
     cps_api_event_service_handle_t handle;
@@ -112,8 +147,10 @@ TEST(cps_api_events,basic_clients) {
     while(--cnt > 0) {
         cps_api_object_guard og(cps_api_object_create());
         ASSERT_TRUE(cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),BASE_IP_IPV6_ADDRESS,cps_api_qualifier_TARGET));
-        cps_api_object_attr_add( og.get(),BASE_IP_IPV6_ADDRESS_IP,"10.10.10.10",12);
-        cps_api_object_attr_add( og.get(),BASE_IP_IPV6_ADDRESS_PREFIX_LENGTH,"24",3);
+        for (size_t cnt=0,mx=1; cnt < mx ; ++cnt ) {
+			cps_api_object_attr_add( og.get(),BASE_IP_IPV6_ADDRESS_IP,"10.10.10.10",12);
+			cps_api_object_attr_add( og.get(),BASE_IP_IPV6_ADDRESS_PREFIX_LENGTH,"24",3);
+        }
 
         printf("Sending...\n");
         cps_api_object_print(og.get());
@@ -231,9 +268,6 @@ TEST(cps_api_events,performance_publish_10k) {
 TEST(cps_api_events,performance_5_secs) {
 	cps_api_events_perf(5);
 }
-
-
-
 
 
 int main(int argc, char **argv) {
