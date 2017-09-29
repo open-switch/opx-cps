@@ -62,6 +62,7 @@ class response_set {
     void *_data[ARRAY_LEN];
     size_t _used=0;
 public:
+    void clear();
     bool add(void *entry) {
         if (_used < ARRAY_LEN) {
             _data[_used++] = entry;

@@ -501,6 +501,11 @@ PyDoc_STRVAR(CPS_FN_DOC(py_cps_node_set_master), "node_set_master(group_name,nod
     "@node_name - name of the node which is part of the group\n"
     "@return - True if successful otherwise False");
 
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_node_set_auto_event), "set_auto_commit_event(key,type)\n\n"
+    "Attempts to force the auto-commit event to the value specified.  This change will be local and not effect other processes in the system\n"
+    "@param key - key for the obejct in either OID format or string \n"
+    "@param type - the boolean value that is desired - true if want auto-commit events otherwise false\n"
+    "@return - True if successful otherwise False");
 
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_node_set_ownership_type), "set_ownership_type(key,type)\n\n"
     "Sets the object owership of the given key.\n"
@@ -515,6 +520,15 @@ PyDoc_STRVAR(CPS_FN_DOC(py_cps_sync), "sync(dest_obj, src_obj,callbacks)\n\n"
    "@callbacks - Python dictionary with 'sync' and 'error' as key\n"
    "             and its callback function as its value\n"
    "@return - True if successful otherwise False");
+
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_reconcile), "reconcile(src_objs,dest_obj,callbacks)\n\n"
+   "Reconcile/compare the list of source objects with entries in DB\n"
+   "@src_objs - List of source objects\n"
+   "@dest_obj - Dest object with class key"
+   "@callbacks - Python dictionary with 'sync' and 'error' as key\n"
+   "             and its callback function as its value\n"
+   "@return - True if successful otherwise False");
+
 
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_api_db_commit), "db_commit(object,previous,publish)\n\n"
     "Stores the object into the database and return the previous object (optional)\n"
@@ -573,7 +587,9 @@ static PyMethodDef cps_methods[] = {
     {"node_delete_group",  py_cps_node_delete_group, METH_VARARGS, CPS_FN_DOC(py_cps_node_delete_group)},
     {"node_set_master",  py_cps_node_set_master, METH_VARARGS, CPS_FN_DOC(py_cps_node_set_master)},
     {"set_ownership_type",  py_cps_node_set_ownership_type, METH_VARARGS, CPS_FN_DOC(py_cps_node_set_ownership_type)},
+    {"set_auto_commit_event",  py_cps_node_set_auto_event, METH_VARARGS, CPS_FN_DOC(py_cps_node_set_auto_event)},
     {"sync",  py_cps_sync, METH_VARARGS, CPS_FN_DOC(py_cps_sync)},
+    {"reconcile",  py_cps_reconcile, METH_VARARGS, CPS_FN_DOC(py_cps_reconcile)},
 
     {"db_commit",  (PyCFunction)py_cps_api_db_commit, METH_VARARGS| METH_KEYWORDS, CPS_FN_DOC(py_cps_api_db_commit)},
     {"db_get",  py_cps_api_db_get, METH_VARARGS, CPS_FN_DOC(py_cps_api_db_get)},
@@ -589,6 +605,30 @@ PyMODINIT_FUNC initcps(void) {
     if (! PyEval_ThreadsInitialized()) {
         PyEval_InitThreads();
     }
+
+    PyModule_AddStringConstant(m,"PATH_SEP","/");
+
+    PyObject *_lst = PyList_New(0);
+    cps_api_qualifier_t _qual = cps_api_qualifier_NULL;
+    while (_qual<cps_api_qualifier_MAX) {
+        const char *_str = cps_class_qual_to_string(_qual);
+        if (_str!=nullptr) {
+            PyList_Append(_lst,PyString_FromString(_str));
+        }
+        _qual=(cps_api_qualifier_t)(_qual+1);
+    }
+    PyModule_AddObject(m,"QUALIFIERS",_lst);
+
+    _lst = PyList_New(0);
+    cps_api_operation_types_t _ops = cps_api_oper_NULL;
+    while (_ops<=cps_api_oper_ACTION) {
+        const char *_str = cps_operation_type_to_string(_ops);
+        if (_str!=nullptr) {
+            PyList_Append(_lst,PyString_FromString(_str));
+        }
+        _ops=(cps_api_operation_types_t)(_ops+1);
+    }
+    PyModule_AddObject(m,"OPERATIONS",_lst);
 
     cps_error_exception = PyErr_NewException((char*)"cps.error", NULL, NULL);
     Py_INCREF(cps_error_exception);

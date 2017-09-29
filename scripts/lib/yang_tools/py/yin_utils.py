@@ -15,36 +15,107 @@
 #
 
 # This file contains a few general purpose YIN utilities
+
+import file_utils
+import general_utils
+
 import os
-import subprocess
+
 import sys
+import copy
+
+import xml.etree.ElementTree as ET
 
 
-def run_cmd(args):
-    p = subprocess.Popen(args, stdout=subprocess.PIPE)
-    stdout = p.communicate()[0]
-    wv = p.wait()
-    if wv != 0:
-        print(stdout)
-        print("Wait result is %d" % wv)
+class Locator:
+    def __init__(self, context, dirs_as_string=None):
+        if dirs_as_string:
+            self.tmpdir = dirs_as_string
+        else:
+            self.tmpdir = tempfile.mkdtemp()
+
+        self.context = context
+        self._loaded_nodes = {}
+
+    def get_yin_file(self, filename):
+        yin_file = os.path.join(
+            self.tmpdir,
+            os.path.splitext(os.path.basename(filename))[0] + ".yin")
+        if not os.path.exists(yin_file):
+            create_yin_file(filename, yin_file)
+        return yin_file
+
+    def _nodes_from_yin(self,filename):
+        '@type yang_file: string'
+        '@rtype ET.Element'
+
+        _file = None
+        with open(filename, 'r') as f:
+            _file = f.read()
+
+        if _file.find('<module ') != -1 and _file.find('xmlns:ywx=') == -1:
+            pos = _file.find('<module ') + len('<module ')
+            lhs = _file[:pos] + 'xmlns:ywx="http://localhost/ignore/" '
+            rhs = _file[pos:]
+            _file = lhs + rhs
+
+        try:
+            return ET.fromstring(_file)
+        except Exception as ex:
+            pass
+        return None
+
+    def get_yin_nodes(self,filename):
+        """
+        Given a yin file name - load it and store in dictionary
+        """
+        if filename not in self._loaded_nodes:
+            self._loaded_nodes[filename] = self._nodes_from_yin(filename)
+        return copy.deepcopy(self._loaded_nodes[filename])
+
+
+class yin_files:
+    def __init__(self,context):
+        self.__map = {}
+        self.__context = context
+        self.__nodes={}
+
+    def __yin_name(self,yang_name):
+        """
+        Take a file name and return a path to a yin file.  If none exists.. create
+        @yang_name just the name of a yang file (no directory expected)
+        """
+        yang_name = os.path.basename(yang_name)
+        return self.__context.get_tmp_filename(yang_name.replace('.yang','.yin'))
+
+
+    def __copy_nodes(self,yang_file):
+        return copy.deepcopy(self.__nodes[yang_file])
+
 
 
 def search_path_for_file(filename):
-    path = os.getenv('YANG_PATH', '')
-    for i in path.split(':'):
-        f = os.path.join(i, filename)
-        if os.path.exists(f):
-            return f
+    path = os.getenv('YANG_MODPATH', '')
+    __full_name = file_utils.search_path_for_file(filename,path)
+    if __full_name!=None:
+        return __full_name
+
     raise Exception(
         "Missing file " +
         filename +
-        " please set path in YANG_PATH.  eg YANG_PATH=DIR1:DIR2")
+        " please set path in YANG_MODPATH.  eg YANG_MODPATH=DIR1:DIR2")
 
+def get_type(node):
+    _type_len = len('type')
+    for i in node:
+        _pos = i.tag.rfind('type')
+        if _pos == (len(i.tag) - _type_len):
+            return i
+    return None
 
 def create_yin_file(yang_file, yin_file):
     yang_file = search_path_for_file(yang_file)
-    # print "converting "+yang_file+" to "+ yin_file
-    run_cmd(['pyang', '-o', yin_file, '-f', 'yin', yang_file])
+    general_utils.run_cmd(['pyang', '-o', yin_file, '-f', 'yin', yang_file])
 
 
 def get_node_text(namespace, node):
@@ -84,42 +155,6 @@ def node_get_type(module, node):
     if s is None:
         s = "Und"
     return s
-
-
-def header_file_open(src_file, mod_name, stream):
-    stream.write("\n")
-    stream.write("/*\n")
-    stream.write("* source file : " + src_file + "\n")
-    stream.write("* (c) Copyright 2015 Dell Inc. All Rights Reserved." + "\n")
-    stream.write("*/" + "\n")
-    stream.write("" + "\n")
-    stream.write("/* OPENSOURCELICENSE */" + "\n")
-
-    stream.write(
-        "#ifndef " +
-        string_to_c_formatted_name(
-            mod_name +
-            "_H") +
-        "\n")
-    stream.write(
-        "#define " +
-        string_to_c_formatted_name(
-            mod_name +
-            "_H") +
-        "\n")
-    stream.write("" + "\n")
-    stream.write("" + "\n")
-
-
-def header_file_close(stream):
-    stream.write("#endif" + "\n")
-
-
-# Create a string that can be used is C programs
-def string_to_c_formatted_name(s):
-    s = s.replace('-', '_')
-    s = s.replace(':', '_')
-    return s.upper()
 
 # walk through all of the children of nodes and find nodes of the type
 # mentioned
@@ -167,6 +202,12 @@ def get_node_path(module, node, root_node):
 
 # generate an index for a node.
 
+
+def get_prefix_tuple(name):
+    _ix = name.find(':')
+    if _ix == -1:
+        return ('',name)
+    return (name[:_ix],name[_ix+1:])
 
 class IndexTracker:
     ix = 0

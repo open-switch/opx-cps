@@ -21,6 +21,7 @@
 
 #include "event_log.h"
 
+#include <poll.h>
 #include <netinet/tcp.h>
 #include <unordered_map>
 #include <hiredis/hiredis.h>
@@ -29,8 +30,6 @@
 
 
 const static ssize_t MAX_RETRY=1;
-
-static bool __added_logging = true;
 
 void cps_db::connection::db_operation_atom_t::from_string(const char *str, size_t len) {
     _atom_type = cps_db::connection::db_operation_atom_t::obj_fields_t::obj_field_STRING;
@@ -59,6 +58,11 @@ void cps_db::connection::disconnect() {
         redisFree(static_cast<redisContext*>(_ctx));
         _ctx = nullptr;
     }
+    _event_connection = false;
+    for ( auto & it : _pending_events) {
+        freeReplyObject(it);
+    }
+    _pending_events.clear();
 }
 
 bool cps_db::connection::reconnect() {
@@ -79,10 +83,10 @@ bool cps_db::connection::clone(connection &conn) {
     return conn.connect(_addr);
 }
 
-bool cps_db::connection::connect(const std::string &s_, const std::string &db_instance_, bool async_) {
+bool cps_db::connection::connect(const std::string &s_, const std::string &db_instance_) {
     size_t _port_pos = s_.rfind(":");
     if (_port_pos==std::string::npos) {
-        EV_LOG(ERR,DSAPI,0,"RED-CON","Failed to connect to server... bad address (%s)",s_.c_str());
+        EV_LOG(INFO,DSAPI,0,"RED-CON","Failed to connect to server... bad address (%s)",s_.c_str());
         return false;
     }
 
@@ -97,21 +101,16 @@ bool cps_db::connection::connect(const std::string &s_, const std::string &db_in
         ++_start_ip;    //first spot is [
         _end_ip = s_.rfind("]:");
         if (_end_ip==std::string::npos) {
-            EV_LOG(ERR,DSAPI,0,"RED-CON","Failed to connect to server... bad address (%s)",s_.c_str());
+            EV_LOG(INFO,DSAPI,0,"RED-CON","Failed to connect to server... bad address (%s)",s_.c_str());
             return false;
         }
     }
     _addr = s_;
-    _async = async_;
 
     _ip = s_.substr(_start_ip,_end_ip);
 
-    if (_async) {
-        _ctx = redisAsyncConnect(_ip.c_str(), _port);
-    } else {
-        timeval tv = { 2 /*Second */ , 0 };
-        _ctx = redisConnectWithTimeout(_ip.c_str(), _port,tv);
-    }
+    timeval tv = { 2 /*Second */ , 0 };
+    _ctx = redisConnectWithTimeout(_ip.c_str(), _port,tv);
 
     if (db_instance_.size()!=0) {
         select_db(*this,db_instance_);
@@ -121,25 +120,35 @@ bool cps_db::connection::connect(const std::string &s_, const std::string &db_in
         auto fd = ((redisContext*)_ctx)->fd;
         int on = 1;
 
+        //set up poll structures for later use
+        _rd.fd = fd;
+        _rd.events = POLLIN;
+        _rd.revents =0;
+
+        _wr.fd = fd;
+        _wr.events = POLLOUT;
+        _wr.revents =0;
+
+        //attempt to set socket options for keepalive
         if (setsockopt(fd,SOL_SOCKET,SO_KEEPALIVE,&on,sizeof(on))<0) {
             EV_LOGGING(DSAPI,DEBUG,"CPS-DB-CONN","Failed to set keepalive option on fd %d",fd);
         }
-        int retries = 5;
-        if (setsockopt(fd,SOL_SOCKET,TCP_KEEPCNT,&retries,sizeof(retries))<0) {
+        int retries = 4;
+        if (setsockopt(fd,IPPROTO_TCP,TCP_KEEPCNT,&retries,sizeof(retries))<0) {
             EV_LOGGING(DSAPI,DEBUG,"CPS-DB-CONN","Failed to set keepcount option on fd %d",fd);
         }
 
         int interval = 1;
-        if (setsockopt(fd,SOL_SOCKET,TCP_KEEPINTVL,&interval,sizeof(interval))<0) {
+        if (setsockopt(fd,IPPROTO_TCP,TCP_KEEPINTVL,&interval,sizeof(interval))<0) {
             EV_LOGGING(DSAPI,DEBUG,"CPS-DB-CONN","Failed to set interval option on fd %d",fd);
         }
 
-        int idle = 5;
-        if (setsockopt(fd,SOL_SOCKET,TCP_KEEPIDLE,&idle,sizeof(idle))<0) {
+        int idle = 2;
+        if (setsockopt(fd,IPPROTO_TCP,TCP_KEEPIDLE,&idle,sizeof(idle))<0) {
             EV_LOGGING(DSAPI,DEBUG,"CPS-DB-CONN","Failed to set idle time option on fd %d",fd);
         }
     }
-
+    _last_used = 0;
     return _ctx !=nullptr;
 }
 
@@ -188,13 +197,13 @@ struct request_walker_contexct_t {
     }
     bool valid() { return cmds_ptr!=cmds; }
 };
-bool handle_str(request_walker_contexct_t &ctx) {
+static bool handle_str(request_walker_contexct_t &ctx) {
     if (!ctx.enough(1)) return false;
     ctx.set_current_entry(ctx._cur->_string,ctx._cur->_len);
     return true;
 }
 
-bool handle_class_key(request_walker_contexct_t &ctx) {
+static bool handle_class_key(request_walker_contexct_t &ctx) {
     if (!ctx.enough(1)) return false;
     ctx.key_scratch.resize(ctx.key_scratch.size()+1);
     if (!cps_db::dbkey_from_class_key(ctx.key_scratch[++ctx.key_scratch_len],cps_api_object_key(ctx._cur->_object))) return false;
@@ -202,7 +211,7 @@ bool handle_class_key(request_walker_contexct_t &ctx) {
     return true;
 }
 
-bool handle_instance_key(request_walker_contexct_t &ctx) {
+static bool handle_instance_key(request_walker_contexct_t &ctx) {
     if (!ctx.enough(1)) return false;
     ctx.key_scratch.resize(ctx.key_scratch.size()+1);
     if (!cps_db::dbkey_from_instance_key(ctx.key_scratch[++ctx.key_scratch_len],ctx._cur->_object,false)) return false;
@@ -210,7 +219,7 @@ bool handle_instance_key(request_walker_contexct_t &ctx) {
     return true;
 }
 
-bool handle_object(request_walker_contexct_t &ctx) {
+static bool handle_object(request_walker_contexct_t &ctx) {
     if (!handle_instance_key(ctx)) return false;
     if (!ctx.enough(2)) return false;
 
@@ -223,7 +232,7 @@ bool handle_object(request_walker_contexct_t &ctx) {
     return true;
 }
 
-bool handle_object_data(request_walker_contexct_t &ctx) {
+static bool handle_object_data(request_walker_contexct_t &ctx) {
     if (!ctx.enough(1)) return false;
 
     const char *d = (const char*)(const void *)cps_api_object_array(ctx._cur->_object);
@@ -233,7 +242,7 @@ bool handle_object_data(request_walker_contexct_t &ctx) {
     return true;
 }
 
-bool handle_event_fields(request_walker_contexct_t &ctx) {
+static bool handle_event_fields(request_walker_contexct_t &ctx) {
     if (!handle_instance_key(ctx)) return false;
     return handle_object_data(ctx);
 }
@@ -258,7 +267,16 @@ bool request_walker_contexct_t::set(cps_db::connection::db_operation_atom_t * ls
 
 }
 
-bool cps_db::connection::operation(db_operation_atom_t * lst_,size_t len_, bool force_push) {
+bool cps_db::connection::writable(size_t timeoutms) {
+    int _rc = poll(&_wr,1,timeoutms);
+    return _rc==1 && (_wr.revents&POLLOUT)!=0;
+}
+
+bool cps_db::connection::readable(size_t timeoutms) {
+    return poll(&_rd,1,timeoutms)==1 && (_rd.revents&POLLIN)!=0;
+}
+
+bool cps_db::connection::operation(db_operation_atom_t * lst_,size_t len_, bool force_push,size_t timeoutms) {
     request_walker_contexct_t ctx(lst_,len_);
 
     if (!ctx.valid()) {
@@ -278,39 +296,23 @@ bool cps_db::connection::operation(db_operation_atom_t * lst_,size_t len_, bool 
 
     if (!_success) return false;
     if (!force_push) return true;
-    return flush();
+    return flush(timeoutms);
 }
 
-bool cps_db::connection::flush() {
+bool cps_db::connection::flush(size_t timeoutms) {
     int _is_done=0;
     while (_is_done==0) {
+        if (!writable(timeoutms)) {
+            reconnect(); return false;
+        }
+
         if (redisBufferWrite(static_cast<redisContext*>(_ctx),&_is_done)==REDIS_ERR) {
             reconnect();
             return false;
         }
+        update_used();
     }
     return true;
-}
-
-bool cps_db::connection::command(db_operation_atom_t * lst,size_t len,response_set &set) {
-    request_walker_contexct_t ctx(lst,len);
-
-    if (!ctx.valid()) {
-        EV_LOGGING(DSAPI,ERR,"CPS-DB-CMD","The DB context is invalid.");
-        return false;
-    }
-    size_t retry = MAX_RETRY;
-    do {
-        redisReply *r = (redisReply*)redisCommandArgv(static_cast<redisContext*>(_ctx),ctx.cmds_ptr - ctx.cmds,ctx.cmds,ctx.cmds_lens);
-        if (r!=nullptr) {
-            set.add(r);
-            return true;
-        }
-        EV_LOG(ERR,DSAPI,0,"CPS-DB-CMD","Redis error reponse.. will try to reconnect and reattempt");
-        reconnect();
-    } while (retry-- > 0);
-
-    return false;
 }
 
 static bool is_event_message(void *resp) {
@@ -326,35 +328,75 @@ static bool is_event_message(void *resp) {
     return false;
 }
 
-bool cps_db::connection::response(response_set &data_, bool expect_events) {
-
-    while (true) {
+bool cps_db::connection::response(response_set &data_, size_t timeoutms) {
+    bool _rc = true;
+    if (!flush(timeoutms)) {
+        _rc=false;
+    }
+    //clear all previous entries
+    data_.clear();
+    while (_rc) {
         void *reply;
-        int rc = redisGetReply(static_cast<redisContext*>(_ctx),&reply);
-        if (rc!=REDIS_OK) {
+
+        if (redisGetReplyFromReader(static_cast<redisContext*>(_ctx),&reply)!=REDIS_OK) {
             EV_LOG(ERR,DSAPI,0,"DB-RESP","Failed to get reply from %s",_addr.c_str());
             //clean up response so no partial responses
-            reconnect();
-            return false;
+            _rc=false; continue;
         }
-        if (expect_events && is_event_message(reply)) {
+
+        if (reply==nullptr) {
+            if (!readable(timeoutms)) {
+                _rc=false; continue;
+            }
+            if (redisBufferRead(static_cast<redisContext*>(_ctx))!=REDIS_OK) {
+                _rc=false; continue;
+            }
+            update_used();
+            continue;
+        }
+
+        if (_event_connection && is_event_message(reply)) {
             _pending_events.push_back(reply);
+            EV_LOGGING(CPS-DB-EV-INTERLEAVE,DEBUG,"RESP","Interleaved message received");
             continue;
         }
         data_.add(reply);
         break;
     }
-    return true;
+    if (_rc==false) {
+        reconnect();
+    }
+    return _rc;
 }
 
-bool cps_db::connection::has_event() {
+bool cps_db::connection::command(db_operation_atom_t * lst,size_t len,response_set &set,size_t timeoutms) {
+    if (!operation(lst,len,true,timeoutms)) {
+        return false;
+    }
+    return response(set,timeoutms);
+}
+
+void cps_db::connection::update_used() {
+    _last_used = std_get_uptime(nullptr);
+}
+
+bool cps_db::connection::used_within(uint64_t relative) {
+    return std_time_is_expired(_last_used,relative);
+}
+
+bool cps_db::connection::has_event(bool &err) {
     void *rep ;
     int rc = REDIS_OK;
+    err = false;
     do {
+        //check redis contexct for already read in data
         if ((rc=redisReaderGetReply(static_cast<redisContext*>(_ctx)->reader,&rep))==REDIS_OK) {
             if (rep==nullptr) break;
             if (is_event_message(rep)) _pending_events.push_back(rep);
             else freeReplyObject(rep);
+        } else {
+            err = true;
+            EV_LOGGING(CPS-DB-CONN,ERR,"DISCON","DB comm channel buffer seems to be corrupted or invalid.  Disconnect required");
         }
     } while (rc==REDIS_OK);
     return _pending_events.size()>0;
@@ -362,24 +404,27 @@ bool cps_db::connection::has_event() {
 
 #include "std_select_tools.h"
 
-bool cps_db::connection::get_event(response_set &data) {
+bool cps_db::connection::get_event(response_set &data, bool &err_occured) {
+    data.clear();
+    err_occured = false;
     do {
         if (_pending_events.size() == 0) {
-            int rc = 0;
-            if (__added_logging) {
-                fd_set _set;
-                FD_ZERO(&_set);
-                FD_SET(static_cast<redisContext*>(_ctx)->fd,&_set);
-                timeval tv = {0,0};
-                rc = std_select_ignore_intr(static_cast<redisContext*>(_ctx)->fd+1,&_set,nullptr,nullptr,&tv,nullptr);
-                if (rc <=0) {
-                    EV_LOG(ERR,DSAPI,0,"CPS-DB-EVT","Called to get event when no data waiting.");
-                    break;
-                }
+
+            if ( !readable(_SELECT_MS_WAIT)) {
+                EV_LOGGING(CPS-DB-CONN,DEBUG,"DISCON","Read timeout while waiting for data - ignored");
+                break;
             }
-            rc = redisBufferRead(static_cast<redisContext*>(_ctx));
-            if (rc==REDIS_ERR) break;
-            if (!has_event()) break;
+
+            if (redisBufferRead(static_cast<redisContext*>(_ctx))==REDIS_ERR) {
+                EV_LOGGING(CPS-DB-CONN,ERR,"DISCON","DB event channel back end read error.  Event channel needs to be reconnected");
+                err_occured=true;
+                break;
+            }
+            update_used();
+            if (!has_event(err_occured)) {
+                if (err_occured) EV_LOGGING(CPS-DB-CONN,DEBUG,"DISCON","event caching failure");
+                break;
+            }
 
         }
         if (_pending_events.size()>0) {
@@ -390,75 +435,5 @@ bool cps_db::connection::get_event(response_set &data) {
     } while (0);
     return false;
 }
-
-static pthread_once_t  onceControl = PTHREAD_ONCE_INIT;
-static cps_db::connection_cache * _cache;
-static cps_db::connection_cache * _event_cache;
-
-void __init(void) {
-    _cache = new cps_db::connection_cache;
-    _event_cache = new cps_db::connection_cache;
-    STD_ASSERT(_cache!=nullptr && _event_cache!=nullptr);
-}
-
-cps_db::connection_cache & cps_db::ProcessDBCache() {
-    pthread_once(&onceControl,__init);
-    return *_cache;
-}
-
-cps_db::connection_cache & cps_db::ProcessDBEvents() {
-    pthread_once(&onceControl,__init);
-    return *_event_cache;
-}
-
-cps_db::connection * cps_db::connection_cache::get(const std::string &name) {
-    std::lock_guard<std::mutex> l(_mutex);
-
-    const auto &_connect = [] (const std::string &name) -> cps_db::connection *{
-        auto *_conn = new cps_db::connection;
-        if (!_conn->connect(name)) {
-            delete _conn;
-            _conn  = nullptr;
-        }
-        return _conn;
-    };
-
-    auto it = _pool.find(name);
-
-    if (it!=_pool.end() && it->second.size()>0) {
-        auto ptr = it->second.back().release();
-        it->second.pop_back();
-        return ptr;
-    }
-    return _connect(name);
-}
-
-void cps_db::connection_cache::put(const std::string &name, connection* conn) {
-    std::lock_guard<std::mutex> l(_mutex);
-    const static size_t MAX_OPEN_CONN=3;
-    auto _ptr = std::unique_ptr<cps_db::connection>(conn);
-
-    if (_pool[name].size()<MAX_OPEN_CONN) {
-        _pool[name].push_back(std::move(_ptr));
-    }
-}
-
-void cps_db::connection_cache::remove(const std::string &name) {
-    std::lock_guard<std::mutex> l(_mutex);
-    _pool.erase(name);
-}
-
-cps_db::connection_request::connection_request(cps_db::connection_cache & cache,const char *addr) : _cache(cache) {
-    _name = addr;
-    _conn = _cache.get(addr);
-}
-
-cps_db::connection_request::~connection_request() {
-    if(_conn!=nullptr) {
-        _cache.put(_name,_conn);
-        _conn = nullptr;
-    }
-}
-
 
 

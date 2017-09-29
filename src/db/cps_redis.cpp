@@ -18,12 +18,16 @@
 #include "cps_api_key.h"
 #include "cps_api_object_key.h"
 
+#include "cps_api_db_connection_tools.h"
+
 #include "cps_api_db.h"
 #include "cps_api_db_response.h"
 #include "cps_string_utils.h"
 #include "cps_api_operation.h"
 
 #include "cps_api_vector_utils.h"
+#include "std_time_tools.h"
+#include "std_select_tools.h"
 #include "event_log.h"
 
 #include <vector>
@@ -34,28 +38,27 @@
 
 #include <hiredis/hiredis.h>
 
-
 static std::mutex _mutex;
 
-bool cps_db::ping(cps_db::connection &conn) {
+
+bool cps_db::ping(cps_db::connection &conn, size_t timeoutms) {
     cps_db::connection::db_operation_atom_t e;
     e.from_string("PING");
     response_set resp;
-
-    if (!conn.operation(&e,1)) return false;
-
-    if (!conn.response(resp,true)) {
-        return false;
-    }
+    if (!conn.command(&e,1,resp,timeoutms)) return false;
 
     cps_db::response r = resp.get_response(0);
-    if (r.has_elements()) {
+    const char *ret = NULL;
+    if(r.has_elements()) {
         r = cps_db::response(r.element_at(0));
-        return strcasecmp((const char *)r.get_str(),"PONG")==0 ;
+        ret = r.get_str();
     }
-    return r.is_ok() ?
-            strcasecmp((const char *)r.get_str(),"PONG")==0 :
-            false;
+    else if(r.is_ok()) {
+        ret = r.get_str();
+    }
+
+    if(ret)  return (strcasecmp((const char *)ret,"PONG")==0) ;
+    return false;
 }
 
 
@@ -153,12 +156,14 @@ bool cps_db::get_objects(cps_db::connection &conn, cps_api_object_t obj,cps_api_
     return false;
 }
 
-
-cps_db::response_set::~response_set() {
+void cps_db::response_set::clear() {
     for ( size_t ix = 0; ix < _used ; ++ix ) {
         freeReplyObject((redisReply*)_data[ix]);
     }
     _used = 0;
+}
+cps_db::response_set::~response_set() {
+    clear();
 }
 
 
@@ -222,7 +227,7 @@ bool cps_db::dbkey_field_get_request(cps_db::connection &conn, const char *key, 
 
 std::string cps_db::dbkey_field_get_response_string(cps_db::connection &conn) {
     response_set resp;
-    if (conn.response(resp,false)) {
+    if (conn.response(resp)) {
         cps_db::response r = resp.get_response(0);
         if(r.is_str()) {
             return r.get_str();
@@ -288,10 +293,10 @@ bool cps_db::set_object_request(cps_db::connection &conn, cps_api_object_t obj, 
 }
 
 bool cps_db::set_object_response(cps_db::connection &conn) {
-    cps_db::response_set rs;
+
     cps_db::response_set resp;
 
-    if (conn.response(resp,false)) {
+    if (conn.response(resp)) {
         //this level of validation is really not needed since all respnses are valid (no fail besides connection)
         cps_db::response r = resp.get_response(0);
         return r.is_int() && (r.get_int()==0 || r.get_int()==1);
@@ -311,7 +316,7 @@ bool cps_db::get_object_request(cps_db::connection &conn, const char*key, size_t
 bool cps_db::get_object_response(cps_db::connection &conn, cps_api_object_t obj) {
     cps_db::response_set resp;
 
-    if (conn.response(resp,false)) {
+    if (conn.response(resp)) {
         response r = resp.get_response(0);
         if (r.is_str() && cps_api_array_to_object(r.get_str(),r.get_str_len(),obj)) {
             return true;

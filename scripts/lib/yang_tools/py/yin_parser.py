@@ -27,11 +27,15 @@ if __name__ == '__main__':
     header = None
     src = None
 
-    for i in sys.argv:
+    for i in sys.argv:        
         if i.find('=') != -1:
-            key, value = i.split('=')
+            key, value = i.split('=',1)
             d[key] = value
-    yf = yin_model.CPSYangModel(d)
-    yf.close()
 
+    #parse and generate output files from the parameters            
+    with yin_model.CPSYangModel(d) as yf:    
+        yf.close()
+
+    #Exceptions are thrown on errors
     sys.exit(0)
+

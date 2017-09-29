@@ -64,7 +64,9 @@ static const auto _qual_to_string = new cps_class_map_qual_to_string{
         {cps_api_qualifier_OBSERVED, "observed"},
         {cps_api_qualifier_PROPOSED, "proposed"},
         {cps_api_qualifier_REALTIME, "realtime"},
-        {cps_api_qualifier_REGISTRATION, "registration"}
+        {cps_api_qualifier_REGISTRATION, "registration"},
+        {cps_api_qualifier_RUNNING_CONFIG, "running"},
+        {cps_api_qualifier_STARTUP_CONFIG, "startup"}
 };
 
 static const auto _op_types = new std::unordered_map<std::string,cps_api_operation_types_t>{

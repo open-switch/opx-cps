@@ -18,7 +18,7 @@
 
 #include "cps_api_python.h"
 
-
+#include "cps_class_map.h"
 #include "cps_api_node.h"
 #include "cps_api_operation_tools.h"
 #include "cps_api_db_interface.h"
@@ -183,6 +183,23 @@ PyObject * py_cps_node_set_master(PyObject *self, PyObject *args) {
     Py_RETURN_FALSE;
 }
 
+PyObject * py_cps_node_set_auto_event(PyObject *self, PyObject *args) {
+    const char *key=NULL;
+    PyObject *_enable = nullptr;
+
+    if (! PyArg_ParseTuple( args, "sO!", &key,&PyBool_Type,&_enable)) Py_RETURN_FALSE;
+
+    bool _is_enabled = (_enable==Py_True);
+
+    cps_api_key_t k;
+    if (!cps_class_key_from_string(key,&k)) {
+        py_set_error_string("Can't convert key to string.");
+        return nullptr;
+    }
+
+    cps_api_obj_set_auto_event(&k,_is_enabled);
+    Py_RETURN_TRUE;
+}
 
 PyObject * py_cps_node_set_ownership_type(PyObject *self, PyObject *args) {
     const char *key=NULL;

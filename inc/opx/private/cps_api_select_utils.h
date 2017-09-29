@@ -31,7 +31,8 @@ static inline cps_api_select_handle_t cps_api_select_alloc_read() {
 
 void cps_api_select_dealloc(cps_api_select_handle_t handle);
 
-bool cps_api_select_add_fd(cps_api_select_handle_t handle, int fd);
+bool cps_api_select_add_fd(cps_api_select_handle_t handle, int fd, bool *read, bool *write);
+
 int cps_api_select_wait(cps_api_select_handle_t h, int *handles, size_t len, size_t timeoutms);
 void cps_api_select_remove_fd(cps_api_select_handle_t handle, int fd);
 
@@ -44,7 +45,7 @@ public:
     bool valid() { return __h!=nullptr; }
     cps_api_select_handle_t get() { return __h; }
 
-    bool add_fd(int fd);
+    bool add_fd(int fd, bool *read=nullptr,bool *write=nullptr);
     void remove_fd(int fd);
 
     void close();

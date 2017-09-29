@@ -1,3 +1,15 @@
+opx-cps (3.6.0ubuntu1) UNRELEASED; urgency=medium
+
+  * Update: Yang parser now supports yang 1.1 and signifiatnely more yang constructs 
+  * Update: CPS_PARSER_CACHE added for faster yang parsing
+  * Update: Adding error logs and debug logs to help troubleshoot event disconnect issues in the field (debug as well). Ignore read timeout when getting events as they may be false positives due to event_thread behaviour of waiting for events as registrations are being sent across socket.
+  * Update: cps_get_oid.py and other script updates to better print disovered objects
+  * Update: Adding new utility file for connection status/caching
+  * Update: Updates for connection caching for db connections
+  * Update: Additional support for distributed CPS with performance updates
+
+ -- Clifford Wichmann <cwichmann@force10networks.com>  Fri, 29 Sep 2017 13:49:48 -0700
+
 opx-cps (3.6.0) unstable; urgency=medium
 
   * Update: CPS Event Optimizations

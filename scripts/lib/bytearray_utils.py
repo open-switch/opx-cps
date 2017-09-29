@@ -135,7 +135,7 @@ def macstr_to_ba(t, macstr):
              eg: '01:02:03:BC:05:06'
     return bytearray
     """
-    return binascii.unhexlify(macstr.replace(':', ''))
+    return bytearray(binascii.unhexlify(macstr.replace(':', '')))
 
 
 def ba_to_macstr(t, ba):
@@ -159,7 +159,7 @@ def ipv4str_to_ba(t, ipv4str):
               eg: '23.0.0.1'
     return bytearray
     """
-    return socket.inet_pton(socket.AF_INET, ipv4str)
+    return bytearray(socket.inet_pton(socket.AF_INET, ipv4str))
 
 
 def ba_to_ipv4str(t, ba):
@@ -169,7 +169,7 @@ def ba_to_ipv4str(t, ba):
     ba - bytearray of the IPv4 address
     return IPv4 address decimal string with each decimal octet seperated by '.'
     """
-    return socket.inet_ntop(socket.AF_INET, ba)
+    return socket.inet_ntop(socket.AF_INET, str(ba))
 
 
 def ipv6str_to_ba(t, ipv6str):
@@ -182,7 +182,7 @@ def ipv6str_to_ba(t, ipv6str):
              or  '2001:0db8:85a3::8a2e:0370:7334'
     return bytearray
     """
-    return socket.inet_pton(socket.AF_INET6, ipv6str)
+    return bytearray(socket.inet_pton(socket.AF_INET6, ipv6str))
 
 
 def ba_to_ipv6str(t, ba):
@@ -192,7 +192,7 @@ def ba_to_ipv6str(t, ba):
     ba - bytearray of the IPv6 address
     return IPv6 address string with ':' separating every 2 octets - leading zeroes will be omitted
     """
-    return socket.inet_ntop(socket.AF_INET6, ba)
+    return socket.inet_ntop(socket.AF_INET6, str(ba))
 
 
 def ba_to_str_wr(t, val):
@@ -273,7 +273,7 @@ def wr_double_type_to_ba(t, val):
 
 
 def hex_to_ba(t, val):
-    return binascii.unhexlify(val)
+    return bytearray(binascii.unhexlify(val))
 
 type_to_ba = {
     'string': wr_str_to_ba,

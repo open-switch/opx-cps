@@ -84,8 +84,8 @@ void db_list_tracker_rm(cps_api_object_t obj) {
 }
 
 uint64_t cps_api_objects_allocated() {
-	std_mutex_simple_lock_guard g(&db_tracker_lock);
-	return trackers.size();
+    std_mutex_simple_lock_guard g(&db_tracker_lock);
+    return trackers.size();
 }
 
 bool cps_api_list_debug() {
@@ -94,7 +94,7 @@ bool cps_api_list_debug() {
     auto end = trackers.end();
     if (it==end) return true;
     for ( ; it != end ; ++it ) {
-    	EV_LOGGING(CPS,NOTICE,"OBJ-TRACKER","Object allocated from %s:%s:%d\n",(it)->second->file,(it)->second->desc,(it)->second->ln);
+        EV_LOGGING(CPS,NOTICE,"OBJ-TRACKER","Object allocated from %s:%s:%d\n",(it)->second->file,(it)->second->desc,(it)->second->ln);
     }
     return false;
 }
@@ -125,8 +125,6 @@ cps_api_object_ATTR_TYPE_t cps_api_object_int_type_for_len(size_t len) {
     }
     return types[len];
 }
-
-
 
 //Basic Object Data Functions
 
@@ -313,7 +311,12 @@ void __delete_repeated_attributes(cps_api_object_t d, cps_api_object_t s) {
 
 bool cps_api_object_attr_merge(cps_api_object_t d, cps_api_object_t s, bool remove_dup) {
     cps_api_object_internal_t *dest = (cps_api_object_internal_t*)d;
-    cps_api_object_internal_t *src = (cps_api_object_internal_t*)s;
+
+    cps_api_object_guard og(cps_api_object_create());
+    if (og.get()==nullptr) return false;
+    cps_api_object_clone(og.get(), s);
+
+    cps_api_object_internal_t *src = (cps_api_object_internal_t*)og.get();
 
     size_t _cur = obj_used_len(dest);
     size_t _amt = obj_used_len(src);
@@ -322,7 +325,7 @@ bool cps_api_object_attr_merge(cps_api_object_t d, cps_api_object_t s, bool remo
 
     if (remove_dup && (_cur>0)) {
         //@TODO optimize in the case of zero attributes
-        __delete_repeated_attributes(d,s);
+        __delete_repeated_attributes(d,og.get());
         _cur = obj_used_len(dest);
         _amt = obj_used_len(src);
     }
@@ -407,21 +410,21 @@ static bool __cps_api_object_attr_delete(cps_api_object_t obj, cps_api_attr_id_t
 }
 
 bool cps_api_object_attr_delete(cps_api_object_t obj, cps_api_attr_id_t attr_id) {
-	bool _first_time = __cps_api_object_attr_delete(obj,attr_id);
-	while (_first_time && __cps_api_object_attr_delete(obj,attr_id)) ; //delete attributes
-	return _first_time;
+    bool _first_time = __cps_api_object_attr_delete(obj,attr_id);
+    while (_first_time && __cps_api_object_attr_delete(obj,attr_id)) ; //delete attributes
+    return _first_time;
 }
 
 bool cps_api_object_delete_it(cps_api_object_t obj, cps_api_object_it_t *it) {
     if (!cps_api_object_it_valid(it)) return false;
 
-	cps_api_object_internal_t *_p = (cps_api_object_internal_t*)obj;
+    cps_api_object_internal_t *_p = (cps_api_object_internal_t*)obj;
 
     void  *_start = obj_data(_p);
     void *_end = obj_data_end(_p);
 
     if (it->attr < _start || it->attr>_end) {
-    	return false;
+        return false;
     }
 
     size_t _it_size = std_tlv_total_len(it->attr);
@@ -571,19 +574,19 @@ bool cps_api_object_e_add(cps_api_object_t obj, cps_api_attr_id_t *id,
 
     switch(type) {
     case cps_api_object_ATTR_T_U16:
-    	if (dlen!=sizeof(un.u16)) {
-    		EV_LOGGING(DSAPI,ERR,"ADD-Invalid","Invalid parameters for add - size mismatch U16 %d vs %d.", dlen, un.u16);
-    	}
+        if (dlen!=sizeof(un.u16)) {
+            EV_LOGGING(DSAPI,ERR,"ADD-Invalid","Invalid parameters for add - size mismatch U16 %d vs %d.");
+        }
         un.u16 = htole16(*(uint16_t*)data); data = &un.u16; break;
     case cps_api_object_ATTR_T_U32:
-    	if (dlen!=sizeof(un.u32)) {
-    		EV_LOGGING(DSAPI,ERR,"ADD-Invalid","Invalid parameters for add - size mismatch U32 %d vs %d.", dlen, un.u32);
-    	}
+        if (dlen!=sizeof(un.u32)) {
+            EV_LOGGING(DSAPI,ERR,"ADD-Invalid","Invalid parameters for add - size mismatch U32 %d vs %d.");
+        }
         un.u32 = htole32(*(uint32_t*)data); data = &un.u32; break;
     case cps_api_object_ATTR_T_U64:
-    	if (dlen!=sizeof(un.u64)) {
-    		EV_LOGGING(DSAPI,ERR,"ADD-Invalid","Invalid parameters for add - size mismatch U64 %d vs %d.", dlen, un.u64);
-    	}
+        if (dlen!=sizeof(un.u64)) {
+            EV_LOGGING(DSAPI,ERR,"ADD-Invalid","Invalid parameters for add - size mismatch U64 %d vs %d.");
+        }
         un.u64 = htole64(*(uint64_t*)data); data = &un.u64; break;
     default:
         //bin;
@@ -629,6 +632,7 @@ cps_api_key_t * cps_api_object_key(cps_api_object_t obj) {
 
 bool cps_api_array_to_object(const void * data, size_t len, cps_api_object_t obj) {
     if (obj == NULL) return false;
+    if (len < sizeof(cps_api_object_data_t)) return false;
 
     cps_api_object_internal_t * p = (cps_api_object_internal_t *)obj;
     p->remain = p->len;

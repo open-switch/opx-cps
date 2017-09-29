@@ -1,27 +1,15 @@
 /*
- * Copyright (c) 2016 Dell Inc.
+ * cps_api_db_events.cpp
  *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may
- * not use this file except in compliance with the License. You may obtain
- * a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
- *
- * THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR
- * CONDITIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT
- * LIMITATION ANY IMPLIED WARRANTIES OR CONDITIONS OF TITLE, FITNESS
- * FOR A PARTICULAR PURPOSE, MERCHANTABLITY OR NON-INFRINGEMENT.
- *
- * See the Apache Version 2.0 License for specific language governing
- * permissions and limitations under the License.
- */
-
-/**
- * @file cps_api_db_events.cpp
+ *  Created on: Oct 15, 2016
  */
 
 
 #include "cps_api_db.h"
 
 #include "cps_api_db_connection.h"
+#include "cps_api_db_connection_tools.h"
+
 #include "cps_api_db_response.h"
 #include "cps_api_vector_utils.h"
 #include "cps_api_select_utils.h"
@@ -43,8 +31,8 @@
 
 class _cps_event_flush {
 public:
-	_cps_event_flush() {}
-	~_cps_event_flush();
+    _cps_event_flush() {}
+    ~_cps_event_flush();
 };
 
 using _cps_event_queue_elem_t = std::tuple<std::string,cps_api_object_t>;
@@ -71,6 +59,9 @@ bool cps_db::subscribe(cps_db::connection &conn, std::vector<char> &key) {
     e[0].from_string("PSUBSCRIBE");
     if (key[key.size()-1]!='*') cps_utils::cps_api_vector_util_append(key,"*",1);
     e[1].from_string(&key[0],key.size());
+
+    //set the flag on the connection indicating that it will be used to handle events
+    conn.used_for_events();
 
     response_set resp;
     if (!conn.command(e,2,resp)) {
@@ -122,7 +113,7 @@ bool _drain_connection(cps_db::connection &conn) {
 
     while (sg.get_event(0)) {
         cps_db::response_set resp;
-        if (!conn.response(resp,false)) {
+        if (!conn.response(resp)) {
             conn.reconnect();
             return false;
         }
@@ -139,7 +130,6 @@ bool _change_connection(std::string &current_address, const std::string &new_add
     if (_conn!=nullptr) {
         _conn->flush();    //clean up existing events
         _drain_connection(*_conn);
-
         cps_db::ProcessDBEvents().put(_db_key,_conn);    //store the handles
     }
 
@@ -199,19 +189,18 @@ bool _process_list(_cps_event_queue_list_t &current) {
 }
 
 void _remove_x_events(size_t ix, size_t mx, _cps_event_queue_list_t &events) {
-	for (size_t _ix=ix ; _ix < mx ; ++_ix ) {
-		cps_api_object_t &_ptr = std::get<1>((events)[_ix]);
-		cps_api_object_t _obj = _ptr;
-		if (_obj==nullptr) continue;
-		cps_api_object_delete(_obj);
-		_ptr=nullptr;	//help debug issues if there is a crash due to some events not being sent/erased twice
-	}
-	events.erase(events.begin()+ix,events.begin()+mx);
+    for (size_t _ix=ix ; _ix < mx ; ++_ix ) {
+        cps_api_object_t &_ptr = std::get<1>((events)[_ix]);
+        cps_api_object_t _obj = _ptr;
+        if (_obj==nullptr) continue;
+        cps_api_object_delete(_obj);
+        _ptr=nullptr;    //help debug issues if there is a crash due to some events not being sent/erased twice
+    }
+    events.erase(events.begin()+ix,events.begin()+mx);
 }
 
 void __thread_main_loop() {
     std::unique_lock<std::mutex> l(__mutex);
-    //uint32_t _rapid_timeout=0;
 
     size_t _MAX_TIMEOUT=1000;
     size_t _current_timeout=_MAX_TIMEOUT;
@@ -245,11 +234,11 @@ void __thread_main_loop() {
 
         if (!_process_list(_current)) {    //need to handle the case of the system never working.. need to throw away events at some point
             l.lock();
-        	if (_events->size()>(_TOTAL_MAX_INFLIGHT_EVENTS*2)) {
-        		size_t mx = _events->size()-_TOTAL_MAX_INFLIGHT_EVENTS;
-        		EV_LOGGING(DSAPI,ERR,0,"CPS-EVT","Not possible to forward events - emptying...%d events",mx);
-        		_remove_x_events(0,mx,*_events);
-        	}
+            if (_events->size()>(_TOTAL_MAX_INFLIGHT_EVENTS*2)) {
+                size_t mx = _events->size()-_TOTAL_MAX_INFLIGHT_EVENTS;
+                EV_LOGGING(DSAPI,ERR,0,"CPS-EVT","Not possible to forward events - emptying...%d events",mx);
+                _remove_x_events(0,mx,*_events);
+            }
             _events->insert(_events->begin(),_current.begin(),_current.end());
             l.unlock();
             continue;
@@ -270,21 +259,21 @@ static void __cps_api_event_thread_push_init() {
 bool cps_db::publish(cps_db::connection &conn, cps_api_object_t obj) {
     pthread_once(&__one_time_only,__cps_api_event_thread_push_init);
     {
-	cps_api_object_guard og(cps_api_object_create());
-	if (og.get()==nullptr) return false;
-	cps_api_object_clone(og.get(),obj);
+    cps_api_object_guard og(cps_api_object_create());
+    if (og.get()==nullptr) return false;
+    cps_api_object_clone(og.get(),obj);
 
-	std::lock_guard<std::mutex> lg(__mutex);
-	while (_events->size()>_TOTAL_MAX_INFLIGHT_EVENTS) {
-		__mutex.unlock();
-		std_usleep(MILLI_TO_MICRO(1));
-		__mutex.lock();
-	}
-	try {
-		_events->emplace_back(conn.addr(),cps_api_object_reference(og.get(),false));
-	} catch (...) {
-		return false;
-	}
+    std::lock_guard<std::mutex> lg(__mutex);
+    while (_events->size()>_TOTAL_MAX_INFLIGHT_EVENTS) {
+        __mutex.unlock();
+        std_usleep(MILLI_TO_MICRO(1));
+        __mutex.lock();
+    }
+    try {
+        _events->emplace_back(conn.addr(),cps_api_object_reference(og.get(),false));
+    } catch (...) {
+        return false;
+    }
     }
     __event_wait.notify_one();
     ++_published;
@@ -292,8 +281,8 @@ bool cps_db::publish(cps_db::connection &conn, cps_api_object_t obj) {
 }
 
 _cps_event_flush::~_cps_event_flush() {
-	std::unique_lock<std::mutex> l(__mutex);
-	_process_list(*_events);
+    std::unique_lock<std::mutex> l(__mutex);
+    _process_list(*_events);
 }
 
 void cps_api_event_stats() {
