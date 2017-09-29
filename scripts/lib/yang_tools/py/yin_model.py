@@ -116,7 +116,7 @@ class CPSYangModel:
 
         __cat_file_name = self.context.get_config_path('category.yconf')
 
-        object_history.YangHistory_CategoryParser(self.context,__cat_file_name,False)
+        object_history.YangHistory_CategoryParser(self.context,__cat_file_name)
 
         #Filled in during initialization the root yang model parser
         #self.context['history']['file']
