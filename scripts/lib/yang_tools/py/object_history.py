@@ -36,14 +36,18 @@ class IndexTracker:
         self._name_map = name_map
 
         if start is not None:
-            self.last_index = start
+            self._last_index = start
+
+        for i in self._name_map.itervalues():
+            if (i+1) >= self._last_index:
+                self._last_index = i+1
 
     def get_free_enum(self):
         """
         Return the next valid index
         """
-        _last_index = self.last_index
-        self.last_index += 1
+        _last_index = self._last_index
+        self._last_index += 1
         return _last_index
 
     def get_element_name(self, value):
@@ -78,17 +82,21 @@ class IndexTracker:
         @override_if_exists if this is true and if there is a discovered cfg element already - don't overwrite it
         """
 
+        #Get the pre-existing value if none provided
         if name in self._name_map and value is None:
             value = self._name_map[name]
 
+        #Check to see if the value is different then the existing value and override
         if name in self._name_map and value is not None \
             and value != self._name_map[name] and override_if_exists:
             self._name_map[name] = value
 
+        #return the existing value if the value matches
         if name in self._name_map and value is not None \
             and value == self._name_map[name]:
             return value
 
+        #Now... check to make sure that the value is unique if needed
         if value_must_be_unique and value is not None:
             _name = self.get_element_name(value)
 
@@ -97,6 +105,7 @@ class IndexTracker:
                     "Adding element - found duplicate names for value %d - %s and %s " %
                     (value, name, _name))
 
+        #check to see if the configured value matches the one in the map
         if name in self._name_map and self._name_map[name] != value:
             raise Exception(
                 "Adding element - found duplicate names %s - values are %d and %d" %
@@ -107,8 +116,9 @@ class IndexTracker:
 
         self._name_map[name] = value
 
-        if self.last_index < value + 1:
-            self.last_index = value + 1
+        if self._last_index < value + 1:
+            self._last_index = value + 1
+
         return value
 
     def replace_element(self, name, value, value_must_be_unique=False):

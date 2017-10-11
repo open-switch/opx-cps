@@ -326,7 +326,7 @@ class CPSObject:
                 return types.from_data(attr_path,
                                        self.obj['data']['cps/key_data'][attr_path])
 
-        raise ValueError(attr + "does not exist in the obect")
+        raise ValueError("Could not find attribute '" + attr + "' in the CPS object")
 
     def convert_to_ba_dict(self, data_dict):
         """
