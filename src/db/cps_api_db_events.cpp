@@ -236,7 +236,7 @@ void __thread_main_loop() {
             l.lock();
             if (_events->size()>(_TOTAL_MAX_INFLIGHT_EVENTS*2)) {
                 size_t mx = _events->size()-_TOTAL_MAX_INFLIGHT_EVENTS;
-                EV_LOGGING(DSAPI,ERR,0,"CPS-EVT","Not possible to forward events - emptying...%d events",mx);
+                EV_LOGGING(DSAPI,ERR,"CPS-EVT","Not possible to forward events - emptying...%d events",mx);
                 _remove_x_events(0,mx,*_events);
             }
             _events->insert(_events->begin(),_current.begin(),_current.end());
