@@ -104,7 +104,7 @@ class Language:
         if self.all_node_map[name].get('augmented'):
             ns = self.all_node_map[name].get('target-namespace')
             ns_index = str.find(name, "/" + ns + "/")
-            if ns_index:
+            if ns_index > 0:
                 name1 = name[:ns_index]
                 name2 = name[ns_index + len(ns) + 1:]
                 name = name1 + name2
