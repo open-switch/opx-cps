@@ -403,8 +403,19 @@ class YangHistory_HistoryFile:
             self._modified = False
 
         for _enum_type in self._data['items'].keys():
+            _id_monitor = {}
+            
             for _enum_name in self._data['items'][_enum_type].keys():
-                self.add_enum(_enum_type, _enum_name, None)
+                #this API will 
+                ##1 init the enum name if not present
+                _value = self._data['items'][_enum_type][_enum_name]                
+                if _value in _id_monitor:
+                    raise Exception('Seems like there is a issue with the configuration for %s in \
+                        %s the offending value is %s - appears to be reaused' % (_enum_name,self._filename,_value))
+                _enum_tag ="++"+_enum_name 
+                _id_monitor[_value] = _enum_tag
+                ##2 validate/add the enum 
+                self.add_enum(_enum_type, _enum_name, None)  
 
     def __get_indexer(self, enum_type):
         if enum_type == self._category:
