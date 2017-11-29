@@ -41,3 +41,19 @@ void cps_api_set_cps_file_perms(const char *path) {
                 CPS_USER_ID);
     }
 }
+
+#include <execinfo.h>
+#include <utility>
+
+std::string cps_api_stacktrace(void) {
+    void *_lst[100];
+    size_t _len = backtrace(_lst,sizeof(_lst)/sizeof(*_lst));
+    char **_syms =  backtrace_symbols(_lst,_len);
+    std::string _trace;
+    if (_syms==nullptr) return "";
+    for ( size_t _ix = 0 ; _ix < _len ; ++_ix ) {
+        _trace+=std::string(" ")+_syms[_ix++];
+    }
+    free((void*)_syms);
+    return std::move(_trace);
+}

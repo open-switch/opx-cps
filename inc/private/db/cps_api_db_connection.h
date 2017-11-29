@@ -118,9 +118,10 @@ private:
 
     //The IP addresss
     std::string _addr ;
+    std::string _local;
+
     void * _ctx=nullptr;// the redis context
     struct pollfd _rd, _wr;    //cache for the poll data structures on this handle
-
     //link list of events that were read already
     std::list<void*> _pending_events;
 
