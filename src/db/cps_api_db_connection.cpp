@@ -22,7 +22,7 @@
 #include "cps_api_core_utils.h"
 #include "event_log.h"
 
-#include <poll.h>
+
 #include <netinet/tcp.h>
 #include <unordered_map>
 #include <hiredis/hiredis.h>
@@ -32,8 +32,6 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-
-
 
 const static ssize_t MAX_RETRY=1;
 
@@ -85,8 +83,6 @@ int cps_db::connection::get_fd() {
     return static_cast<redisContext*>(_ctx)->fd;
 }
 
-
-pthread_once_t __thread_init = PTHREAD_ONCE_INIT;
 
 bool cps_db::connection::clone(connection &conn) {
     conn.disconnect();
