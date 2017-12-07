@@ -1,11 +1,12 @@
 # opx-cps
-This repository contains the CPS object library files, and provides a micro-service data-centric API allowing applications to communicate with each other between threads, processes, or diverse locations.
+This repository contains the CPS object library files, and provides a microservice data-centric API allowing applications to communicate with each other between threads, processes, or diverse locations.
 
-The data model is described through YANG or other constructs.
-Applications can use CPS objects with Python, C, C++, and REST services in the `opx-cps-REST` service.
-Applications/threads will register for ownership of CPS objects, while other applications/threads will operate and receive events of the registered CPS objects. Applications can also publish objects through the event service.
+- Data model is described through YANG or other constructs
+- Applications can use CPS objects with Python, C, C++, and REST services in the `opx-cps-REST` service
+- Applications/threads will register for ownership of CPS objects, while other applications/threads will operate and receive events of the registered CPS objects; applications can also publish objects through the event service
 
 A high-level list of CPS features include:
+
 - Distributed framework for application interaction
 - Database-like API (Get, Commit[add,delete,create,modify])
 - Publish/subscribe semantics supported
@@ -15,16 +16,16 @@ Lookup and binary to text translation and object introspection is also available
 Applications define objects through (optionally YANG-based) object models. These object models are converted into binary (C accessible) object keys and object attributes that can be used in conjunction with the C-based CPS APIs. There are adaptions on top of CPS that allow these objects and APIs to be converted to different languages like Python.
 
 With the object keys and attributes applications can:
-- Get a single or get multiple objects.
-- Perform transactions consisting of:
+- Get a single or get multiple objects
+- Perform transactions
    - Create
    - Delete
    - Set
    - Action
-- Register and publish object messages.
+- Register and publish object messages
 
 ## API documentation
-The CPS API is documented through doxygen. To generate the CPS doxygen content, at the top level of your source directory (one level underneath `opx-cps`), run the `opx-cps/doc/cps_gen_doc.sh` command.  
+The CPS API is documented through Doxygen. To generate CPS Doxygen content, at the top level of your source directory (one level underneath `opx-cps`), run the `opx-cps/doc/cps_gen_doc.sh` command.  
     
     git clone git@github.com:open-switch/opx-cps.git
     cd opx-cps
@@ -32,34 +33,33 @@ The CPS API is documented through doxygen. To generate the CPS doxygen content, 
     firefox workspace/cps-api-doc/c-cpp-doc/html/index.html
 
 ## Packages
-`libopx-cps1\_*version*\_*arch*.deb` — Utility libraries
 
-`libopx-cps-dev\_*version*\_*arch*.deb` — Exported header files
+- `libopx-cps1\_*version*\_*arch*.deb` — Utility libraries
 
-`python-opx-cps\_*version*\_*arch*.deb` — Python bindings
+- `libopx-cps-dev\_*version*\_*arch*.deb` — Exported header files
 
-`opx-cps\_*version*\_*arch*.deb` — Service executables, configuration files, tool scripts 
+- `python-opx-cps\_*version*\_*arch*.deb` — Python bindings
 
-`opx-yang-utils-dev\_*version*\_*arch*.deb` — Tools to parse YANG files
+- `opx-cps\_*version*\_*arch*.deb` — Service executables, configuration files, tool scripts 
+
+- `opx-yang-utils-dev\_*version*\_*arch*.deb` — Tools to parse YANG files
 
 See [Architecture](https://github.com/open-switch/opx-docs/wiki/Architecture) for more information on the CPS module.
 
 
 ## Debugging tools
 
-This section covers the following tools:
+- `cps\_model\_info`
 
-1) `cps\_model\_info`
+- `cps\_get\_oid`
 
-2) `cps\_get\_oid`
+- `cps\_set\_oid`
 
-3) `cps\_set\_oid`
+- `cps\_trace\_events`
 
-4) `cps\_trace\_events`
+- `cps\_send\_events`
 
-5) `cps\_send\_events`
-
-### 1) cps\_model\_info 
+### cps\_model\_info 
 This tool is useful to get all information about CPS objects on the target. It is used to get the attributes of a specific CPS object, or first-level contents of a given YANG path of the CPS object (as defined in the YANG model).
 
 #### Usage
@@ -122,7 +122,7 @@ Registered to CPS with qualifier:  target
 Process Owner:  base_nas
 ```
 
-### 2) cps\_get\_oid.py
+### cps\_get\_oid.py
 This tool is used to get data from a CPS Object Service provider.
 
 #### Usage
@@ -153,7 +153,7 @@ root@OPX:~#
 ```
 
 
-### 3) cps\_set\_oid.py
+### cps\_set\_oid.py
 This tool is used to do transactions on a given CPS object.
 
 #### Usage
@@ -172,8 +172,7 @@ Operation: create/set/delete
 root@OPX:/opt/dell/os10/bin# cps_set_oid.py target create base-if-phy/physical hardware-port-id=26 admin-state=2
 ```
 
-
-### 4) cps\_trace\_events.py
+### cps\_trace\_events.py
 This tool is used to subscribe/listen for CPS events on the target.
 
 #### Usage
@@ -195,7 +194,6 @@ cps/connection-entry/connection-state = 1
 cps/connection-entry/group = 127.0.0.1:6379
 
 
-
 2.19.44.2883618.2883611.2883586.
 Key: 2.19.44.2883618.2883611.2883586.
 if/interfaces-state/interface/name = e101-025-0
@@ -203,7 +201,7 @@ if/interfaces-state/interface/if-index = 41
 if/interfaces-state/interface/admin-status = 2
 ```                                                     
 
-### 5) cps\_send\_event.py
+### cps\_send\_event.py
 
 This tool is used to publish/send CPS events on the target.
 
@@ -223,4 +221,4 @@ Operation: create/set/delete
 root@OPX:/opt/dell/os10/bin# cps_send_event.py create observed  dell-base-if-cmn/if/interfaces-state/interface  if/interfaces-state/interface/name=e101-007-0 if/interfaces-state/interface/oper-status=2
 ```
 
-(c) 2017 Dell
+(c) 2017 Dell EMC
