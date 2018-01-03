@@ -37,18 +37,27 @@
 #include <stdbool.h>
 #include <string>
 #include <vector>
-
+#include <memory>
 
 struct cps_class_map_node_details_int_t {
-    std::string name;
-    std::string full_path;
-    std::string desc;
-    bool embedded=false;
-    CPS_CLASS_ATTR_TYPES_t attr_type;
-    CPS_CLASS_DATA_TYPE_t data_type;
-    cps_api_attr_id_t id=0;
-    std::vector<cps_api_attr_id_t> ids;
-    std::vector<cps_api_attr_id_t> key_ids;
+    const cps_class_map_node_details *details=nullptr;
+    const char                         *name=nullptr;
+    cps_api_attr_id_t               id=0;
+
+    const cps_api_attr_id_t         *ids=nullptr;
+    size_t                          ids_size=0;
+
+    std::vector<cps_api_attr_id_t> * key_ids=nullptr;
+
+    cps_class_map_node_details_int_t &operator=(const cps_class_map_node_details_int_t&rhs) {
+        details = rhs.details;
+        id = rhs.id;
+        ids = rhs.ids;
+        ids_size = rhs.ids_size;
+        key_ids = rhs.key_ids;
+        name = rhs.name;
+        return *this;
+    }
 };
 
 const cps_class_map_node_details_int_t * cps_dict_find_by_name(const char * name);

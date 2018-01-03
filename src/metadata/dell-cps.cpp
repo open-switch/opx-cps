@@ -6,7 +6,7 @@ dell-cps
 
 #include <vector>
 
-static struct {
+const static struct {
   std::vector<cps_api_attr_id_t> _ids;
   cps_api_attr_id_t id;
   cps_class_map_node_details details;
@@ -58,10 +58,10 @@ static struct {
 static const size_t lst_len = sizeof(lst)/sizeof(*lst);
 
 t_std_error cps_api_yang_module_init(void) {
-	size_t ix = 0;
-	for ( ; ix < lst_len ; ++ix ) {
-		cps_class_map_init(lst[ix].id,&(lst[ix]._ids[0]),lst[ix]._ids.size(),&lst[ix].details);
-	}
-	return STD_ERR_OK;
+    size_t ix = 0;
+    for ( ; ix < lst_len ; ++ix ) {
+        cps_class_map_init(lst[ix].id,&(lst[ix]._ids[0]),lst[ix]._ids.size(),&lst[ix].details);
+    }
+    return STD_ERR_OK;
 }
 

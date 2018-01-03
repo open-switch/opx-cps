@@ -32,6 +32,21 @@ class COutputFormat:
 
     def create_map_src(self):
         c_utils.add_copyright_to_file(sys.stdout)
+
+        _max_len = 0
+        #generate static length as a max for all keys...
+        for i in self.model.keys:
+            if i == self.lang.category:
+                continue
+
+            # start the key encoding...
+            key_str = ""
+            _lst = self.model.keys[i].split()
+
+            if _max_len < len(_lst)+1:
+                _max_len = len(_lst)+1
+
+
         print "/*"
         print self.context['model-names'][self.model.module.name()]
         print "*/"
@@ -39,9 +54,10 @@ class COutputFormat:
         print "#include \"cps_class_map.h\""
         print ""
         print "#include <vector>"
-        print ""
-        print "static struct {"
-        print "  std::vector<cps_api_attr_id_t> _ids;"
+        print "#define MAX_LIST_SIZE"
+        print "static const struct {"
+        print "  cps_api_attr_id_t ids["+str(_max_len)+"]; //maximum of any keys in this file"
+        print "  size_t ids_size;"
         print "  cps_api_attr_id_t id;"
         print "  cps_class_map_node_details details;"
         print "} lst[] = {"
@@ -68,7 +84,7 @@ class COutputFormat:
                 key_str = self.lang.names[i] + ","
             key_str = key_str[:-1]
 
-            line = "{ { %s }, %s, " % (key_str, self.lang.names[i])
+            line = "{ { %s }, %d, %s, " % (key_str, len(self.model.keys[i].split()), self.lang.names[i])
 
             # Create the structure contianing type and etc details
             _n_name = i
@@ -108,7 +124,7 @@ class COutputFormat:
         print "  t_std_error module_init(void) {"
         print "    size_t ix = 0;"
         print "    for ( ; ix < lst_len ; ++ix ) { "
-        print "        cps_class_map_init(lst[ix].id,&(lst[ix]._ids[0]),lst[ix]._ids.size(),&lst[ix].details); "
+        print "        cps_class_map_init(lst[ix].id,lst[ix].ids,lst[ix].ids_size,&lst[ix].details); "
         print "    }"
         print "    return STD_ERR_OK;"
         print "  }"

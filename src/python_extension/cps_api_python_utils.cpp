@@ -87,7 +87,7 @@ std::string py_str_from_attr_id(cps_api_attr_id_t id) {
         snprintf(buff,sizeof(buff),"%" PRId64,(int64_t)id);
         return std::string(buff);
     }
-    return ent->full_path;
+    return ent->details->name;
 }
 
 void py_dict_set_from_attr(PyObject *d, cps_api_attr_id_t id, cps_api_object_attr_t attr) {
@@ -115,7 +115,7 @@ static void py_obj_dump_level(PyObject * d, cps_api_object_it_t *it, std::vector
             std::string name = py_str_from_attr_id(id);
 
             if (ent==nullptr && par_ent!=nullptr) {
-                if (par_ent->attr_type==CPS_CLASS_ATTR_T_LIST) {
+                if (par_ent->details->attr_type==CPS_CLASS_ATTR_T_LIST) {
                     cps_api_object_it_t contained_it = *it;
                     cps_api_object_it_inside(&contained_it);
                     if (cps_api_object_it_valid(&contained_it)) {
@@ -131,7 +131,7 @@ static void py_obj_dump_level(PyObject * d, cps_api_object_it_t *it, std::vector
                 break;
             }
 
-            if (ent->embedded) {
+            if (ent->details->embedded) {
                 PyObject *container = (PyDict_New());
                 if (container==nullptr) break;
 
@@ -145,7 +145,7 @@ static void py_obj_dump_level(PyObject * d, cps_api_object_it_t *it, std::vector
                 break;
             }
 
-            if ((ent->attr_type & CPS_CLASS_ATTR_T_LEAF_LIST)==CPS_CLASS_ATTR_T_LEAF_LIST) {
+            if ((ent->details->attr_type & CPS_CLASS_ATTR_T_LEAF_LIST)==CPS_CLASS_ATTR_T_LEAF_LIST) {
                 bool _created = false;
                 PyObject *o = PyDict_GetItemString(d,name.c_str());
                 if (o == NULL) {
