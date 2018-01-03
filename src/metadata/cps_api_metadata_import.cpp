@@ -143,23 +143,23 @@ void __process_node(std_config_node_t node, void *user_data) {
 
     cps_api_attr_id_t _id = (cps_api_attr_id_t) strtoull(id,nullptr,0);
 
-    cps_class_map_node_details details;
+    cps_class_map_node_details *details = new cps_class_map_node_details;
     cps_api_attr_id_t *_ids=nullptr;
     do {
-        details.desc = strdup(desc);
-        details.name = strdup(name);
+        details->desc = strdup(desc);
+        details->name = strdup(name);
 
-        if(details.desc==nullptr || details.name==nullptr) {
+        if(details->desc==nullptr || details->name==nullptr) {
             EV_LOGGING(CPS-METADATA,ERR,"XML-reader","Failed to allocate memory for node %s",name);
             break;
         }
-        details.embedded = strcasecmp(embedded,"true")==0 ;
-        details.attr_type = *_node_type;
-        details.data_type = *_data_type;
+        details->embedded = strcasecmp(embedded,"true")==0 ;
+        details->attr_type = *_node_type;
+        details->data_type = *_data_type;
 
         //keys
         std::vector<cps_api_attr_id_t> _key_path;
-        if (!__process_key(_key_path, key_path,_id, details)) {
+        if (!__process_key(_key_path, key_path,_id, *details)) {
             EV_LOG(ERR,DSAPI,0,"CPS-META","Can't parse key - invalid data %s %s)",key_path,name);
             break;
         }
@@ -170,14 +170,16 @@ void __process_node(std_config_node_t node, void *user_data) {
 
         memcpy(_ids,&_key_path[0],_len*sizeof(cps_api_attr_id_t*));
 
-        if (cps_class_map_init(_id,_ids,_len,&details)!=cps_api_ret_code_OK) {
+        if (cps_class_map_init(_id,_ids,_len, details)!=cps_api_ret_code_OK) {
             EV_LOG(ERR,DSAPI,0,"CPS-META","CPS Class metadata could not be loaded for %s",name);
             break;
         }
         return;
     } while (0);
-    free((void*)details.desc);
-    free((void*)details.name);
+
+    free((void*)details->desc);
+    free((void*)details->name);
+    delete details;
     free(_ids);
 }
 

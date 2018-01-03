@@ -47,7 +47,7 @@ struct enum_field_t {
     std::string descr;
 };
 
-struct _log_key_hash {
+struct _hash_const_char {
     size_t operator()(const char *key) const {
         size_t _hash = 0;
         while (*key!='\0') {
@@ -57,13 +57,11 @@ struct _log_key_hash {
     }
 };
 
-struct _log_key_equal {
+struct _equal_const_char {
     bool operator ()(const char *a, const char *b) const {
         return strcmp(a,b)==0;
     }
 };
-
-
 
 class CPSEnum {
     std::string _desc;
@@ -88,7 +86,7 @@ public:
 };
 
 using cps_class_map_type_t = std::unordered_map<cps_api_attr_id_t,std::unique_ptr<cps_class_map_node_details_int_t>>;
-using cps_class_map_string_t = std::unordered_map<const char*,cps_class_map_node_details_int_t*,_log_key_hash,_log_key_equal>;
+using cps_class_map_string_t = std::unordered_map<const char*,cps_class_map_node_details_int_t*,_hash_const_char,_equal_const_char>;
 using cps_class_map_enums_t = std::unordered_map<std::string,CPSEnum>;
 using cps_class_map_id_to_enum_t = std::unordered_map<cps_api_attr_id_t,std::string>;
 using cps_class_map_key_to_map_element = cps_api_key_cache<cps_class_map_node_details_int_t*>;
