@@ -15,7 +15,6 @@ cps-class-map-util_LDFLAGS=-ldn_common -levent_log -lcps-api-common -lpthread
 
 CXXFLAGS += -I${TOP_SRCDIR}/inc/private -I${TOP_SRCDIR}/inc/private/db
 
-
 cps-api-common_SRCS+=cps_api_object.cpp
 cps-api-common_SRCS+=cps_api_events.cpp
 cps-api-common_SRCS+=cps_api_operation_common.cpp

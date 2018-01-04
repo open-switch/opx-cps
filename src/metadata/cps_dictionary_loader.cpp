@@ -88,8 +88,6 @@ static bool _cps_class_data(const char *name, std_dir_file_TYPE_t type,void *con
              EV_LOG(ERR,DSAPI,0,"cps_class_data","Can not load function map");
          } else {
              _loaded_libs[_dup_check] = _stats;
-             //
-             //
              class_data_init();
              //keep the class in memory to use mapped memory to hold things like strings
          }
