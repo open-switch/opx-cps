@@ -63,7 +63,7 @@ bool cps_class_map_detail(const cps_api_attr_id_t id, cps_class_map_node_details
 void cps_class_ids_from_key(std::vector<cps_api_attr_id_t> &v, cps_api_key_t *key);
 void cps_class_ids_from_string(std::vector<cps_api_attr_id_t> &v, const char * str);
 
-std::string cps_class_ids_to_string(const std::vector<cps_api_attr_id_t> &v);
+std::string cps_class_ids_to_string(const cps_api_attr_id_t *ids, size_t len);
 std::string cps_key_to_string(const cps_api_key_t * key);
 
 const CPS_API_OBJECT_OWNER_TYPE_t *cps_class_owner_type_from_string(const char *str);

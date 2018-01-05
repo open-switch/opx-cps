@@ -138,7 +138,9 @@ static PyObject * py_cps_info(PyObject *self, PyObject *args) {
     const cps_class_map_node_details_int_t * ref = cps_dict_find_by_name(path);
     if (ref!=nullptr) {
         //then assume that it is a valid object id
-        v = ref->ids;
+        for ( size_t _ix=0; _ix < ref->ids_size ; ++_ix ) {
+            v.push_back(ref->ids[_ix]);
+        }
     } else {
         cps_class_ids_from_string(v,path);
     }
@@ -163,8 +165,8 @@ static PyObject * py_cps_info(PyObject *self, PyObject *args) {
         char buff[40]; //just enough for the attribute id
         snprintf(buff,sizeof(buff),"%lld",(long long)lst[ix].id);
         py_cps_util_set_item_to_dict(ids.get(),buff,
-                PyString_FromString(lst[ix].full_path.c_str()));
-        py_cps_util_set_item_to_dict(names.get(),lst[ix].full_path.c_str(),
+                PyString_FromString(lst[ix].details->name));
+        py_cps_util_set_item_to_dict(names.get(),lst[ix].details->name,
                 PyString_FromString(buff));
     }
     names.release();
@@ -226,10 +228,10 @@ static PyObject * py_cps_types(PyObject *self, PyObject *args) {
     PyObject *dict = d.get();
     d.release();
 
-    py_cps_util_set_item_to_dict(dict,"name", PyString_FromString(ref->full_path.c_str()));
-    py_cps_util_set_item_to_dict(dict,"key", PyString_FromString(cps_class_ids_to_string(ref->ids).c_str()));
-    py_cps_util_set_item_to_dict(dict,"description", PyString_FromString(ref->desc.c_str()));
-    py_cps_util_set_item_to_dict(dict,"embedded", PyString_FromString(ref->embedded?"True":"False"));
+    py_cps_util_set_item_to_dict(dict,"name", PyString_FromString(ref->details->name));
+    py_cps_util_set_item_to_dict(dict,"key", PyString_FromString(cps_class_ids_to_string(ref->ids,ref->ids_size).c_str()));
+    py_cps_util_set_item_to_dict(dict,"description", PyString_FromString(ref->details->desc));
+    py_cps_util_set_item_to_dict(dict,"embedded", PyString_FromString(ref->details->embedded?"True":"False"));
 
     {
     static const size_t ID_BUFF_LEN=100;
@@ -238,8 +240,8 @@ static PyObject * py_cps_types(PyObject *self, PyObject *args) {
     py_cps_util_set_item_to_dict(dict,"id", PyString_FromString(buff));
     }
 
-    const char *_attr_type = cps_class_attr_type_to_string(ref->attr_type);
-    const char *_data_type = cps_class_data_type_to_string(ref->data_type);
+    const char *_attr_type = cps_class_attr_type_to_string(ref->details->attr_type);
+    const char *_data_type = cps_class_data_type_to_string(ref->details->data_type);
     if (_attr_type!=nullptr) {
         py_cps_util_set_item_to_dict(dict,"attribute_type", PyString_FromString(_attr_type));
     }

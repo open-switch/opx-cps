@@ -36,6 +36,7 @@
 #include <memory>
 #include <functional>
 #include <inttypes.h>
+#include <string.h>
 
 #define CPS_ATTR_ID_GEN_ATTR_ID_START (0)
 #define CPS_ATTR_ID_GEN_ATTR_ID_END (1<<16)
@@ -44,6 +45,22 @@ struct enum_field_t {
     std::string name;
     int value;
     std::string descr;
+};
+
+struct _hash_const_char {
+    size_t operator()(const char *key) const {
+        size_t _hash = 0;
+        while (*key!='\0') {
+            _hash ^= *key++ << 1;
+        }
+        return _hash;
+    }
+};
+
+struct _equal_const_char {
+    bool operator ()(const char *a, const char *b) const {
+        return strcmp(a,b)==0;
+    }
 };
 
 class CPSEnum {
@@ -69,7 +86,7 @@ public:
 };
 
 using cps_class_map_type_t = std::unordered_map<cps_api_attr_id_t,std::unique_ptr<cps_class_map_node_details_int_t>>;
-using cps_class_map_string_t = std::unordered_map<std::string,cps_class_map_node_details_int_t*>;
+using cps_class_map_string_t = std::unordered_map<const char*,cps_class_map_node_details_int_t*,_hash_const_char,_equal_const_char>;
 using cps_class_map_enums_t = std::unordered_map<std::string,CPSEnum>;
 using cps_class_map_id_to_enum_t = std::unordered_map<cps_api_attr_id_t,std::string>;
 using cps_class_map_key_to_map_element = cps_api_key_cache<cps_class_map_node_details_int_t*>;
@@ -151,8 +168,6 @@ cps_class_map_node_details_int_t * cps_dict_find_by_key(const cps_api_key_t *key
     return ref;
 }
 
-
-
 void cps_dict_walk(void *context, cps_dict_walk_fun fun) {
     std_mutex_simple_lock_guard lg(&lock);
     cps_api_class_map_init();
@@ -164,10 +179,9 @@ void cps_dict_walk(void *context, cps_dict_walk_fun fun) {
 }
 
 cps_api_return_code_t cps_class_map_init(cps_api_attr_id_t id, const cps_api_attr_id_t *ids, size_t ids_len,
-        cps_class_map_node_details *details) {
+        const cps_class_map_node_details *details) {
     std_mutex_simple_lock_guard lg(&lock);
 
-    std::vector<cps_api_attr_id_t> v(ids,ids+(ids_len));
     if(ids_len==0) return cps_api_ret_code_ERR;
 
     if (_class_def->find(id)!=_class_def->end()) {
@@ -175,29 +189,29 @@ cps_api_return_code_t cps_class_map_init(cps_api_attr_id_t id, const cps_api_att
         return cps_api_ret_code_ERR;
     }
 
-    std::string name = details->name;
-    if (name.find('/')!=std::string::npos) {
-        name = name.substr(name.rfind('/')+1);
+    const char *_name_start = strrchr(details->name,'/');
+    if (_name_start==nullptr) {
+        _name_start = details->name;
+    } else {
+        _name_start+=1;
     }
     std::unique_ptr<cps_class_map_node_details_int_t> p (new (std::nothrow)  cps_class_map_node_details_int_t);
     if (p.get() == nullptr) return cps_api_ret_code_ERR;
 
     cps_class_map_node_details_int_t &ref = *p;
 
-    ref.ids = std::move(v);
-    ref.desc = details->desc;
-    ref.name = std::move(name);
-    ref.full_path = details->name;
-    ref.embedded = details->embedded;
-    ref.attr_type = details->attr_type;
-    ref.data_type = details->data_type;
+    ref.ids = ids;
+    ref.ids_size = ids_len;
+    ref.name = _name_start;
     ref.id = id;
+    ref.key_ids = nullptr;
+    ref.details = details;
 
     cps_api_key_t _key;
-    cps_api_key_init_from_attr_array(&_key,&ref.ids[0],ref.ids.size(),NO_OFFSET);
+    cps_api_key_init_from_attr_array(&_key,const_cast<cps_api_attr_id_t*>(ref.ids),ref.ids_size,NO_OFFSET);
 
     _key_to_map_element->insert(&_key,p.get());
-    (*_str_map)[p->full_path] = p.get();
+    (*_str_map)[p->details->name] = p.get();
     (*_class_def)[id] = std::move(p);
     return cps_api_ret_code_OK;
 }
@@ -212,7 +226,7 @@ bool cps_api_key_from_attr(cps_api_key_t *key,cps_api_attr_id_t id, size_t key_s
     if (it==nullptr) return false;
 
     cps_api_key_set_attr(key,0);
-    cps_api_key_init_from_attr_array(key,(cps_api_attr_id_t *)&(it->ids[0]),it->ids.size(),key_start_pos);
+    cps_api_key_init_from_attr_array(key,const_cast<cps_api_attr_id_t*>(it->ids),it->ids_size,key_start_pos);
     return true;
 }
 
@@ -229,7 +243,7 @@ const char * cps_attr_id_to_name(cps_api_attr_id_t id) {
     std_mutex_simple_lock_guard lg(&lock);
     const cps_class_map_node_details_int_t * it = cps_dict_find_by_id(id);
     if (it==nullptr) return nullptr;
-    return it->full_path.c_str();
+    return it->details->name;
 }
 
 const char * cps_class_attr_name(const cps_api_attr_id_t *ids, size_t ids_len) {
@@ -241,7 +255,7 @@ const char * cps_class_attr_name(const cps_api_attr_id_t *ids, size_t ids_len) {
     _key_to_map_element->find(&key,p,true);
 
     if (p==nullptr) return nullptr;
-    return p->name.c_str();
+    return p->name;
 }
 
 bool cps_class_attr_is_embedded(const cps_api_attr_id_t *ids, size_t ids_len) {
@@ -254,7 +268,7 @@ bool cps_class_attr_is_embedded(const cps_api_attr_id_t *ids, size_t ids_len) {
 
     if (p==nullptr) return false;
 
-    return p->embedded;
+    return p->details->embedded;
 }
 
 bool cps_class_attr_is_valid(const cps_api_attr_id_t *ids, size_t ids_len) {
@@ -274,7 +288,7 @@ bool cps_class_string_to_key(const char *str, cps_api_attr_id_t *ids, size_t *ma
     if (rec==nullptr) return false;
 
     size_t ix = 0;
-    size_t mx = std::min((size_t)*max_ids,(size_t)rec->ids.size());
+    size_t mx = std::min((size_t)*max_ids,rec->ids_size);
     *max_ids = mx;
     for ( ; ix < mx ; ++ix ) {
         ids[ix] = rec->ids[ix];
@@ -286,7 +300,7 @@ const char * cps_class_string_from_key(cps_api_key_t *key, size_t offset) {
     std_mutex_simple_lock_guard lg(&lock);
     cps_class_map_node_details_int_t * it = cps_dict_find_by_key(key,offset);
     if (it==nullptr) return nullptr;
-    return it->full_path.c_str();
+    return it->details->name;
 }
 
 bool cps_class_key_from_string(const char *name, cps_api_key_t *key) {
@@ -359,15 +373,20 @@ const std::vector<cps_api_attr_id_t> & cps_api_key_attrs(const cps_api_key_t *ke
     cps_class_map_node_details_int_t * it = cps_dict_find_by_key((cps_api_key_t*)key,key_offset);
 
     if (it==nullptr) return _fake;
-    if (it->key_ids.size()==0) {
-        for (auto &_id : it->ids ) {
+    if (it->key_ids==nullptr) {
+        it->key_ids = new std::vector<cps_api_attr_id_t>;
+
+        for ( size_t _ix = 0; _ix < it->ids_size ; ++_ix ) {
+            auto & _id = it->ids[_ix];
             const cps_class_map_node_details_int_t * _id_entry = cps_dict_find_by_id(_id);
             if (_id_entry==nullptr) continue;
-            if (_id_entry->attr_type == CPS_CLASS_ATTR_T_LEAF) it->key_ids.push_back(_id_entry->id);
-            if (it->key_ids.size()>=CPS_OBJ_MAX_KEY_LEN) break;    //sane termination - key can't be longer
+            if (_id_entry->details->attr_type == CPS_CLASS_ATTR_T_LEAF) {
+                it->key_ids->push_back(_id_entry->id);
+            }
+            if (it->key_ids->size()>=CPS_OBJ_MAX_KEY_LEN) break;    //sane termination - key can't be longer
         }
     }
-    return it->key_ids;
+    return *(it->key_ids);
 }
 
 int    cps_api_enum_value(cps_api_attr_id_t id, const char *tag) {
@@ -382,14 +401,14 @@ int    cps_api_enum_value(cps_api_attr_id_t id, const char *tag) {
 bool cps_class_map_attr_type(cps_api_attr_id_t id, CPS_CLASS_DATA_TYPE_t *t) {
     const cps_class_map_node_details_int_t * it = cps_dict_find_by_id(id);
     if (it==nullptr) return false;
-    *t = it->data_type;
+    *t = it->details->data_type;
     return true;
 }
 
 bool cps_class_map_attr_class(cps_api_attr_id_t id, CPS_CLASS_ATTR_TYPES_t *type) {
     const cps_class_map_node_details_int_t * it = cps_dict_find_by_id(id);
     if (it==nullptr) return false;
-    *type = it->attr_type;
+    *type = it->details->attr_type;
     return true;
 }
 
