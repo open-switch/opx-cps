@@ -162,6 +162,7 @@ class TunnelConfigManager():
             f.write("socket = a:TCP_KEEPCNT="+default_keepalive_count+"\n")
             f.write("socket = a:TCP_KEEPINTVL="+default_keepalive_interval+"\n")
             f.write("socket = a:TCP_KEEPIDLE="+default_keepalive_idle+"\n")
+            f.write("pid = /tmp/stunnel_"+group+"_"+node+".pid\n")
 
             # Service specific socket options
             f.write("[redis - "+group+" - "+node+" ]\n")

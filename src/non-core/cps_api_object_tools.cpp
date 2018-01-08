@@ -47,15 +47,41 @@ cps_api_object_t cps_api_obj_tool_create(cps_api_qualifier_t qual,cps_api_attr_i
     return og.release();
 }
 
+/*
+ * Try to match the given leaf list attribute value from source to
+ * all possible leaf list attribute values in destination. If destination
+ * contains the leaf-list with the same value as given in source return true
+ *
+ */
+static bool __cps_api_obj_tool_match_leaf_lists(cps_api_object_it_t & src,
+                                               cps_api_object_it_t & dst ){
+
+    cps_api_object_it_t search_it = dst;
+    cps_api_attr_id_t id = cps_api_object_attr_id(src.attr);
+
+    while(cps_api_object_it_valid(&search_it)) {
+        if ((search_it.attr = cps_api_object_it_find(&search_it,id)) != NULL) {
+            if(cps_api_object_attrs_compare(src.attr,search_it.attr)==0){
+                return true;
+            }
+            cps_api_object_it_next(&search_it);
+        }else{
+            return false;
+        }
+    }
+
+    return false;
+
+}
 static bool __cps_api_obj_tool_matches_filter(cps_api_object_it_t &fit, cps_api_object_it_t &oit, bool require_all_attribs) {
 
     for ( ; cps_api_object_it_valid(&fit); cps_api_object_it_next(&fit)) {
 
-    	cps_api_attr_id_t id = cps_api_object_attr_id(fit.attr);
+        cps_api_attr_id_t id = cps_api_object_attr_id(fit.attr);
 
-    	if (cps_api_attr_id_is_cps_reserved(id) && (id!=CPS_API_OBJ_KEY_ATTRS)) {
-    		continue; // skip CPS internal attributes
-    	}
+        if (cps_api_attr_id_is_cps_reserved(id) && (id!=CPS_API_OBJ_KEY_ATTRS)) {
+            continue; // skip CPS internal attributes
+        }
 
         cps_api_object_it_t tgt = oit;
         tgt.attr = cps_api_object_it_find(&tgt,id);
@@ -82,7 +108,18 @@ static bool __cps_api_obj_tool_matches_filter(cps_api_object_it_t &fit, cps_api_
             continue;
         }
 
-        if (!cps_api_object_attrs_compare(fit.attr,tgt.attr)==0) {
+        if (!cps_api_object_attrs_compare(fit.attr,tgt.attr)==0){
+            /*
+             * In case values doesn't match check if the attribute type is leaf-
+             * list and if all attributes needs to be matched then try to see if
+             * destination has a leaf list which matches source value
+             */
+            CPS_CLASS_ATTR_TYPES_t type;
+            if(cps_class_map_attr_class(id,&type)){
+                if((type ==  CPS_CLASS_ATTR_T_LEAF_LIST) && require_all_attribs){
+                    if(__cps_api_obj_tool_match_leaf_lists(fit,tgt)) continue;
+                }
+            }
             return false;
         }
     }
@@ -231,7 +268,7 @@ const t_std_error *cps_api_object_return_code(cps_api_object_t obj) {
 }
 
 bool cps_api_object_exact_match(cps_api_object_t obj, bool have_exact_match) {
-	cps_api_object_attr_delete(obj,CPS_OBJECT_GROUP_EXACT_MATCH);
+    cps_api_object_attr_delete(obj,CPS_OBJECT_GROUP_EXACT_MATCH);
 
     if (!have_exact_match) {
         return true;
@@ -246,16 +283,16 @@ bool cps_api_object_get_exact_match_flag(cps_api_object_t obj) {
 }
 
 bool cps_api_object_compact(cps_api_object_t obj) {
-	if (obj==nullptr) return false;
+    if (obj==nullptr) return false;
     cps_api_object_it_t obj_it;
     cps_api_object_it_begin(obj,&obj_it);
 
     for ( ; cps_api_object_it_valid(&obj_it); cps_api_object_it_next(&obj_it)) {
-    	cps_api_attr_id_t id = cps_api_object_attr_id(obj_it.attr);
-    	if (cps_api_attr_id_is_temporary(id)) {
-    		cps_api_object_attr_delete(obj,id);
-    	    cps_api_object_it_begin(obj,&obj_it);
-    	}
+        cps_api_attr_id_t id = cps_api_object_attr_id(obj_it.attr);
+        if (cps_api_attr_id_is_temporary(id)) {
+            cps_api_object_attr_delete(obj,id);
+            cps_api_object_it_begin(obj,&obj_it);
+        }
     }
     return true;
 }
