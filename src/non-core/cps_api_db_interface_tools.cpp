@@ -214,19 +214,20 @@ cps_api_return_code_t cps_api_reconcile(void *context, cps_api_object_list_t src
     cps_api_db_sync_cb_response_t res = {cps_api_make_change, cps_api_raise_event};
     cps_api_db_sync_cb_error_t er;
 
+    // In case of reconcilation, since source objects is obtained as input, defaulting the source node to local host
+    params.src_node = (char *)__get_default_node_name();
+
     cps_dbkey_obj_map src_obj_map;
     _get_obj_dbkey_map(src_objs, src_obj_map);
 
-    const char *_src_addr = nullptr;
     const char *_dest_addr = nullptr;
 
     cps_api_nodes n;
     n.load();
 
-    _get_addr_info(cps_api_object_list_get(src_objs, 0), (char **)(&params.src_node) , (char **)(&_src_addr), n);
     _get_addr_info(dest_obj, (char **)(&params.dest_node) , (char **)(&_dest_addr), n);
 
-    if (!_dest_addr || !_src_addr) {
+    if (!_dest_addr) {
         er.err_code = cps_api_db_invalid_address;
         err_cb(context, &params, &er);
         return cps_api_ret_code_ERR;
