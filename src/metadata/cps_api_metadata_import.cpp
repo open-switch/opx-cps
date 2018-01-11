@@ -65,6 +65,20 @@ bool __process_key(std::vector<cps_api_attr_id_t> &ids, const char * str_key, cp
     return true;
 }
 
+void __system_parameters(std_config_node_t node, void *user_data) {
+    const char * _flag = std_config_attr_get(node,"flag");
+    const char * _value = std_config_attr_get(node,"value");
+
+    if (_flag==nullptr || _value==nullptr) {
+        EV_LOGGING(CPS,TRACE,"CPS-META","Can't parse entry - missing data "
+        		"Flag:%s Val:%s",_flag==nullptr? "missing" : "present",
+        				_value==nullptr? "missing" : "present");
+        return;
+    }
+
+    (void)cps_api_set_library_flags(_flag,_value);
+}
+
 void __process_ownership(std_config_node_t node, void *user_data) {
     const char * id = std_config_attr_get(node,"id");
 
@@ -220,6 +234,7 @@ void __process_file(std_config_node_t node, void *user_data) {
             {"class_ownership", __process_ownership},
             {"enum_entry", __process_enum},
             {"enum_association", __process_enum_assoc},
+            {"system_parameters", __system_parameters},
     };
 
     auto it = _handlers.find(_node_name);

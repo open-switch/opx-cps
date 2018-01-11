@@ -53,6 +53,7 @@ extern "C" {
 #define CPS_API_EVENT_THREADS (1)
 /** @endcond */
 
+
 /**
  * Initialize the CPS and start the cps services in the context of the calling process.  The CPS services like
  * event notifications and the transaction/get APIs are dependant on starting this process.
