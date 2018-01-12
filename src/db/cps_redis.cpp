@@ -41,6 +41,8 @@
 static std::mutex _mutex;
 
 
+
+
 bool cps_db::ping(cps_db::connection &conn, size_t timeoutms) {
     cps_db::connection::db_operation_atom_t e;
     e.from_string("PING");

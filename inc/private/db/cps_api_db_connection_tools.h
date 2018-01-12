@@ -58,7 +58,6 @@ bool cps_api_db_validate_connection(cps_db::connection *conn);
 std::unique_ptr<connection> cps_api_db_create_validated_connection(const char *node);
 
 class connection_cache {
-    enum { CONN_TIMEOUT_CHECK=MILLI_TO_MICRO(30*1000) };	//default timeout is 30 seconds
     std::mutex _mutex;
     using _conn_map = std::unordered_map<std::string,std::vector<std::unique_ptr<connection>>>;
     _conn_map _pool;

@@ -41,6 +41,7 @@
 #include <string>
 #include <vector>
 #include <string>
+#include <functional>
 
 /** @cond HIDDEN_SYMBOLS */
 #define CPS_DEF_PRODUCT_LOC "/opt/dell/os10"
@@ -95,6 +96,17 @@ t_std_error cps_api_yang_module_init(void);
  */
 const std::vector<cps_api_attr_id_t> & cps_api_key_attrs(const cps_api_key_t *key, size_t key_offset=1);
 
+
+/**
+ * All registration to updates of the CPS parameters.  internal systems can cache values
+ * such as polling interval, etc..  Handlers should avoid calling any set flag APIs in
+ * the context of the callback to avoid recursive behavior.
+ * @param param the name of the parameter to watch
+ * @param handler the function call when the parameter changes
+ */
+void cps_api_add_flag_set_handler(const char * param, const std::function<void(const char*)> *handler) ;
+
+void cps_api_update_ssize_on_param_change(const char * param, ssize_t *value_to_set)  ;
 
 /**
  * @}
