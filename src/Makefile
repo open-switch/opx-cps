@@ -91,6 +91,9 @@ endef
 
 $(foreach UT,${UNIT_TEST},$(eval $(call add_UT_pieces,${UT})))
 
+UNIT_TEST+=cps_api_c_client_stub
+cps_api_c_client_stub_SRCS+=unit_test/cps_api_c_client_stub.c
+cps_api_c_client_stub_LDFLAGS+=-lcps-api-common
 include ${MAKE_INC}/workspace.mak
 
 
