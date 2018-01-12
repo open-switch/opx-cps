@@ -124,69 +124,69 @@ const static size_t NO_OFFSET=0;
 
 
 void cps_api_add_flag_set_handler(const char * what, std::function<void(const char*)> handler) {
-	std_mutex_simple_lock_guard lg(&_parameter_lock);
-	if (what==nullptr) _parameter_handlers->emplace_back(handler);
-	else (*_parameter_handler_map)[what].emplace_back(handler);
+    std_mutex_simple_lock_guard lg(&_parameter_lock);
+    if (what==nullptr) _parameter_handlers->emplace_back(handler);
+    else (*_parameter_handler_map)[what].emplace_back(handler);
 }
 
 static void __trigger_param_callback(const char *param) {
-	std::remove_reference<decltype(*_parameter_handlers)>::type _generic_handlers, _specific_handlers;
-	{
-	std_mutex_simple_lock_guard lg(&_parameter_lock);
-	_generic_handlers = *_parameter_handlers;
-	_specific_handlers = (*_parameter_handler_map)[param];
-	}
-	for (auto callback : _specific_handlers) {
-		callback(param);
-	}
-	for (auto callback : _generic_handlers) {
-		callback(param);
-	}
+    std::remove_reference<decltype(*_parameter_handlers)>::type _generic_handlers, _specific_handlers;
+    {
+    std_mutex_simple_lock_guard lg(&_parameter_lock);
+    _generic_handlers = *_parameter_handlers;
+    _specific_handlers = (*_parameter_handler_map)[param];
+    }
+    for (auto callback : _specific_handlers) {
+        callback(param);
+    }
+    for (auto callback : _generic_handlers) {
+        callback(param);
+    }
 }
 
 void cps_api_update_ssize_on_param_change(const char * param, ssize_t *value_to_set)  {
-	std::function<void(const char *)> _handler = [value_to_set](const char *param){
-		std::string _val = cps_api_get_library_flags(param);
-		if (_val.size()==0) return ;
-		*value_to_set = strtol(_val.c_str(),nullptr,10);
-	};
-	cps_api_add_flag_set_handler(param,_handler);
+    std::function<void(const char *)> _handler = [value_to_set](const char *param){
+        std::string _val = cps_api_get_library_flag_value(param);
+        if (_val.size()==0) return ;
+        *value_to_set = strtol(_val.c_str(),nullptr,10);
+    };
+    cps_api_add_flag_set_handler(param,_handler);
 
-	std::string _val = cps_api_get_library_flags(param);
-	if (_val.size()>0) __trigger_param_callback(param);
+    std::string _val = cps_api_get_library_flag_value(param);
+    if (_val.size()>0) __trigger_param_callback(param);
 }
 
 
-std::string cps_api_get_library_flags(const char * flag) {
-	std_mutex_simple_lock_guard lg(&_parameter_lock);
-	auto _it = _cps_parameters->find(flag);
-	if (_it==_cps_parameters->end()) return std::string();
-	return _it->second;
+std::string cps_api_get_library_flag_value(const char * flag) {
+    std_mutex_simple_lock_guard lg(&_parameter_lock);
+    auto _it = _cps_parameters->find(flag);
+    if (_it==_cps_parameters->end()) return std::string();
+    return _it->second;
 }
 
 bool cps_api_get_library_flags(const char * flag, char *val, size_t val_size) {
-	std_mutex_simple_lock_guard lg(&_parameter_lock);
-	auto _it = _cps_parameters->find(val);
-	if (_it==_cps_parameters->end()) return false;
-	safestrncpy(val,_it->second.c_str(),val_size);
-	return true;
+    std_mutex_simple_lock_guard lg(&_parameter_lock);
+    auto _it = _cps_parameters->find(val);
+    if (_it==_cps_parameters->end()) return false;
+    safestrncpy(val,_it->second.c_str(),val_size);
+    return true;
 }
 
 cps_api_return_code_t cps_api_set_library_flags(const char * flag, const char *val) {
-	{
-	std_mutex_simple_lock_guard lg(&_parameter_lock);
+    {
+    std_mutex_simple_lock_guard lg(&_parameter_lock);
 
-	if (val!=nullptr) {
-		try {
-			(*_cps_parameters)[flag] = val;
-		} catch (...) {
-			EV_LOGGING(CPS,ERR,"CPS-Parameters","Failed to update flag %s - alloc failed",flag);
-			return cps_api_ret_code_ERR;
-		}
-	}
-	}
-	__trigger_param_callback(val);
-	return cps_api_ret_code_OK;
+    if (val!=nullptr) {
+        try {
+            (*_cps_parameters)[flag] = val;
+        } catch (...) {
+            EV_LOGGING(CPS,ERR,"CPS-Parameters","Failed to update flag %s - alloc failed",flag);
+            return cps_api_ret_code_ERR;
+        }
+    }
+    }
+    __trigger_param_callback(val);
+    return cps_api_ret_code_OK;
 
 }
 
