@@ -44,15 +44,15 @@ static ssize_t _timeout_remote=2000;
 
 static void __init(void) {
     cps_api_update_ssize_on_param_change("cps.connect.operation-retry",
-    		&_operation_retry_flags);
+            &_operation_retry_flags);
     cps_api_update_ssize_on_param_change("cps.channel.timeout-remote",
-    		&_timeout_remote);
+            &_timeout_remote);
     cps_api_update_ssize_on_param_change("cps.channel.timeout-local",
-    		&_timeout_local);
+            &_timeout_local);
     cps_api_update_ssize_on_param_change("cps.channel.timeout-global",
-    		&_timeout_remote);
+            &_timeout_remote);
     cps_api_update_ssize_on_param_change("cps.channel.timeout-global",
-    		&_timeout_local);
+            &_timeout_local);
 }
 
 void cps_db::connection::db_operation_atom_t::from_string(const char *str, size_t len) {
@@ -100,6 +100,7 @@ bool cps_db::connection::reconnect() {
 }
 
 int cps_db::connection::get_fd() {
+    if (_ctx==nullptr) return -1;
     return static_cast<redisContext*>(_ctx)->fd;
 }
 
@@ -109,7 +110,9 @@ bool cps_db::connection::clone(connection &conn) {
 }
 
 bool cps_db::connection::connect(const std::string &s_, const std::string &db_instance_) {
-	pthread_once(&onceControl,__init);
+    pthread_once(&onceControl,__init);
+
+    _last_used = 0;
 
     size_t _port_pos = s_.rfind(":");
     if (_port_pos==std::string::npos) {
@@ -138,7 +141,7 @@ bool cps_db::connection::connect(const std::string &s_, const std::string &db_in
 
     timeval tv = { _timeout_remote/1000 /*millisec to sec*/ , 0 /*ignore remainder currently*/ };
     _ctx = redisConnectWithTimeout(_ip.c_str(), _port,tv);
-        
+
     if (_ctx==nullptr) {
         EV_LOGGING(CPS-DB-CONN,INFO,"RED-CON","Failed to connect to server... malloc failed for (%s)",s_.c_str());
     //memory allocation
@@ -210,7 +213,6 @@ bool cps_db::connection::connect(const std::string &s_, const std::string &db_in
             EV_LOGGING(CPS-DB-CONN,DEBUG,"CPS-DB-CONN","Failed to set idle time option on fd %d",fd);
         }
     }
-    _last_used = 0;
     return _ctx !=nullptr;
 }
 
@@ -346,6 +348,9 @@ bool cps_db::connection::operation(db_operation_atom_t * lst_,size_t len_, bool 
         return false;
     }
 
+    if (_ctx==nullptr) //if the redis connection is not valid its not going to work
+        return false;
+
     bool _success = false;
     ssize_t retry = _operation_retry_flags;
     do {
@@ -366,13 +371,15 @@ bool cps_db::connection::operation(db_operation_atom_t * lst_,size_t len_, bool 
 bool cps_db::connection::flush(size_t timeoutms) {
     int _is_done=0;
     while (_is_done==0) {
-    	if (!cps_api_db_is_local_node(_addr.c_str())) {
-    		if (timeoutms==_SELECT_MS_WAIT)timeoutms = _timeout_remote;
-    	}
+        if (!cps_api_db_is_local_node(_addr.c_str())) {
+            if (timeoutms==_SELECT_MS_WAIT)timeoutms = _timeout_remote;
+        }
         if (!writable(timeoutms)) {
             EV_LOGGING(CPS-DB-CONN,ERR,"FLUSH","Sending buffer full - terminating..");
             reconnect(); return false;
         }
+        if (_ctx==nullptr) //if the redis connection is not valid its not going to work
+            return false;
 
         if (redisBufferWrite(static_cast<redisContext*>(_ctx),&_is_done)==REDIS_ERR) {
             reconnect();
@@ -397,6 +404,9 @@ static bool is_event_message(void *resp) {
 }
 
 bool cps_db::connection::response(response_set &data_, size_t timeoutms) {
+    if (_ctx==nullptr)
+        return false;
+
     bool _rc = true;
     if (!flush(timeoutms)) {
         _rc=false;
@@ -414,10 +424,10 @@ bool cps_db::connection::response(response_set &data_, size_t timeoutms) {
 
         if (reply==nullptr) {
             if (!cps_api_db_is_local_node(_addr.c_str())) {
-				if (timeoutms==_SELECT_MS_WAIT)timeoutms = _timeout_remote;
-            	if (!readable(timeoutms)) {
-            		_rc=false; continue;
-            	}
+                if (timeoutms==_SELECT_MS_WAIT)timeoutms = _timeout_remote;
+                if (!readable(timeoutms)) {
+                    _rc=false; continue;
+                }
             }
 
             if (redisBufferRead(static_cast<redisContext*>(_ctx))!=REDIS_OK) {
@@ -442,6 +452,7 @@ bool cps_db::connection::response(response_set &data_, size_t timeoutms) {
 }
 
 bool cps_db::connection::command(db_operation_atom_t * lst,size_t len,response_set &set,size_t timeoutms) {
+
     if (!operation(lst,len,true,timeoutms)) {
         return false;
     }
@@ -457,6 +468,9 @@ bool cps_db::connection::used_within(uint64_t relative) {
 }
 
 bool cps_db::connection::has_event(bool &err) {
+    if (_ctx==nullptr)
+        return false;
+
     void *rep ;
     int rc = REDIS_OK;
     err = false;
@@ -477,14 +491,17 @@ bool cps_db::connection::has_event(bool &err) {
 #include "std_select_tools.h"
 
 bool cps_db::connection::get_event(response_set &data, bool &err_occured) {
+    if (_ctx==nullptr)
+        return false;
+
     data.clear();
     err_occured = false;
     do {
         if (_pending_events.size() == 0) {
-        	ssize_t timeoutms = _timeout_local;
-        	if (!cps_api_db_is_local_node(_addr.c_str())) {
-        		timeoutms = _timeout_remote;
-        	}
+            ssize_t timeoutms = _timeout_local;
+            if (!cps_api_db_is_local_node(_addr.c_str())) {
+                timeoutms = _timeout_remote;
+            }
             if ( !readable(timeoutms)) {
                 EV_LOGGING(CPS-DB-CONN,DEBUG,"DISCON","Read timeout while waiting for data - ignored");
                 break;

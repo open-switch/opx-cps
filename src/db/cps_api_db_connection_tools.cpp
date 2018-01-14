@@ -129,7 +129,9 @@ cps_db::connection * cps_db::connection_cache::get(const std::string &name, bool
 void cps_db::connection_cache::put(const std::string &name, connection* conn) {
     std::lock_guard<std::mutex> l(_mutex);
     auto _ptr = std::unique_ptr<cps_db::connection>(conn);
-
+    if (!_ptr->connection_valid()) {
+        return;    //clear it out
+    }
     if (_pool[name].size()<(size_t)_cache_max_connections) {
         _pool[name].push_back(std::move(_ptr));
     }
