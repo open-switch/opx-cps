@@ -16,15 +16,15 @@
 
 /*
  * cps_api_utils.cpp
- *
- *  Created on: Jan 18, 2016
- *      Author: cwichmann
  */
 
 #include "private/cps_api_client_utils.h"
 
 #include "std_user_perm.h"
 #include "event_log.h"
+
+#include <execinfo.h> 
+#include <utility>
 
 #define CPS_USER_ID "_opx_cps"
 #define CPS_USER_GRPUP "_opx_cps"
@@ -40,4 +40,18 @@ void cps_api_set_cps_file_perms(const char *path) {
         EV_LOG(ERR,DSAPI,0,"CPSAPI-FILE-PERM","Failed to set file %s to user %s",path,
                 CPS_USER_ID);
     }
+}
+
+std::string cps_api_stacktrace(void) {
+    const static int _MAX_DEPTH=100;
+    void *_lst[_MAX_DEPTH];
+    size_t _len = backtrace(_lst,sizeof(_lst)/sizeof(*_lst));
+    char **_syms =  backtrace_symbols(_lst,_len);
+    std::string _trace;
+    if (_syms==nullptr) return "";
+    for ( size_t _ix = 0 ; _ix < _len ; ++_ix ) {
+        _trace+=std::string(" ")+_syms[_ix];
+    }
+    free((void*)_syms);
+    return std::move(_trace);
 }

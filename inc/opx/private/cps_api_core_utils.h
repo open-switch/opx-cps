@@ -19,9 +19,10 @@
 #define CPS_API_INC_PRIVATE_CPS_API_CORE_UTILS_H_
 
 #include "cps_api_object.h"
-
+#include <string>
 bool cps_api_core_publish(cps_api_object_t obj);
 
 void cps_api_event_stats();
+std::string cps_api_stacktrace(void);
 
 #endif /* CPS_API_INC_PRIVATE_CPS_API_CORE_UTILS_H_ */

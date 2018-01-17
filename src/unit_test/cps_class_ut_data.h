@@ -128,6 +128,7 @@ struct _node_details {
  * Init librarry unit test
  */
 void __init_class_map();
+void __init_class_metadata(void);
 void UTDataClear();
 std::vector<_node_details>&__get_class_map();
 
