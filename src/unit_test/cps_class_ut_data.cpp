@@ -189,13 +189,17 @@ static void __ns_uniqueue_init() {
     std::string _pid = cps_string::sprintf("%d",(int)getpid());
     setenv("CPSNS",_pid.c_str(),1);
 }
-void __init_class_map() {
-    __ns_uniqueue_init();
 
+void __init_class_metadata(void) {
+    __ns_uniqueue_init();
     std::vector<cps_api_attr_id_t> ids ;
 
     for ( auto &it : lst) {
         cps_class_map_init(it.id,&(it._ids[0]),it._ids.size(),&it.details);
     }
+}
+
+void __init_class_map(void) {
+    __init_class_metadata();
     __init_global_test_objects();
 }

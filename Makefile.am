@@ -70,6 +70,7 @@ libopx_cps_api_common_la_SOURCES = \
 #src/unit_test/cps_api_key_cache_unittest.cpp
 #src/unit_test/cps_class_map_unittest.cpp
 #src/unit_test/cps_registration_unittest.cpp
+#src/unit_test/cps_api_event_loss_unittest.cpp
 #src/example/cps_api_operation_example.c
 
 #current,revision,age version format - currently age 1 revision 1 (0.1)
