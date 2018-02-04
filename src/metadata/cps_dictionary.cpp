@@ -185,7 +185,7 @@ cps_api_return_code_t cps_api_set_library_flags(const char * flag, const char *v
         }
     }
     }
-    __trigger_param_callback(val);
+    __trigger_param_callback(flag);
     return cps_api_ret_code_OK;
 
 }
