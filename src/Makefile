@@ -94,6 +94,8 @@ $(foreach UT,${UNIT_TEST},$(eval $(call add_UT_pieces,${UT})))
 UNIT_TEST+=cps_api_c_client_stub
 cps_api_c_client_stub_SRCS+=unit_test/cps_api_c_client_stub.c
 cps_api_c_client_stub_LDFLAGS+=-lcps-api-common
+
+UNIT_TEST_SCRIPT=unit_test/run_test
 include ${MAKE_INC}/workspace.mak
 
 

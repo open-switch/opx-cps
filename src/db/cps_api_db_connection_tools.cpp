@@ -47,7 +47,7 @@ static void __init(void) {
     cps_api_update_ssize_on_param_change("cps.connect.retry-local",
             &_connection_retry_count_local);
     cps_api_update_ssize_on_param_change("cps.connect.retry-remote",
-            &_connection_retry_count_local);
+            &_connection_retry_count_remote);
     cps_api_update_ssize_on_param_change("cps.connect.retry-delay",
             &_delay_between_retries);
     cps_api_update_ssize_on_param_change("cps.connect.ping-timeout",
