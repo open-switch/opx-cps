@@ -117,25 +117,28 @@ bool cps_db::select_db(cps_db::connection &conn,const std::string &db_id) {
     return  (r.is_status() && strcmp("OK",r.get_str())==0);
 }
 
-bool cps_db::delete_object(cps_db::connection &conn,cps_api_object_t obj) {
+bool cps_db::delete_object(cps_db::connection &conn,cps_api_object_t obj, cps_api_return_code_t *rc) {
     std::vector<char> key;
+    cps_db::set_return_code(rc,cps_api_ret_code_OK);
     bool _is_wildcard =false;
     if (!cps_db::dbkey_instance_or_wildcard(key,obj,_is_wildcard)) {
+    	cps_db::set_return_code(rc,cps_api_ret_code_ERR);
         return false;
     }
     if (!_is_wildcard) {
-        cps_db::delete_object(conn,&key[0],key.size());
+        cps_db::delete_object(conn,&key[0],key.size(),rc);
     } else {
         cps_db::connection_request r(cps_db::ProcessDBCache(),conn.addr());
-        if (!r.valid()) return false;
+        if (!r.valid()) { cps_db::set_return_code(rc,cps_api_ret_code_COMMUNICATION_ERROR); return false; }
         cps_db::walk_keys(r.get(),&key[0],key.size(),[&](const void *data, size_t len) {
-            cps_db::delete_object(conn,(const char *)data,len);
+            cps_db::delete_object(conn,(const char *)data,len,rc);
         });
     }
     return true;
 }
 
-bool cps_db::get_objects(cps_db::connection &conn, cps_api_object_t obj,cps_api_object_list_t obj_list) {
+bool cps_db::get_objects(cps_db::connection &conn, cps_api_object_t obj,cps_api_object_list_t obj_list,
+		cps_api_return_code_t *rc) {
     std::vector<char> k;
     bool wildcard = false;
 
@@ -143,13 +146,16 @@ bool cps_db::get_objects(cps_db::connection &conn, cps_api_object_t obj,cps_api_
         wildcard=true;
         if (!cps_db::dbkey_from_instance_key(k,obj,true)) return false;
     } else {    //otherwise guess from attributes provided
-        if (!cps_db::dbkey_instance_or_wildcard(k,obj,wildcard)) return false;
+        if (!cps_db::dbkey_instance_or_wildcard(k,obj,wildcard)) {
+        	cps_db::set_return_code(rc,cps_api_ret_code_PARAM_INVALID);
+        	return false;
+        }
     }
 
-    if (wildcard) return get_objects(conn,k,obj_list);
+    if (wildcard) return get_objects(conn,k,obj_list,rc);
 
     cps_api_object_guard og(cps_api_object_create());
-    if (cps_db::get_object(conn,k,og.get())) {
+    if (cps_db::get_object(conn,k,og.get(),rc)) {
         if (cps_api_object_list_append(obj_list,og.get())) {
             og.release();
             return true;
@@ -169,12 +175,12 @@ cps_db::response_set::~response_set() {
 }
 
 
-bool cps_db::delete_object(cps_db::connection &conn,const char *key, size_t key_len) {
+bool cps_db::delete_object(cps_db::connection &conn,const char *key, size_t key_len,cps_api_return_code_t*rc) {
     cps_db::connection::db_operation_atom_t e[2];
     e[0].from_string("DEL");
     e[1].from_string(key,key_len);
     response_set resp;
-    return conn.command(e,2,resp);
+    return conn.command(e,2,resp,cps_db::connection::_SELECT_MS_WAIT,rc);
 }
 
 bool cps_db::atomic_count_set(cps_db::connection &conn,const char *key, size_t key_len, int64_t data) {
@@ -307,21 +313,28 @@ bool cps_db::set_object_response(cps_db::connection &conn) {
 }
 
 
-bool cps_db::get_object_request(cps_db::connection &conn, const char*key, size_t len) {
+bool cps_db::get_object_request(cps_db::connection &conn, const char*key, size_t len,cps_api_return_code_t *rc) {
     cps_db::connection::db_operation_atom_t e[3];
     e[0].from_string("HGET");
     e[1].from_string(key,len);
     e[2].from_string("object");
-    return conn.operation(e,sizeof(e)/sizeof(*e));
+    return conn.operation(e,sizeof(e)/sizeof(*e),rc);
 }
 
-bool cps_db::get_object_response(cps_db::connection &conn, cps_api_object_t obj) {
+bool cps_db::get_object_response(cps_db::connection &conn, cps_api_object_t obj,
+		cps_api_return_code_t *rc) {
     cps_db::response_set resp;
 
-    if (conn.response(resp)) {
+    if (conn.response(resp,cps_db::connection::_SELECT_MS_WAIT,rc)) {
         response r = resp.get_response(0);
-        if (r.is_str() && cps_api_array_to_object(r.get_str(),r.get_str_len(),obj)) {
-            return true;
+        cps_db::set_return_code(rc,cps_api_ret_code_ERR);
+        if (r.is_str()) {
+        	if (cps_api_array_to_object(r.get_str(),r.get_str_len(),obj)) {
+
+        		cps_db::set_return_code(rc,cps_api_ret_code_OK);
+        		return true;
+        	}
+        	cps_db::set_return_code(rc,cps_api_ret_code_CORRUPT);
         }
     }
     return false;

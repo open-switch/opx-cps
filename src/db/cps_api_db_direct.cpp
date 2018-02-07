@@ -32,6 +32,8 @@
 #include "cps_api_object_tools_internal.h"
 #include "cps_api_node_private.h"
 
+#include "cps_class_map_query.h"
+
 #include "event_log.h"
 
 #include <vector>
@@ -39,6 +41,25 @@
 #include <string.h>
 
 namespace {
+
+size_t _ignore_communication_errors = 0;
+size_t _communication_error_retry_timeout = 200;	//200ms
+
+pthread_once_t  onceControl = PTHREAD_ONCE_INIT;
+
+void __init(void) {
+    cps_api_update_ssize_on_param_change("cps.db.ignore-comm-failure",(ssize_t*)&_ignore_communication_errors);
+    cps_api_update_ssize_on_param_change("cps.db.comm-failure-retry",(ssize_t*)&_communication_error_retry_timeout);
+}
+
+static inline bool _handle_retry_request(cps_api_return_code_t rc) {
+	if (rc==cps_api_ret_code_COMMUNICATION_ERROR &&
+			_ignore_communication_errors!=0) {
+		std_usleep((size_t)_communication_error_retry_timeout);
+		return true;
+	}
+	return false;
+}
 
 std::string _get_node_name(const std::string &str) {
     std::string s;
@@ -64,11 +85,11 @@ cps_api_return_code_t __cps_api_db_operation_get(cps_api_object_t obj, cps_api_o
 
     cps_api_node_set_iterate(_group,[&obj,&results,&rc,_group](const std::string &name) -> bool{
         cps_db::connection_request r(cps_db::ProcessDBCache(),name.c_str());
-        if (!r.valid()) return true;
+        if (!r.valid()) { rc = cps_api_ret_code_COMMUNICATION_ERROR; return true; }
 
         size_t _prev_obj_ptr = cps_api_object_list_size(results);
 
-        if (cps_db::get_objects(r.get(),obj,results)) {
+        if (cps_db::get_objects(r.get(),obj,results,&rc)) {
             rc = cps_api_ret_code_OK;
         }
         std::string node_name = _get_node_name(name);
@@ -108,40 +129,70 @@ bool cps_api_db_get_filter_enable_connection(cps_api_object_t obj) {
 }
 
 cps_api_return_code_t cps_api_db_get(cps_api_object_t obj,cps_api_object_list_t found) {
-    return __cps_api_db_operation_get(obj,found);
+	pthread_once(&onceControl,__init);
+	cps_api_return_code_t _rc=cps_api_ret_code_OK;
+
+	do {
+		_rc = __cps_api_db_operation_get(obj,found);
+		if (_handle_retry_request(_rc)) continue;
+		break;
+	} while (true);
+
+	return _rc;
 }
 
-cps_api_return_code_t cps_api_db_get_bulk(cps_api_object_list_t objs, const char * node_group) {
+static cps_api_return_code_t __cps_api_db_get_bulk(cps_api_object_list_t objs, const char * node_group) {
+	pthread_once(&onceControl,__init);
+
     if (node_group==nullptr) {
         node_group = DEFAULT_REDIS_ADDR;
     }
+    cps_api_return_code_t _rc = cps_api_ret_code_ERR;
+
     if (!cps_api_node_set_iterate(node_group,[&](const std::string &name) -> bool{
+    	if (_rc!=cps_api_ret_code_OK) _rc = cps_api_ret_code_COMMUNICATION_ERROR;
+
         cps_db::connection_request r(cps_db::ProcessDBCache(),name.c_str());
-        if (!r.valid()) return true;
-        (void)cps_db::get_object_list(r.get(),objs);
+        if (!r.valid()) { return true; }
+        if (cps_db::get_object_list(r.get(),objs,&_rc)) {
+        	_rc=cps_api_ret_code_OK;
+        }
         return true;
 
     })) {
-        return cps_api_ret_code_ERR;
+        return _rc;
     }
-    return cps_api_ret_code_OK;
+    return _rc;
+}
+
+cps_api_return_code_t cps_api_db_get_bulk(cps_api_object_list_t objs, const char * node_group) {
+	cps_api_return_code_t _rc=cps_api_ret_code_OK;
+	do {
+		_rc = __cps_api_db_get_bulk(objs,node_group);
+		if (_handle_retry_request(_rc)) continue;
+		break;
+	} while (true);
+
+	return _rc;
 }
 
 namespace {
-    cps_api_return_code_t __one_pre_load_into_prev(std::vector<std::string> &service_addrs, cps_api_object_t obj,cps_api_object_t prev) {
+    cps_api_return_code_t __one_pre_load_into_prev(std::vector<std::string> &service_addrs, cps_api_object_t obj,
+    		cps_api_object_t prev) {
         if (prev==nullptr) return cps_api_ret_code_OK;
 
+        cps_api_return_code_t _rc = cps_api_ret_code_ERR;
         std::vector<char> key;
         if (!cps_db::dbkey_from_instance_key(key,obj,false)) return cps_api_ret_code_ERR;
 
         for (auto &it : service_addrs) {
             cps_db::connection_request r(cps_db::ProcessDBCache(),it.c_str());
-            if (!r.valid()) continue;
-            if (cps_db::get_object(r.get(),key,prev)) {
+            if (!r.valid()) { _rc = cps_api_ret_code_COMMUNICATION_ERROR; continue; }
+            if (cps_db::get_object(r.get(),key,prev,&_rc)) {
                 return cps_api_ret_code_OK;
             }
         }
-        return cps_api_ret_code_OK;
+        return _rc;
     }
 
     cps_api_return_code_t __one_pre_load_into_prev_for_set(std::vector<std::string> &service_addrs, cps_api_object_t obj,cps_api_object_t prev) {
@@ -161,9 +212,9 @@ namespace {
         cps_api_return_code_t rc = cps_api_ret_code_OK;
         for (auto &it : l) {
             cps_db::connection_request r(cps_db::ProcessDBCache(),it.c_str());
-            if (!r.valid()) continue;
-            (void)cps_db::delete_object(r.get(),obj);
-            rc=cps_api_ret_code_OK;
+            if (!r.valid()) { rc = cps_api_ret_code_COMMUNICATION_ERROR; continue; }
+            (void)cps_db::delete_object(r.get(),obj,&rc);
+            if (rc!=cps_api_ret_code_COMMUNICATION_ERROR) rc=cps_api_ret_code_OK;
         }
         return rc;    //ignore merge issue
     }
@@ -173,9 +224,14 @@ namespace {
 
         for (auto &it : l) {
             cps_db::connection_request r(cps_db::ProcessDBCache(),it.c_str());
-            if (!r.valid()) continue;
+            if (!r.valid()) {
+            	if (rc!=cps_api_ret_code_OK)
+            		rc = cps_api_ret_code_COMMUNICATION_ERROR;
+            	continue;
+            }
             if (!cps_db::store_object(r.get(),obj)) {
-                if (!_continue_on_failure(obj)) return cps_api_ret_code_ERR;
+                if (!_continue_on_failure(obj)) return cps_api_ret_code_COMMUNICATION_ERROR;
+                continue;
             }
             rc=cps_api_ret_code_OK;
         }
@@ -191,10 +247,13 @@ namespace {
         cps_api_return_code_t rc = cps_api_ret_code_ERR;
 
         for (auto &it : l) {
+        	if (rc!=cps_api_ret_code_OK) rc = cps_api_ret_code_COMMUNICATION_ERROR;
+
             cps_db::connection_request r(cps_db::ProcessDBCache(),it.c_str());
             if (!r.valid()) continue;
             if (!cps_db::store_object(r.get(),merged.get())) {
-                if (!_continue_on_failure(obj)) return cps_api_ret_code_ERR;
+                if (!_continue_on_failure(obj)) return cps_api_ret_code_COMMUNICATION_ERROR;
+                continue;
             }
             rc=cps_api_ret_code_OK;
         }
@@ -202,7 +261,8 @@ namespace {
     }
 }
 
-cps_api_return_code_t cps_api_db_commit_one(cps_api_operation_types_t op,cps_api_object_t obj,cps_api_object_t prev, bool publish) {
+static cps_api_return_code_t __cps_api_db_commit_one(cps_api_operation_types_t op,cps_api_object_t obj,cps_api_object_t prev, bool publish) {
+	pthread_once(&onceControl,__init);
 
     if (op>cps_api_oper_SET || op<=cps_api_oper_NULL)
         return cps_api_ret_code_ERR;
@@ -263,40 +323,64 @@ cps_api_return_code_t cps_api_db_commit_one(cps_api_operation_types_t op,cps_api
     return cps_api_ret_code_OK;
 }
 
+cps_api_return_code_t cps_api_db_commit_one(cps_api_operation_types_t op,cps_api_object_t obj,cps_api_object_t prev, bool publish) {
+	cps_api_return_code_t _rc=cps_api_ret_code_OK;
+	do {
+		_rc = __cps_api_db_commit_one(op,obj,prev,publish);
+		if (_handle_retry_request(_rc)) continue;
+		break;
+	} while (true);
+
+	return _rc;
+}
+
 namespace {
     cps_api_return_code_t __pre_set(std::vector<std::string> &lst, cps_api_db_commit_bulk_t *param) {
         cps_api_return_code_t rc = cps_api_ret_code_ERR;
         for (auto &it : lst ) {
             cps_db::connection_request r(cps_db::ProcessDBCache(),it.c_str());
-            if (!r.valid()) continue;
-            rc=cps_api_ret_code_OK;    //at least one DB connected
-            if (cps_db::merge_objects(r.get(),param->objects)) break;
+            if (!r.valid()) {
+            	rc = cps_api_ret_code_COMMUNICATION_ERROR;
+            	continue;
+            }
+            if (cps_db::merge_objects(r.get(),param->objects,&rc)) {
+            	break;
+            }
         }
         return rc;
     }
 
     cps_api_return_code_t __handle_delete(std::vector<std::string> &lst, cps_api_db_commit_bulk_t *param) {
-        bool _success = false;
+
+        cps_api_return_code_t _rc = cps_api_ret_code_COMMUNICATION_ERROR;
         for (auto &it : lst ) {
             cps_db::connection_request r(cps_db::ProcessDBCache(),it.c_str());
             if (!r.valid()) continue;
             if (cps_db::delete_object_list(r.get(),param->objects)) {
-                _success = true;
+                _rc = cps_api_ret_code_OK;
             }
         }
-        return _success ? cps_api_ret_code_OK : cps_api_ret_code_ERR;
+        return _rc;
     }
 
     cps_api_return_code_t __handle_create(std::vector<std::string> &lst, cps_api_db_commit_bulk_t *param) {
-        bool _success = false;
+
+        cps_api_return_code_t _rc = cps_api_ret_code_ERR;
+
         for (auto &it : lst ) {
+        	//default to communication error as this would be the only failure below (assuming syntax is correct)
+        	if (_rc==cps_api_ret_code_ERR) _rc = cps_api_ret_code_COMMUNICATION_ERROR;
             cps_db::connection_request r(cps_db::ProcessDBCache(),it);
-            if (!r.valid()) continue;
+            if (!r.valid()) {
+            	continue;
+            }
+
             if (cps_db::store_objects(r.get(),param->objects)) {
-                _success = true;
+                _rc = cps_api_ret_code_OK;
+                continue;
             }
         }
-        return _success ? cps_api_ret_code_OK : cps_api_ret_code_ERR;
+        return _rc;
     }
 }
 
@@ -310,16 +394,18 @@ void cps_api_db_commit_bulk_close(cps_api_db_commit_bulk_t*p) {
     cps_api_object_list_destroy(p->objects,true);
 }
 
-cps_api_return_code_t cps_api_db_commit_bulk(cps_api_db_commit_bulk_t *param) {
+static cps_api_return_code_t __cps_api_db_commit_bulk(cps_api_db_commit_bulk_t *param) {
+	pthread_once(&onceControl,__init);
+
     cps_api_operation_types_t op = param->op;
     if (op>cps_api_oper_SET || op<=cps_api_oper_NULL)
-        return cps_api_ret_code_ERR;
+        return cps_api_ret_code_PARAM_INVALID;
 
     if (param->node_group==nullptr) param->node_group = DEFAULT_REDIS_ADDR;
     std::vector<std::string> lst;
     if (!cps_api_db_get_node_group(param->node_group,lst)) {
-        EV_LOGGING(DSAPI,ERR,"CPS-DB-IF","Failed to get node details.");
-        return cps_api_ret_code_ERR;
+        EV_LOGGING(DSAPI,ERR,"CPS-DB-IF","Failed to get node details for %s.",param->node_group);
+        return cps_api_ret_code_PARAM_INVALID;
     }
 
     struct {
@@ -363,7 +449,9 @@ cps_api_return_code_t cps_api_db_commit_bulk(cps_api_db_commit_bulk_t *param) {
             for (size_t ix = 0, mx = cps_api_object_list_size(param->objects); ix < mx ; ++ix ) {
                 cps_api_object_t o = cps_api_object_list_get(param->objects,ix);
                 if (_first_time) cps_api_object_set_type_operation(cps_api_object_key(o),op);
-                cps_db::publish(r.get(),o);
+                if (!cps_db::publish(r.get(),o)) {
+                	EV_LOGGING(CPS-DB-EV,ERR,"EVT-SEND","Failed to send event (contents not displayed)");
+                }
             }
             _first_time = false;
         }
@@ -372,3 +460,12 @@ cps_api_return_code_t cps_api_db_commit_bulk(cps_api_db_commit_bulk_t *param) {
     return rc;
 }
 
+cps_api_return_code_t cps_api_db_commit_bulk(cps_api_db_commit_bulk_t *param) {
+	cps_api_return_code_t _rc = cps_api_ret_code_OK;
+	do {
+		_rc = __cps_api_db_commit_bulk(param);
+		if (_handle_retry_request(_rc)) continue;
+		break;
+	} while (true);
+	return _rc;
+}
