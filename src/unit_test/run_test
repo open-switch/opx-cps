@@ -1,0 +1,7 @@
+#!/bin/bash
+
+./cps_api_operation_unittest -a
+./cps_api_key_unittest -a
+./cps_class_map_unittest -a
+./cps_api_key_cache_unittest -a
+./cps_api_registration_unittest -a
