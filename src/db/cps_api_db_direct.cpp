@@ -33,6 +33,7 @@
 #include "cps_api_node_private.h"
 
 #include "cps_class_map_query.h"
+#include "cps_api_core_utils.h"
 
 #include "event_log.h"
 
@@ -44,25 +45,28 @@ namespace {
 
 size_t _ignore_communication_errors = 0;
 
-size_t _communication_error_retry_timeout = 200;	//200ms
-size_t _communication_error_retry = (1000/200)*60*20;	//20 minutes
+size_t _communication_error_retry_timeout = 200;    //200ms
+size_t _communication_error_retry = (1000/200)*60*20;    //20 minutes
 
 pthread_once_t  onceControl = PTHREAD_ONCE_INIT;
 
 void __init(void) {
     cps_api_update_ssize_on_param_change("cps.db.ignore-comm-failure",(ssize_t*)&_ignore_communication_errors);
-    cps_api_update_ssize_on_param_change("cps.db.comm-failure-retry-delay",(ssize_t*)&_communication_error_retry_timeout);
     cps_api_update_ssize_on_param_change("cps.db.comm-failure-retry",(ssize_t*)&_communication_error_retry);
+    cps_api_update_ssize_on_param_change("cps.db.comm-failure-retry-delay",(ssize_t*)&_communication_error_retry_timeout);
 }
 
 static inline bool _handle_retry_request(cps_api_return_code_t rc, size_t retry_count) {
-	if (rc==cps_api_ret_code_COMMUNICATION_ERROR &&
-			_ignore_communication_errors!=0) {
-		if (retry_count>=_communication_error_retry) return false;
-		std_usleep((size_t)_communication_error_retry_timeout);
-		return true;
-	}
-	return false;
+    if (rc==cps_api_ret_code_COMMUNICATION_ERROR &&
+            _ignore_communication_errors!=0) {
+        if (retry_count>=_communication_error_retry) return false;
+        EV_LOGGING(CPS-DB-CONN,WARNING,"COMM-RETRY","Operation being retried - #%d in %dms - %s",
+                (int)retry_count,(int)_communication_error_retry_timeout,cps_api_stacktrace().c_str());
+
+        std_usleep((size_t)_communication_error_retry_timeout*1000);
+        return true;
+    }
+    return false;
 }
 
 std::string _get_node_name(const std::string &str) {
@@ -133,20 +137,20 @@ bool cps_api_db_get_filter_enable_connection(cps_api_object_t obj) {
 }
 
 cps_api_return_code_t cps_api_db_get(cps_api_object_t obj,cps_api_object_list_t found) {
-	pthread_once(&onceControl,__init);
-	cps_api_return_code_t _rc=cps_api_ret_code_OK;
-	size_t _count = 0;
-	do {
-		_rc = __cps_api_db_operation_get(obj,found);
-		if (_handle_retry_request(_rc,_count++)) continue;
-		break;
-	} while (true);
+    pthread_once(&onceControl,__init);
+    cps_api_return_code_t _rc=cps_api_ret_code_OK;
+    size_t _count = 0;
+    do {
+        _rc = __cps_api_db_operation_get(obj,found);
+        if (_handle_retry_request(_rc,_count++)) continue;
+        break;
+    } while (true);
 
-	return _rc;
+    return _rc;
 }
 
 static cps_api_return_code_t __cps_api_db_get_bulk(cps_api_object_list_t objs, const char * node_group) {
-	pthread_once(&onceControl,__init);
+    pthread_once(&onceControl,__init);
 
     if (node_group==nullptr) {
         node_group = DEFAULT_REDIS_ADDR;
@@ -154,12 +158,12 @@ static cps_api_return_code_t __cps_api_db_get_bulk(cps_api_object_list_t objs, c
     cps_api_return_code_t _rc = cps_api_ret_code_ERR;
 
     if (!cps_api_node_set_iterate(node_group,[&](const std::string &name) -> bool{
-    	if (_rc!=cps_api_ret_code_OK) _rc = cps_api_ret_code_COMMUNICATION_ERROR;
+        if (_rc!=cps_api_ret_code_OK) _rc = cps_api_ret_code_COMMUNICATION_ERROR;
 
         cps_db::connection_request r(cps_db::ProcessDBCache(),name.c_str());
         if (!r.valid()) { return true; }
         if (cps_db::get_object_list(r.get(),objs,&_rc)) {
-        	_rc=cps_api_ret_code_OK;
+            _rc=cps_api_ret_code_OK;
         }
         return true;
 
@@ -170,20 +174,20 @@ static cps_api_return_code_t __cps_api_db_get_bulk(cps_api_object_list_t objs, c
 }
 
 cps_api_return_code_t cps_api_db_get_bulk(cps_api_object_list_t objs, const char * node_group) {
-	cps_api_return_code_t _rc=cps_api_ret_code_OK;
-	size_t _count = 0;
-	do {
-		_rc = __cps_api_db_get_bulk(objs,node_group);
-		if (_handle_retry_request(_rc,_count++)) continue;
-		break;
-	} while (true);
+    cps_api_return_code_t _rc=cps_api_ret_code_OK;
+    size_t _count = 0;
+    do {
+        _rc = __cps_api_db_get_bulk(objs,node_group);
+        if (_handle_retry_request(_rc,_count++)) continue;
+        break;
+    } while (true);
 
-	return _rc;
+    return _rc;
 }
 
 namespace {
     cps_api_return_code_t __one_pre_load_into_prev(std::vector<std::string> &service_addrs, cps_api_object_t obj,
-    		cps_api_object_t prev) {
+            cps_api_object_t prev) {
         if (prev==nullptr) return cps_api_ret_code_OK;
 
         cps_api_return_code_t _rc = cps_api_ret_code_ERR;
@@ -200,10 +204,10 @@ namespace {
         return _rc;
     }
     cps_api_return_code_t __one_pre_load_into_prev_delete(std::vector<std::string> &service_addrs, cps_api_object_t obj,
-    		cps_api_object_t prev) {
-    	cps_api_return_code_t rc = __one_pre_load_into_prev(service_addrs,obj,prev);
-    	if (rc==cps_api_ret_code_ERR) rc = cps_api_ret_code_OK;
-    	return rc;
+            cps_api_object_t prev) {
+        cps_api_return_code_t rc = __one_pre_load_into_prev(service_addrs,obj,prev);
+        if (rc==cps_api_ret_code_ERR) rc = cps_api_ret_code_OK;
+        return rc;
     }
 
     cps_api_return_code_t __one_pre_load_into_prev_for_set(std::vector<std::string> &service_addrs, cps_api_object_t obj,cps_api_object_t prev) {
@@ -236,9 +240,9 @@ namespace {
         for (auto &it : l) {
             cps_db::connection_request r(cps_db::ProcessDBCache(),it.c_str());
             if (!r.valid()) {
-            	if (rc!=cps_api_ret_code_OK)
-            		rc = cps_api_ret_code_COMMUNICATION_ERROR;
-            	continue;
+                if (rc!=cps_api_ret_code_OK)
+                    rc = cps_api_ret_code_COMMUNICATION_ERROR;
+                continue;
             }
             if (!cps_db::store_object(r.get(),obj)) {
                 if (!_continue_on_failure(obj)) return cps_api_ret_code_COMMUNICATION_ERROR;
@@ -258,7 +262,7 @@ namespace {
         cps_api_return_code_t rc = cps_api_ret_code_ERR;
 
         for (auto &it : l) {
-        	if (rc!=cps_api_ret_code_OK) rc = cps_api_ret_code_COMMUNICATION_ERROR;
+            if (rc!=cps_api_ret_code_OK) rc = cps_api_ret_code_COMMUNICATION_ERROR;
 
             cps_db::connection_request r(cps_db::ProcessDBCache(),it.c_str());
             if (!r.valid()) continue;
@@ -273,7 +277,7 @@ namespace {
 }
 
 static cps_api_return_code_t __cps_api_db_commit_one(cps_api_operation_types_t op,cps_api_object_t obj,cps_api_object_t prev, bool publish) {
-	pthread_once(&onceControl,__init);
+    pthread_once(&onceControl,__init);
 
     if (op>cps_api_oper_SET || op<=cps_api_oper_NULL)
         return cps_api_ret_code_ERR;
@@ -291,7 +295,7 @@ static cps_api_return_code_t __cps_api_db_commit_one(cps_api_operation_types_t o
         cps_api_return_code_t (*handle)(std::vector<std::string> &, cps_api_object_t,cps_api_object_t);
     } pre_hook [cps_api_oper_SET+1] = {
             nullptr/*cps_api_oper_NULL*/,
-			__one_pre_load_into_prev_delete,     /*Delete*/
+            __one_pre_load_into_prev_delete,     /*Delete*/
             nullptr,                    /*Create*/
             __one_pre_load_into_prev_for_set,    /*set*/
     };
@@ -335,15 +339,15 @@ static cps_api_return_code_t __cps_api_db_commit_one(cps_api_operation_types_t o
 }
 
 cps_api_return_code_t cps_api_db_commit_one(cps_api_operation_types_t op,cps_api_object_t obj,cps_api_object_t prev, bool publish) {
-	cps_api_return_code_t _rc=cps_api_ret_code_OK;
-	size_t _count = 0;
-	do {
-		_rc = __cps_api_db_commit_one(op,obj,prev,publish);
-		if (_handle_retry_request(_rc,_count++)) continue;
-		break;
-	} while (true);
+    cps_api_return_code_t _rc=cps_api_ret_code_OK;
+    size_t _count = 0;
+    do {
+        _rc = __cps_api_db_commit_one(op,obj,prev,publish);
+        if (_handle_retry_request(_rc,_count++)) continue;
+        break;
+    } while (true);
 
-	return _rc;
+    return _rc;
 }
 
 namespace {
@@ -352,11 +356,11 @@ namespace {
         for (auto &it : lst ) {
             cps_db::connection_request r(cps_db::ProcessDBCache(),it.c_str());
             if (!r.valid()) {
-            	rc = cps_api_ret_code_COMMUNICATION_ERROR;
-            	continue;
+                rc = cps_api_ret_code_COMMUNICATION_ERROR;
+                continue;
             }
             if (cps_db::merge_objects(r.get(),param->objects,&rc)) {
-            	break;
+                break;
             }
         }
         return rc;
@@ -380,11 +384,11 @@ namespace {
         cps_api_return_code_t _rc = cps_api_ret_code_ERR;
 
         for (auto &it : lst ) {
-        	//default to communication error as this would be the only failure below (assuming syntax is correct)
-        	if (_rc==cps_api_ret_code_ERR) _rc = cps_api_ret_code_COMMUNICATION_ERROR;
+            //default to communication error as this would be the only failure below (assuming syntax is correct)
+            if (_rc==cps_api_ret_code_ERR) _rc = cps_api_ret_code_COMMUNICATION_ERROR;
             cps_db::connection_request r(cps_db::ProcessDBCache(),it);
             if (!r.valid()) {
-            	continue;
+                continue;
             }
 
             if (cps_db::store_objects(r.get(),param->objects)) {
@@ -407,7 +411,7 @@ void cps_api_db_commit_bulk_close(cps_api_db_commit_bulk_t*p) {
 }
 
 static cps_api_return_code_t __cps_api_db_commit_bulk(cps_api_db_commit_bulk_t *param) {
-	pthread_once(&onceControl,__init);
+    pthread_once(&onceControl,__init);
 
     cps_api_operation_types_t op = param->op;
     if (op>cps_api_oper_SET || op<=cps_api_oper_NULL)
@@ -462,7 +466,7 @@ static cps_api_return_code_t __cps_api_db_commit_bulk(cps_api_db_commit_bulk_t *
                 cps_api_object_t o = cps_api_object_list_get(param->objects,ix);
                 if (_first_time) cps_api_object_set_type_operation(cps_api_object_key(o),op);
                 if (!cps_db::publish(r.get(),o)) {
-                	EV_LOGGING(CPS-DB-EV,ERR,"EVT-SEND","Failed to send event (contents not displayed)");
+                    EV_LOGGING(CPS-DB-EV,ERR,"EVT-SEND","Failed to send event (contents not displayed)");
                 }
             }
             _first_time = false;
@@ -473,12 +477,12 @@ static cps_api_return_code_t __cps_api_db_commit_bulk(cps_api_db_commit_bulk_t *
 }
 
 cps_api_return_code_t cps_api_db_commit_bulk(cps_api_db_commit_bulk_t *param) {
-	cps_api_return_code_t _rc = cps_api_ret_code_OK;
-	size_t _count = 0;
-	do {
-		_rc = __cps_api_db_commit_bulk(param);
-		if (_handle_retry_request(_rc,_count++)) continue;
-		break;
-	} while (true);
-	return _rc;
+    cps_api_return_code_t _rc = cps_api_ret_code_OK;
+    size_t _count = 0;
+    do {
+        _rc = __cps_api_db_commit_bulk(param);
+        if (_handle_retry_request(_rc,_count++)) continue;
+        break;
+    } while (true);
+    return _rc;
 }

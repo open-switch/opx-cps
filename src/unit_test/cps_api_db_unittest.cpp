@@ -237,8 +237,8 @@ bool delete_object_instance(cps_api_object_t obj) {
     printf("Cleaning... %d %s objects... \n",(int)get_instance_count(obj),cps_api_object_to_c_string(obj).c_str());
     cps_api_return_code_t _rc = cps_api_db_commit_one(cps_api_oper_DELETE,obj,nullptr,false);
     if (_rc!=cps_api_ret_code_OK) {
-    	printf("Return code from delete is %d\n",_rc);
-    	return false;
+        printf("Return code from delete is %d\n",_rc);
+        return false;
     }
 
     return (get_object_count(obj)==0);
@@ -587,24 +587,33 @@ TEST(cps_api_db,ignore_comm_errors) {
 
     cps_api_key_set_group(og.get(),"127.0.0.1:6377");
 
-	auto _start = std_get_uptime(nullptr);
-	cps_api_get_objs(og.get(),lg.get(),1,0);
-	auto _end = std_get_uptime(nullptr);
-	ASSERT_TRUE((_end-_start)> 100000);
+    auto _start = std_get_uptime(nullptr);
+    cps_api_get_objs(og.get(),lg.get(),1,0);
+    auto _end = std_get_uptime(nullptr);
+    ASSERT_TRUE((_end-_start)< 100*1000*3);
 
-	//"cps.db.ignore-comm-failure"
-	//"cps.db.comm-failure-retry-delay"
-	//"cps.db.comm-failure-retry-delay-retry"
+    _start = std_get_uptime(nullptr);
+    cps_api_commit_one(cps_api_oper_CREATE,og.get(),1,0);
+    _end = std_get_uptime(nullptr);
+    ASSERT_TRUE((_end-_start)< 100*1000*3);
 
-	cps_api_set_library_flags("cps.db.ignore-comm-failure","1");
-	cps_api_set_library_flags("cps.db.comm-failure-retry-delay","500");
-	cps_api_set_library_flags("cps.db.comm-failure-retry-delay-retry","2");
+    //"cps.db.ignore-comm-failure"
+    //"cps.db.comm-failure-retry-delay"
+    //"cps.db.comm-failure-retry-delay-retry"
 
-	_start = std_get_uptime(nullptr);
-	cps_api_get_objs(og.get(),lg.get(),1,0);
-	_end = std_get_uptime(nullptr);
-	ASSERT_TRUE((_end-_start)> 1000*1000*1);
+    cps_api_set_library_flags("cps.db.ignore-comm-failure","1");
+    cps_api_set_library_flags("cps.db.comm-failure-retry-delay","500");
+    cps_api_set_library_flags("cps.db.comm-failure-retry","2");
 
+    _start = std_get_uptime(nullptr);
+    cps_api_get_objs(og.get(),lg.get(),1,0);
+    _end = std_get_uptime(nullptr);
+    ASSERT_TRUE((_end-_start)> 1000*1000*1);
+
+    _start = std_get_uptime(nullptr);
+    cps_api_commit_one(cps_api_oper_CREATE,og.get(),1,0);
+    _end = std_get_uptime(nullptr);
+    ASSERT_TRUE((_end-_start)> 1000*1000*1);
 }
 
 int main(int argc, char **argv) {
