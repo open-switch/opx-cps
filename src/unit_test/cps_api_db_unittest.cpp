@@ -28,6 +28,7 @@
 #include "cps_api_operation_tools.h"
 #include "cps_dictionary.h"
 
+#include "cps_api_node.h"
 #include "cps_class_ut_data.h"
 #include "dell-cps.h"
 
@@ -234,7 +235,12 @@ size_t get_instance_count(cps_api_object_t obj) {
 
 bool delete_object_instance(cps_api_object_t obj) {
     printf("Cleaning... %d %s objects... \n",(int)get_instance_count(obj),cps_api_object_to_c_string(obj).c_str());
-    if (cps_api_db_commit_one(cps_api_oper_DELETE,obj,nullptr,false)!=cps_api_ret_code_OK) return false;
+    cps_api_return_code_t _rc = cps_api_db_commit_one(cps_api_oper_DELETE,obj,nullptr,false);
+    if (_rc!=cps_api_ret_code_OK) {
+    	printf("Return code from delete is %d\n",_rc);
+    	return false;
+    }
+
     return (get_object_count(obj)==0);
 }
 
@@ -254,6 +260,7 @@ TEST(cps_api_db,objects_with_wildcard_chars_in_key) {
     cps_api_object_guard         og(cps_api_obj_tool_create(cps_api_qualifier_TARGET,BASE_IP_IPV6,false));
     cps_api_object_list_guard     lg(cps_api_object_list_create());
 
+    delete_object_instance(og.get());
     delete_object_instance(og.get());
 
     //add 2 key attributes with elements that have wildcard chars
@@ -361,8 +368,16 @@ TEST(cps_api_db,simple) {
     //with the operation type being create, do a commit
     ASSERT_EQ(cps_api_db_commit_one(cps_api_oper_CREATE,og.get(),prev.get(),true),cps_api_ret_code_OK);
 
-    cps_api_object_print(og.get());
-    cps_api_object_print(prev.get());
+    ASSERT_EQ(get_instance_count(og.get()),1);
+
+    auto _disp = [&]() {
+        printf("Current\n");
+        cps_api_object_print(og.get());
+        printf("Prev\n");
+        cps_api_object_print(prev.get());
+    };
+
+    _disp();
 
     cps_api_object_attr_add_u32(og.get(),BASE_IP_IPV6_DUP_ADDR_DETECT_TRANSMITS,10);
     ASSERT_EQ(cps_api_db_commit_one(cps_api_oper_SET,og.get(),prev.get(),true),cps_api_ret_code_OK);
@@ -375,19 +390,35 @@ TEST(cps_api_db,simple) {
 
     ASSERT_EQ(cps_api_object_list_size(_found_list.get()),1);
     cps_api_object_t _updated = cps_api_object_list_get(_found_list.get(),0);
+    printf("Updated object in the db\n");
+    cps_api_object_print(_updated);
 
     ASSERT_TRUE(cps_api_object_get_data(_updated,BASE_IP_IPV6_DUP_ADDR_DETECT_TRANSMITS)!=nullptr);
     ASSERT_EQ(*(uint32_t*)cps_api_object_get_data(_updated,BASE_IP_IPV6_DUP_ADDR_DETECT_TRANSMITS),10);
 
-    cps_api_object_print(og.get());
-    cps_api_object_print(prev.get());
-
+    _disp();
     cps_api_object_attr_delete(og.get(),BASE_IP_IPV6_DUP_ADDR_DETECT_TRANSMITS);
+    printf("Current after delete\n");
+    cps_api_object_print(og.get());
+
     cps_api_object_attr_add(og.get(),BASE_IP_IPV6_DUP_ADDR_DETECT_TRANSMITS,nullptr,0);
+    printf("Current after add\n");
+    cps_api_object_print(og.get());
+
     ASSERT_EQ(cps_api_db_commit_one(cps_api_oper_SET,og.get(),prev.get(),true),cps_api_ret_code_OK);
 
+    cps_api_object_list_clear(_found_list.get(),true);
+
+    ASSERT_EQ(cps_api_db_get(og.get(),_found_list.get()),cps_api_ret_code_OK);
+    ASSERT_EQ(cps_api_object_list_size(_found_list.get()),1);
+
+    _updated = cps_api_object_list_get(_found_list.get(),0);
     ASSERT_TRUE(cps_api_object_get_data(prev.get(),BASE_IP_IPV6_DUP_ADDR_DETECT_TRANSMITS)!=nullptr);
-    ASSERT_TRUE(cps_api_object_get_data(og.get(),BASE_IP_IPV6_DUP_ADDR_DETECT_TRANSMITS)==nullptr);
+
+    ASSERT_TRUE(cps_api_object_get_data(_updated,BASE_IP_IPV6_DUP_ADDR_DETECT_TRANSMITS)==nullptr);
+    printf("Updated value\n");
+    cps_api_object_print(_updated);
+
 
     ASSERT_EQ(cps_api_db_commit_one(cps_api_oper_SET,prev.get(),nullptr,true),cps_api_ret_code_OK);
 
@@ -540,8 +571,40 @@ TEST(cps_api_db,cps_general_db_backend) {
     cps_api_object_attr_delete(og.get(),BASE_IP_IPV6_VRF_ID);
     cps_api_object_attr_delete(og.get(),BASE_IP_IPV6_IFINDEX);
 
-    ASSERT_TRUE(cps_api_commit_one(cps_api_oper_DELETE, og.get(), 1, 0)==cps_api_ret_code_OK);
+    ASSERT_EQ(cps_api_commit_one(cps_api_oper_DELETE, og.get(), 1, 0),cps_api_ret_code_OK);
     ASSERT_EQ(cps_general_count(og.get()),0);
+}
+
+TEST(cps_api_db,ignore_comm_errors) {
+
+    cps_api_object_list_guard lg(cps_api_object_list_create());
+    cps_api_object_guard og(cps_api_object_create());
+
+    cps_api_object_t obj = cps_api_object_list_get(Get100(),0);
+
+    cps_api_object_clone(og.get(),obj);
+    cps_api_object_guard prev(cps_api_object_create());
+
+    cps_api_key_set_group(og.get(),"127.0.0.1:6377");
+
+	auto _start = std_get_uptime(nullptr);
+	cps_api_get_objs(og.get(),lg.get(),1,0);
+	auto _end = std_get_uptime(nullptr);
+	ASSERT_TRUE((_end-_start)> 100000);
+
+	//"cps.db.ignore-comm-failure"
+	//"cps.db.comm-failure-retry-delay"
+	//"cps.db.comm-failure-retry-delay-retry"
+
+	cps_api_set_library_flags("cps.db.ignore-comm-failure","1");
+	cps_api_set_library_flags("cps.db.comm-failure-retry-delay","500");
+	cps_api_set_library_flags("cps.db.comm-failure-retry-delay-retry","2");
+
+	_start = std_get_uptime(nullptr);
+	cps_api_get_objs(og.get(),lg.get(),1,0);
+	_end = std_get_uptime(nullptr);
+	ASSERT_TRUE((_end-_start)> 1000*1000*1);
+
 }
 
 int main(int argc, char **argv) {

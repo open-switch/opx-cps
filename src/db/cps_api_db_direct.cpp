@@ -43,18 +43,22 @@
 namespace {
 
 size_t _ignore_communication_errors = 0;
+
 size_t _communication_error_retry_timeout = 200;	//200ms
+size_t _communication_error_retry = (1000/200)*60*20;	//20 minutes
 
 pthread_once_t  onceControl = PTHREAD_ONCE_INIT;
 
 void __init(void) {
     cps_api_update_ssize_on_param_change("cps.db.ignore-comm-failure",(ssize_t*)&_ignore_communication_errors);
-    cps_api_update_ssize_on_param_change("cps.db.comm-failure-retry",(ssize_t*)&_communication_error_retry_timeout);
+    cps_api_update_ssize_on_param_change("cps.db.comm-failure-retry-delay",(ssize_t*)&_communication_error_retry_timeout);
+    cps_api_update_ssize_on_param_change("cps.db.comm-failure-retry",(ssize_t*)&_communication_error_retry);
 }
 
-static inline bool _handle_retry_request(cps_api_return_code_t rc) {
+static inline bool _handle_retry_request(cps_api_return_code_t rc, size_t retry_count) {
 	if (rc==cps_api_ret_code_COMMUNICATION_ERROR &&
 			_ignore_communication_errors!=0) {
+		if (retry_count>=_communication_error_retry) return false;
 		std_usleep((size_t)_communication_error_retry_timeout);
 		return true;
 	}
@@ -131,10 +135,10 @@ bool cps_api_db_get_filter_enable_connection(cps_api_object_t obj) {
 cps_api_return_code_t cps_api_db_get(cps_api_object_t obj,cps_api_object_list_t found) {
 	pthread_once(&onceControl,__init);
 	cps_api_return_code_t _rc=cps_api_ret_code_OK;
-
+	size_t _count = 0;
 	do {
 		_rc = __cps_api_db_operation_get(obj,found);
-		if (_handle_retry_request(_rc)) continue;
+		if (_handle_retry_request(_rc,_count++)) continue;
 		break;
 	} while (true);
 
@@ -167,9 +171,10 @@ static cps_api_return_code_t __cps_api_db_get_bulk(cps_api_object_list_t objs, c
 
 cps_api_return_code_t cps_api_db_get_bulk(cps_api_object_list_t objs, const char * node_group) {
 	cps_api_return_code_t _rc=cps_api_ret_code_OK;
+	size_t _count = 0;
 	do {
 		_rc = __cps_api_db_get_bulk(objs,node_group);
-		if (_handle_retry_request(_rc)) continue;
+		if (_handle_retry_request(_rc,_count++)) continue;
 		break;
 	} while (true);
 
@@ -193,6 +198,12 @@ namespace {
             }
         }
         return _rc;
+    }
+    cps_api_return_code_t __one_pre_load_into_prev_delete(std::vector<std::string> &service_addrs, cps_api_object_t obj,
+    		cps_api_object_t prev) {
+    	cps_api_return_code_t rc = __one_pre_load_into_prev(service_addrs,obj,prev);
+    	if (rc==cps_api_ret_code_ERR) rc = cps_api_ret_code_OK;
+    	return rc;
     }
 
     cps_api_return_code_t __one_pre_load_into_prev_for_set(std::vector<std::string> &service_addrs, cps_api_object_t obj,cps_api_object_t prev) {
@@ -280,7 +291,7 @@ static cps_api_return_code_t __cps_api_db_commit_one(cps_api_operation_types_t o
         cps_api_return_code_t (*handle)(std::vector<std::string> &, cps_api_object_t,cps_api_object_t);
     } pre_hook [cps_api_oper_SET+1] = {
             nullptr/*cps_api_oper_NULL*/,
-            __one_pre_load_into_prev,     /*Delete*/
+			__one_pre_load_into_prev_delete,     /*Delete*/
             nullptr,                    /*Create*/
             __one_pre_load_into_prev_for_set,    /*set*/
     };
@@ -325,9 +336,10 @@ static cps_api_return_code_t __cps_api_db_commit_one(cps_api_operation_types_t o
 
 cps_api_return_code_t cps_api_db_commit_one(cps_api_operation_types_t op,cps_api_object_t obj,cps_api_object_t prev, bool publish) {
 	cps_api_return_code_t _rc=cps_api_ret_code_OK;
+	size_t _count = 0;
 	do {
 		_rc = __cps_api_db_commit_one(op,obj,prev,publish);
-		if (_handle_retry_request(_rc)) continue;
+		if (_handle_retry_request(_rc,_count++)) continue;
 		break;
 	} while (true);
 
@@ -462,9 +474,10 @@ static cps_api_return_code_t __cps_api_db_commit_bulk(cps_api_db_commit_bulk_t *
 
 cps_api_return_code_t cps_api_db_commit_bulk(cps_api_db_commit_bulk_t *param) {
 	cps_api_return_code_t _rc = cps_api_ret_code_OK;
+	size_t _count = 0;
 	do {
 		_rc = __cps_api_db_commit_bulk(param);
-		if (_handle_retry_request(_rc)) continue;
+		if (_handle_retry_request(_rc,_count++)) continue;
 		break;
 	} while (true);
 	return _rc;

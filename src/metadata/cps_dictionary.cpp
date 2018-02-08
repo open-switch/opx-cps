@@ -536,6 +536,8 @@ std::string cps_api_object_attr_data_to_string(cps_api_attr_id_t id, const void 
     CPS_CLASS_DATA_TYPE_t _type = CPS_CLASS_DATA_TYPE_T_BIN;
     cps_class_map_attr_type(id, &_type);
 
+    if (len==0) return "";
+
     switch(_type) {
     case CPS_CLASS_DATA_TYPE_T_UINT8:
         return cps_string::sprintf("%x",*(uint8_t*)data);
@@ -595,8 +597,9 @@ static std::string _escape(std::string data) {
 std::string cps_api_object_attr_as_string(cps_api_attr_id_t id, const void * data, size_t len) {
     const char * _raw_name = cps_attr_id_to_name(id);
     std::string _ret = _raw_name!=nullptr ? _raw_name : cps_string::sprintf("%d",(int)id);
-    std::string _data = cps_api_object_attr_data_to_string(id,data,len);
 
+    std::string _data = cps_api_object_attr_data_to_string(id,data,len);
+    _data += cps_string::sprintf(":(%d)",(int)len);
     return _ret + " : " + _escape(_data);
 }
 
