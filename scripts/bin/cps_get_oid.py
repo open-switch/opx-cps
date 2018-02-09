@@ -34,7 +34,7 @@ if __name__ == '__main__':
         o = cps_object.CPSObject(obj=entry)
         if (_cur_key!=o.get_key()):
             _cur_key = o.get_key()
-            print('\n============%s==========' % _cur_key)
+            print('\n============%s==========\n' % cps.name_from_key(_cur_key,1))
 
         cps_utils.print_obj(o.get(),show_key=False)
         print "------------------------------------------------"
