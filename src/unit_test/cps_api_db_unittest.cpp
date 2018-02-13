@@ -110,12 +110,21 @@ TEST(cps_api_db,internal_db_set_obj) {
     cps_api_object_guard og2(clone);
     cps_api_object_clone(clone,obj);
 
+    cps_api_object_attr_add_u32(clone,111,0);
+
     ASSERT_TRUE(con.connect(DEFAULT_REDIS_ADDR,"0"));
+
+    printf("CPS Objects... \n");
+    cps_api_object_print(obj);
+    cps_api_object_print(clone);
 
     cps_db::delete_object(con,obj);
 
     ASSERT_TRUE(cps_db::store_object(con,obj));
+
     ASSERT_TRUE(cps_db::get_object(con,clone));
+
+    //clone and obj must be the same now... so can't be original one
     ASSERT_TRUE(memcmp(cps_api_object_array(obj),cps_api_object_array(clone),cps_api_object_to_array_len(clone))==0);
 
     cps_db::delete_object(con,obj);
@@ -202,6 +211,7 @@ TEST(cps_api_db,cps_db_standard_api_test) {
     ASSERT_TRUE(cps_api_commit_one(cps_api_oper_CREATE,og.get(),1,100)==cps_api_ret_code_OK);
 
     cps_api_object_set_type_operation(cps_api_object_key(og.get()),cps_api_oper_SET);
+
     ASSERT_TRUE(cps_api_commit_one(cps_api_oper_SET,og.get(),1,100)==cps_api_ret_code_OK);
 
     ASSERT_TRUE(cps_api_object_exact_match(og.get(),true));
@@ -350,6 +360,92 @@ TEST(cps_api_db,direct_delete) {
     ASSERT_EQ(cps_api_db_commit_bulk(&bulk),cps_api_ret_code_OK);
 
     ASSERT_EQ(get_object_count(cps_api_object_list_get(lg.get(),0)),0);
+}
+
+TEST(cps_api_db,stanard_error_codes_set) {
+    //cps_api_db_get cps_api_db_commit_one cps_api_db_commit_bulk
+
+    cps_api_object_list_guard lg(cps_api_object_list_create());
+    cps_api_object_guard og(cps_api_object_create());
+
+    cps_api_object_t obj = cps_api_object_list_get(Get100(),0);
+
+    //set up a few objects (current and make a prev)
+    cps_api_object_clone(og.get(),obj);
+    cps_api_object_guard prev(cps_api_object_create());
+
+
+    //with the operation type being create, do a commit
+    ASSERT_EQ(cps_api_db_commit_one(cps_api_oper_DELETE,og.get(),prev.get(),true),cps_api_ret_code_OK);
+
+    //with the operation type being create, do a commit
+    ASSERT_EQ(cps_api_db_commit_one(cps_api_oper_CREATE,og.get(),prev.get(),true),cps_api_ret_code_OK);
+    //prove that we can set one when there is no data
+
+    ASSERT_EQ(cps_api_db_get(og.get(),lg.get()),cps_api_ret_code_OK);
+    ASSERT_EQ(get_instance_count(og.get()),1);
+
+    cps_api_object_print(cps_api_object_list_get(lg.get(),0));
+
+    //with the operation type being create, do a commit
+    ASSERT_EQ(cps_api_db_commit_one(cps_api_oper_DELETE,og.get(),prev.get(),true),cps_api_ret_code_OK);
+
+    //with the operation type being create, do a commit
+    ASSERT_EQ(cps_api_db_commit_one(cps_api_oper_SET,og.get(),prev.get(),true),cps_api_ret_code_OK);
+    //prove that we can set one when there is no data
+
+    ASSERT_EQ(cps_api_db_get(og.get(),lg.get()),cps_api_ret_code_OK);
+    ASSERT_EQ(get_instance_count(og.get()),1);
+
+    cps_api_object_print(cps_api_object_list_get(lg.get(),0));
+
+
+    ASSERT_EQ(cps_api_db_commit_one(cps_api_oper_DELETE,og.get(),prev.get(),true),cps_api_ret_code_OK);
+
+    cps_api_object_attr_add_u32(og.get(),BASE_IP_IPV6_DUP_ADDR_DETECT_TRANSMITS,10);
+    ASSERT_EQ(cps_api_db_commit_one(cps_api_oper_SET,og.get(),prev.get(),true),cps_api_ret_code_OK);
+
+    ASSERT_TRUE(cps_api_object_get_data(og.get(),BASE_IP_IPV6_DUP_ADDR_DETECT_TRANSMITS)!=nullptr);
+    ASSERT_TRUE(cps_api_object_get_data(prev.get(),BASE_IP_IPV6_DUP_ADDR_DETECT_TRANSMITS)==nullptr);
+
+    cps_api_object_list_guard _found_list(cps_api_object_list_create());
+    ASSERT_EQ(cps_api_db_get(og.get(),_found_list.get()),cps_api_ret_code_OK);
+
+    ASSERT_EQ(cps_api_object_list_size(_found_list.get()),1);
+    cps_api_object_t _updated = cps_api_object_list_get(_found_list.get(),0);
+    printf("Updated object in the db\n");
+    cps_api_object_print(_updated);
+
+    ASSERT_TRUE(cps_api_object_get_data(_updated,BASE_IP_IPV6_DUP_ADDR_DETECT_TRANSMITS)!=nullptr);
+    ASSERT_EQ(*(uint32_t*)cps_api_object_get_data(_updated,BASE_IP_IPV6_DUP_ADDR_DETECT_TRANSMITS),10);
+
+
+    cps_api_object_attr_delete(og.get(),BASE_IP_IPV6_DUP_ADDR_DETECT_TRANSMITS);
+    cps_api_object_print(og.get());
+
+    cps_api_object_attr_add(og.get(),BASE_IP_IPV6_DUP_ADDR_DETECT_TRANSMITS,nullptr,0);
+    printf("Current after add\n");
+    cps_api_object_print(og.get());
+
+    ASSERT_EQ(cps_api_db_commit_one(cps_api_oper_SET,og.get(),prev.get(),true),cps_api_ret_code_OK);
+
+    cps_api_object_list_clear(_found_list.get(),true);
+
+    ASSERT_EQ(cps_api_db_get(og.get(),_found_list.get()),cps_api_ret_code_OK);
+    ASSERT_EQ(cps_api_object_list_size(_found_list.get()),1);
+
+    _updated = cps_api_object_list_get(_found_list.get(),0);
+    ASSERT_TRUE(cps_api_object_get_data(prev.get(),BASE_IP_IPV6_DUP_ADDR_DETECT_TRANSMITS)!=nullptr);
+
+    ASSERT_TRUE(cps_api_object_get_data(_updated,BASE_IP_IPV6_DUP_ADDR_DETECT_TRANSMITS)==nullptr);
+    printf("Updated value\n");
+    cps_api_object_print(_updated);
+
+
+    ASSERT_EQ(cps_api_db_commit_one(cps_api_oper_SET,prev.get(),nullptr,true),cps_api_ret_code_OK);
+
+    ASSERT_EQ(cps_api_db_commit_one(cps_api_oper_DELETE,prev.get(),nullptr,true),cps_api_ret_code_OK);
+
 }
 
 

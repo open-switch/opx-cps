@@ -188,8 +188,6 @@ cps_api_return_code_t cps_api_db_get_bulk(cps_api_object_list_t objs, const char
 namespace {
     cps_api_return_code_t __one_pre_load_into_prev(std::vector<std::string> &service_addrs, cps_api_object_t obj,
             cps_api_object_t prev) {
-        if (prev==nullptr) return cps_api_ret_code_OK;
-
         cps_api_return_code_t _rc = cps_api_ret_code_ERR;
         std::vector<char> key;
         if (!cps_db::dbkey_from_instance_key(key,obj,false)) return cps_api_ret_code_ERR;
@@ -200,27 +198,32 @@ namespace {
             if (cps_db::get_object(r.get(),key,prev,&_rc)) {
                 return cps_api_ret_code_OK;
             }
+            if (_rc==cps_api_ret_code_NO_EXIST) break;    //no sense in checking
         }
         return _rc;
     }
     cps_api_return_code_t __one_pre_load_into_prev_delete(std::vector<std::string> &service_addrs, cps_api_object_t obj,
             cps_api_object_t prev) {
-        cps_api_return_code_t rc = __one_pre_load_into_prev(service_addrs,obj,prev);
-        if (rc==cps_api_ret_code_ERR) rc = cps_api_ret_code_OK;
-        return rc;
+        (void)__one_pre_load_into_prev(service_addrs,obj,prev);
+        EV_LOGGING(CPS-DB-COMM-ONE,DEBUG,"COMMIT-PRE-DEL","Prev objects is %s",cps_api_object_to_c_string(prev).c_str());
+        return cps_api_ret_code_OK;
     }
 
     cps_api_return_code_t __one_pre_load_into_prev_for_set(std::vector<std::string> &service_addrs, cps_api_object_t obj,cps_api_object_t prev) {
-        cps_api_return_code_t rc = __one_pre_load_into_prev(service_addrs,obj,prev);
-        if (rc!=cps_api_ret_code_OK) return cps_api_ret_code_OK;
+
+        (void)__one_pre_load_into_prev(service_addrs,obj,prev);
+        EV_LOGGING(CPS-DB-COMM-ONE,DEBUG,"COMMIT-PRE-SET","Prev objects is %s",cps_api_object_to_c_string(prev).c_str());
+
 
         //in this case, if there is no valid key in the prev object - it doesn't exist or wasn't retrievable.
         if (cps_api_key_matches(cps_api_object_key(obj),cps_api_object_key(prev),true)!=0) {
+            EV_LOGGING(CPS-DB-COMM-ONE,DEBUG,"COMMIT-PRE-SET","Initiing object to match %s",cps_api_object_to_c_string(obj).c_str());
+            //if the object key was invalid create a new blank object and return it into the prev
             cps_api_object_guard og(cps_api_object_create());
             cps_api_key_copy(cps_api_object_key(og.get()),cps_api_object_key(obj));
             cps_api_object_swap(og.get(),prev);
         }
-        return rc;
+        return cps_api_ret_code_OK;
     }
 
     cps_api_return_code_t __one_handle_delete(std::vector<std::string> &l, cps_api_object_t obj,cps_api_object_t prev) {
@@ -229,6 +232,7 @@ namespace {
             cps_db::connection_request r(cps_db::ProcessDBCache(),it.c_str());
             if (!r.valid()) { rc = cps_api_ret_code_COMMUNICATION_ERROR; continue; }
             (void)cps_db::delete_object(r.get(),obj,&rc);
+            EV_LOGGING(CPS-DB-COMM-ONE,DEBUG,"COMMIT-DELETE","Deleting object %s",cps_api_object_to_c_string(obj).c_str());
             if (rc!=cps_api_ret_code_COMMUNICATION_ERROR) rc=cps_api_ret_code_OK;
         }
         return rc;    //ignore merge issue
@@ -244,6 +248,7 @@ namespace {
                     rc = cps_api_ret_code_COMMUNICATION_ERROR;
                 continue;
             }
+            EV_LOGGING(CPS-DB-COMM-ONE,DEBUG,"COMMIT-CREATE","Storing %s",cps_api_object_to_c_string(obj).c_str());
             if (!cps_db::store_object(r.get(),obj)) {
                 if (!_continue_on_failure(obj)) return cps_api_ret_code_COMMUNICATION_ERROR;
                 continue;
@@ -266,6 +271,7 @@ namespace {
 
             cps_db::connection_request r(cps_db::ProcessDBCache(),it.c_str());
             if (!r.valid()) continue;
+            EV_LOGGING(CPS-DB-COMM-ONE,DEBUG,"COMMIT-SET","Storing %s",cps_api_object_to_c_string(merged.get()).c_str());
             if (!cps_db::store_object(r.get(),merged.get())) {
                 if (!_continue_on_failure(obj)) return cps_api_ret_code_COMMUNICATION_ERROR;
                 continue;
@@ -301,7 +307,13 @@ static cps_api_return_code_t __cps_api_db_commit_one(cps_api_operation_types_t o
     };
     cps_api_return_code_t rc = cps_api_ret_code_OK;
 
-    if(pre_hook[op].handle!=nullptr) rc = pre_hook[op].handle(lst,obj,prev);
+    if(pre_hook[op].handle!=nullptr) {
+        rc = pre_hook[op].handle(lst,obj,prev);
+        EV_LOGGING(CPS-DB-COMM-ONE,INFO,"COMMIT","Pre-commit handler for op %d result is %d",
+                (int)op,(int)rc);
+        EV_LOGGING(CPS-DB-COMM-ONE,INFO,"COMMIT","Committed objects are %s and %s",
+                cps_api_object_to_c_string(obj).c_str(),cps_api_object_to_c_string(prev).c_str());
+    }
 
     if (rc!=cps_api_ret_code_OK) {
         EV_LOGGING(DSAPI,ERR,"CPS-DB-IF","Prehook failed for operation %d",(int)op);
@@ -316,7 +328,11 @@ static cps_api_return_code_t __cps_api_db_commit_one(cps_api_operation_types_t o
             __one_handle_set
     };
 
-    if(handlers[op].handle!=nullptr) rc = handlers[op].handle(lst,obj,prev);
+    if(handlers[op].handle!=nullptr) {
+        rc = handlers[op].handle(lst,obj,prev);
+        EV_LOGGING(CPS-DB-COMM-ONE,INFO,"COMMIT","Commit handler for op %d result is %d",
+                (int)op,(int)rc);
+    }
 
     if (rc!=cps_api_ret_code_OK) {
         EV_LOGGING(DSAPI,ERR,"CPS-DB-IF","Update failed for operation %d",(int)op);

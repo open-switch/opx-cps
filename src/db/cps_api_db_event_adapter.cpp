@@ -65,6 +65,8 @@ struct db_connection_details {
 struct __db_event_handle_t {
     std::recursive_mutex _mutex;
 
+    std::unordered_map<std::vector<char>,std::string,cps_utils::vector_hash<char>> _key_translation;
+
     std::unordered_map<std::string,std::vector<std::vector<char>>> _group_keys;
 
     std::unordered_map<std::string,std::unique_ptr<cps_db::connection>> _connections;
@@ -184,7 +186,7 @@ static void __resync_regs(cps_api_event_service_handle_t handle) {
                 [nd,&it,&handle,&_connections_changed](const std::string &node) ->bool {
             //occurs one for each node in the group
             auto con_it = nd->_connections.find(node);
-            if (con_it==nd->_connections.end()) {    //if the connection is good
+            if (con_it==nd->_connections.end()) {    //if the connection is not so good
                 return true;
             }
 
@@ -202,6 +204,14 @@ static void __resync_regs(cps_api_event_service_handle_t handle) {
                     return true;
                 }
                 nd->_connection_mon[node]._keys.insert(reg_it);
+
+                //
+                auto _k_it = nd->_key_translation.find(reg_it);
+                if (_k_it!=nd->_key_translation.end()) {
+                    EV_LOGGING(CPS-DB-CONN,INFO,"EVT-REG","Syncing registration for %s to the backend %s",
+                            _k_it->second.c_str(),node.c_str());
+                }
+
             }
             nd->_connection_mon[node]._group_reg[it.first] = true;
             return true;
@@ -301,6 +311,7 @@ static cps_api_return_code_t _register_one_object(cps_api_event_service_handle_t
     }
 
     try {
+        nh->_key_translation[_key] = cps_api_object_to_c_string(object);
         nh->_group_keys[_group].push_back(std::move(_key));    //add this key to the group
     } catch(std::exception &e) {
         return cps_api_ret_code_ERR;
@@ -508,6 +519,8 @@ static cps_api_return_code_t _cps_api_wait_for_event(
                     if(cps_api_db_get_node_from_ip(it.first,node_name)) {
                         cps_api_object_attr_add(msg,CPS_OBJECT_GROUP_NODE,node_name.c_str(),node_name.size()+1);
                     }
+                    EV_LOGGING(CPS-DB-EV-CONN,INFO,"EVT-WAIT","Waiting for event returned %s",
+                            cps_api_object_to_c_string(msg).c_str());
                     return cps_api_ret_code_OK;
                 } else {
                     if (_has_error) {

@@ -39,8 +39,9 @@ using _cps_event_queue_elem_t = std::tuple<std::string,cps_api_object_t>;
 using _cps_event_queue_list_t = std::vector<_cps_event_queue_elem_t>;
 
 namespace {
-const size_t _TOTAL_MAX_INFLIGHT_EVENTS = 100000;
 
+const size_t _TOTAL_MAX_INFLIGHT_EVENTS = 100000;
+static size_t _event_flush_timeout=3000;
 _cps_event_flush _flush_on_exit;
 
 auto _events = new _cps_event_queue_list_t;
@@ -48,7 +49,7 @@ auto _events = new _cps_event_queue_list_t;
 pthread_once_t __one_time_only;
 std::mutex __mutex;
 std::condition_variable __event_wait;
-std::thread * __event_thread;
+
 size_t _published = 0;
 size_t _pushed = 0;
 
@@ -103,33 +104,34 @@ bool _send_event(cps_db::connection *conn, cps_api_object_t obj){
     return true;
 }
 
-bool _drain_connection(cps_db::connection &conn) {
-    cps_api_select_guard sg(cps_api_select_alloc_read());
-    if (!sg.valid()) {
-        return false;
-    }
-    size_t _fd = conn.get_fd();
-    sg.add_fd(_fd);
-
-    while (sg.get_event(0)) {
+bool _drain_connection(cps_db::connection &conn, size_t amount) {
+    EV_LOGGING(CPS-DB-EV-CONN,INFO,"DRAIN-EV","Draining %d events",amount);
+    for ( ; amount > 0 ; --amount ) {
         cps_db::response_set resp;
-        if (!conn.response(resp)) {
+        if (!conn.response(resp,_event_flush_timeout)) {
             conn.reconnect();
+            EV_LOGGING(CPS-DB-EV-CONN,INFO,"DRAIN-EV","Draining failed - remaining %d",amount);
             return false;
         }
     }
+    EV_LOGGING(CPS-DB-EV-CONN,INFO,"DRAIN-EV","All events drained");
     return true;
 }
 
 bool _change_connection(std::string &current_address, const std::string &new_addr,
-        cps_db::connection *& _conn ) {
+        cps_db::connection *& _conn, size_t wait_for) {
 
     const std::string _db_key = current_address;
     current_address = "";
 
     if (_conn!=nullptr) {
-        _conn->flush();    //clean up existing events
-        _drain_connection(*_conn);
+        if (_conn->flush(_event_flush_timeout)) {
+            if (!_drain_connection(*_conn, wait_for)) {
+            	EV_LOGGING(CPS-DB-EV-CONN,ERR,"EV-DRAIN","Failed to drain responses from server");
+            }
+        } else {
+        	EV_LOGGING(CPS-DB-EV-CONN,ERR,"EV-FLUSH","Failed to flush events to server");
+        }
         cps_db::ProcessDBEvents().put(_db_key,_conn);    //store the handles
     }
 
@@ -149,6 +151,8 @@ bool _change_connection(std::string &current_address, const std::string &new_add
 
 bool _process_list(_cps_event_queue_list_t &current) {
     bool _halted = false;
+    size_t _sent = 0;
+
     std::string current_addr="";
     cps_db::connection *conn=nullptr;
 
@@ -163,7 +167,7 @@ bool _process_list(_cps_event_queue_list_t &current) {
         }
 
         if (current_addr!=_addr) {
-            if (!_change_connection(current_addr,_addr,conn)) {
+            if (!_change_connection(current_addr,_addr,conn,_sent)) {
                 _halted = true;
                 break;
             }
@@ -177,13 +181,14 @@ bool _process_list(_cps_event_queue_list_t &current) {
             _halted = true;
             break;
         }
+        ++_sent;
         ++_pushed;
         cps_api_object_delete(_obj);
         std::get<1>(it) = nullptr;
     }
 
     if (conn!=nullptr) {
-        _change_connection(current_addr,"",conn);
+        _change_connection(current_addr,"",conn,_sent);
     }
     return !_halted;
 }
@@ -199,7 +204,7 @@ void _remove_x_events(size_t ix, size_t mx, _cps_event_queue_list_t &events) {
     events.erase(events.begin()+ix,events.begin()+mx);
 }
 
-void __thread_main_loop() {
+void *__thread_main_loop(void *param) {
     std::unique_lock<std::mutex> l(__mutex);
 
     size_t _MAX_TIMEOUT=1000;
@@ -246,14 +251,24 @@ void __thread_main_loop() {
 
         l.lock();
     }
+    return nullptr;
 }
 
 }
+#include "std_thread_tools.h"
+
+static std_thread_create_param_t _event_pushing_thread;
 
 static void __cps_api_event_thread_push_init() {
-    __event_thread = new std::thread([](){
-        __thread_main_loop();
-    });
+
+    std_thread_init_struct(&_event_pushing_thread) ;
+    _event_pushing_thread.name = "CPS-Event-Sync";
+    _event_pushing_thread.thread_function = __thread_main_loop;
+
+    t_std_error rc = std_thread_create(&_event_pushing_thread);
+    if (rc!=STD_ERR_OK) {
+        EV_LOGGING(CPS,ERR,"CPS-EVENTS","Failed to create the event thread.  Resources?");
+    }
 }
 
 bool cps_db::publish(cps_db::connection &conn, cps_api_object_t obj) {
@@ -276,6 +291,9 @@ bool cps_db::publish(cps_db::connection &conn, cps_api_object_t obj) {
     }
     }
     __event_wait.notify_one();
+    if ((_published%10000)==0) {
+        EV_LOGGING(CPS-DB-EV-CONN,INFO,"EVENT-PUSH","Pushed %d events",(int)_published);
+    }
     ++_published;
     return true;
 }

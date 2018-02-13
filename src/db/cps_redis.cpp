@@ -40,9 +40,6 @@
 
 static std::mutex _mutex;
 
-
-
-
 bool cps_db::ping(cps_db::connection &conn, size_t timeoutms) {
     cps_db::connection::db_operation_atom_t e;
     e.from_string("PING");
@@ -122,7 +119,7 @@ bool cps_db::delete_object(cps_db::connection &conn,cps_api_object_t obj, cps_ap
     cps_db::set_return_code(rc,cps_api_ret_code_OK);
     bool _is_wildcard =false;
     if (!cps_db::dbkey_instance_or_wildcard(key,obj,_is_wildcard)) {
-    	cps_db::set_return_code(rc,cps_api_ret_code_ERR);
+        cps_db::set_return_code(rc,cps_api_ret_code_ERR);
         return false;
     }
     if (!_is_wildcard) {
@@ -138,7 +135,7 @@ bool cps_db::delete_object(cps_db::connection &conn,cps_api_object_t obj, cps_ap
 }
 
 bool cps_db::get_objects(cps_db::connection &conn, cps_api_object_t obj,cps_api_object_list_t obj_list,
-		cps_api_return_code_t *rc) {
+        cps_api_return_code_t *rc) {
     std::vector<char> k;
     bool wildcard = false;
 
@@ -147,8 +144,8 @@ bool cps_db::get_objects(cps_db::connection &conn, cps_api_object_t obj,cps_api_
         if (!cps_db::dbkey_from_instance_key(k,obj,true)) return false;
     } else {    //otherwise guess from attributes provided
         if (!cps_db::dbkey_instance_or_wildcard(k,obj,wildcard)) {
-        	cps_db::set_return_code(rc,cps_api_ret_code_PARAM_INVALID);
-        	return false;
+            cps_db::set_return_code(rc,cps_api_ret_code_PARAM_INVALID);
+            return false;
         }
     }
 
@@ -301,9 +298,7 @@ bool cps_db::set_object_request(cps_db::connection &conn, cps_api_object_t obj, 
 }
 
 bool cps_db::set_object_response(cps_db::connection &conn) {
-
     cps_db::response_set resp;
-
     if (conn.response(resp)) {
         //this level of validation is really not needed since all respnses are valid (no fail besides connection)
         cps_db::response r = resp.get_response(0);
@@ -322,19 +317,25 @@ bool cps_db::get_object_request(cps_db::connection &conn, const char*key, size_t
 }
 
 bool cps_db::get_object_response(cps_db::connection &conn, cps_api_object_t obj,
-		cps_api_return_code_t *rc) {
+        cps_api_return_code_t *rc) {
     cps_db::response_set resp;
 
     if (conn.response(resp,cps_db::connection::_SELECT_MS_WAIT,rc)) {
         response r = resp.get_response(0);
-        cps_db::set_return_code(rc,cps_api_ret_code_ERR);
-        if (r.is_str()) {
-        	if (cps_api_array_to_object(r.get_str(),r.get_str_len(),obj)) {
 
-        		cps_db::set_return_code(rc,cps_api_ret_code_OK);
-        		return true;
-        	}
-        	cps_db::set_return_code(rc,cps_api_ret_code_CORRUPT);
+        if (r.is_nill()) {    //if nill - then doesn't exist
+            cps_db::set_return_code(rc,cps_api_ret_code_NO_EXIST);
+            return false;
+        }
+
+        cps_db::set_return_code(rc,cps_api_ret_code_ERR);
+
+        if (r.is_str()) {
+            if (cps_api_array_to_object(r.get_str(),r.get_str_len(),obj)) {
+                cps_db::set_return_code(rc,cps_api_ret_code_OK);
+                return true;
+            }
+            cps_db::set_return_code(rc,cps_api_ret_code_CORRUPT);
         }
     }
     return false;
