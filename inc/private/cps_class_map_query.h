@@ -88,8 +88,10 @@ const char * cps_operation_type_to_string(cps_api_operation_types_t data);
  */
 cps_api_attr_id_t *cps_api_attr_name_to_id(const char *name);
 
-
+extern "C" {
+//Load the CPS yang model definitions
 t_std_error cps_api_yang_module_init(void);
+}
 
 /**
  * Find the key attribute list for an object.  Default key offset is 1 as we are skipping the qualifier (target/observed/etc..)

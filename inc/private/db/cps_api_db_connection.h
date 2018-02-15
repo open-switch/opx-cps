@@ -44,8 +44,9 @@ class response_set;
 
 //Note.. this is not a multthread safe class - not expected to at this point.
 class connection {
-    enum { _SELECT_MS_WAIT = (2000) };
+
 public:
+	enum { _SELECT_MS_WAIT = (2000) };
     enum error_rc_e { 	error_rc_e_timeout=1,	//timeout during communication
     					error_rc_e_channel=2, 	//the specific communication channel
 						error_rc_e_response=3,	//response
@@ -85,11 +86,12 @@ public:
     std::string addr() { return _addr; } //make a copy.. since reconnects could change it in the future
 
     bool command(db_operation_atom_t * lst,size_t len,response_set &set,
-    		size_t timeoutms=_SELECT_MS_WAIT);
-    bool response(response_set &data, size_t timeoutms=_SELECT_MS_WAIT);
+    		size_t timeoutms=_SELECT_MS_WAIT, cps_api_return_code_t *rc=nullptr);
+    bool response(response_set &data, size_t timeoutms=_SELECT_MS_WAIT, cps_api_return_code_t *rc=nullptr);
 
-    bool operation(db_operation_atom_t * lst,size_t len, bool force_flush=false, size_t timeoutms=_SELECT_MS_WAIT);
-    bool flush(size_t timeoutms=_SELECT_MS_WAIT);
+    bool operation(db_operation_atom_t * lst,size_t len, bool force_flush=false,
+    		size_t timeoutms=_SELECT_MS_WAIT, cps_api_return_code_t *rc=nullptr);
+    bool flush(size_t timeoutms=_SELECT_MS_WAIT, cps_api_return_code_t *rc=nullptr);
 
     /**
      * Check for any pending events, check the redis context for data and then finally read from the socket
@@ -98,13 +100,13 @@ public:
      * @param err a flag that will be set if there is any errors
      * @return true if successful otherwise false
      */
-    bool get_event(response_set &data,bool &err);
+    bool get_event(response_set &data,bool &err, cps_api_return_code_t *rc=nullptr);
     /**
      * Check the redis context for data but don't read from socket - fast non-blocking call
      * @param err a flag that indicates if there was an error with the context
      * @return true if there is an event waiting otherwise false
      */
-    bool has_event(bool &err);
+    bool has_event(bool &err, cps_api_return_code_t *rc=nullptr);
 
     void update_used();
     void reset_last_used() { _last_used = 0; }
@@ -118,8 +120,8 @@ public:
         return _rc;
     }
 private:
-    bool readable(size_t timeoutms);
-    bool writable(size_t timeoutms);
+    bool readable(size_t timeoutms, cps_api_return_code_t *rc=nullptr);
+    bool writable(size_t timeoutms, cps_api_return_code_t *rc=nullptr);
 
     //The IP addresss
     std::string _addr ;
