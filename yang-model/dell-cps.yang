@@ -185,6 +185,11 @@ module dell-base-cps {
     	This is used internally for debugging purposes only.";
     	type uint64;
     }
+    leaf timestamp {
+    	description "This is the timestamp of when the event is generated.";
+    	type uint64;
+    }
+    
   }
 
   list connection-entry {

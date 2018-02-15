@@ -413,7 +413,7 @@ bool cps_db::connection::flush(size_t timeoutms, cps_api_return_code_t *rc) {
             if (timeoutms==_SELECT_MS_WAIT)timeoutms = _timeout_remote;
         }
         if (!writable(timeoutms,rc)) {
-            EV_LOGGING(CPS-DB-CONN,ERR,"FLUSH","Sending buffer full - terminating..");
+            EV_LOGGING(CPS-DB-CONN,ERR,"FLUSH","Sending buffer full - terminating.. (%d)",(timeoutms));
             reconnect(); return false;
         }
         if (_ctx==nullptr) //if the redis connection is not valid its not going to work

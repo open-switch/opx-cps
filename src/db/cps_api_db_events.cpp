@@ -13,6 +13,7 @@
 #include "cps_api_db_response.h"
 #include "cps_api_vector_utils.h"
 #include "cps_api_select_utils.h"
+#include "cps_class_map_query.h"
 
 #include "cps_string_utils.h"
 
@@ -25,9 +26,9 @@
 #include <mutex>
 #include <condition_variable>
 #include <tuple>
-#include <thread>
-#include <chrono>
 
+#include <chrono>
+#include <pthread.h>
 
 class _cps_event_flush {
 public:
@@ -40,8 +41,10 @@ using _cps_event_queue_list_t = std::vector<_cps_event_queue_elem_t>;
 
 namespace {
 
-const size_t _TOTAL_MAX_INFLIGHT_EVENTS = 100000;
+size_t _LOG_INTERVAL = 1000;
+size_t _TOTAL_MAX_INFLIGHT_EVENTS = 100000;
 static size_t _event_flush_timeout=3000;
+
 _cps_event_flush _flush_on_exit;
 
 auto _events = new _cps_event_queue_list_t;
@@ -54,6 +57,7 @@ size_t _published = 0;
 size_t _pushed = 0;
 
 }
+
 
 bool cps_db::subscribe(cps_db::connection &conn, std::vector<char> &key) {
     cps_db::connection::db_operation_atom_t e[2];
@@ -152,7 +156,8 @@ bool _change_connection(std::string &current_address, const std::string &new_add
 bool _process_list(_cps_event_queue_list_t &current) {
     bool _halted = false;
     size_t _sent = 0;
-
+    size_t _pid = getpid();
+    static size_t _count = 0;
     std::string current_addr="";
     cps_db::connection *conn=nullptr;
 
@@ -176,6 +181,10 @@ bool _process_list(_cps_event_queue_list_t &current) {
             _halted = true;
             break;
         }
+        std_uptime_get
+        cps_api_object_attr_add_u64(_obj,CPS_OBJECT_GROUP_THREAD_ID,_pid);
+        cps_api_object_attr_add_u64(_obj,CPS_OBJECT_GROUP_SEQUENCE,_count);
+        cps_api_object_attr_add_u64(_obj,CPS_OBJECT_GROUP_SEQUENCE,_count);
 
         if (!_send_event(conn,_obj)) {
             _halted = true;
@@ -269,6 +278,17 @@ static void __cps_api_event_thread_push_init() {
     if (rc!=STD_ERR_OK) {
         EV_LOGGING(CPS,ERR,"CPS-EVENTS","Failed to create the event thread.  Resources?");
     }
+
+    cps_api_update_ssize_on_param_change("cps.events.max-queued",
+            (ssize_t*)&_TOTAL_MAX_INFLIGHT_EVENTS);
+
+    cps_api_update_ssize_on_param_change("cps.events.flush-timeout",
+            (ssize_t*)&_event_flush_timeout);
+
+    cps_api_update_ssize_on_param_change("cps.events.log-every-x",
+            (ssize_t*)&_LOG_INTERVAL);
+    _LOG_INTERVAL
+
 }
 
 bool cps_db::publish(cps_db::connection &conn, cps_api_object_t obj) {

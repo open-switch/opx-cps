@@ -72,6 +72,8 @@ struct __db_event_handle_t {
     std::unordered_map<std::string,std::unique_ptr<cps_db::connection>> _connections;
     std::unordered_map<std::string,db_connection_details> _connection_mon;
 
+    std::unordered_map<size_t,size_t> _sequence_tracker;
+
     cps_api_key_cache<std::vector<cps_api_object_t>> _filters;
 
     fd_set _connection_set;
@@ -519,8 +521,20 @@ static cps_api_return_code_t _cps_api_wait_for_event(
                     if(cps_api_db_get_node_from_ip(it.first,node_name)) {
                         cps_api_object_attr_add(msg,CPS_OBJECT_GROUP_NODE,node_name.c_str(),node_name.size()+1);
                     }
-                    EV_LOGGING(CPS-DB-EV-CONN,INFO,"EVT-WAIT","Waiting for event returned %s",
+                    EV_LOGGING(CPS-DB-EV-CONN,DEBUG,"EVT-WAIT","Waiting for event returned %s",
                             cps_api_object_to_c_string(msg).c_str());
+
+                    //_sequence_tracker
+                    uint64_t*_id = (uint64_t*)cps_api_object_get_data(msg,CPS_OBJECT_GROUP_THREAD_ID);
+                    uint64_t*_seq = (uint64_t*)cps_api_object_get_data(msg,CPS_OBJECT_GROUP_SEQUENCE);
+                    if (_id!=nullptr && _seq!=nullptr) {
+                    	if (nh->_sequence_tracker[*_id]>=(*_seq)) {
+                    		EV_LOGGING(CPS-DB-EV-CONN,WARNING,"EVT-RECV","Recieved a unusual sequence number %d:%d"
+                    				, (int)*_id,(int)*_seq);
+                    	} else {
+                    		nh->_sequence_tracker[*_id]=*_seq;//don't increase in negative case
+                    	}
+                    }
                     return cps_api_ret_code_OK;
                 } else {
                     if (_has_error) {
