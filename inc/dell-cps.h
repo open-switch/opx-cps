@@ -1,11 +1,7 @@
+/*Source file name -> dell-base-cps*/
 
 /*
-* source file : dell-base-cps.h
-*/
-
-
-/*
-* Copyright (c) 2015 Dell Inc.
+* Copyright (c) 2017 Dell Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License"); you may
 * not use this file except in compliance with the License. You may obtain
@@ -22,9 +18,11 @@
 #ifndef DELL_BASE_CPS_H
 #define DELL_BASE_CPS_H
 
+
 #include "cps_api_operation.h"
 #include <stdint.h>
 #include <stdbool.h>
+
 
 
 #define cps_api_obj_CAT_CPS (2) 
@@ -33,7 +31,7 @@
 
 
 
-/* Enumeration cps:config-type */
+/* Object cps/node-group/node */
 
 typedef enum { 
 /*The name of the node entry. (an alias for the ip)*/
@@ -186,6 +184,18 @@ Eg..1 in the get case, with 3 object filters, if there is no results or a failur
 CPS will ignore the error and continue.*/
 /*type=boolean*/ 
   CPS_OBJECT_GROUP_CONTINUE_ON_FAILURE = 131116,
+/*This field will hold a CPS internal sequence number.  This 
+number will be used to determine if duplicate events are being sent and
+to help track out of order events.*/
+/*type=uint64*/ 
+  CPS_OBJECT_GROUP_SEQUENCE = 131117,
+/*The thread ID of the person making the request or sending the event.
+This is used internally for debugging purposes only.*/
+/*type=uint64*/ 
+  CPS_OBJECT_GROUP_THREAD_ID = 131118,
+/*This is the timestamp of when the event is generated.*/
+/*type=uint64*/ 
+  CPS_OBJECT_GROUP_TIMESTAMP = 131119,
 } CPS_OBJECT_GROUP_t;
 /* Object cps/node-group */
 

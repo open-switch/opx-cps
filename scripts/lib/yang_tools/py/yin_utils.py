@@ -115,6 +115,7 @@ def get_type(node):
 
 def create_yin_file(yang_file, yin_file):
     yang_file = search_path_for_file(yang_file)
+    print("Opening %s yang file and placing it in %s" %(yang_file,yin_file))
     general_utils.run_cmd(['pyang', '-o', yin_file, '-f', 'yin', yang_file])
 
 
