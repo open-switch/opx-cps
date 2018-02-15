@@ -40,9 +40,9 @@ using _cps_event_queue_elem_t = std::tuple<std::string,cps_api_object_t>;
 using _cps_event_queue_list_t = std::vector<_cps_event_queue_elem_t>;
 
 namespace {
-
 size_t _LOG_INTERVAL = 1000;
 size_t _TOTAL_MAX_INFLIGHT_EVENTS = 100000;
+size_t _TOTAL_MAX_INFLIGHT_EVENTS_REDLINE = _TOTAL_MAX_INFLIGHT_EVENTS*2;
 static size_t _event_flush_timeout=3000;
 
 _cps_event_flush _flush_on_exit;
@@ -50,6 +50,7 @@ _cps_event_flush _flush_on_exit;
 auto _events = new _cps_event_queue_list_t;
 
 pthread_once_t __one_time_only;
+
 std::mutex __mutex;
 std::condition_variable __event_wait;
 
@@ -131,10 +132,10 @@ bool _change_connection(std::string &current_address, const std::string &new_add
     if (_conn!=nullptr) {
         if (_conn->flush(_event_flush_timeout)) {
             if (!_drain_connection(*_conn, wait_for)) {
-            	EV_LOGGING(CPS-DB-EV-CONN,ERR,"EV-DRAIN","Failed to drain responses from server");
+                EV_LOGGING(CPS-DB-EV-CONN,ERR,"EV-DRAIN","Failed to drain responses from server");
             }
         } else {
-        	EV_LOGGING(CPS-DB-EV-CONN,ERR,"EV-FLUSH","Failed to flush events to server");
+            EV_LOGGING(CPS-DB-EV-CONN,ERR,"EV-FLUSH","Failed to flush events to server");
         }
         cps_db::ProcessDBEvents().put(_db_key,_conn);    //store the handles
     }
@@ -157,7 +158,6 @@ bool _process_list(_cps_event_queue_list_t &current) {
     bool _halted = false;
     size_t _sent = 0;
     size_t _pid = getpid();
-    static size_t _count = 0;
     std::string current_addr="";
     cps_db::connection *conn=nullptr;
 
@@ -181,10 +181,9 @@ bool _process_list(_cps_event_queue_list_t &current) {
             _halted = true;
             break;
         }
-        std_uptime_get
+
         cps_api_object_attr_add_u64(_obj,CPS_OBJECT_GROUP_THREAD_ID,_pid);
-        cps_api_object_attr_add_u64(_obj,CPS_OBJECT_GROUP_SEQUENCE,_count);
-        cps_api_object_attr_add_u64(_obj,CPS_OBJECT_GROUP_SEQUENCE,_count);
+        cps_api_object_attr_add_u64(_obj,CPS_OBJECT_GROUP_SEQUENCE,_pushed++);
 
         if (!_send_event(conn,_obj)) {
             _halted = true;
@@ -203,6 +202,10 @@ bool _process_list(_cps_event_queue_list_t &current) {
 }
 
 void _remove_x_events(size_t ix, size_t mx, _cps_event_queue_list_t &events) {
+    const auto _events_len = events.size();
+    if (mx > _events_len) {
+        mx = _events_len;
+    }
     for (size_t _ix=ix ; _ix < mx ; ++_ix ) {
         cps_api_object_t &_ptr = std::get<1>((events)[_ix]);
         cps_api_object_t _obj = _ptr;
@@ -248,10 +251,24 @@ void *__thread_main_loop(void *param) {
 
         if (!_process_list(_current)) {    //need to handle the case of the system never working.. need to throw away events at some point
             l.lock();
-            if (_events->size()>(_TOTAL_MAX_INFLIGHT_EVENTS*2)) {
-                size_t mx = _events->size()-_TOTAL_MAX_INFLIGHT_EVENTS;
-                EV_LOGGING(DSAPI,ERR,"CPS-EVT","Not possible to forward events - emptying...%d events",mx);
-                _remove_x_events(0,mx,*_events);
+            if (_events->size() > (_TOTAL_MAX_INFLIGHT_EVENTS_REDLINE)) {
+                //shrink it down to size of event list and the size of the new list
+
+                auto _limit = [](_cps_event_queue_list_t &lst, size_t limit) -> void {
+                    if (lst.size() > limit) {
+                        size_t _len = lst.size();
+                        size_t _issue = _len - limit;
+                        _remove_x_events(_issue,_len,lst);
+                    }
+                };
+
+                auto _val = _current.size()+_events->size()- _TOTAL_MAX_INFLIGHT_EVENTS;
+
+                EV_LOGGING(DSAPI,ERR,"CPS-EVT","Not possible to forward events - emptying...%d events",
+                        _val);
+                _limit(_current,_TOTAL_MAX_INFLIGHT_EVENTS);
+                _limit(*_events,(size_t)( _TOTAL_MAX_INFLIGHT_EVENTS -_current.size()));
+
             }
             _events->insert(_events->begin(),_current.begin(),_current.end());
             l.unlock();
@@ -281,15 +298,14 @@ static void __cps_api_event_thread_push_init() {
 
     cps_api_update_ssize_on_param_change("cps.events.max-queued",
             (ssize_t*)&_TOTAL_MAX_INFLIGHT_EVENTS);
-
+    cps_api_update_ssize_on_param_change("cps.events.queue-redline",
+            (ssize_t*)&_TOTAL_MAX_INFLIGHT_EVENTS_REDLINE);
     cps_api_update_ssize_on_param_change("cps.events.flush-timeout",
             (ssize_t*)&_event_flush_timeout);
-
     cps_api_update_ssize_on_param_change("cps.events.log-every-x",
             (ssize_t*)&_LOG_INTERVAL);
-    _LOG_INTERVAL
 
-}
+}//
 
 bool cps_db::publish(cps_db::connection &conn, cps_api_object_t obj) {
     pthread_once(&__one_time_only,__cps_api_event_thread_push_init);
@@ -311,10 +327,13 @@ bool cps_db::publish(cps_db::connection &conn, cps_api_object_t obj) {
     }
     }
     __event_wait.notify_one();
-    if ((_published%10000)==0) {
-        EV_LOGGING(CPS-DB-EV-CONN,INFO,"EVENT-PUSH","Pushed %d events",(int)_published);
-    }
+
     ++_published;
+
+    if ((_published%_LOG_INTERVAL)==0) {
+        EV_LOGGING(CPS-DB-EV-CONN,INFO,"EVENT-PUSH","Pushed total is %d events",(int)_published);
+    }
+
     return true;
 }
 
