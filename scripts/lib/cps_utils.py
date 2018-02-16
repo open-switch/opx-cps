@@ -204,7 +204,8 @@ class CPSTypes:
             elif isinstance(data[k], dict):
                 self.printable_dict(data[k])
             else:
-                data[k] = str(self.from_data(k, data[k]))
+                if len(data[k]) == 0: data[k] = None
+                else: data[k] = str(self.from_data(k, data[k]))
 
     def printable(self,obj):
         data = obj['data']
