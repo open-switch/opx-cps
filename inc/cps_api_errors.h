@@ -56,7 +56,11 @@ typedef enum {
     cps_api_ret_code_SERVICE_CONNECT_FAIL=3,//!< returned when there is a service but it is not responding
     cps_api_ret_code_INTERNAL_FAILURE=4,    //!< returned if there is an error but it is memory allocation or other internal reasons
     cps_api_ret_code_TIMEOUT=5,             //!< returned when the client specified a timeout and the timeout is expired
-    cps_api_ret_code_COMMUNICATION_ERROR=6	//!< returned when there is a communication error
+    cps_api_ret_code_COMMUNICATION_ERROR=6,	//!< returned when there is a communication error
+    cps_api_ret_code_NO_EXIST=7,		    //!< returned when the queried object doesn't exist (applies to db cached objects)
+    cps_api_ret_code_CORRUPT=8,				//!< returned when the entry exists but is corrupt and may need to be cleaned up
+    cps_api_ret_code_PARAM_INVALID=9,		//!< returned if parameters to the function are invalid
+
 } cps_api_return_code_enum_val_t;
 
 /**

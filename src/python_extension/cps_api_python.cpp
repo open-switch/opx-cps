@@ -47,6 +47,23 @@ static PyObject * py_cps_map_init(PyObject *self, PyObject *args) {
     Py_RETURN_TRUE;
 }
 
+static PyObject * py_cps_set_library_flags(PyObject *self, PyObject *args) {
+    const char *flag = NULL;
+    const char *value = NULL;
+
+    if (! PyArg_ParseTuple( args, "ss", &flag, &value)) return NULL;
+    if(cps_api_set_library_flags(flag, value) != cps_api_ret_code_OK)  Py_RETURN_FALSE;
+    Py_RETURN_TRUE;
+}
+
+static PyObject * py_cps_get_library_flags(PyObject *self, PyObject *args) {
+    const char *flag = NULL;
+
+    if (! PyArg_ParseTuple( args, "s", &flag)) return NULL;
+    std::string _val = cps_api_get_library_flag_value(flag);
+    return PyString_FromString(_val.c_str());
+}
+
 static PyObject * py_cps_byte_array_key(PyObject *self, PyObject *args) {
     PyObject *array;
     if (! PyArg_ParseTuple( args, "O!", &PyByteArray_Type, &array)) return NULL;
@@ -546,6 +563,19 @@ PyDoc_STRVAR(CPS_FN_DOC(py_cps_api_db_get), "db_get(filter, list_of_objects )\n\
     "@list_of_objects - the list that will have the object found appended.\n"
     "@return - True if successful otherwise False");
 
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_set_library_flags), "set_library_flags(flag, value )\n\n"
+    "This will set internal CPS library and/or service parameters.\n"
+    "@flag  - the CPS internal control value to setup\n"
+    "@value - the value of what the string/entry should be.\n"
+    "@return - True if successful otherwise False");
+
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_get_library_flags), "get_library_flags(flag)\n\n"
+    "Get the value of a given CPS library/service configuration flag.\n"
+    "@flag  - the configuration flag to get the value of\n"
+    "@return - the flag value");
+
+
+
 /* A list of all the methods defined by this module. */
 /* "METH_VARGS" tells Python how to call the handler */
 static PyMethodDef cps_methods[] = {
@@ -595,6 +625,8 @@ static PyMethodDef cps_methods[] = {
 
     {"db_commit",  (PyCFunction)py_cps_api_db_commit, METH_VARARGS| METH_KEYWORDS, CPS_FN_DOC(py_cps_api_db_commit)},
     {"db_get",  py_cps_api_db_get, METH_VARARGS, CPS_FN_DOC(py_cps_api_db_get)},
+    {"set_library_flags", py_cps_set_library_flags, METH_VARARGS, CPS_FN_DOC(py_cps_set_library_flags) },
+    {"get_library_flags", py_cps_get_library_flags, METH_VARARGS, CPS_FN_DOC(py_cps_get_library_flags) },
 
 
     {NULL, NULL}      /* sentinel */
