@@ -96,6 +96,8 @@ cps_api_c_client_stub_SRCS+=unit_test/cps_api_c_client_stub.c
 cps_api_c_client_stub_LDFLAGS+=-lcps-api-common
 
 UNIT_TEST_SCRIPT=unit_test/run_test
+UNIT_TEST_SCRIPT+= unit_test/test_cps_connectivity_agent.py
+
 include ${MAKE_INC}/workspace.mak
 
 
