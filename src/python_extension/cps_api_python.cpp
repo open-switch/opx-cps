@@ -14,8 +14,6 @@
  * permissions and limitations under the License.
  */
 
-
-
 #include "cps_api_operation.h"
 #include "cps_api_key.h"
 #include "cps_class_map.h"
@@ -88,7 +86,6 @@ static PyObject * py_cps_obj_to_array(PyObject *self, PyObject *args) {
             cps_api_object_to_array_len(obj));
 }
 
-
 static PyObject * py_cps_config(PyObject *self, PyObject *args) {
     const char * path=NULL, *name, *desc,*_id,*attr_type,*data_type;
     PyObject *has_emb;
@@ -124,7 +121,6 @@ static PyObject * py_cps_config(PyObject *self, PyObject *args) {
     Py_RETURN_TRUE;
 }
 
-
 static PyObject * py_cps_info(PyObject *self, PyObject *args) {
     PyObject *bool_cur_level=nullptr;
     const char * path=NULL;
@@ -138,7 +134,9 @@ static PyObject * py_cps_info(PyObject *self, PyObject *args) {
     const cps_class_map_node_details_int_t * ref = cps_dict_find_by_name(path);
     if (ref!=nullptr) {
         //then assume that it is a valid object id
-        v = ref->ids;
+        for ( size_t _ix=0; _ix < ref->ids_size ; ++_ix ) {
+            v.push_back(ref->ids[_ix]);
+        }
     } else {
         cps_class_ids_from_string(v,path);
     }
@@ -163,8 +161,8 @@ static PyObject * py_cps_info(PyObject *self, PyObject *args) {
         char buff[40]; //just enough for the attribute id
         snprintf(buff,sizeof(buff),"%lld",(long long)lst[ix].id);
         py_cps_util_set_item_to_dict(ids.get(),buff,
-                PyString_FromString(lst[ix].full_path.c_str()));
-        py_cps_util_set_item_to_dict(names.get(),lst[ix].full_path.c_str(),
+                PyString_FromString(lst[ix].details->name));
+        py_cps_util_set_item_to_dict(names.get(),lst[ix].details->name,
                 PyString_FromString(buff));
     }
     names.release();
@@ -185,7 +183,6 @@ static PyObject * py_cps_enabled(PyObject *self, PyObject *args) {
     }
     Py_RETURN_FALSE;
 }
-
 
 static PyObject * py_cps_stats(PyObject *self, PyObject *args) {
     const char * path=NULL;
@@ -226,10 +223,10 @@ static PyObject * py_cps_types(PyObject *self, PyObject *args) {
     PyObject *dict = d.get();
     d.release();
 
-    py_cps_util_set_item_to_dict(dict,"name", PyString_FromString(ref->full_path.c_str()));
-    py_cps_util_set_item_to_dict(dict,"key", PyString_FromString(cps_class_ids_to_string(ref->ids).c_str()));
-    py_cps_util_set_item_to_dict(dict,"description", PyString_FromString(ref->desc.c_str()));
-    py_cps_util_set_item_to_dict(dict,"embedded", PyString_FromString(ref->embedded?"True":"False"));
+    py_cps_util_set_item_to_dict(dict,"name", PyString_FromString(ref->details->name));
+    py_cps_util_set_item_to_dict(dict,"key", PyString_FromString(cps_class_ids_to_string(ref->ids,ref->ids_size).c_str()));
+    py_cps_util_set_item_to_dict(dict,"description", PyString_FromString(ref->details->desc));
+    py_cps_util_set_item_to_dict(dict,"embedded", PyString_FromString(ref->details->embedded?"True":"False"));
 
     {
     static const size_t ID_BUFF_LEN=100;
@@ -238,8 +235,8 @@ static PyObject * py_cps_types(PyObject *self, PyObject *args) {
     py_cps_util_set_item_to_dict(dict,"id", PyString_FromString(buff));
     }
 
-    const char *_attr_type = cps_class_attr_type_to_string(ref->attr_type);
-    const char *_data_type = cps_class_data_type_to_string(ref->data_type);
+    const char *_attr_type = cps_class_attr_type_to_string(ref->details->attr_type);
+    const char *_data_type = cps_class_data_type_to_string(ref->details->data_type);
     if (_attr_type!=nullptr) {
         py_cps_util_set_item_to_dict(dict,"attribute_type", PyString_FromString(_attr_type));
     }
@@ -304,9 +301,6 @@ static PyObject * py_key_from_qualifer(PyObject *self, PyObject *args) {
     std::string _key = cps_string::sprintf("%d.",(int)*_op_type);
     return PyString_FromString(_key.c_str());
 }
-
-
-
 
 static PyObject * py_cps_name_from_key(PyObject *self, PyObject *args) {
     const char * key=NULL;
@@ -439,7 +433,6 @@ PyDoc_STRVAR(CPS_FN_DOC(py_cps_qual_from_key), "qual_from_key(key)\n\n"
     "@key - the key for which the qualifier string is required \n"
     "@return - the character string holding the qualifier if successful otherwise returns empty string\n");
 
-
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_event_connect), "event_connect()\n\n"
     "Returns a CPS handle to register send/receive events");
 
@@ -528,7 +521,6 @@ PyDoc_STRVAR(CPS_FN_DOC(py_cps_reconcile), "reconcile(src_objs,dest_obj,callback
    "@callbacks - Python dictionary with 'sync' and 'error' as key\n"
    "             and its callback function as its value\n"
    "@return - True if successful otherwise False");
-
 
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_api_db_commit), "db_commit(object,previous,publish)\n\n"
     "Stores the object into the database and return the previous object (optional)\n"

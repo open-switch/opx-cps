@@ -6,7 +6,7 @@ dell-cps
 
 #include <vector>
 
-static struct {
+const static struct {
   std::vector<cps_api_attr_id_t> _ids;
   cps_api_attr_id_t id;
   cps_class_map_node_details details;
@@ -54,14 +54,13 @@ static struct {
 { { cps_api_obj_CAT_CPS,CPS_DB_INSTANCE,CPS_DB_INSTANCE_GROUP,CPS_DB_INSTANCE_NODE_ID,CPS_DB_INSTANCE_GROUP }, CPS_DB_INSTANCE_GROUP, { "cps/db-instance/group", "Group name", false, CPS_CLASS_ATTR_T_LEAF, CPS_CLASS_DATA_TYPE_T_STRING }},
 };
 
-
 static const size_t lst_len = sizeof(lst)/sizeof(*lst);
 
 t_std_error cps_api_yang_module_init(void) {
-	size_t ix = 0;
-	for ( ; ix < lst_len ; ++ix ) {
-		cps_class_map_init(lst[ix].id,&(lst[ix]._ids[0]),lst[ix]._ids.size(),&lst[ix].details);
-	}
-	return STD_ERR_OK;
+    size_t ix = 0;
+    for ( ; ix < lst_len ; ++ix ) {
+        cps_class_map_init(lst[ix].id,&(lst[ix]._ids[0]),lst[ix]._ids.size(),&lst[ix].details);
+    }
+    return STD_ERR_OK;
 }
 

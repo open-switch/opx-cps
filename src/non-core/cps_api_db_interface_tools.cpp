@@ -7,12 +7,22 @@
 #include "cps_api_node_private.h"
 #include "cps_api_db_connection_tools.h"
 #include "cps_api_db.h"
+#include "cps_class_map_query.h"
+
 #include "dell-cps.h"
 
+#include <pthread.h>
 #include <string>
 #include <cstring>
 #include <unordered_map>
 
+static size_t _IN_THE_PIPE = cps_db::IN_THE_PIPE();
+
+static pthread_once_t  onceControl = PTHREAD_ONCE_INIT;
+
+static void __init(void) {
+    cps_api_update_ssize_on_param_change("cps.pipeline.count",(ssize_t*)&_IN_THE_PIPE);
+}
 
 constexpr static const char * __get_default_node_name() {
     return "localhost";
@@ -88,7 +98,6 @@ static void _process_cb_response(cps_db::connection &conn, cps_api_db_sync_cb_pa
     }
 }
 
-
 static void _get_addr_info(cps_api_object_t obj, char **node_name, char **addr, cps_api_nodes &n){
     if(obj) {
         *node_name = (char *)cps_api_key_get_node(obj);
@@ -154,6 +163,8 @@ static bool _handle_create_set_case(const char *_dest_addr, const char *key, siz
 static cps_api_return_code_t _handle_delete_case(const char *addr, cps_api_object_t src, cps_api_sync_callback_t cb, void *context,
                                           cps_api_db_sync_cb_param_t &params, cps_api_db_sync_cb_response_t &res ) {
 
+    pthread_once(&onceControl,__init);
+
     cps_db::connection_request _dest_conn(cps_db::ProcessDBCache(),addr);
     if (!_dest_conn.valid()) return cps_api_ret_code_ERR;
 
@@ -198,7 +209,7 @@ static cps_api_return_code_t _handle_delete_case(const char *addr, cps_api_objec
         ret = false;
     } else ++count;
     _key_cache.push_back(std::string((char*)dest_inst_key,len));
-    if(count < cps_db::IN_THE_PIPE()) return;
+    if(count < _IN_THE_PIPE) return;
     _process_get_response();
     });
 
@@ -213,6 +224,7 @@ cps_api_return_code_t cps_api_reconcile(void *context, cps_api_object_list_t src
     cps_api_db_sync_cb_param_t params = {};
     cps_api_db_sync_cb_response_t res = {cps_api_make_change, cps_api_raise_event};
     cps_api_db_sync_cb_error_t er;
+    pthread_once(&onceControl,__init);
 
     // In case of reconcilation, since source objects is obtained as input, defaulting the source node to local host
     params.src_node = (char *)__get_default_node_name();
@@ -233,7 +245,6 @@ cps_api_return_code_t cps_api_reconcile(void *context, cps_api_object_list_t src
         return cps_api_ret_code_ERR;
     }
 
-
     cps_db::connection_request _dest_conn(cps_db::ProcessDBCache(),_dest_addr);
     if (!_dest_conn.valid()) return cps_api_ret_code_ERR;
 
@@ -241,7 +252,6 @@ cps_api_return_code_t cps_api_reconcile(void *context, cps_api_object_list_t src
     if (!_dest_conn_meta.valid()) return cps_api_ret_code_ERR;
 
     if(! _mark_dirty_dbkey(dest_obj, _dest_conn_meta.get())) return cps_api_ret_code_ERR;
-
 
     params.object_src = cps_api_object_create();
     params.object_dest = cps_api_object_create();
@@ -282,7 +292,7 @@ cps_api_return_code_t cps_api_reconcile(void *context, cps_api_object_list_t src
         else ++count;
         std::string kk(&inst_key[0],inst_key.size());
         _key_cache.push_back(kk);
-        if (count < cps_db::IN_THE_PIPE()) continue;
+        if (count < _IN_THE_PIPE) continue;
         _drain_queue();
     }
     _drain_queue();
@@ -299,6 +309,8 @@ cps_api_return_code_t cps_api_sync(void *context, cps_api_object_t dest, cps_api
     cps_api_db_sync_cb_param_t params = {};
     cps_api_db_sync_cb_response_t res = {cps_api_make_change, cps_api_raise_event};
     cps_api_db_sync_cb_error_t er;
+
+    pthread_once(&onceControl,__init);
 
     const char *_src_addr;
     const char *_dest_addr;
@@ -375,7 +387,7 @@ cps_api_return_code_t cps_api_sync(void *context, cps_api_object_t dest, cps_api
                 ret = false;
             } else ++count;
             _key_cache.push_back(std::string((char*)remote_inst_key,len));
-            if (count < cps_db::IN_THE_PIPE()) return;
+            if (count < _IN_THE_PIPE) return;
             _drain_queue();
         });
 

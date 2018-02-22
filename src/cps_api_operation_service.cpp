@@ -214,8 +214,8 @@ static bool  cps_api_handle_get(cps_api_operation_data_t *op, int fd,size_t len)
 
 static bool cps_api_handle_commit(cps_api_operation_data_t *op, int fd, size_t len) {
 
-    Function_Timer tm(op,cps_api_obj_stat_GET_MIN_TIME,cps_api_obj_stat_GET_MAX_TIME,
-                cps_api_obj_stat_GET_AVE_TIME,cps_api_obj_stat_GET_COUNT);
+    Function_Timer tm(op,cps_api_obj_stat_SET_MIN_TIME,cps_api_obj_stat_SET_MAX_TIME,
+                cps_api_obj_stat_SET_AVE_TIME,cps_api_obj_stat_SET_COUNT);
 
     std_rw_lock_read_guard g(&op->db_lock);
     cps_api_return_code_t rc =cps_api_ret_code_OK;

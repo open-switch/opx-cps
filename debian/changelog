@@ -1,3 +1,16 @@
+opx-cps (3.6.2+opx4) unstable; urgency=medium
+
+  * Update: Restore yang:mac-address to base type which is string
+  * Update: Checking for a valid _ctx before accessing REDIS functions in cases where it is invalid/null
+  * Update: Adding configuration of pipeline parameters
+  * Update: Increase the number of cached connections to 6
+  * Update: Added missing unit test
+  * Update: Updated name of flags API to avoid conflict between C/C++
+  * Update: Updates to the parser to reduce relocation tables
+  * Update: Add return code value for communication error
+
+ -- Dell EMC <ops-dev@lists.openswitch.net>  Tue, 13 Feb 2018 01:00:13 -0700
+
 opx-cps (3.6.2+opx3) unstable; urgency=medium
 
   * Bugfix: Fix 'Key Error: 0' in cps_utils.printable(), fill "None" in case of empty byte array
