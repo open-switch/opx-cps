@@ -119,7 +119,7 @@ typedef struct {
  * @param details the details
  * @return STD_ERR_OK if successful otherwise a return code indicating the error type
  */
-cps_api_return_code_t cps_class_map_init(cps_api_attr_id_t id, const cps_api_attr_id_t *ids, size_t ids_len, cps_class_map_node_details *details);
+cps_api_return_code_t cps_class_map_init(cps_api_attr_id_t id, const cps_api_attr_id_t *ids, size_t ids_len, const cps_class_map_node_details *details);
 
 /**
  * Register a enum with the system - support look up/etc.  This will replace the previous mapping if one exists.
@@ -345,6 +345,27 @@ bool cps_api_attr_id_is_cps_reserved(cps_api_attr_id_t id);
  */
 bool cps_api_attr_id_is_temporary(cps_api_attr_id_t id);
 
+/**
+ * This will set internal CPS library and/or service parameters.
+ * @param flag the CPS internal control value to setup
+ * @param val the value of what the string/entry should be
+ * @return either cps_api_return_code_OK or cps_api_return_code_ERROR depending on the
+ *     success or failure condition
+ */
+cps_api_return_code_t cps_api_set_library_flags(const char * flag, const char *val);
+
+
+/**
+ * This API will ge the value for the specified cps flag.  Mostly used
+ *     internally by the CPS though available for debug purposes.
+ * @param flag the CPS flag to configure (timeouts, buffers, etc..)
+ * @param val the place that will contain the output
+ * @param val_size the size of the buffer
+ * @return true if successful otherwise the flag doesn't exists
+ */
+bool cps_api_get_library_flags(const char * flag, char *val, size_t val_size) ;
+
+
 #ifdef __cplusplus
 }
 
@@ -366,6 +387,15 @@ std::string cps_api_object_attr_as_string(cps_api_attr_id_t id, const void * dat
  * @return a string containing a ascii representation of the object
  */
 std::string cps_api_object_to_c_string(cps_api_object_t obj);
+
+/**
+ * Get the value of a given CPS library/service configuration flag.  A C++ string based
+ * implementation
+ * @param flag the configuration flag to get the value of
+ * @return the string value
+ */
+std::string cps_api_get_library_flag_value(const char * flag);
+
 
 #endif
 

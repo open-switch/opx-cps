@@ -41,7 +41,8 @@ template <typename data_type>
 class cps_api_key_cache {
 public:
     struct field_entry {
-        cps_api_key_t key;
+        const cps_api_key_t *key;
+        bool allocated;
         data_type data;
     };
     using cache_data = std::unordered_map<size_t,std::vector<field_entry>>;
@@ -49,7 +50,7 @@ public:
 private:
     cache_data _cache;
 public:
-    bool insert(const cps_api_key_t *key, const data_type &dt);
+    bool insert(const cps_api_key_t *key, const data_type &dt, bool alloc=true);
 
     void erase(const cps_api_key_t *key);
 
@@ -88,8 +89,8 @@ bool cps_api_key_cache<data_type>::find_entry(const cps_api_key_element_t *key, 
 
     auto & v = it->second;
     for (size_t _ix = 0, _mx = v.size(); _ix < _mx ; ++_ix ) {
-    	const cps_api_key_element_t *_src = cps_api_key_elem_start(&v[_ix].key);
-    	size_t _src_len = cps_api_key_get_len(&v[_ix].key);
+        const cps_api_key_element_t *_src = cps_api_key_elem_start((cps_api_key_t*)v[_ix].key);
+        size_t _src_len = cps_api_key_get_len((cps_api_key_t*)v[_ix].key);
         if (cps_api_key_array_matches(_src,_src_len,key,len,true)==0) {
             *ent = &v;
             ix = _ix;
@@ -128,7 +129,7 @@ bool cps_api_key_cache<data_type>::find_entry(const cps_api_key_t *key, std::vec
 
     auto & v = it->second;
     for (size_t ix = 0, mx = v.size(); ix < mx ; ++ix ) {
-        if (cps_api_key_matches(&v[ix].key,(cps_api_key_t*)key,true)==0) {
+        if (cps_api_key_matches((cps_api_key_t*)v[ix].key,(cps_api_key_t*)key,true)==0) {
             *ent = &v;
             _ix = ix;
             return true;
@@ -138,12 +139,22 @@ bool cps_api_key_cache<data_type>::find_entry(const cps_api_key_t *key, std::vec
 }
 
 template <typename data_type>
-bool cps_api_key_cache<data_type>::insert(const cps_api_key_t *key, const data_type &dt) {
+bool cps_api_key_cache<data_type>::insert(const cps_api_key_t *key, const data_type &dt,
+        bool alloc) {
     uint64_t hash = cps_api_key_hash((cps_api_key_t*)key);
     try {
         field_entry fe;
         fe.data = dt;
-        cps_api_key_copy(&fe.key,(cps_api_key_t*)key);
+        fe.allocated = alloc;
+        if (alloc) {
+            size_t _bytes = cps_api_key_get_len_in_bytes((cps_api_key_t*)key)+CPS_OBJ_KEY_HEADER_SIZE;
+            cps_api_key_t *_dest = (cps_api_key_t*)malloc(_bytes);
+            if (_dest==nullptr) return false;
+            memcpy(_dest,key,_bytes);
+            fe.key = _dest;
+        } else {
+            fe.key = key;
+        }
         _cache[hash].push_back(std::move(fe));
     } catch (...) {
         return false;
@@ -157,6 +168,7 @@ void cps_api_key_cache<data_type>::erase(const cps_api_key_t *key) {
     std::vector<field_entry> *v;
     size_t ix = 0;
     if (find_entry(key,&v,ix,true)) {
+        if ((*v)[ix].allocated) free((void*)(*v)[ix].key);
         (*v).erase((*v).begin()+ix);
     }
 }

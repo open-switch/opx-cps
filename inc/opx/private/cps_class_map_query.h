@@ -41,6 +41,7 @@
 #include <string>
 #include <vector>
 #include <string>
+#include <functional>
 
 /** @cond HIDDEN_SYMBOLS */
 #define CPS_DEF_CLASS_MAP_STARTING "/usr/lib"
@@ -63,7 +64,7 @@ bool cps_class_map_detail(const cps_api_attr_id_t id, cps_class_map_node_details
 void cps_class_ids_from_key(std::vector<cps_api_attr_id_t> &v, cps_api_key_t *key);
 void cps_class_ids_from_string(std::vector<cps_api_attr_id_t> &v, const char * str);
 
-std::string cps_class_ids_to_string(const std::vector<cps_api_attr_id_t> &v);
+std::string cps_class_ids_to_string(const cps_api_attr_id_t *ids, size_t len);
 std::string cps_key_to_string(const cps_api_key_t * key);
 
 const CPS_API_OBJECT_OWNER_TYPE_t *cps_class_owner_type_from_string(const char *str);
@@ -95,6 +96,17 @@ t_std_error cps_api_yang_module_init(void);
  */
 const std::vector<cps_api_attr_id_t> & cps_api_key_attrs(const cps_api_key_t *key, size_t key_offset=1);
 
+
+/**
+ * All registration to updates of the CPS parameters.  internal systems can cache values
+ * such as polling interval, etc..  Handlers should avoid calling any set flag APIs in
+ * the context of the callback to avoid recursive behavior.
+ * @param param the name of the parameter to watch
+ * @param handler the function call when the parameter changes
+ */
+void cps_api_add_flag_set_handler(const char * param, const std::function<void(const char*)> *handler) ;
+
+void cps_api_update_ssize_on_param_change(const char * param, ssize_t *value_to_set)  ;
 
 /**
  * @}

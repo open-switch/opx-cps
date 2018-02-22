@@ -14,8 +14,6 @@
  * permissions and limitations under the License.
  */
 
-
-
 #include "cps_class_map.h"
 
 #include "private/cps_class_map_query.h"
@@ -37,8 +35,10 @@ void cps_class_ids_from_key(std::vector<cps_api_attr_id_t> &v, cps_api_key_t *ke
         cps_api_attr_id_t id = cps_api_key_element_at(key,max_len);
         const cps_class_map_node_details_int_t *ent = cps_dict_find_by_id(id);
         if (ent==nullptr) continue;
-        if (ent->embedded) {
-            v = ent->ids;
+        if (ent->details->embedded) {
+            for ( size_t _ix = 0; _ix < ent->ids_size ; ++_ix ) {
+                v.push_back(ent->ids[_ix]);
+            }
             break;
         }
     }
@@ -68,15 +68,14 @@ void cps_class_ids_from_string(std::vector<cps_api_attr_id_t> &v, const char * s
     std_parse_string_free(handle);
 }
 
-std::string cps_class_ids_to_string(const std::vector<cps_api_attr_id_t> &v) {
+std::string cps_class_ids_to_string(const cps_api_attr_id_t *ids, size_t len) {
     std::string s;
     static const int BUFF_LEN=1024;
     char buff[BUFF_LEN];
     bool first_time = true;
     size_t ix = 0;
-    size_t mx = v.size();
-    for ( ; ix < mx ; ++ix ) {
-        snprintf(buff,sizeof(buff)-1,"%" PRId64,(int64_t)v[ix]);
+    for ( ; ix < len ; ++ix ) {
+        snprintf(buff,sizeof(buff)-1,"%" PRId64,(int64_t)ids[ix]);
         if (!first_time) s+=".";
         first_time=false;
         s+=buff;
@@ -113,10 +112,10 @@ static bool __cps_dict_walk_fun__(void * context, const cps_class_map_node_detai
     walk_struct *ws = (walk_struct*)context;
     if (ws->current_level) {
         //filter non matching level
-        if (ptr->ids.size()!=(ws->max_ids+1))
+        if (ptr->ids_size!=(ws->max_ids+1))
             return true;
     }
-    if (!cps_attr_id_key_compare_match( &(ptr->ids[0]),ptr->ids.size(),ws->ids,ws->max_ids)) return true;
+    if (!cps_attr_id_key_compare_match( ptr->ids,ptr->ids_size,ws->ids,ws->max_ids)) return true;
     ws->lst->push_back(*ptr);
     return true;
 }

@@ -35,7 +35,6 @@
  * @{
 */
 
-
 #include "cps_api_errors.h"
 
 #ifdef __cplusplus

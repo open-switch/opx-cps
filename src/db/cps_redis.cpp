@@ -40,7 +40,6 @@
 
 static std::mutex _mutex;
 
-
 bool cps_db::ping(cps_db::connection &conn, size_t timeoutms) {
     cps_db::connection::db_operation_atom_t e;
     e.from_string("PING");
@@ -60,7 +59,6 @@ bool cps_db::ping(cps_db::connection &conn, size_t timeoutms) {
     if(ret)  return (strcasecmp((const char *)ret,"PONG")==0) ;
     return false;
 }
-
 
 bool cps_db::make_slave(cps_db::connection &conn,std::string ip) {
     cps_db::connection::db_operation_atom_t e[3];
@@ -165,7 +163,6 @@ void cps_db::response_set::clear() {
 cps_db::response_set::~response_set() {
     clear();
 }
-
 
 bool cps_db::delete_object(cps_db::connection &conn,const char *key, size_t key_len) {
     cps_db::connection::db_operation_atom_t e[2];
