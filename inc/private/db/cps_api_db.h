@@ -31,7 +31,12 @@
 #define CPS_DB_MAX_ITEMS_PER_PIPELINE 200
 #define CPS_DB_INITIAL_PING_TIME (2000)
 
+
 namespace cps_db {
+	static inline void set_return_code(cps_api_return_code_t*rc, cps_api_return_code_t val) {
+		if (rc!=nullptr) *rc = val;
+	}
+
     static constexpr size_t IN_THE_PIPE() { return 500; }
     bool dbkey_from_class_key(std::vector<char> &lst, const cps_api_key_t *key);
     bool dbkey_from_instance_key(std::vector<char> &lst,cps_api_object_t obj, bool escape);
@@ -48,7 +53,7 @@ namespace cps_db {
 }
 
 namespace cps_db {
-    bool delete_object(cps_db::connection &conn,const char *key, size_t key_len);
+    bool delete_object(cps_db::connection &conn,const char *key, size_t key_len, cps_api_return_code_t *rc=nullptr);
 
     bool atomic_count_set(cps_db::connection &conn,const char *key, size_t key_len, int64_t data);
     bool atomic_count_change(cps_db::connection &conn,bool inc, const char *key, size_t key_len,
@@ -70,13 +75,15 @@ namespace cps_db {
 namespace cps_db {
     bool get_object(cps_db::connection &conn, cps_api_object_t obj);
 
-    bool delete_object(cps_db::connection &conn,cps_api_object_t obj);
+    bool delete_object(cps_db::connection &conn,cps_api_object_t obj,cps_api_return_code_t *rc=nullptr);
 
     bool get_objects_bulk(cps_db::connection &conn, std::vector<std::vector<char>> &keys,
             cps_api_object_list_t objs);
 
-    bool get_objects(cps_db::connection &conn,std::vector<char> &key,cps_api_object_list_t obj_list) ;
-    bool get_objects(cps_db::connection &conn, cps_api_object_t obj,cps_api_object_list_t obj_list);
+    bool get_objects(cps_db::connection &conn,std::vector<char> &key,cps_api_object_list_t obj_list,
+    		cps_api_return_code_t *rc=nullptr) ;
+    bool get_objects(cps_db::connection &conn, cps_api_object_t obj,cps_api_object_list_t obj_list,
+    		cps_api_return_code_t *rc=nullptr);
 
 
     bool ping(cps_db::connection &conn, size_t timeoutms=CPS_DB_INITIAL_PING_TIME);
@@ -98,13 +105,16 @@ namespace cps_db {
     bool set_object_response(cps_db::connection &conn);
 
     //Get and pipeline gets
-    bool get_object_request(cps_db::connection &conn, const char*key, size_t len);
-    bool get_object_response(cps_db::connection &conn, cps_api_object_t obj);
+    bool get_object_request(cps_db::connection &conn, const char*key, size_t len,
+    		cps_api_return_code_t *rc=nullptr);
+    bool get_object_response(cps_db::connection &conn, cps_api_object_t obj,
+    		cps_api_return_code_t *rc=nullptr);
 
-    bool get_object_list(cps_db::connection &conn,cps_api_object_list_t objs);
+    bool get_object_list(cps_db::connection &conn,cps_api_object_list_t objs,cps_api_return_code_t *rc=nullptr);
 
     bool store_objects(cps_db::connection &conn,cps_api_object_list_t objs);
-    bool merge_objects(cps_db::connection &conn, cps_api_object_list_t obj_list);
+    bool merge_objects(cps_db::connection &conn, cps_api_object_list_t obj_list,
+    		cps_api_return_code_t *rc=nullptr);
 
     bool delete_object_list(cps_db::connection &conn,cps_api_object_list_t objs);
     bool for_each_store_field(cps_db::connection &conn,std::vector<char> &key, const char * field, size_t field_len, const char *data, size_t len);
@@ -125,16 +135,21 @@ namespace cps_db {
  * Wrappers to the optimized functions to handle C++ constructs when available
 */
 namespace cps_db {
-    static inline bool delete_object(cps_db::connection &conn,const std::vector<char> &key) {
-        return cps_db::delete_object(conn,&key[0],key.size());
+    static inline bool delete_object(cps_db::connection &conn,const std::vector<char> &key,
+    		cps_api_return_code_t *rc=nullptr) {
+        return cps_db::delete_object(conn,&key[0],key.size(),rc);
     }
     static inline bool get_sequence(cps_db::connection &conn, std::vector<char> &key, int64_t &cntr) {
         return cps_db::atomic_count_change(conn,true,&key[0],key.size(),cntr);
     }
-    static inline bool get_object(cps_db::connection &conn, const std::vector<char> &key, cps_api_object_t obj) {
-        if(get_object_request(conn,&key[0],key.size())) {
-            return get_object_response(conn,obj);
+    static inline bool get_object(cps_db::connection &conn, const std::vector<char> &key,
+    		cps_api_object_t obj,cps_api_return_code_t *rc=nullptr) {
+
+    	if(get_object_request(conn,&key[0],key.size())) {
+            return get_object_response(conn,obj,rc);
         }
+
+    	cps_db::set_return_code(rc,cps_api_ret_code_COMMUNICATION_ERROR);
         return false;
     }
     static inline bool store_object(cps_db::connection &conn,cps_api_object_t obj) {
