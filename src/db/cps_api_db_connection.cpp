@@ -220,19 +220,24 @@ namespace {
 
 
 struct request_walker_contexct_t {
-    static const size_t MAX_EXP_CMD{10};
+    static const size_t MAX_EXP_CMD = 10;
 
+    //buffers
     const char *cmds[MAX_EXP_CMD];
     size_t cmds_lens[MAX_EXP_CMD];
 
+    //temp locations
     const char **cmds_ptr = cmds;
     size_t *cmds_lens_ptr = cmds_lens;
+    size_t _cmds_used = 0;
 
     std::vector<std::vector<char>> key_scratch;
     ssize_t key_scratch_len=-1;
 
     std::vector<std::vector<char>> key;  //just a buffer to hold the key portion of the data structure until we call into REDIS
     size_t scratch_pad_ix=0;
+
+    cps_db::connection::db_operation_atom_t * _cur=nullptr;
 
     bool set(cps_db::connection::db_operation_atom_t * lst_,size_t len_);
 
@@ -243,25 +248,36 @@ struct request_walker_contexct_t {
         }
     }
 
-    request_walker_contexct_t() {
+    std::vector<char> &alloc_key() {
+    	size_t _ix = key.size();
+    	key.resize(_ix+1);
+    	return key[_ix];
+    }
+
+    void reset() {
+    	_cmds_used = 0;
         cmds_ptr = cmds;
         cmds_lens_ptr = cmds_lens;
     }
 
-    cps_db::connection::db_operation_atom_t * _cur=nullptr;
+    //most class variables are automatically done via class declared initialization
+    request_walker_contexct_t() {
+    	reset();
+    }
 
     bool enough(size_t cnt) {
-        if ((cmds_ptr + cnt) > (cmds + MAX_EXP_CMD)) {
-            return false;
-        }
-        return true;
+    	return ((_cmds_used+cnt) < MAX_EXP_CMD);
     }
+
     void set_current_entry(const char *data, size_t len) {
         *(cmds_ptr++) = data;
         *(cmds_lens_ptr++) = len;
+        ++_cmds_used;
     }
-    bool valid() { return cmds_ptr!=cmds; }
+    bool valid() { return (_cmds_used > 0) && cmds_ptr!=cmds; }
+
 };
+
 static bool handle_str(request_walker_contexct_t &ctx) {
     if (!ctx.enough(1)) return false;
     ctx.set_current_entry(ctx._cur->_string,ctx._cur->_len);
@@ -270,41 +286,43 @@ static bool handle_str(request_walker_contexct_t &ctx) {
 
 static bool handle_class_key(request_walker_contexct_t &ctx) {
     if (!ctx.enough(1)) return false;
-    ctx.key_scratch.resize(ctx.key_scratch.size()+1);
-    if (!cps_db::dbkey_from_class_key(ctx.key_scratch[++ctx.key_scratch_len],cps_api_object_key(ctx._cur->_object))) return false;
-    ctx.set_current_entry(&ctx.key_scratch[ctx.key_scratch_len][0],ctx.key_scratch[ctx.key_scratch_len].size());
+    auto &_key_space = ctx.alloc_key();
+
+    if (!cps_db::dbkey_from_class_key(_key_space,cps_api_object_key(ctx._cur->_object))) return false;
+    ctx.set_current_entry(&_key_space[0],_key_space.size());
+
     return true;
 }
 
 static bool handle_instance_key(request_walker_contexct_t &ctx) {
     if (!ctx.enough(1)) return false;
-    ctx.key_scratch.resize(ctx.key_scratch.size()+1);
-    if (!cps_db::dbkey_from_instance_key(ctx.key_scratch[++ctx.key_scratch_len],ctx._cur->_object,false)) return false;
-    ctx.set_current_entry(&ctx.key_scratch[ctx.key_scratch_len][0],ctx.key_scratch[ctx.key_scratch_len].size());
-    return true;
-}
+    auto &_key_space = ctx.alloc_key();
 
-static bool handle_object(request_walker_contexct_t &ctx) {
-    if (!handle_instance_key(ctx)) return false;
-    if (!ctx.enough(2)) return false;
-
-    ctx.set_current_entry("object",strlen("object"));
-
-    const char *d = (const char*)(const void *)cps_api_object_array(ctx._cur->_object);
-    size_t dl = cps_api_object_to_array_len(ctx._cur->_object);
-
-    ctx.set_current_entry(d,dl);
+    if (!cps_db::dbkey_from_instance_key(_key_space,ctx._cur->_object,false)) return false;
+    ctx.set_current_entry(&_key_space[0],_key_space.size());
     return true;
 }
 
 static bool handle_object_data(request_walker_contexct_t &ctx) {
     if (!ctx.enough(1)) return false;
 
-    const char *d = (const char*)(const void *)cps_api_object_array(ctx._cur->_object);
+    const char *d = (const char *)(const void *)cps_api_object_array(ctx._cur->_object);
     size_t dl = cps_api_object_to_array_len(ctx._cur->_object);
 
     ctx.set_current_entry(d,dl);
     return true;
+}
+
+static bool handle_object(request_walker_contexct_t &ctx) {
+    if (!handle_instance_key(ctx)) return false;
+
+    if (!ctx.enough(1)) return false;
+
+    static const char *_obj_name = "object";
+    static const size_t _obj_len = strlen("object");
+    ctx.set_current_entry(_obj_name,_obj_len);
+
+    return handle_object_data(ctx);
 }
 
 static bool handle_event_fields(request_walker_contexct_t &ctx) {
@@ -325,7 +343,10 @@ bool request_walker_contexct_t::set(cps_db::connection::db_operation_atom_t * ls
     size_t iter = 0;
     for ( ; iter < len_; ++iter ) {
         _cur = lst_+iter;
-        if (!_map->at((int)_cur->_atom_type)(*this)) return false;
+        if (!_map->at((int)_cur->_atom_type)(*this)) {
+        	reset();
+        	return false;
+        }
     }
     return true;
 }
@@ -404,7 +425,6 @@ bool cps_db::connection::operation(db_operation_atom_t * lst_,size_t len_,
 
 
 bool cps_db::connection::flush(size_t timeoutms, cps_api_return_code_t *rc) {
-
 	SET_RC(rc,cps_api_ret_code_COMMUNICATION_ERROR);
 
     int _is_done=0;
@@ -540,7 +560,6 @@ bool cps_db::connection::has_event(bool &err, cps_api_return_code_t *rc) {
 
 bool cps_db::connection::get_event(response_set &data, bool &err_occured,
 		cps_api_return_code_t *rc) {
-
 	SET_RC(rc,cps_api_ret_code_COMMUNICATION_ERROR);
 
     if (_ctx==nullptr)
