@@ -14,6 +14,7 @@
 #include "cps_api_vector_utils.h"
 #include "cps_api_select_utils.h"
 #include "cps_class_map_query.h"
+#include "cps_api_core_utils.h"
 
 #include "cps_string_utils.h"
 
@@ -39,11 +40,15 @@ using _cps_event_queue_list_t = std::vector<_cps_event_queue_elem_t>;
 #include "std_thread_tools.h"
 
 namespace {    //as part of internal coding policies - need to use static
+//Inject failure
+static size_t _FAILURE_UNITTEST_ENABLE=0;
+static size_t _FAILURE_UNITTEST_THREAD_SLEEP=4000;
+static size_t _FAILURE_UNITTEST_MOD=50;
+
 
 //Mutex handing tweaks
 static size_t _MAX_ERROR_RETRY = 1000;
 static size_t _MUTEX_ERROR_RETRY_DELAY= 5;
-static size_t _DB_PUSH_MAX_SOCK_FAIL= 5;
 
 //Events and event logs
 static size_t _LOG_INTERVAL = 1000;
@@ -71,6 +76,9 @@ static std_thread_create_param_t _event_pushing_thread;
 static void *__thread_main_loop(void *param) ;
 
 static void __cps_api_event_thread_push_init() {
+    srand((unsigned int)std_get_uptime(nullptr));
+
+
     std_condition_var_timed_init(&__events);
 
     std_thread_init_struct(&_event_pushing_thread) ;
@@ -91,10 +99,33 @@ static void __cps_api_event_thread_push_init() {
             (ssize_t*)&_event_flush_timeout);
     cps_api_update_ssize_on_param_change("cps.events.log-every-x",
             (ssize_t*)&_LOG_INTERVAL);
+
+    cps_api_update_ssize_on_param_change("cps.unit-test.event-ut.enable",
+            (ssize_t*)&_FAILURE_UNITTEST_ENABLE);
+    cps_api_update_ssize_on_param_change("cps.unit-test.event-ut.error-delay",
+            (ssize_t*)&_FAILURE_UNITTEST_THREAD_SLEEP);
+    cps_api_update_ssize_on_param_change("cps.unit-test.event-ut.error-freq",
+            (ssize_t*)&_FAILURE_UNITTEST_MOD);
+
+}
+
+
+static bool _unittest_true_on_simulated_fail() {
+    if (_FAILURE_UNITTEST_ENABLE==0) return false;
+    static size_t _failure_count = 0;
+    ++_failure_count;
+
+    if ((_failure_count%_FAILURE_UNITTEST_MOD)==0) {
+        EV_LOGGING(CPS-UT,ERR,"EV-ERR-COMM","Simulating issue at %s",
+                cps_api_stacktrace().c_str());
+        printf("Failing request...\n");
+        return true;
+    }
+    return false;
 }
 
 //All locks must be taken
-void _must_lock_mutex(std_mutex_type_t *lock) {
+static void _must_lock_mutex(std_mutex_type_t *lock) {
     size_t _errors = 0;
     int _rc = 0;
     while (true) {
@@ -150,6 +181,10 @@ bool cps_db::subscribe(cps_db::connection &conn, cps_api_object_t obj) {
 namespace {
 
 static bool _send_event(cps_db::connection *conn, cps_api_object_t obj){
+    if (_unittest_true_on_simulated_fail()) {
+        return false;
+    }
+
     cps_db::connection::db_operation_atom_t e[2];
     e[0].from_string("PUBLISH");
     e[1].for_event(obj);
@@ -157,28 +192,29 @@ static bool _send_event(cps_db::connection *conn, cps_api_object_t obj){
     if (!conn->operation(e,sizeof(e)/sizeof(*e),false)) {
         return false;
     }
+
+    if (_unittest_true_on_simulated_fail()) {
+        std_usleep(MILLI_TO_MICRO(_FAILURE_UNITTEST_THREAD_SLEEP));
+    }
     return true;
 }
 
 static bool _drain_connection(cps_db::connection &conn, size_t amount) {
     EV_LOGGING(CPS-DB-EV-CONN,INFO,"DRAIN-EV","Draining %d events",amount);
-    size_t _err_count=0;
+
+    if (_unittest_true_on_simulated_fail()) {
+        amount+=1;
+    }
     for ( ; amount > 0 ; --amount ) {
 
         cps_api_return_code_t _rc = cps_api_ret_code_OK;
-        if (!conn.readable(_event_flush_timeout,&_rc)) {
-            ++_err_count;
-            if (_err_count>_DB_PUSH_MAX_SOCK_FAIL && _rc==cps_api_ret_code_TIMEOUT) {
-                EV_LOGGING(CPS-DB-EV-CONN,INFO,"DRAIN-EV","Draining failed - remaining %d",amount);
-                return false;
-            }
-        }
-        _err_count = 0;
-
         cps_db::response_set resp;
-        if (!conn.response(resp,_event_flush_timeout)) {
+        if (!conn.response(resp,_event_flush_timeout,&_rc,true)) {
             conn.reconnect();
             EV_LOGGING(CPS-DB-EV-CONN,INFO,"DRAIN-EV","Draining failed - remaining %d",amount);
+            return false;
+        }
+        if (_unittest_true_on_simulated_fail()) {
             return false;
         }
     }

@@ -87,7 +87,8 @@ public:
 
     bool command(db_operation_atom_t * lst,size_t len,response_set &set,
             size_t timeoutms=_SELECT_MS_WAIT, cps_api_return_code_t *rc=nullptr);
-    bool response(response_set &data, size_t timeoutms=_SELECT_MS_WAIT, cps_api_return_code_t *rc=nullptr);
+    bool response(response_set &data, size_t timeoutms=_SELECT_MS_WAIT,
+            cps_api_return_code_t *rc=nullptr, bool _force_timeout_check=false);
 
     bool operation(db_operation_atom_t * lst,size_t len, bool force_flush=false,
             size_t timeoutms=_SELECT_MS_WAIT, cps_api_return_code_t *rc=nullptr);

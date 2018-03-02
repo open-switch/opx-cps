@@ -163,14 +163,14 @@ bool cps_api_db_get_node_group(const std::string &group,std::vector<std::string>
 
     cps_api_node_data_type_t type;
     if(!_nodes->get_group_type(group,type)){
-        EV_LOGGING(DSAPI,ERR,"GET-NODE-GRUOP","Failed to get group type for %s",group.c_str());
+        EV_LOGGING(DSAPI,ERR,"GET-NODE-GROUP","Failed to get group type for %s",group.c_str());
         return false;
     }
 
     if((type == cps_api_node_data_1_PLUS_1_REDUNDENCY) && (_nodes->is_master_set(group))){
         auto it = _nodes->_master.find(group);
         if(it == _nodes->_master.end()){
-             EV_LOGGING(DSAPI,ERR,"GET-NODE-GRUOP","Master not set for %s",group.c_str());
+             EV_LOGGING(DSAPI,ERR,"GET-NODE-GROUP","Master not set for %s",group.c_str());
              return false;
         }
         lst.push_back(it->second);
