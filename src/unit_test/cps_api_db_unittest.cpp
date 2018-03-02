@@ -320,19 +320,25 @@ TEST(cps_api_db,objects_with_wildcard_chars_in_key) {
 
     std::string _data;
 
-    for ( size_t ix=0; _lst.size()> 0 ; --ix ) {
-        (void)_lst.pop_back();
-        if (_lst[ix]=='\\') _lst.pop_back();
+    //reduce the list to just the first 100
+    if (_lst.size()>100) {
+    	_lst.resize(100);
+    }
+    while (_lst.size()> 1) {
+        (void)_lst.pop_back(); //zap last
+        if (_lst[_lst.size()-1]=='\\') {
+        	continue;
+        }
         _lst.push_back('*');
         cps_api_object_attr_delete(og.get(),BASE_IP_IPV6_VRF_ID);
         cps_api_object_attr_add(og.get(),BASE_IP_IPV6_VRF_ID,&_lst[0],_lst.size());
-        if (_lst.size()<100) {
+        if (_lst.size()<100) {	//
             size_t _cnt = get_instance_count(og.get());
             if (_cnt>0) {
                 printf("Found %d matching objects\n",(int)_cnt);
             }
         }
-        (void)_lst.pop_back();
+        (void)_lst.pop_back();	//remove the *
     }
 
     cps_api_object_attr_delete(og.get(),BASE_IP_IPV6_VRF_ID);

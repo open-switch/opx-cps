@@ -17,45 +17,95 @@
 
 #include "cps_string_utils.h"
 
-#include "event_log.h"
+#include "std_condition_variable.h"
 #include "std_time_tools.h"
 
-#include <type_traits>
-#include <std_condition_variable.h>
-#include <pthread.h>
-#include <mutex>
-#include <condition_variable>
-#include <tuple>
+#include "event_log.h"
 
-#include <chrono>
+#include <tuple>
+#include <type_traits>
+
 #include <pthread.h>
 
 class _cps_event_flush {
 public:
-    _cps_event_flush() {}
-    ~_cps_event_flush();
+    _cps_event_flush(void) {}
+    ~_cps_event_flush(void);
 };
 
 using _cps_event_queue_elem_t = std::tuple<std::string,cps_api_object_t>;
 using _cps_event_queue_list_t = std::vector<_cps_event_queue_elem_t>;
 
-namespace {
-size_t _LOG_INTERVAL = 1000;
-size_t _TOTAL_MAX_INFLIGHT_EVENTS = 100000;
-size_t _TOTAL_MAX_INFLIGHT_EVENTS_REDLINE = _TOTAL_MAX_INFLIGHT_EVENTS*2;
+#include "std_thread_tools.h"
+
+namespace {	//as part of internal coding policies - need to use static
+
+//Mutex handing tweaks
+static size_t _MAX_ERROR_RETRY = 1000;
+static size_t _MUTEX_ERROR_RETRY_DELAY= 5;
+
+//Events and event logs
+static size_t _LOG_INTERVAL = 1000;
+static size_t _TOTAL_MAX_INFLIGHT_EVENTS = 100000;
+static size_t _TOTAL_MAX_INFLIGHT_EVENTS_REDLINE = _TOTAL_MAX_INFLIGHT_EVENTS*2;
 static size_t _event_flush_timeout=3000;
 
-_cps_event_flush _flush_on_exit;
+static _cps_event_flush _flush_on_exit;
 
-auto _events = new _cps_event_queue_list_t;
+//List of current events
+static auto _events = new _cps_event_queue_list_t;
 
-pthread_once_t __one_time_only;
+static pthread_once_t __one_time_only;
 
-std::mutex __mutex;
-std::condition_variable __event_wait;
+//Mutex and condition for event list lock/signaling
+static std_mutex_lock_create_static_init_rec(__mutex);
+static std_condition_var_t __events;
 
-size_t _published = 0;
-size_t _pushed = 0;
+//Statistics on pushed events
+static size_t _published = 0;
+static size_t _pushed = 0;
+
+static std_thread_create_param_t _event_pushing_thread;
+
+static void *__thread_main_loop(void *param) ;
+
+static void __cps_api_event_thread_push_init() {
+    std_condition_var_timed_init(&__events);
+
+    std_thread_init_struct(&_event_pushing_thread) ;
+
+    _event_pushing_thread.name = "CPS-Event-Sync";
+    _event_pushing_thread.thread_function = __thread_main_loop;
+
+    t_std_error rc = std_thread_create(&_event_pushing_thread);
+    if (rc!=STD_ERR_OK) {
+        EV_LOGGING(CPS,ERR,"CPS-EVENTS","Failed to create the event thread.  Resources?");
+    }
+
+    cps_api_update_ssize_on_param_change("cps.events.max-queued",
+            (ssize_t*)&_TOTAL_MAX_INFLIGHT_EVENTS);
+    cps_api_update_ssize_on_param_change("cps.events.queue-redline",
+            (ssize_t*)&_TOTAL_MAX_INFLIGHT_EVENTS_REDLINE);
+    cps_api_update_ssize_on_param_change("cps.events.flush-timeout",
+            (ssize_t*)&_event_flush_timeout);
+    cps_api_update_ssize_on_param_change("cps.events.log-every-x",
+            (ssize_t*)&_LOG_INTERVAL);
+}
+
+//All locks must be taken
+void _must_lock_mutex(std_mutex_type_t *lock) {
+	size_t _errors = 0;
+	int _rc = 0;
+	while (true) {
+		_rc = std_mutex_lock(lock);
+		if (_rc==0) break;
+		++_errors;
+		if (_errors>_MAX_ERROR_RETRY) {
+			abort();
+		}
+		std_usleep(MILLI_TO_MICRO(_MUTEX_ERROR_RETRY_DELAY));
+	}
+}
 
 }
 
@@ -98,7 +148,7 @@ bool cps_db::subscribe(cps_db::connection &conn, cps_api_object_t obj) {
 
 namespace {
 
-bool _send_event(cps_db::connection *conn, cps_api_object_t obj){
+static bool _send_event(cps_db::connection *conn, cps_api_object_t obj){
     cps_db::connection::db_operation_atom_t e[2];
     e[0].from_string("PUBLISH");
     e[1].for_event(obj);
@@ -109,7 +159,7 @@ bool _send_event(cps_db::connection *conn, cps_api_object_t obj){
     return true;
 }
 
-bool _drain_connection(cps_db::connection &conn, size_t amount) {
+static bool _drain_connection(cps_db::connection &conn, size_t amount) {
     EV_LOGGING(CPS-DB-EV-CONN,INFO,"DRAIN-EV","Draining %d events",amount);
     for ( ; amount > 0 ; --amount ) {
         cps_db::response_set resp;
@@ -123,7 +173,7 @@ bool _drain_connection(cps_db::connection &conn, size_t amount) {
     return true;
 }
 
-bool _change_connection(std::string &current_address, const std::string &new_addr,
+static bool _change_connection(std::string &current_address, const std::string &new_addr,
         cps_db::connection *& _conn, size_t wait_for) {
 
     const std::string _db_key = current_address;
@@ -154,7 +204,7 @@ bool _change_connection(std::string &current_address, const std::string &new_add
     return true;
 }
 
-bool _process_list(_cps_event_queue_list_t &current) {
+static bool _process_list(_cps_event_queue_list_t &current) {
     bool _halted = false;
     size_t _sent = 0;
     size_t _pid = getpid();
@@ -183,7 +233,7 @@ bool _process_list(_cps_event_queue_list_t &current) {
         }
 
         cps_api_object_attr_add_u64(_obj,CPS_OBJECT_GROUP_THREAD_ID,_pid);
-        cps_api_object_attr_add_u64(_obj,CPS_OBJECT_GROUP_SEQUENCE,_pushed++);
+        cps_api_object_attr_add_u64(_obj,CPS_OBJECT_GROUP_SEQUENCE,_pushed);
 
         if (!_send_event(conn,_obj)) {
             _halted = true;
@@ -201,7 +251,7 @@ bool _process_list(_cps_event_queue_list_t &current) {
     return !_halted;
 }
 
-void _remove_x_events(size_t ix, size_t mx, _cps_event_queue_list_t &events) {
+static void _remove_x_events(size_t ix, size_t mx, _cps_event_queue_list_t &events) {
     const auto _events_len = events.size();
     if (mx > _events_len) {
         mx = _events_len;
@@ -216,8 +266,34 @@ void _remove_x_events(size_t ix, size_t mx, _cps_event_queue_list_t &events) {
     events.erase(events.begin()+ix,events.begin()+mx);
 }
 
-void *__thread_main_loop(void *param) {
-    std::unique_lock<std::mutex> l(__mutex);
+//need to modify the common utilities to give simular functionality
+static t_std_error _condition_var_timed_wait (std_condition_var_t* cond,
+		std_mutex_type_t* mutex,
+		size_t time_in_millisec,
+		bool &timedout)
+{
+    size_t time_sec = (time_in_millisec / 1000);
+    size_t time_nanosec = ((time_in_millisec % 1000) * 1000000);
+
+    struct timespec timeout;
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    timeout.tv_sec = now.tv_sec + time_sec;
+    timeout.tv_nsec = now.tv_nsec + time_nanosec;
+    timedout = false;
+
+    int rc = pthread_cond_timedwait(cond, mutex, &timeout);
+    if (rc == ETIMEDOUT) {
+    	timedout = true;
+        return STD_ERR_OK;
+    }
+    if (rc!=0) return STD_ERR(NULL,FAIL,0);
+    return STD_ERR_OK;
+}
+
+static void *__thread_main_loop(void *param) {
+
+	std_mutex_simple_lock_guard lg(&__mutex);
 
     size_t _MAX_TIMEOUT=1000;
     size_t _current_timeout=_MAX_TIMEOUT;
@@ -232,13 +308,25 @@ void *__thread_main_loop(void *param) {
         _current_timeout <<=1;
         if (_current_timeout > _MAX_TIMEOUT) _current_timeout = _MAX_TIMEOUT;
     };
+    size_t _failed_counter = 0;
 
-    while (true) {///TODO need to use a incremental profile for chrono because this one can be effected by TOD issues... yuck
-        std::cv_status _rc =__event_wait.wait_for(l,std::chrono::milliseconds(_current_timeout));
-        if (_rc==std::cv_status::no_timeout) {
+    while (true) {
+    	bool _timedout=false;
+    	int _rc = _condition_var_timed_wait(&__events,&__mutex,_current_timeout,
+    			_timedout);
+    	if (_rc!=STD_ERR_OK) {
+    		//note.. may happen on shutdown - needs to address in future
+    		++_failed_counter;
+    		if (_failed_counter>_MAX_ERROR_RETRY)abort();
+    		std_usleep(MILLI_TO_MICRO(_MUTEX_ERROR_RETRY_DELAY));
+    		continue;
+    	}
+    	_failed_counter=0;
+        if (!_timedout) {	//false means not timedout
             bool _handle_it = _should_process();
             if (!_handle_it) continue;
         }
+
         if (_events->size()==0) {
             _increase_wait_time();
             continue;
@@ -247,10 +335,10 @@ void *__thread_main_loop(void *param) {
         _cps_event_queue_list_t _current ;
         std::swap(*_events,_current);
 
-        l.unlock();
+        std_mutex_unlock(&__mutex);
 
         if (!_process_list(_current)) {    //need to handle the case of the system never working.. need to throw away events at some point
-            l.lock();
+        	_must_lock_mutex(&__mutex);
             if (_events->size() > (_TOTAL_MAX_INFLIGHT_EVENTS_REDLINE)) {
                 //shrink it down to size of event list and the size of the new list
 
@@ -271,74 +359,61 @@ void *__thread_main_loop(void *param) {
 
             }
             _events->insert(_events->begin(),_current.begin(),_current.end());
-            l.unlock();
-            continue;
+            continue;	//incase we add additional logic below during health update
+            			//skip back to the top
         }
 
-        l.lock();
+        _must_lock_mutex(&__mutex);
     }
     return nullptr;
 }
 
 }
-#include "std_thread_tools.h"
-
-static std_thread_create_param_t _event_pushing_thread;
-
-static void __cps_api_event_thread_push_init() {
-
-    std_thread_init_struct(&_event_pushing_thread) ;
-    _event_pushing_thread.name = "CPS-Event-Sync";
-    _event_pushing_thread.thread_function = __thread_main_loop;
-
-    t_std_error rc = std_thread_create(&_event_pushing_thread);
-    if (rc!=STD_ERR_OK) {
-        EV_LOGGING(CPS,ERR,"CPS-EVENTS","Failed to create the event thread.  Resources?");
-    }
-
-    cps_api_update_ssize_on_param_change("cps.events.max-queued",
-            (ssize_t*)&_TOTAL_MAX_INFLIGHT_EVENTS);
-    cps_api_update_ssize_on_param_change("cps.events.queue-redline",
-            (ssize_t*)&_TOTAL_MAX_INFLIGHT_EVENTS_REDLINE);
-    cps_api_update_ssize_on_param_change("cps.events.flush-timeout",
-            (ssize_t*)&_event_flush_timeout);
-    cps_api_update_ssize_on_param_change("cps.events.log-every-x",
-            (ssize_t*)&_LOG_INTERVAL);
-
-}//
 
 bool cps_db::publish(cps_db::connection &conn, cps_api_object_t obj) {
     pthread_once(&__one_time_only,__cps_api_event_thread_push_init);
-    {
+
     cps_api_object_guard og(cps_api_object_create());
     if (og.get()==nullptr) return false;
     cps_api_object_clone(og.get(),obj);
 
-    std::lock_guard<std::mutex> lg(__mutex);
-    while (_events->size()>_TOTAL_MAX_INFLIGHT_EVENTS) {
-        __mutex.unlock();
-        std_usleep(MILLI_TO_MICRO(1));
-        __mutex.lock();
-    }
-    try {
-        _events->emplace_back(conn.addr(),cps_api_object_reference(og.get(),false));
-    } catch (...) {
-        return false;
-    }
-    }
-    __event_wait.notify_one();
+    bool _success = false;
 
-    ++_published;
+    _must_lock_mutex(&__mutex);
 
-    if ((_published%_LOG_INTERVAL)==0) {
-        EV_LOGGING(CPS-DB-EV-CONN,INFO,"EVENT-PUSH","Pushed total is %d events",(int)_published);
+    do {
+    	if (_events->size()>_TOTAL_MAX_INFLIGHT_EVENTS) {
+        	std_mutex_unlock(&__mutex);
+            std_usleep(MILLI_TO_MICRO(1));
+            _must_lock_mutex(&__mutex);
+            continue;
+        }
+        try {
+        	_cps_event_queue_elem_t _e(conn.addr(),cps_api_object_reference(og.get(),false));
+            _events->push_back(std::move(_e));
+        } catch (...) {
+        	break;
+        }
+        _success=true;
+    } while (0);
+
+    if (_success) {
+		++_published;
+
+		if ((_published%_LOG_INTERVAL)==0) {
+			EV_LOGGING(CPS-DB-EV-CONN,INFO,"EVENT-PUSH","Pushed total is %d events",(int)_published);
+		}
     }
 
-    return true;
+    std_mutex_unlock(&__mutex);
+
+    if (_success) (void)std_condition_var_signal(&__events);
+
+    return _success;
 }
 
 _cps_event_flush::~_cps_event_flush() {
-    std::unique_lock<std::mutex> l(__mutex);
+	_must_lock_mutex(&__mutex);
     _process_list(*_events);
 }
 
