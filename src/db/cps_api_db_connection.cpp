@@ -249,24 +249,24 @@ struct request_walker_contexct_t {
     }
 
     std::vector<char> &alloc_key() {
-    	size_t _ix = key.size();
-    	key.resize(_ix+1);
-    	return key[_ix];
+        size_t _ix = key.size();
+        key.resize(_ix+1);
+        return key[_ix];
     }
 
     void reset() {
-    	_cmds_used = 0;
+        _cmds_used = 0;
         cmds_ptr = cmds;
         cmds_lens_ptr = cmds_lens;
     }
 
     //most class variables are automatically done via class declared initialization
     request_walker_contexct_t() {
-    	reset();
+        reset();
     }
 
     bool enough(size_t cnt) {
-    	return ((_cmds_used+cnt) < MAX_EXP_CMD);
+        return ((_cmds_used+cnt) < MAX_EXP_CMD);
     }
 
     void set_current_entry(const char *data, size_t len) {
@@ -344,15 +344,15 @@ bool request_walker_contexct_t::set(cps_db::connection::db_operation_atom_t * ls
     for ( ; iter < len_; ++iter ) {
         _cur = lst_+iter;
         if (!_map->at((int)_cur->_atom_type)(*this)) {
-        	reset();
-        	return false;
+            reset();
+            return false;
         }
     }
     return true;
 }
 
 inline void SET_RC(cps_api_return_code_t *rc, cps_api_return_code_t val) {
-	if (rc!=nullptr) *rc = val;
+    if (rc!=nullptr) *rc = val;
 }
 
 inline void SET_RC_FROM_ERRNO(cps_api_return_code_t *rc, int poll_rc) {
@@ -364,7 +364,7 @@ inline void SET_RC_FROM_ERRNO(cps_api_return_code_t *rc, int poll_rc) {
 
 
 bool cps_db::connection::writable(size_t timeoutms, cps_api_return_code_t *rc) {
-	SET_RC(rc,cps_api_ret_code_ERR);
+    SET_RC(rc,cps_api_ret_code_ERR);
     int _rc = poll(&_wr,1,timeoutms);
     SET_RC_FROM_ERRNO(rc,_rc);
 
@@ -375,7 +375,7 @@ bool cps_db::connection::writable(size_t timeoutms, cps_api_return_code_t *rc) {
 }
 
 bool cps_db::connection::readable(size_t timeoutms, cps_api_return_code_t *rc) {
-	SET_RC(rc,cps_api_ret_code_ERR);
+    SET_RC(rc,cps_api_ret_code_ERR);
 
     int _rc = poll(&_rd,1,timeoutms);
     SET_RC_FROM_ERRNO(rc,_rc);
@@ -387,7 +387,7 @@ bool cps_db::connection::readable(size_t timeoutms, cps_api_return_code_t *rc) {
 }
 
 bool cps_db::connection::operation(db_operation_atom_t * lst_,size_t len_,
-		bool force_push,size_t timeoutms, cps_api_return_code_t *rc) {
+        bool force_push,size_t timeoutms, cps_api_return_code_t *rc) {
     request_walker_contexct_t ctx(lst_,len_);
 
     SET_RC(rc,cps_api_ret_code_COMMUNICATION_ERROR);
@@ -410,7 +410,7 @@ bool cps_db::connection::operation(db_operation_atom_t * lst_,size_t len_,
 
         EV_LOGGING(CPS-DB-CONN,ERR,"CPS-RED-CON-OP","Seems to be an issue with the REDIS request - (first entry: %s)",ctx.cmds[0]);
         if (!reconnect()) {
-        	return false;
+            return false;
         }
     } while (retry-->0);
 
@@ -425,7 +425,7 @@ bool cps_db::connection::operation(db_operation_atom_t * lst_,size_t len_,
 
 
 bool cps_db::connection::flush(size_t timeoutms, cps_api_return_code_t *rc) {
-	SET_RC(rc,cps_api_ret_code_COMMUNICATION_ERROR);
+    SET_RC(rc,cps_api_ret_code_COMMUNICATION_ERROR);
 
     int _is_done=0;
     while (_is_done==0) {
@@ -463,8 +463,8 @@ static bool is_event_message(void *resp) {
 }
 
 bool cps_db::connection::response(response_set &data_, size_t timeoutms,
-		cps_api_return_code_t *rc) {
-	SET_RC(rc,cps_api_ret_code_COMMUNICATION_ERROR);
+        cps_api_return_code_t *rc, bool force_timeout_check) {
+    SET_RC(rc,cps_api_ret_code_COMMUNICATION_ERROR);
 
     if (_ctx==nullptr)
         return false;
@@ -485,7 +485,7 @@ bool cps_db::connection::response(response_set &data_, size_t timeoutms,
         }
 
         if (reply==nullptr) {
-            if (!cps_api_db_is_local_node(_addr.c_str())) {
+            if (force_timeout_check || !cps_api_db_is_local_node(_addr.c_str())) {
                 if (timeoutms==_SELECT_MS_WAIT)timeoutms = _timeout_remote;
                 if (!readable(timeoutms,rc)) {
                     _rc=false; continue;
@@ -515,8 +515,8 @@ bool cps_db::connection::response(response_set &data_, size_t timeoutms,
 }
 
 bool cps_db::connection::command(db_operation_atom_t * lst,size_t len,
-		response_set &set,size_t timeoutms,
-		cps_api_return_code_t *rc) {
+        response_set &set,size_t timeoutms,
+        cps_api_return_code_t *rc) {
 
     if (!operation(lst,len,true,timeoutms,rc)) {
         return false;
@@ -533,7 +533,7 @@ bool cps_db::connection::used_within(uint64_t relative) {
 }
 
 bool cps_db::connection::has_event(bool &err, cps_api_return_code_t *rc) {
-	SET_RC(rc,cps_api_ret_code_COMMUNICATION_ERROR);
+    SET_RC(rc,cps_api_ret_code_COMMUNICATION_ERROR);
     if (_ctx==nullptr)
         return false;
 
@@ -559,8 +559,8 @@ bool cps_db::connection::has_event(bool &err, cps_api_return_code_t *rc) {
 #include "std_select_tools.h"
 
 bool cps_db::connection::get_event(response_set &data, bool &err_occured,
-		cps_api_return_code_t *rc) {
-	SET_RC(rc,cps_api_ret_code_COMMUNICATION_ERROR);
+        cps_api_return_code_t *rc) {
+    SET_RC(rc,cps_api_ret_code_COMMUNICATION_ERROR);
 
     if (_ctx==nullptr)
         return false;
