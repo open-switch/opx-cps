@@ -46,10 +46,10 @@ class response_set;
 class connection {
 
 public:
-	enum { _SELECT_MS_WAIT = (2000) };
-    enum error_rc_e { 	error_rc_e_timeout=1,	//timeout during communication
-    					error_rc_e_channel=2, 	//the specific communication channel
-						error_rc_e_response=3,	//response
+    enum { _SELECT_MS_WAIT = (2000) };
+    enum error_rc_e {     error_rc_e_timeout=1,    //timeout during communication
+                        error_rc_e_channel=2,     //the specific communication channel
+                        error_rc_e_response=3,    //response
     };
     struct db_operation_atom_t {
         const char *_string=nullptr;
@@ -86,11 +86,11 @@ public:
     std::string addr() { return _addr; } //make a copy.. since reconnects could change it in the future
 
     bool command(db_operation_atom_t * lst,size_t len,response_set &set,
-    		size_t timeoutms=_SELECT_MS_WAIT, cps_api_return_code_t *rc=nullptr);
+            size_t timeoutms=_SELECT_MS_WAIT, cps_api_return_code_t *rc=nullptr);
     bool response(response_set &data, size_t timeoutms=_SELECT_MS_WAIT, cps_api_return_code_t *rc=nullptr);
 
     bool operation(db_operation_atom_t * lst,size_t len, bool force_flush=false,
-    		size_t timeoutms=_SELECT_MS_WAIT, cps_api_return_code_t *rc=nullptr);
+            size_t timeoutms=_SELECT_MS_WAIT, cps_api_return_code_t *rc=nullptr);
     bool flush(size_t timeoutms=_SELECT_MS_WAIT, cps_api_return_code_t *rc=nullptr);
 
     /**
@@ -119,9 +119,9 @@ public:
         if (_rc) update_used();    //if the connection was tested update the validated flag
         return _rc;
     }
-private:
     bool readable(size_t timeoutms, cps_api_return_code_t *rc=nullptr);
     bool writable(size_t timeoutms, cps_api_return_code_t *rc=nullptr);
+private:
 
     //The IP addresss
     std::string _addr ;
