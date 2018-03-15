@@ -47,7 +47,7 @@ static size_t _FAILURE_UNITTEST_MOD=50;
 
 
 //Mutex handing tweaks
-static size_t _MAX_ERROR_RETRY = 1000;
+static size_t _MAX_ERROR_RETRY = 5;
 static size_t _MUTEX_ERROR_RETRY_DELAY= 5;
 
 //Events and event logs
@@ -131,6 +131,7 @@ static void _must_lock_mutex(std_mutex_type_t *lock) {
     while (true) {
         _rc = std_mutex_lock(lock);
         if (_rc==0) break;
+        EV_LOGGING(DSAPI,ERR,"CPS-EVT","Event mutex lock failed %d", STD_ERR_EXT_PRIV (_rc));
         ++_errors;
         if (_errors>_MAX_ERROR_RETRY) {
             abort();
@@ -316,31 +317,6 @@ static void _remove_x_events(size_t ix, size_t mx, _cps_event_queue_list_t &even
     events.erase(events.begin()+ix,events.begin()+mx);
 }
 
-//need to modify the common utilities to give simular functionality
-static t_std_error _condition_var_timed_wait (std_condition_var_t* cond,
-        std_mutex_type_t* mutex,
-        size_t time_in_millisec,
-        bool &timedout)
-{
-    size_t time_sec = (time_in_millisec / 1000);
-    size_t time_nanosec = ((time_in_millisec % 1000) * 1000000);
-
-    struct timespec timeout;
-    struct timespec now;
-    clock_gettime(CLOCK_MONOTONIC, &now);
-    timeout.tv_sec = now.tv_sec + time_sec;
-    timeout.tv_nsec = now.tv_nsec + time_nanosec;
-    timedout = false;
-
-    int rc = pthread_cond_timedwait(cond, mutex, &timeout);
-    if (rc == ETIMEDOUT) {
-        timedout = true;
-        return STD_ERR_OK;
-    }
-    if (rc!=0) return STD_ERR(NULL,FAIL,0);
-    return STD_ERR_OK;
-}
-
 static void *__thread_main_loop(void *param) {
 
     std_mutex_simple_lock_guard lg(&__mutex);
@@ -362,10 +338,11 @@ static void *__thread_main_loop(void *param) {
 
     while (true) {
         bool _timedout=false;
-        int _rc = _condition_var_timed_wait(&__events,&__mutex,_current_timeout,
-                _timedout);
+        int _rc = std_condition_var_timed_wait(&__events,&__mutex,_current_timeout,
+                                               &_timedout);
         if (_rc!=STD_ERR_OK) {
             //note.. may happen on shutdown - needs to address in future
+            EV_LOGGING(DSAPI,ERR,"CPS-EVT","Event timed wait failed %d", STD_ERR_EXT_PRIV (_rc));
             ++_failed_counter;
             if (_failed_counter>_MAX_ERROR_RETRY)abort();
             std_usleep(MILLI_TO_MICRO(_MUTEX_ERROR_RETRY_DELAY));
