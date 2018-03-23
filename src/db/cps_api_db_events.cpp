@@ -43,6 +43,7 @@ using _cps_event_queue_list_t = std::vector<_cps_event_queue_elem_t>;
 namespace {    //as part of internal coding policies - need to use static
 //Inject failure
 static size_t _FAILURE_UNITTEST_ENABLE=0;
+static size_t _FAILURE_HANDLING_REBOOT=1;
 static size_t _FAILURE_UNITTEST_THREAD_SLEEP=4000;
 static size_t _FAILURE_UNITTEST_MOD=50;
 
@@ -107,6 +108,9 @@ static void __cps_api_event_thread_push_init() {
             (ssize_t*)&_FAILURE_UNITTEST_THREAD_SLEEP);
     cps_api_update_ssize_on_param_change("cps.unit-test.event-ut.error-freq",
             (ssize_t*)&_FAILURE_UNITTEST_MOD);
+    cps_api_update_ssize_on_param_change("cps.events.failure-reboot.enable",
+            (ssize_t*)&_FAILURE_HANDLING_REBOOT);
+
 
 }
 
@@ -234,11 +238,11 @@ static bool _change_connection(std::string &current_address, const std::string &
         if (_conn->flush(_event_flush_timeout)) {
             if (!_drain_connection(*_conn, wait_for)) {
                 EV_LOGGING(CPS-DB-EV-CONN,ERR,"EV-DRAIN","Failed to drain responses from server");
-                STD_ASSERT(0);
+                if(_FAILURE_HANDLING_REBOOT) STD_ASSERT(0);
             }
         } else {
             EV_LOGGING(CPS-DB-EV-CONN,ERR,"EV-FLUSH","Failed to flush events to server");
-            STD_ASSERT(0);
+            if(_FAILURE_HANDLING_REBOOT) STD_ASSERT(0);
         }
         cps_db::ProcessDBEvents().put(_db_key,_conn);    //store the handles
     }
