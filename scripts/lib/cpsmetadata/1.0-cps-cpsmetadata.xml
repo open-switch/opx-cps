@@ -54,6 +54,12 @@
 <!-- CPS Node Ownership  -->
 <class_ownership id="cps/node-group" qualifiers="target,observed" owner-type="db" />
 
+<!-- CPS Connectivity Group Ownership  -->
+<class_ownership id="cps/connectivity-group" qualifiers="observed" owner-type="db" automated-events="true"/>
+
+<!-- CPS Connection Object Ownership  -->
+<class_ownership id="cps/connection-object" qualifiers="observed" owner-type="db" automated-events="true"/>
+
 
 <!-- CPS Enum Mapping  -->
 <enum_entry name="base-acl/counter-type" >

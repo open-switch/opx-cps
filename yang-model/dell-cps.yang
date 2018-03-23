@@ -38,6 +38,20 @@ module dell-base-cps {
     }
   }
 
+  typedef group_type {
+    description "Type of supported DB clusters";
+    type enumeration {
+      enum NODAL {
+        value 1;
+        description "Data resides on each node and is not duplicated by node group";
+      }
+      enum GLOBAL {
+        value 2;
+        description "Data is stored in a global database and replicated to a backup node";
+      }
+    }
+  }
+
 
   list node-details {
     description "This object contains a list of aliases for a node.  Any one of the aliases will be converted
@@ -77,16 +91,52 @@ module dell-base-cps {
                     combinations are IPv4:port or [IPv6]:port";
         type string;
       }
+    }
+    leaf type {
+      description "Type of the group cluster";
+      type group_type;
+    }
+  }
+
+  list connectivity-group {
+    description "This object is used to describe the mapping of a group ID to a list of node IP/port combinations.";
+    key "name";
+
+    leaf name {
+      description "The name of the group.";
+      type string;
+    }
+    leaf timestamp {
+      description "Timestamp when the group was created";
+      type string;
+    }
+    list node {
+      leaf name {
+        description "The name of the node entry. (an alias for the ip)";
+        type string;
+      }
+      leaf ip {
+        description "The IP address and port of the element.  Valid IP address/port
+                    combinations are IPv4:port or [IPv6]:port";
+        type string;
+      }
       leaf tunnel-ip {
         description "The IP addres and port of the stunnel client. Valid IP address/port
                     combinations are IPv4:port or [IPv6]:port";
         type string;
       }
+      leaf timestamp {
+        description "Timestamp when the node has connectivity established";
+        type string;
+      }
+
     }
     leaf type {
-      type uint32;
+      description "Type of the group cluster";
+      type group_type;
     }
   }
+
 
   container object-group {
     description "These attributes are placed in objects by CPS infrastructure and provide additional information or change
@@ -226,29 +276,27 @@ module dell-base-cps {
     }
   }
 
-   list tunnel{
-    key "group node-id";
-    leaf group{
-        type string;
-        description "Group name";
-    }
-
-    leaf node-id{
+  list connection-object{
+    key "name";
+    leaf name{
         type string;
         description "Node name";
     }
-
-    leaf ip{
+    leaf addr{
         type string;
-        description "Ip address of the node.";
+        description "The IP address and port of the element.  Valid IP address/port
+                    combinations are IPv4:port or [IPv6]:port";
     }
-
-    leaf port{
+    leaf tunnel{
         type string;
-        config false;
-        description "System port where tunneling from DB to other node occurs.";
+        description "System port where tunneling from DB to other node occurs";
     }
+    leaf timestamp {
+        type string;
+        description "Timestamp when the node has connectivity established";
+      }
   }
+
 
   list service-instance {
     description "This service is registered by the CPS infra and can be used to provide details about active registrations in the system.";
