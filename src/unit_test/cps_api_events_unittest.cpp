@@ -118,6 +118,7 @@ TEST(cps_api_events,test_event_sending_failure_recovery) {
     cps_api_object_guard og(cps_api_object_create());
     //wait for connection event...
     ASSERT_TRUE(cps_api_wait_for_event(handle,og.get())==cps_api_ret_code_OK);
+    cps_api_set_library_flags("cps.events.failure-reboot.enable","0");
     cps_api_set_library_flags("cps.unit-test.event-ut.enable","1");
 
     int cnt=100;
@@ -142,6 +143,7 @@ TEST(cps_api_events,test_event_sending_failure_recovery) {
     cps_api_event_client_disconnect(handle);
 
     cps_api_set_library_flags("cps.unit-test.event-ut.enable","0");
+    cps_api_set_library_flags("cps.events.failure-reboot.enable","1");
 }
 
 
