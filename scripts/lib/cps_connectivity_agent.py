@@ -30,7 +30,6 @@ __running = True
 signum_caught = -1
 
 default_redis_addrv4 = '127.0.0.1:6379'
-default_redis_addrv6 = '::1:6379'
 tunnel_group_mapping = {}
 log_filename = sys._getframe().f_code.co_filename
 
@@ -88,7 +87,7 @@ def cps_convert_attr_data( raw_elem ):
 def _node_connect(node):
     log_funcname = sys._getframe().f_code.co_name
 
-    if node['ip'] == default_redis_addrv4 or node['ip'] == default_redis_addrv6:
+    if node['ip'] == default_redis_addrv4:
         log_msg(6," No Tunnel creations for localhost", log_funcname, sys._getframe().f_lineno )
         return True
     instance_key = node['name']+"_"+node['ip']
@@ -117,7 +116,7 @@ def _node_connect(node):
 def _node_disconnect(node):
     log_funcname = sys._getframe().f_code.co_name
 
-    if node['ip'] == default_redis_addrv4 or node['ip'] == default_redis_addrv6:
+    if node['ip'] == default_redis_addrv4:
         log_msg(6," No Tunnel deletions for localhost since it doesn't exist", log_funcname, sys._getframe().f_lineno )
         return True
 
@@ -198,7 +197,7 @@ def _sync():
                 node = grp['cps/node-group/node'][node_index]
                 l = {'name': node['name'], 'ip': node['ip'], 'timestamp':  '{:%Y-%b-%d %H:%M:%S:%f}'.format(datetime.datetime.now())}
 
-                if node['ip'] == default_redis_addrv4 or node['ip'] == default_redis_addrv6:
+                if node['ip'] == default_redis_addrv4:
                     l.update( {'tunnel-ip': node['ip']} )
                 elif node['name'] not in conn_objs:
                      # Create tunnels
@@ -269,6 +268,7 @@ def _validate_conn_objs():
             with open(tunnel_pid_path, 'r') as fd:
                 pid = fd.read()
             proc_pid_path = "/proc/"+pid
+            proc_pid_path = proc_pid_path.rstrip()
             if not os.path.isdir(proc_pid_path):
                 # Delete the corresponding cps/connection-object
                 delete_conn_obj(conn)
