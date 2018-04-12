@@ -20,5 +20,6 @@ run:
     /opt/opx-build/scripts/opx_build src
     popd
     # copy artifacts to output
-    cp -t dist/ /mnt/*.deb /mnt/*.build /mnt/*.dsc /mnt/*.tar.gz
+    find /mnt/pool \( -name '*.deb' -o -name '*.dsc' -o -name '*.changes' -o -name '*.tar.gz' -o -name '*.build' \) \
+      -exec cp -t dist/ {} +
 
