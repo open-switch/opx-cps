@@ -54,7 +54,6 @@ class cps_api_nodes {
 
     static size_t gen_hash(group_data_t &src);
     bool load_groups();
-    bool load_aliases();
     bool update_slaves(const char * group);
 public:
     db_node_data_t _db_node_map;

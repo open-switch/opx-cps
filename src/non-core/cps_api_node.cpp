@@ -439,36 +439,7 @@ bool cps_api_nodes::ip_to_name(const char *ip, std::string &name) {
     return true;
 }
 
-bool cps_api_nodes::load_aliases() {
-    cps_db::connection_request b(cps_db::ProcessDBCache(),DEFAULT_REDIS_ADDR);
-    if (!b.valid()) {
-        return false;
-    }
-
-    alias_map_t _cpy;
-
-    cps_api_object_guard og(cps_api_object_create());
-    if (!cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),CPS_NODE_DETAILS, cps_api_qualifier_TARGET)) {
-        return false;
-    }
-
-    cps_api_object_list_guard lg(cps_api_object_list_create());
-    if (!cps_db::get_objects(b.get(),og.get(),lg.get())) return false;
-
-    for ( size_t ix = 0, mx = cps_api_object_list_size(lg.get()); ix < mx ; ++ix ) {
-        cps_api_object_t o = cps_api_object_list_get(lg.get(),ix);
-        const char *name = (const char*) cps_api_object_get_data(o,CPS_NODE_DETAILS_NAME);
-        const char *alias = (const char*) cps_api_object_get_data(o,CPS_NODE_DETAILS_ALIAS);
-
-        _cpy[name] = alias;
-    }
-    std::swap(_cpy,_alias_map);
-
-    return true;
-}
-
 bool cps_api_nodes::load() {
-    load_aliases();
     return load_groups();
 }
 
