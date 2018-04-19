@@ -162,17 +162,21 @@ def _get_node_group_objs():
 
     return node_group_objs
 
+def sync_err_cb(methods, params, err):
+    log_funcname = sys._getframe().f_code.co_name
+    log_msg(6," In Error callback with params %s and error %s " %(str(params), str(err)), log_funcname, sys._getframe().f_lineno )
+    return True
+
+def sync_cb(methods, params, res):
+    log_funcname = sys._getframe().f_code.co_name
+    log_msg(6," In sync callback with params %s and response %s " %(str(params), str(res)), log_funcname, sys._getframe().f_lineno )
+    return True
+
+callback_dict = {'sync': sync_cb, 'error': sync_err_cb}
+
 def _sync():
 
     log_funcname = sys._getframe().f_code.co_name
-
-    # Delete all cps/connectivity-group objects
-    group_info = {}
-    data = _fill_connectivity_group_obj(group_info)
-    ret = commit_obj("delete", data )
-    if ret == False:
-        return ret
-    log_msg(6," Deleted all Tunnel cps/connectivity-group objects ", log_funcname, sys._getframe().f_lineno )
 
     # Get all cps/node-group objects
     node_grp_objs = _get_node_group_objs()
@@ -218,11 +222,15 @@ def _sync():
         # Create cps/connectivity-group object in DB
         group_info['timestamp']  = '{:%Y-%b-%d %H:%M:%S:%f}'.format(datetime.datetime.now())
 
+        data = {}
         data = _fill_connectivity_group_obj(group_info)
-        commit_obj("create", data )
+        dest_obj = cps_object.CPSObject(module="cps/connectivity-group", qual="observed")
+        dest_obj.add_attr("name", str(grp['cps/node-group/name']))
+        log_msg(6," In sync- about to sync connectivity grp obj src %s dst %s "%(str(data), str(dest_obj.get())), log_funcname, sys._getframe().f_lineno )
+        cps.reconcile([data], dest_obj.get(), callback_dict)
 
     # Delete tunnels that is not part of any group
-    log_msg(6," Delete Tunnels that is not part of any group" , log_funcname, sys._getframe().f_lineno )
+    log_msg(6," Delete Tunnels that is not part of any group: conn_objs: %s" %(str(conn_objs)) , log_funcname, sys._getframe().f_lineno )
     for conn in conn_objs: 
         if conn_objs[conn]["seen"] == "no":            
             node = {'name': conn, 'ip': conn_objs[conn]['ip']}
