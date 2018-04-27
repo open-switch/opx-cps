@@ -238,11 +238,9 @@ static bool _change_connection(std::string &current_address, const std::string &
         if (_conn->flush(_event_flush_timeout)) {
             if (!_drain_connection(*_conn, wait_for)) {
                 EV_LOGGING(CPS-DB-EV-CONN,ERR,"EV-DRAIN","Failed to drain responses from server");
-                if(_FAILURE_HANDLING_REBOOT) STD_ASSERT(0);
             }
         } else {
             EV_LOGGING(CPS-DB-EV-CONN,ERR,"EV-FLUSH","Failed to flush events to server");
-            if(_FAILURE_HANDLING_REBOOT) STD_ASSERT(0);
         }
         cps_db::ProcessDBEvents().put(_db_key,_conn);    //store the handles
     }
