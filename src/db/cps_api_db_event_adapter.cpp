@@ -344,6 +344,7 @@ static cps_api_return_code_t _cps_api_event_service_client_connect(cps_api_event
     cps_api_key_copy(cps_api_object_key(og.get()),&__grp_key);
     //log error
     if(_register_one_object(*handle,og.get()) != cps_api_ret_code_OK) EV_LOG(ERR,DSAPI,0,"CPS-EVNT-SERVICE","Connectivity group object subscription failed");
+     __maintain_connections(handle_to_data(*handle));
 
     return cps_api_ret_code_OK;
 }
@@ -468,7 +469,7 @@ static cps_api_return_code_t _cps_api_wait_for_event(
             cps_api_object_clone(msg,og.get());
             return cps_api_ret_code_OK;
         }
-        if (std_time_is_expired(nh->_last_checked,MILLI_TO_MICRO(1000*60))) {    //wait for 60 seconds before scanning again
+        if (std_time_is_expired(nh->_last_checked,MILLI_TO_MICRO(1000*3))) {    //wait for 3 seconds before scanning again
             nh->_last_checked = std_get_uptime(nullptr);
             __maintain_connections(nh);
         }
