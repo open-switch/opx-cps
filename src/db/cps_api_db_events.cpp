@@ -20,6 +20,7 @@
 
 #include "std_condition_variable.h"
 #include "std_time_tools.h"
+#include "std_assert.h"
 
 #include "event_log.h"
 
@@ -42,6 +43,7 @@ using _cps_event_queue_list_t = std::vector<_cps_event_queue_elem_t>;
 namespace {    //as part of internal coding policies - need to use static
 //Inject failure
 static size_t _FAILURE_UNITTEST_ENABLE=0;
+static size_t _FAILURE_HANDLING_REBOOT=1;
 static size_t _FAILURE_UNITTEST_THREAD_SLEEP=4000;
 static size_t _FAILURE_UNITTEST_MOD=50;
 
@@ -106,6 +108,9 @@ static void __cps_api_event_thread_push_init() {
             (ssize_t*)&_FAILURE_UNITTEST_THREAD_SLEEP);
     cps_api_update_ssize_on_param_change("cps.unit-test.event-ut.error-freq",
             (ssize_t*)&_FAILURE_UNITTEST_MOD);
+    cps_api_update_ssize_on_param_change("cps.events.failure-reboot.enable",
+            (ssize_t*)&_FAILURE_HANDLING_REBOOT);
+
 
 }
 
