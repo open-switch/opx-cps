@@ -22,6 +22,8 @@
 #include "cps_string_utils.h"
 #include "cps_api_core_utils.h"
 #include "event_log.h"
+#include "std_time_tools.h"
+#include "std_mutex_lock.h"
 
 
 #include <netinet/tcp.h>
@@ -41,6 +43,30 @@ static ssize_t _operation_retry_flags=1;
 
 static ssize_t _timeout_local=2000;
 static ssize_t _timeout_remote=2000;
+static std_mutex_lock_create_static_init_rec(_mutex);
+
+class _db_op_timer {
+	uint64_t _ts;
+	static size_t _flush_max_timeout;
+public:
+	_db_op_timer() {
+		_ts = std_get_uptime(nullptr);
+	}
+	~_db_op_timer() {
+		auto _now = std_get_uptime(nullptr);
+		auto _tms = ((_now - _ts)/100000)*100; //round to the nearest 100ms
+		std_mutex_lock(&_mutex);
+		if (_tms > _flush_max_timeout) {
+                _flush_max_timeout = _tms;
+                EV_LOGGING(CPS-DB-CONN,NOTICE,"FLUSH-TO","It took %lu.%03u seconds to flush to the DB.",
+					(unsigned long)(_flush_max_timeout/1000),(unsigned int)(_flush_max_timeout%1000));
+		}
+		std_mutex_unlock(&_mutex);
+
+	}
+};
+
+size_t _db_op_timer::_flush_max_timeout = 2000;
 
 static void __init(void) {
     cps_api_update_ssize_on_param_change("cps.connect.operation-retry",
@@ -426,11 +452,14 @@ bool cps_db::connection::operation(db_operation_atom_t * lst_,size_t len_,
 
 bool cps_db::connection::flush(size_t timeoutms, cps_api_return_code_t *rc) {
     SET_RC(rc,cps_api_ret_code_COMMUNICATION_ERROR);
+     _db_op_timer _tm;
 
     int _is_done=0;
     while (_is_done==0) {
         if (!cps_api_db_is_local_node(_addr.c_str())) {
             if (timeoutms==_SELECT_MS_WAIT)timeoutms = _timeout_remote;
+        } else {
+            if (timeoutms==_SELECT_MS_WAIT) timeoutms = _timeout_local;
         }
         if (!writable(timeoutms,rc)) {
             EV_LOGGING(CPS-DB-CONN,ERR,"FLUSH","Sending buffer full - terminating.. (%d)",(timeoutms));
