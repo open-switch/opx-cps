@@ -104,7 +104,7 @@ void cps_db::connection::db_operation_atom_t::from_object(cps_api_object_t obj, 
 }
 
 void cps_db::connection::disconnect() {
-    EV_LOGGING(CPS-DB-CONN,WARNING,"CPS-DB-DISCONNECT","Disconnected from %s("
+    EV_LOGGING(CPS-DB-CONN,DEBUG,"CPS-DB-DISCONNECT","Disconnected from %s("
                 "source address %s) - was connected (%d) - stack trace (%s)",
                 _addr.c_str(),_local.c_str(),_ctx!=nullptr,cps_api_stacktrace().c_str());
 
