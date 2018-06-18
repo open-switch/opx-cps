@@ -42,28 +42,23 @@ class cps_api_nodes {
     using group_data_t = std::unordered_map<std::string,_node_data>;
     using group_master_data_t = std::unordered_map<std::string,std::string>;
     using db_node_data_t = std::unordered_map<std::string,std::vector<_db_node_data>>;
-    using group_members_t = std::unordered_map<std::string,std::unordered_set<std::string>>;
 
     std::recursive_mutex _mutex;
     std::unordered_map<std::string,std::string> _ip_to_name_map;
     std::unordered_set<std::string> _master_set;
     group_data_t _groups;
-    size_t _hash;
+    size_t _hash=0;
 
     alias_map_t _alias_map;
 
 
     static size_t gen_hash(group_data_t &src);
     bool load_groups();
-    bool load_aliases();
     bool update_slaves(const char * group);
 public:
     db_node_data_t _db_node_map;
     group_master_data_t _master;
-    group_members_t _group_node_map;
 
-    bool get_group_info(std::string group,std::unordered_set<std::string> & node_list);
-    bool add_group_info(std::string group,std::unordered_set<std::string> & node_list);
     bool is_master_set(std::string group);
     bool group_exists(const std::string &group);
     void mark_master_set(std::string group){ _master_set.insert(group); }

@@ -38,26 +38,30 @@
 #include <stdlib.h>
 
 #include "gtest/gtest.h"
-
+#include <mutex>
 
 static size_t cnt=0;
 static bool _first_time = false;
+std::mutex _mutex;
+
 
 bool _cps_api_event_term2(cps_api_object_t object,void * context) {
      char buff[1024];
      _first_time=true;
-     //uint32_t* data = (uint32_t*)cps_api_object_get_data(object,1);
+     _mutex.lock();
      printf("2 ---- %d(%d) - Obj %s\n",0,(int)cnt,cps_api_object_to_string(object,buff,sizeof(buff)));
      ++cnt;
+     _mutex.unlock();
      return true;
 }
 
 bool _cps_api_event_term1(cps_api_object_t object,void * context) {
     char buff[1024];
     _first_time=true;
-    //uint32_t* data = (uint32_t*)cps_api_object_get_data(object,1);
+    _mutex.lock();
     printf("1 ---- %d(%d) - Obj %s\n",0,(int)cnt,cps_api_object_to_string(object,buff,sizeof(buff)));
     ++cnt;
+    _mutex.unlock();
     return true;
 }
 
@@ -83,15 +87,16 @@ TEST(cps_api_events,event_thread) {
 
     cps_api_attr_id_t ids[] = {BASE_IP_IPV6, BASE_IP_IPV4};
     cps_api_object_list_guard lg(cps_api_object_list_create());
-    size_t ix = 0;
+
     size_t mx = sizeof(ids)/sizeof(*ids);
 
-    for ( ; ix < mx ; ++ix ) {
+    for ( size_t ix = 0 ; ix < mx ; ++ix ) {
         cps_api_object_t o = cps_api_object_list_create_obj_and_append(lg.get());
         ASSERT_TRUE(o!=nullptr);
         cps_api_key_from_attr_with_qual(cps_api_object_key(o),ids[ix],cps_api_qualifier_TARGET);
     }
 
+    printf("Registering callbacks\n");
     cps_api_event_thread_reg_object(lg.get(),_cps_api_event_term1,nullptr);
     cps_api_event_thread_reg_object(lg.get(),_cps_api_event_term2,nullptr);
 
@@ -99,17 +104,16 @@ TEST(cps_api_events,event_thread) {
 
     static const size_t CALLBACKS = 2;
 
-    size_t _mx =1;
-    for ( ix=0 ; ix < mx ; ++ix ) {
+    for ( size_t repeat_cnt =0 ; repeat_cnt < mx ; ++repeat_cnt ) {
         cps_api_attr_id_t ids[] = {BASE_IP_IPV4, BASE_IP_IPV6};
 
         size_t _ix = 0;
-        size_t _mx = sizeof(ids)/sizeof(*ids);
-        for ( ; _ix < _mx ; ++_ix ) {
+        for ( ; _ix < mx ; ++_ix ) {
             cps_api_object_guard og(cps_api_object_create());
             ASSERT_TRUE(og.valid());
             cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),ids[_ix],cps_api_qualifier_TARGET);
-            cps_api_object_attr_add_u32(og.get(),1,ix);cps_api_key_set_group(og.get(),"A");
+            cps_api_object_attr_add_u32(og.get(),1,(repeat_cnt*mx)+_ix);
+
             cps_api_event_thread_publish(og.get());
         }
     }
@@ -118,7 +122,7 @@ TEST(cps_api_events,event_thread) {
         sleep(1);
         if ((time(NULL) - now)> 30) break;
     }
-    ASSERT_EQ(cnt,(mx*_mx*CALLBACKS));
+    ASSERT_EQ(cnt,(mx*mx*CALLBACKS));
 
 }
 
