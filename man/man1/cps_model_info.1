@@ -1,0 +1,385 @@
+.TH cps_model_info "1opx" "2018-06-11" OPX "OPX utilities"
+.SH NAME
+cps_model_info \- Print structure of a CPS API object
+.SH SYNOPSIS
+.SY cps_model_info
+.I object
+.YS
+.SH DESCRIPTION
+This command allows the user to display:
+.IP \(bu
+the heirarchy and structure CPS API objects; and
+.IP \(bu
+the owning service of CPS API objects.
+.P
+The object \fIobject\fR is specified as a slash-separated pathname of the form a/b/c/..., much like a Unix pathname.  Object names are defined by the CPS API YANG models.
+.SH EXAMPLE
+.nf
+.eo
+# Display the structure and ownership of the platform entity object
+
+root@OPX:~# cps_model_info base-pas/entity
+
+base-pas/entity/insertion-cnt
+	Attribute Type =  leaf
+	Data Type =  uint64_t
+	Description =  Number of times entity inserted
+
+Registered to CPS with qualifier:  target
+
+Process Owner:  opx_pas_service 
+
+
+Registered to CPS with qualifier:  observed
+
+Process Owner:  opx_pas_service 
+
+
+Registered to CPS with qualifier:  realtime
+
+Process Owner:  opx_pas_service 
+
+
+base-pas/entity/insertion-timestamp
+	Attribute Type =  leaf
+	Data Type =  uint32_t
+	Description =  Timestamp of last entity insertion
+
+Registered to CPS with qualifier:  target
+
+Process Owner:  opx_pas_service 
+
+
+Registered to CPS with qualifier:  observed
+
+Process Owner:  opx_pas_service 
+
+
+Registered to CPS with qualifier:  realtime
+
+Process Owner:  opx_pas_service 
+
+
+base-pas/entity/part-number
+	Attribute Type =  leaf
+	Data Type =  string
+	Description =  Entity Part Number
+
+Registered to CPS with qualifier:  target
+
+Process Owner:  opx_pas_service 
+
+
+Registered to CPS with qualifier:  observed
+
+Process Owner:  opx_pas_service 
+
+
+Registered to CPS with qualifier:  realtime
+
+Process Owner:  opx_pas_service 
+
+
+base-pas/entity/vendor-name
+	Attribute Type =  leaf
+	Data Type =  string
+	Description =  Entity vendor name
+
+Registered to CPS with qualifier:  target
+
+Process Owner:  opx_pas_service 
+
+
+Registered to CPS with qualifier:  observed
+
+Process Owner:  opx_pas_service 
+
+
+Registered to CPS with qualifier:  realtime
+
+Process Owner:  opx_pas_service 
+
+
+base-pas/entity/slot
+	Attribute Type =  leaf
+	Data Type =  uint8_t
+	Description =  Entity slot
+
+Registered to CPS with qualifier:  target
+
+Process Owner:  opx_pas_service 
+
+
+Registered to CPS with qualifier:  observed
+
+Process Owner:  opx_pas_service 
+
+
+Registered to CPS with qualifier:  realtime
+
+Process Owner:  opx_pas_service 
+
+
+base-pas/entity/entity-type
+	Attribute Type =  leaf
+	Data Type =  enum
+	Description =  Entity type
+
+Registered to CPS with qualifier:  target
+
+Process Owner:  opx_pas_service 
+
+
+Registered to CPS with qualifier:  observed
+
+Process Owner:  opx_pas_service 
+
+
+Registered to CPS with qualifier:  realtime
+
+Process Owner:  opx_pas_service 
+
+
+base-pas/entity/present
+	Attribute Type =  leaf
+	Data Type =  bool
+	Description =  Entity present flag
+
+Registered to CPS with qualifier:  target
+
+Process Owner:  opx_pas_service 
+
+
+Registered to CPS with qualifier:  observed
+
+Process Owner:  opx_pas_service 
+
+
+Registered to CPS with qualifier:  realtime
+
+Process Owner:  opx_pas_service 
+
+
+base-pas/entity/platform-name
+	Attribute Type =  leaf
+	Data Type =  string
+	Description =  Entity platform name
+
+Registered to CPS with qualifier:  target
+
+Process Owner:  opx_pas_service 
+
+
+Registered to CPS with qualifier:  observed
+
+Process Owner:  opx_pas_service 
+
+
+Registered to CPS with qualifier:  realtime
+
+Process Owner:  opx_pas_service 
+
+
+base-pas/entity/service-code
+	Attribute Type =  leaf
+	Data Type =  string
+	Description =  Entity service code
+
+Registered to CPS with qualifier:  target
+
+Process Owner:  opx_pas_service 
+
+
+Registered to CPS with qualifier:  observed
+
+Process Owner:  opx_pas_service 
+
+
+Registered to CPS with qualifier:  realtime
+
+Process Owner:  opx_pas_service 
+
+
+base-pas/entity/name
+	Attribute Type =  leaf
+	Data Type =  string
+	Description =  Printable name of entity
+
+Registered to CPS with qualifier:  target
+
+Process Owner:  opx_pas_service 
+
+
+Registered to CPS with qualifier:  observed
+
+Process Owner:  opx_pas_service 
+
+
+Registered to CPS with qualifier:  realtime
+
+Process Owner:  opx_pas_service 
+
+
+base-pas/entity/admin-status
+	Attribute Type =  leaf
+	Data Type =  enum
+	Description =  Administrative status
+
+Registered to CPS with qualifier:  target
+
+Process Owner:  opx_pas_service 
+
+
+Registered to CPS with qualifier:  observed
+
+Process Owner:  opx_pas_service 
+
+
+Registered to CPS with qualifier:  realtime
+
+Process Owner:  opx_pas_service 
+
+
+base-pas/entity/fault-type
+	Attribute Type =  leaf
+	Data Type =  enum
+	Description =  Cause of fault
+
+Registered to CPS with qualifier:  target
+
+Process Owner:  opx_pas_service 
+
+
+Registered to CPS with qualifier:  observed
+
+Process Owner:  opx_pas_service 
+
+
+Registered to CPS with qualifier:  realtime
+
+Process Owner:  opx_pas_service 
+
+
+base-pas/entity/hw-version
+	Attribute Type =  leaf
+	Data Type =  string
+	Description =  Entity hardware version
+
+Registered to CPS with qualifier:  target
+
+Process Owner:  opx_pas_service 
+
+
+Registered to CPS with qualifier:  observed
+
+Process Owner:  opx_pas_service 
+
+
+Registered to CPS with qualifier:  realtime
+
+Process Owner:  opx_pas_service 
+
+
+base-pas/entity/product-name
+	Attribute Type =  leaf
+	Data Type =  string
+	Description =  Entity product name
+
+Registered to CPS with qualifier:  target
+
+Process Owner:  opx_pas_service 
+
+
+Registered to CPS with qualifier:  observed
+
+Process Owner:  opx_pas_service 
+
+
+Registered to CPS with qualifier:  realtime
+
+Process Owner:  opx_pas_service 
+
+
+base-pas/entity/oper-status
+	Attribute Type =  leaf
+	Data Type =  enum
+	Description =  Operational status
+
+Registered to CPS with qualifier:  target
+
+Process Owner:  opx_pas_service 
+
+
+Registered to CPS with qualifier:  observed
+
+Process Owner:  opx_pas_service 
+
+
+Registered to CPS with qualifier:  realtime
+
+Process Owner:  opx_pas_service 
+
+
+base-pas/entity/service-tag
+	Attribute Type =  leaf
+	Data Type =  string
+	Description =  Entity service tag
+
+Registered to CPS with qualifier:  target
+
+Process Owner:  opx_pas_service 
+
+
+Registered to CPS with qualifier:  observed
+
+Process Owner:  opx_pas_service 
+
+
+Registered to CPS with qualifier:  realtime
+
+Process Owner:  opx_pas_service 
+
+
+base-pas/entity/ppid
+	Attribute Type =  leaf
+	Data Type =  string
+	Description =  Entity PPID
+
+Registered to CPS with qualifier:  target
+
+Process Owner:  opx_pas_service 
+
+
+Registered to CPS with qualifier:  observed
+
+Process Owner:  opx_pas_service 
+
+
+Registered to CPS with qualifier:  realtime
+
+Process Owner:  opx_pas_service 
+
+
+base-pas/entity/entity-type-choice
+	Attribute Type =  container
+	Description =  
+
+Registered to CPS with qualifier:  target
+
+Process Owner:  opx_pas_service 
+
+
+Registered to CPS with qualifier:  observed
+
+Process Owner:  opx_pas_service 
+
+
+Registered to CPS with qualifier:  realtime
+
+Process Owner:  opx_pas_service 
+.ec
+.fi
+.SH REPORTING BUGS
+To report any OPX software bugs, please refer to https://github.com/open-switch/opx-docs/wiki/Report-bugs.
+.SH COPYRIGHT
+Copyright \(co 2018 Dell Inc. and its subsidiaries. All Rights Reserved.
