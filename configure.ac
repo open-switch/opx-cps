@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 AC_PREREQ([2.69])
-AC_INIT([opx-cps], [3.6.2+opx4], [ops-dev@lists.openswitch.net])
+AC_INIT([opx-cps], [3.6.2+opx5], [ops-dev@lists.openswitch.net])
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 AC_CONFIG_SRCDIR([.])
 AC_CONFIG_HEADERS([config.h])
