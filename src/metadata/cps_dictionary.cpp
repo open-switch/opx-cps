@@ -37,6 +37,7 @@
 #include <functional>
 #include <inttypes.h>
 #include <string.h>
+#include <algorithm>
 
 #define CPS_ATTR_ID_GEN_ATTR_ID_START (0)
 #define CPS_ATTR_ID_GEN_ATTR_ID_END (1<<16)
@@ -176,7 +177,7 @@ cps_api_return_code_t cps_api_set_library_flags(const char * flag, const char *v
         }
     }
     }
-    __trigger_param_callback(val);
+    __trigger_param_callback(flag);
     return cps_api_ret_code_OK;
 
 }
@@ -526,6 +527,8 @@ std::string cps_api_object_attr_data_to_string(cps_api_attr_id_t id, const void 
     CPS_CLASS_DATA_TYPE_t _type = CPS_CLASS_DATA_TYPE_T_BIN;
     cps_class_map_attr_type(id, &_type);
 
+    if (len==0) return "";
+
     switch(_type) {
     case CPS_CLASS_DATA_TYPE_T_UINT8:
         return cps_string::sprintf("%x",*(uint8_t*)data);
@@ -585,8 +588,9 @@ static std::string _escape(std::string data) {
 std::string cps_api_object_attr_as_string(cps_api_attr_id_t id, const void * data, size_t len) {
     const char * _raw_name = cps_attr_id_to_name(id);
     std::string _ret = _raw_name!=nullptr ? _raw_name : cps_string::sprintf("%d",(int)id);
-    std::string _data = cps_api_object_attr_data_to_string(id,data,len);
 
+    std::string _data = cps_api_object_attr_data_to_string(id,data,len);
+    _data += cps_string::sprintf(":(%d)",(int)len);
     return _ret + " : " + _escape(_data);
 }
 
@@ -594,10 +598,33 @@ void cps_api_object_print(cps_api_object_t obj) {
     printf("%s\n",cps_api_object_to_c_string(obj).c_str());
 }
 
+static std::array<cps_api_attr_id_t, 22> cps_metadata_ids{ { CPS_NODE_GROUP_NODE_NAME,
+					 CPS_NODE_GROUP_NODE_IP,
+					 CPS_NODE_GROUP_NAME,
+					 CPS_NODE_GROUP_NODE,
+					 CPS_NODE_GROUP_TYPE,
+					 CPS_NODE_GROUP_OBJ,
+					 CPS_OBJECT_GROUP_GROUP,
+					 CPS_OBJECT_GROUP_NODE,
+					 CPS_OBJECT_GROUP_TRANSACTION,
+					 CPS_OBJECT_GROUP_FAILED_NODES,
+					 CPS_OBJECT_GROUP_OBJ,
+					 CPS_OBJECT_GROUP_EXACT_MATCH,
+					 CPS_OBJECT_GROUP_RETURN_CODE,
+					 CPS_OBJECT_GROUP_GET_NEXT,
+					 CPS_OBJECT_GROUP_NUMBER_OF_ENTRIES,
+					 CPS_OBJECT_GROUP_CONFIG_TYPE,
+					 CPS_OBJECT_GROUP_WILDCARD_SEARCH,
+					 CPS_OBJECT_GROUP_RETURN_STRING,
+					 CPS_OBJECT_GROUP_CONTINUE_ON_FAILURE,
+					 CPS_OBJECT_GROUP_SEQUENCE,
+					 CPS_OBJECT_GROUP_THREAD_ID,
+					 CPS_OBJECT_GROUP_TIMESTAMP }
+					};
 static inline bool __is_in_cps_attr_set(cps_api_attr_id_t id) {
-    static const cps_api_attr_id_t _cps_start_id_range =(cps_api_attr_id_t)(cps_api_obj_CAT_CPS*CPS_ATTR_ID_GEN_ATTR_ID_END);
-    static const cps_api_attr_id_t _cps_end_id_range = (cps_api_attr_id_t)((cps_api_obj_CAT_CPS+1)*CPS_ATTR_ID_GEN_ATTR_ID_END);
-    return id >=_cps_start_id_range && id<_cps_end_id_range;    //return true if the attribute ID is within the CPS attribute space
+    auto it = std::find(cps_metadata_ids.begin(), cps_metadata_ids.end(), id);
+    if(it != cps_metadata_ids.end()) return true;
+    return false;
 }
 
 bool cps_api_attr_id_is_temporary(cps_api_attr_id_t id) {

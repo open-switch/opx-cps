@@ -38,7 +38,9 @@ public:
     //simple string returns
     int get_str_len() ;
     const char *get_str() ;
+
     bool is_str();
+    bool is_nill();
 
     //error status check
     bool is_ok();

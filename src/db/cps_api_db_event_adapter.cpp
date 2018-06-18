@@ -45,7 +45,8 @@
 #include <memory>
 #include <set>
 
-
+static cps_api_key_t __grp_key;
+static pthread_once_t __one_time_only;//need to statically init
 
 struct db_connection_details {
     std::string _name;
@@ -65,10 +66,14 @@ struct db_connection_details {
 struct __db_event_handle_t {
     std::recursive_mutex _mutex;
 
+    std::unordered_map<std::vector<char>,std::string,cps_utils::vector_hash<char>> _key_translation;
+
     std::unordered_map<std::string,std::vector<std::vector<char>>> _group_keys;
 
     std::unordered_map<std::string,std::unique_ptr<cps_db::connection>> _connections;
     std::unordered_map<std::string,db_connection_details> _connection_mon;
+
+    std::unordered_map<size_t,size_t> _sequence_tracker;
 
     cps_api_key_cache<std::vector<cps_api_object_t>> _filters;
 
@@ -184,7 +189,7 @@ static void __resync_regs(cps_api_event_service_handle_t handle) {
                 [nd,&it,&handle,&_connections_changed](const std::string &node) ->bool {
             //occurs one for each node in the group
             auto con_it = nd->_connections.find(node);
-            if (con_it==nd->_connections.end()) {    //if the connection is good
+            if (con_it==nd->_connections.end()) {    //if the connection is not so good
                 return true;
             }
 
@@ -202,6 +207,14 @@ static void __resync_regs(cps_api_event_service_handle_t handle) {
                     return true;
                 }
                 nd->_connection_mon[node]._keys.insert(reg_it);
+
+                //
+                auto _k_it = nd->_key_translation.find(reg_it);
+                if (_k_it!=nd->_key_translation.end()) {
+                    EV_LOGGING(CPS-DB-CONN,INFO,"EVT-REG","Syncing registration for %s to the backend %s",
+                            _k_it->second.c_str(),node.c_str());
+                }
+
             }
             nd->_connection_mon[node]._group_reg[it.first] = true;
             return true;
@@ -275,14 +288,6 @@ static bool __maintain_connections(__db_event_handle_t *nh) {
     return new_conn;
 }
 
-static cps_api_return_code_t _cps_api_event_service_client_connect(cps_api_event_service_handle_t * handle) {
-    std::unique_ptr<__db_event_handle_t> _h(new __db_event_handle_t);
-    _h->_pending_events = cps_api_object_list_create();
-    if (_h->_pending_events==nullptr) return cps_api_ret_code_ERR;
-    *handle = _h.release();
-    return cps_api_ret_code_OK;
-}
-
 static cps_api_return_code_t _register_one_object(cps_api_event_service_handle_t handle,
         cps_api_object_t object) {
 
@@ -301,6 +306,7 @@ static cps_api_return_code_t _register_one_object(cps_api_event_service_handle_t
     }
 
     try {
+        nh->_key_translation[_key] = cps_api_object_to_c_string(object);
         nh->_group_keys[_group].push_back(std::move(_key));    //add this key to the group
     } catch(std::exception &e) {
         return cps_api_ret_code_ERR;
@@ -319,6 +325,30 @@ static cps_api_return_code_t _register_one_object(cps_api_event_service_handle_t
 
     return cps_api_ret_code_OK;
 }
+
+static void __init_event_data(void) {
+    cps_api_key_from_attr_with_qual(&__grp_key,CPS_CONNECTIVITY_GROUP,cps_api_qualifier_OBSERVED);
+}
+
+static cps_api_return_code_t _cps_api_event_service_client_connect(cps_api_event_service_handle_t * handle) {
+    std::unique_ptr<__db_event_handle_t> _h(new __db_event_handle_t);
+    _h->_pending_events = cps_api_object_list_create();
+    if (_h->_pending_events==nullptr) return cps_api_ret_code_ERR;
+    *handle = _h.release();
+    
+    //add pthread once
+	pthread_once(&__one_time_only,__init_event_data);
+
+    // Register for connectivity group events
+    cps_api_object_guard og(cps_api_object_create());
+    cps_api_key_copy(cps_api_object_key(og.get()),&__grp_key);
+    //log error
+    if(_register_one_object(*handle,og.get()) != cps_api_ret_code_OK) EV_LOG(ERR,DSAPI,0,"CPS-EVNT-SERVICE","Connectivity group object subscription failed");
+     __maintain_connections(handle_to_data(*handle));
+
+    return cps_api_ret_code_OK;
+}
+
 
 static cps_api_return_code_t _cps_api_event_service_register_objs_function_(cps_api_event_service_handle_t handle,
         cps_api_object_list_t objects) {
@@ -503,10 +533,31 @@ static cps_api_return_code_t _cps_api_wait_for_event(
 
             if (has_data) {
                 if (get_event(it.second.get(),msg,_has_error)) {
+                    // Check if its connectivity group object
+                    if (cps_api_key_matches(&__grp_key, cps_api_object_key(msg), true) == 0) {
+                        EV_LOGGING(CPS-DB-EV-CONN,DEBUG,"EVT-WAIT","Received connectivity group object");
+                        __maintain_connections(nh);
+                        continue;
+                    }
+                    
                     if (!nh->object_matches_filter(msg)) continue;        //throw out if doesn't match
                     std::string node_name;
                     if(cps_api_db_get_node_from_ip(it.first,node_name)) {
                         cps_api_object_attr_add(msg,CPS_OBJECT_GROUP_NODE,node_name.c_str(),node_name.size()+1);
+                    }
+                    EV_LOGGING(CPS-DB-EV-CONN,DEBUG,"EVT-WAIT","Waiting for event returned %s",
+                            cps_api_object_to_c_string(msg).c_str());
+
+                    //_sequence_tracker
+                    uint64_t*_id = (uint64_t*)cps_api_object_get_data(msg,CPS_OBJECT_GROUP_THREAD_ID);
+                    uint64_t*_seq = (uint64_t*)cps_api_object_get_data(msg,CPS_OBJECT_GROUP_SEQUENCE);
+                    if (_id!=nullptr && _seq!=nullptr) {
+                        if (nh->_sequence_tracker[*_id]>=(*_seq)) {
+                            EV_LOGGING(CPS-DB-EV-CONN,WARNING,"EVT-RECV","Recieved a unusual sequence number %d:%d"
+                                    , (int)*_id,(int)*_seq);
+                        } else {
+                            nh->_sequence_tracker[*_id]=*_seq;//don't increase in negative case
+                        }
                     }
                     return cps_api_ret_code_OK;
                 } else {

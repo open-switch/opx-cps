@@ -345,6 +345,11 @@ void cps_api_metadata_import(void) {
 
     ///TODO erg.. in a transition where the software will be moving to SONiC soon - and then this should be /etc/sonic/cpsmetadata
     auto _search_path = cps_string::split(CPS_DEF_META_SEARCH_PATHS,":");
+
+    // Search for platform specific metadata files
+    auto _path = cps_string::split(CPS_DEF_SEARCH_PATH_CFG,":");
+    _search_path.insert(_search_path.end(), _path.begin(), _path.end());
+
     for (auto &__dir : _search_path ) {
         std_dir_iterate((__dir+ "/cpsmetadata").c_str(),__cb,&_files,true);
     }
