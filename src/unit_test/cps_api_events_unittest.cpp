@@ -65,29 +65,85 @@ TEST(cps_api_events,initialize_event_system) {
 }
 
 const static auto &_rep_send_event = [] (size_t range) ->bool {
-	size_t ix = 0;
-	size_t mx = cps_api_object_list_size(Get1000());
-	for ( ; ix < range ; ++ix ) {
-		cps_api_object_t o = cps_api_object_list_get(Get1000(),ix%mx);
-		if (!cps_api_core_publish(o)) return false;
-	}
-	return true;
+    size_t ix = 0;
+    size_t mx = cps_api_object_list_size(Get1000());
+    for ( ; ix < range ; ++ix ) {
+        cps_api_object_t o = cps_api_object_list_get(Get1000(),ix%mx);
+        if (!cps_api_core_publish(o)) return false;
+    }
+    return true;
 };
 
 TEST(cps_api_events,simple_publish_events_10000) {
-	ASSERT_TRUE(_rep_send_event(10000));
+    ASSERT_TRUE(_rep_send_event(10000));
 }
 
 TEST(cps_api_events,epoll_trial_20000) {
-	std::vector<cps_api_select_handle_t> _handles;
-	size_t ix = 0;
-	size_t mx = 1000;
-	for ( ; ix < mx ; ++ix ) {
-		_handles.push_back(cps_api_select_alloc_read());
-	}
-	for ( auto &it : _handles) {
-		cps_api_select_dealloc(it);
-	}
+    std::vector<cps_api_select_handle_t> _handles;
+    size_t ix = 0;
+    size_t mx = 1000;
+    for ( ; ix < mx ; ++ix ) {
+        _handles.push_back(cps_api_select_alloc_read());
+    }
+    for ( auto &it : _handles) {
+        cps_api_select_dealloc(it);
+    }
+}
+
+/*
+ * This test is just meant to enable errors but be sure that the system overall continues
+ * to run. This is done by enabling the UT flags before exection and then after
+ * clearning the UT flag.  As the test runs, it should not crash or be stuck.
+ *
+ * Additionally, after clearing the flag, the rest of the tests should work properly
+ * */
+
+TEST(cps_api_events,test_event_sending_failure_recovery) {
+
+    cps_api_event_service_handle_t handle;
+
+    ASSERT_TRUE(cps_api_event_client_connect(&handle)==cps_api_ret_code_OK);
+
+    cps_api_event_reg_t reg;
+    reg.priority = 0;
+
+    cps_api_key_t key;
+    ASSERT_TRUE(cps_api_key_from_attr_with_qual(&key,BASE_IP_IPV6_ADDRESS,cps_api_qualifier_TARGET));
+
+    reg.objects = &key;
+    reg.number_of_objects =1;
+
+    ASSERT_TRUE(cps_api_event_client_register(handle,&reg)==cps_api_ret_code_OK) ;
+
+    cps_api_object_guard og(cps_api_object_create());
+    //wait for connection event...
+    ASSERT_TRUE(cps_api_wait_for_event(handle,og.get())==cps_api_ret_code_OK);
+    cps_api_set_library_flags("cps.events.failure-reboot.enable","0");
+    cps_api_set_library_flags("cps.unit-test.event-ut.enable","1");
+
+    int cnt=100;
+    while(--cnt > 0) {
+        og.set(cps_api_object_create());
+
+        ASSERT_TRUE(cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),BASE_IP_IPV6_ADDRESS,cps_api_qualifier_TARGET));
+        cps_api_object_attr_add( og.get(),0,"This is a tag.........",strlen("This is a tag.........")+1);
+        for (size_t cnt=0,mx=1000; cnt < mx ; ++cnt ) {
+            cps_api_object_attr_add( og.get(),BASE_IP_IPV6_ADDRESS_IP,"10.10.10.10",12);
+            cps_api_object_attr_add( og.get(),BASE_IP_IPV6_ADDRESS_PREFIX_LENGTH,"24",3);
+        }
+        printf("Sending...\n");
+        cps_api_event_publish(handle,og.get());
+
+        if(cps_api_timedwait_for_event(handle,og.get(),5000)!=cps_api_ret_code_OK) {
+            printf("Missing events...\n");
+            continue;
+        }
+        printf("Received...\n");
+    }
+    cps_api_event_client_disconnect(handle);
+
+    cps_api_set_library_flags("cps.unit-test.event-ut.enable","0");
+    cps_api_set_library_flags("cps.events.failure-reboot.enable","1");
 }
 
 
@@ -105,24 +161,25 @@ TEST(cps_api_events,basic_clients_jumbo) {
     reg.number_of_objects =1;
 
     ASSERT_TRUE(cps_api_event_client_register(handle,&reg)==cps_api_ret_code_OK) ;
-    
+
     cps_api_object_guard og(cps_api_object_create());
-    //wait for connection event...       
+    //wait for connection event...
     ASSERT_TRUE(cps_api_wait_for_event(handle,og.get())==cps_api_ret_code_OK);
-        
+    sleep(1);
     int cnt=5;
     while(--cnt > 0) {
-    	og.set(cps_api_object_create());
+        og.set(cps_api_object_create());
 
         ASSERT_TRUE(cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),BASE_IP_IPV6_ADDRESS,cps_api_qualifier_TARGET));
+        cps_api_object_attr_add( og.get(),0,"This is a tag.........",strlen("This is a tag.........")+1);
         for (size_t cnt=0,mx=1000; cnt < mx ; ++cnt ) {
-			cps_api_object_attr_add( og.get(),BASE_IP_IPV6_ADDRESS_IP,"10.10.10.10",12);
-			cps_api_object_attr_add( og.get(),BASE_IP_IPV6_ADDRESS_PREFIX_LENGTH,"24",3);
+            cps_api_object_attr_add( og.get(),BASE_IP_IPV6_ADDRESS_IP,"10.10.10.10",12);
+            cps_api_object_attr_add( og.get(),BASE_IP_IPV6_ADDRESS_PREFIX_LENGTH,"24",3);
         }
-        printf("Sending...\n");        
+        printf("Sending...\n");
         cps_api_event_publish(handle,og.get());
         ASSERT_TRUE(cps_api_wait_for_event(handle,og.get())==cps_api_ret_code_OK);
-        printf("Received...\n");        
+        printf("Received...\n");
     }
     cps_api_event_client_disconnect(handle);
 }
@@ -148,8 +205,8 @@ TEST(cps_api_events,basic_clients) {
         cps_api_object_guard og(cps_api_object_create());
         ASSERT_TRUE(cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),BASE_IP_IPV6_ADDRESS,cps_api_qualifier_TARGET));
         for (size_t cnt=0,mx=1; cnt < mx ; ++cnt ) {
-			cps_api_object_attr_add( og.get(),BASE_IP_IPV6_ADDRESS_IP,"10.10.10.10",12);
-			cps_api_object_attr_add( og.get(),BASE_IP_IPV6_ADDRESS_PREFIX_LENGTH,"24",3);
+            cps_api_object_attr_add( og.get(),BASE_IP_IPV6_ADDRESS_IP,"10.10.10.10",12);
+            cps_api_object_attr_add( og.get(),BASE_IP_IPV6_ADDRESS_PREFIX_LENGTH,"24",3);
         }
 
         printf("Sending...\n");
@@ -168,8 +225,8 @@ void _cps_api_publish_event(cps_api_object_t obj, std::function<void(cps_api_obj
     ASSERT_TRUE(cps_api_event_client_connect(&handle)==cps_api_ret_code_OK);
 
     for ( size_t _ix = 0; _ix < count ; ++_ix ) {
-    	cps_api_event_publish(handle,obj);
-    	changer(obj);
+        cps_api_event_publish(handle,obj);
+        changer(obj);
     }
 
     cps_api_event_client_disconnect(handle);
@@ -182,8 +239,8 @@ void _cps_api_publish_event_time(cps_api_object_t obj, std::function<void(cps_ap
     size_t _uptime = std_get_uptime(nullptr);
 
     while ( !std_time_is_expired(_uptime,MILLI_TO_MICRO(time*1000)) ) {
-    	cps_api_event_publish(handle,obj);
-    	changer(obj);
+        cps_api_event_publish(handle,obj);
+        changer(obj);
     }
 
     cps_api_event_client_disconnect(handle);
@@ -204,10 +261,10 @@ void cps_api_events_perf(size_t secs) {
     m2.lock();
 
     std::thread th([&m1,&secs]() {
-    	cps_api_object_guard og(_create_object());
+        cps_api_object_guard og(_create_object());
         m1.lock();
         _cps_api_publish_event_time(og.get(),[](cps_api_object_t o){
-        	static int _inc_value=0;
+            static int _inc_value=0;
             cps_api_object_attr_delete(o,0);
             cps_api_object_attr_add_u64(o,0,++_inc_value);
 
@@ -216,10 +273,10 @@ void cps_api_events_perf(size_t secs) {
     });
 
     std::thread th2([&m2,&secs]() {
-    	cps_api_object_guard og(_create_object());
+        cps_api_object_guard og(_create_object());
         m2.lock();
         _cps_api_publish_event_time(og.get(),[](cps_api_object_t o){
-        	static int _inc_value=0;
+            static int _inc_value=0;
             cps_api_object_attr_delete(o,0);
             cps_api_object_attr_add_u64(o,0,--_inc_value);
 
@@ -260,13 +317,13 @@ void cps_api_events_perf(size_t secs) {
 
 
 TEST(cps_api_events,performance_publish_10k) {
-	cps_api_object_guard og(_create_object());
-	_cps_api_publish_event_time(og.get(),[](cps_api_object_t){},1);
-	cps_api_event_stats();
+    cps_api_object_guard og(_create_object());
+    _cps_api_publish_event_time(og.get(),[](cps_api_object_t){},1);
+    cps_api_event_stats();
 }
 
 TEST(cps_api_events,performance_5_secs) {
-	cps_api_events_perf(5);
+    cps_api_events_perf(5);
 }
 
 

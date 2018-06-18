@@ -32,8 +32,4 @@ bool cps_api_db_get_node_group(const std::string &group,std::vector<std::string>
 
 bool cps_api_db_get_node_from_ip(const std::string & ip, std::string &name);
 
-bool cps_api_db_set_group_config(const char * group,std::unordered_set<std::string> & node_list);
-
-bool cps_api_db_get_group_config(const char * group, std::unordered_set<std::string> & node_list);
-
 #endif /* CPS_API_INC_PRIVATE_DB_CPS_API_NODE_SET_H_ */
