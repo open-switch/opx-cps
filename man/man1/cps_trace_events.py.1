@@ -1,0 +1,71 @@
+.TH cps_trace_events.oy "1" "2018-06-11" OPX "OPX utilities"
+.SH NAME
+cps_trace_events.py \- Print CPS API events as they occurr
+.SH SYNOPSIS
+.SY cps_trace_events.py
+.I qualifier
+.RI [ object ]
+.YS
+.SH DESCRIPTION
+This command allows the user to see CPS API events they occur.
+.P
+Filtering of events printed is based on:
+.IP \(bu
+an object qualifier, which must be one of: target, observed, proposed, realtime, registration, running, or startup; and
+.IP \(bu
+an optional object, specified as a slash-separated pathname of the form a/b/c/..., much like a Unix pathname.  Object names are defined by the CPS API YANG models.
+.SH EXAMPLE
+.nf
+.eo
+# Print out platform entity events as they occur
+
+root@OPX:~# cps_trace_events.py observed base-pas/entity
+Key : 2.28.1835209.1835045.1835046.
+ Registering for observed base-pas/entity
+1.2.131094.131075.
+Key: 1.2.131094.131075.
+cps/connection-entry/ip = 127.0.0.1:6379
+cps/connection-entry/name = 
+cps/connection-entry/connection-state = 1
+cps/connection-entry/group = 127.0.0.1:6379
+----------------------------------------------
+
+# Remove PSU 1 from the chassis
+
+2.28.1835209.1835045.1835046.
+Key: 2.28.1835209.1835045.1835046.
+base-pas/entity/present = 0
+base-pas/entity/oper-status = 1
+base-pas/entity/slot = 1
+base-pas/entity/entity-type = 1
+base-pas/entity/slot = 1
+base-pas/entity/fault-type = 1
+base-pas/entity/entity-type = 1
+----------------------------------------------
+
+# Re-insert PSU 1 in the chassis
+
+2.28.1835209.1835045.1835046.
+Key: 2.28.1835209.1835045.1835046.
+base-pas/entity/platform-name = 
+base-pas/entity/hw-version = 
+base-pas/entity/present = 1
+base-pas/entity/service-code = 
+base-pas/entity/product-name = Power Supply
+base-pas/entity/oper-status = 1
+base-pas/entity/service-tag = 
+base-pas/entity/slot = 1
+base-pas/entity/entity-type = 1
+base-pas/entity/vendor-name = 
+base-pas/entity/part-number = 
+base-pas/entity/slot = 1
+base-pas/entity/fault-type = 1
+base-pas/entity/entity-type = 1
+base-pas/entity/ppid = CN0T9FNW2829883AG036
+----------------------------------------------
+.ec
+.fi
+.SH REPORTING BUGS
+To report any OPX software bugs, please refer to https://github.com/open-switch/opx-docs/wiki/Report-bugs.
+.SH COPYRIGHT
+Copyright \(co 2018 Dell Inc. and its subsidiaries. All Rights Reserved.
