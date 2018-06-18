@@ -62,47 +62,8 @@ constexpr static size_t __get_local_ip_len() {
     return strlen(__get_local_ip());
 }
 
-#define MAX_IP_LEN 64
-
-
-static cps_api_return_code_t cps_api_del_node_tunnel(const char * group, const char * node) {
-    cps_api_transaction_params_t trans;
-    cps_api_key_t keys;
-
-    if (cps_api_transaction_init(&trans) != cps_api_ret_code_OK)
-        return cps_api_ret_code_ERR;
-
-    cps_api_object_t p_trans_obj = cps_api_object_create();
-    cps_api_transaction_guard tgd(&trans);
-
-    cps_api_key_from_attr_with_qual(&keys, CPS_TUNNEL_OBJ, cps_api_qualifier_TARGET);
-    cps_api_object_set_type_operation(&keys, cps_api_oper_DELETE);
-    cps_api_object_set_key(p_trans_obj, &keys);
-
-    // Add attributes
-    cps_api_object_attr_add(p_trans_obj, CPS_TUNNEL_GROUP, group,strlen(group)+1);
-    cps_api_object_attr_add(p_trans_obj, CPS_TUNNEL_NODE_ID, node,strlen(node)+1);
-
-    cps_api_object_list_append(trans.change_list, p_trans_obj);
-    if (cps_api_commit(&trans) != cps_api_ret_code_OK) // Add logs
-        return cps_api_ret_code_ERR;
-
-    return cps_api_ret_code_OK;
-}
-
-
 cps_api_return_code_t cps_api_delete_node_group(const char *grp) {
     cps_api_db_del_node_group(grp);
-
-    std::unordered_set<std::string>  node_list;
-    if(!cps_api_db_get_group_config(grp,node_list)){
-        EV_LOGGING(DSAPI,ERR,"DELETE-GLOBAL","Failed to get group information %s",grp);
-        return cps_api_ret_code_OK;
-    }
-
-    for ( auto it : node_list ){
-        cps_api_del_node_tunnel(grp, it.c_str());
-    }
 
     cps_api_object_guard og(cps_api_object_create());
     cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),CPS_NODE_GROUP, cps_api_qualifier_TARGET);
@@ -200,80 +161,9 @@ cps_api_return_code_t cps_api_create_global_instance(cps_api_node_group_t *group
 }
 
 
-static bool cps_api_get_tunnel_port(cps_api_node_group_t *group, size_t ix, char *tunnel_port, size_t len) {
-    cps_api_transaction_params_t trans;
-    cps_api_key_t keys;
-
-    if (cps_api_transaction_init(&trans) != cps_api_ret_code_OK)
-        return false;
-
-    cps_api_object_t p_trans_obj = cps_api_object_create();
-    cps_api_transaction_guard tgd(&trans);
-
-    cps_api_key_from_attr_with_qual(&keys, CPS_TUNNEL_OBJ, cps_api_qualifier_TARGET);
-    cps_api_object_set_type_operation(&keys, cps_api_oper_CREATE);
-    cps_api_object_set_key(p_trans_obj, &keys);
-
-    // Add attributes
-    cps_api_object_attr_add(p_trans_obj, CPS_TUNNEL_GROUP, group->id,strlen(group->id)+1);
-    cps_api_object_attr_add(p_trans_obj, CPS_TUNNEL_NODE_ID, group->addrs[ix].node_name,strlen(group->addrs[ix].node_name)+1);
-    cps_api_object_attr_add(p_trans_obj, CPS_TUNNEL_IP,  group->addrs[ix].addr,strlen(group->addrs[ix].addr)+1);
-
-    cps_api_object_list_append(trans.change_list, p_trans_obj);
-    if (cps_api_commit(&trans) != cps_api_ret_code_OK)
-        return false;
-
-    cps_api_object_t p_ret_obj = cps_api_object_list_get(trans.change_list,0);
-    if (p_ret_obj==nullptr)
-        return false;
-
-    const char *port = (const char *)cps_api_object_get_data(p_ret_obj, CPS_TUNNEL_PORT);
-    strncpy(tunnel_port,port,len-1);
-
-    return true;
-}
-
-static bool cps_api_set_compare_group(cps_api_node_group_t *new_grp,  std::unordered_set<std::string> & node_list){
-
-    std::unordered_set<std::string>del_nodes;
-    for(auto it : node_list){
-        bool exist = false;
-        for(unsigned int new_grp_ix = 0 ; new_grp_ix < new_grp->addr_len ; ++ new_grp_ix){
-            if(strncmp(it.c_str(),new_grp->addrs[new_grp_ix].node_name,
-                    strlen(it.c_str()))==0){
-                exist = true;
-                break;
-            }
-        }
-        if(!exist){
-            del_nodes.insert(it);
-        }
-    }
-
-    for(auto node_it : del_nodes){
-        cps_api_del_node_tunnel(new_grp->id,node_it.c_str());
-    }
-
-    return true;
-}
-
 cps_api_return_code_t cps_api_set_node_group(cps_api_node_group_t *group) {
 
     cps_api_object_guard og(cps_api_object_create());
-
-    std::unordered_set<std::string>  node_list;
-
-    bool created = cps_api_db_get_group_config(group->id,node_list);
-
-    if(created){
-        cps_api_set_compare_group(group,node_list);
-    }
-
-    for(unsigned int ix = 0 ; ix < group->addr_len ; ++ix){
-        node_list.insert(std::string(group->addrs[ix].node_name));
-    }
-
-    cps_api_db_set_group_config(group->id,node_list);
 
     cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),CPS_NODE_GROUP, cps_api_qualifier_TARGET);
 
@@ -287,24 +177,6 @@ cps_api_return_code_t cps_api_set_node_group(cps_api_node_group_t *group) {
         cps_api_object_e_add(og.get(),_alias,sizeof(_alias)/sizeof(*_alias),cps_api_object_ATTR_T_BIN,
                 group->addrs[ix].node_name,strlen(group->addrs[ix].node_name)+1);
 
-        cps_api_attr_id_t _tunnel_ip[]={CPS_NODE_GROUP_NODE,ix,CPS_NODE_GROUP_NODE_TUNNEL_IP};
-        if (strstr(group->addrs[ix].addr, __get_local_ip()) )
-            cps_api_object_e_add(og.get(),_tunnel_ip,sizeof(_tunnel_ip)/sizeof(*_tunnel_ip),
-                                 cps_api_object_ATTR_T_BIN,
-                                 group->addrs[ix].addr,strlen(group->addrs[ix].addr)+1);
-        else {
-           // Do a transaction on cps/tunnel object and get the stunnel port
-           char tunnel_port[MAX_IP_LEN], tunnel_addr[MAX_IP_LEN];
-
-           if(! cps_api_get_tunnel_port(group, ix, tunnel_port, sizeof(tunnel_port)))
-               return cps_api_ret_code_ERR;
-
-           // Stunnel IP address will be "loopback:tunnel_port"
-           strncpy(tunnel_addr,"127.0.0.1:", MAX_IP_LEN-1);
-           strncat(tunnel_addr, tunnel_port, MAX_IP_LEN-1);
-           cps_api_object_e_add(og.get(),_tunnel_ip,sizeof(_tunnel_ip)/sizeof(*_tunnel_ip),
-                            cps_api_object_ATTR_T_BIN, tunnel_addr, strlen(tunnel_addr)+1);
-        }
     }
 
     cps_api_object_attr_add(og.get(),CPS_NODE_GROUP_TYPE,&group->data_type,sizeof(group->data_type));
@@ -333,7 +205,7 @@ cps_api_return_code_t cps_api_set_node_group(cps_api_node_group_t *group) {
         return cps_api_create_global_instance(group);
     }
 
-    cps_api_object_set_type_operation(cps_api_object_key(og.get()),created? cps_api_oper_CREATE : cps_api_oper_SET);
+    cps_api_object_set_type_operation(cps_api_object_key(og.get()),changed? cps_api_oper_SET : cps_api_oper_CREATE);
     cps_db::publish(b.get(),og.get());
 
     return cps_api_ret_code_OK;
@@ -453,7 +325,7 @@ bool cps_api_nodes::update_slaves(const char *group) {
 bool cps_api_nodes::load_groups() {
     cps_api_object_guard og(cps_api_object_create());
 
-    if (!cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),CPS_NODE_GROUP, cps_api_qualifier_TARGET)) {
+    if (!cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),CPS_CONNECTIVITY_GROUP, cps_api_qualifier_OBSERVED)) {
         EV_LOG(ERR,DSAPI,0,"CPS-CLS-MAP","Meta data for cluster set is not loaded.");
         return false;
     }
@@ -473,16 +345,16 @@ bool cps_api_nodes::load_groups() {
     for (size_t ix = 0,mx = cps_api_object_list_size(lg.get()); ix < mx ; ++ix ) {
         cps_api_object_t o = cps_api_object_list_get(lg.get(),ix);
         std::vector<_db_node_data> v;
-        const char *name = (const char*) cps_api_object_get_data(o,CPS_NODE_GROUP_NAME);
+        const char *name = (const char*) cps_api_object_get_data(o,CPS_CONNECTIVITY_GROUP_NAME);
         _node_data nd;
 
-        cps_api_node_data_type_t *_type = (cps_api_node_data_type_t*)cps_api_object_get_data(o,CPS_NODE_GROUP_TYPE);
+        cps_api_node_data_type_t *_type = (cps_api_node_data_type_t*)cps_api_object_get_data(o,CPS_CONNECTIVITY_GROUP_TYPE);
         if (_type==nullptr){
             EV_LOGGING(DSAPI,ERR,"NODE-LOAD","Could not get the group type for group %s",name);
             return false;
         }
         nd.type = *_type;
-        cps_api_object_attr_t _node_group = cps_api_object_attr_get(o,CPS_NODE_GROUP_NODE);
+        cps_api_object_attr_t _node_group = cps_api_object_attr_get(o,CPS_CONNECTIVITY_GROUP_NODE);
         if (_node_group==nullptr) {
             cpy[name] = nd;
             EV_LOGGING(DSAPI, DEBUG, "NODE-LOAD", "Empty node list for group %s", name);
@@ -503,8 +375,8 @@ bool cps_api_nodes::load_groups() {
             if (!cps_api_object_it_valid(&elem)) continue;
 
             _db_node_data db_node;
-            cps_api_object_attr_t _ip =cps_api_object_it_find(&elem,CPS_NODE_GROUP_NODE_TUNNEL_IP);
-            cps_api_object_attr_t _name =cps_api_object_it_find(&elem,CPS_NODE_GROUP_NODE_NAME);
+            cps_api_object_attr_t _ip =cps_api_object_it_find(&elem,CPS_CONNECTIVITY_GROUP_NODE_TUNNEL_IP);
+            cps_api_object_attr_t _name =cps_api_object_it_find(&elem,CPS_CONNECTIVITY_GROUP_NODE_NAME);
 
             if (_ip==nullptr || _name==nullptr) continue;
             const char *__ip = (const char*)cps_api_object_attr_data_bin(_ip);
@@ -567,36 +439,7 @@ bool cps_api_nodes::ip_to_name(const char *ip, std::string &name) {
     return true;
 }
 
-bool cps_api_nodes::load_aliases() {
-    cps_db::connection_request b(cps_db::ProcessDBCache(),DEFAULT_REDIS_ADDR);
-    if (!b.valid()) {
-        return false;
-    }
-
-    alias_map_t _cpy;
-
-    cps_api_object_guard og(cps_api_object_create());
-    if (!cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),CPS_NODE_DETAILS, cps_api_qualifier_TARGET)) {
-        return false;
-    }
-
-    cps_api_object_list_guard lg(cps_api_object_list_create());
-    if (!cps_db::get_objects(b.get(),og.get(),lg.get())) return false;
-
-    for ( size_t ix = 0, mx = cps_api_object_list_size(lg.get()); ix < mx ; ++ix ) {
-        cps_api_object_t o = cps_api_object_list_get(lg.get(),ix);
-        const char *name = (const char*) cps_api_object_get_data(o,CPS_NODE_DETAILS_NAME);
-        const char *alias = (const char*) cps_api_object_get_data(o,CPS_NODE_DETAILS_ALIAS);
-
-        _cpy[name] = alias;
-    }
-    std::swap(_cpy,_alias_map);
-
-    return true;
-}
-
 bool cps_api_nodes::load() {
-    load_aliases();
     return load_groups();
 }
 
@@ -661,20 +504,5 @@ bool cps_api_nodes::is_master_set(std::string group){
     if(it != _master_set.end()){
         return true;
     }
-    return false;
-}
-
-bool cps_api_nodes::add_group_info(std::string group,std::unordered_set<std::string> & node_list){
-    _group_node_map[group] = std::move(node_list);
-    return true;
-}
-
-bool cps_api_nodes::get_group_info(std::string group,std::unordered_set<std::string> & node_list){
-    auto it = _group_node_map.find(group);
-    if(it != _group_node_map.end()){
-        node_list = it->second;
-        return true;
-    }
-
     return false;
 }
