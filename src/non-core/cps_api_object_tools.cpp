@@ -73,13 +73,14 @@ static bool __cps_api_obj_tool_match_leaf_lists(cps_api_object_it_t & src,
     return false;
 
 }
+
 static bool __cps_api_obj_tool_matches_filter(cps_api_object_it_t &fit, cps_api_object_it_t &oit, bool require_all_attribs) {
 
     for ( ; cps_api_object_it_valid(&fit); cps_api_object_it_next(&fit)) {
 
         cps_api_attr_id_t id = cps_api_object_attr_id(fit.attr);
 
-        if (cps_api_attr_id_is_cps_reserved(id) && (id!=CPS_API_OBJ_KEY_ATTRS)) {
+        if (cps_api_attr_id_is_temporary(id)) {
             continue; // skip CPS internal attributes
         }
 

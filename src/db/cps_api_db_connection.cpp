@@ -218,20 +218,26 @@ bool cps_db::connection::connect(const std::string &s_, const std::string &db_in
 
 namespace {
 
-struct request_walker_contexct_t {
-    static const size_t MAX_EXP_CMD{10};
 
+struct request_walker_contexct_t {
+    static const size_t MAX_EXP_CMD = 10;
+
+    //buffers
     const char *cmds[MAX_EXP_CMD];
     size_t cmds_lens[MAX_EXP_CMD];
 
+    //temp locations
     const char **cmds_ptr = cmds;
     size_t *cmds_lens_ptr = cmds_lens;
+    size_t _cmds_used = 0;
 
     std::vector<std::vector<char>> key_scratch;
     ssize_t key_scratch_len=-1;
 
     std::vector<std::vector<char>> key;  //just a buffer to hold the key portion of the data structure until we call into REDIS
     size_t scratch_pad_ix=0;
+
+    cps_db::connection::db_operation_atom_t * _cur=nullptr;
 
     bool set(cps_db::connection::db_operation_atom_t * lst_,size_t len_);
 
@@ -242,25 +248,36 @@ struct request_walker_contexct_t {
         }
     }
 
-    request_walker_contexct_t() {
+    std::vector<char> &alloc_key() {
+        size_t _ix = key.size();
+        key.resize(_ix+1);
+        return key[_ix];
+    }
+
+    void reset() {
+        _cmds_used = 0;
         cmds_ptr = cmds;
         cmds_lens_ptr = cmds_lens;
     }
 
-    cps_db::connection::db_operation_atom_t * _cur=nullptr;
+    //most class variables are automatically done via class declared initialization
+    request_walker_contexct_t() {
+        reset();
+    }
 
     bool enough(size_t cnt) {
-        if ((cmds_ptr + cnt) > (cmds + MAX_EXP_CMD)) {
-            return false;
-        }
-        return true;
+        return ((_cmds_used+cnt) < MAX_EXP_CMD);
     }
+
     void set_current_entry(const char *data, size_t len) {
         *(cmds_ptr++) = data;
         *(cmds_lens_ptr++) = len;
+        ++_cmds_used;
     }
-    bool valid() { return cmds_ptr!=cmds; }
+    bool valid() { return (_cmds_used > 0) && cmds_ptr!=cmds; }
+
 };
+
 static bool handle_str(request_walker_contexct_t &ctx) {
     if (!ctx.enough(1)) return false;
     ctx.set_current_entry(ctx._cur->_string,ctx._cur->_len);
@@ -269,41 +286,43 @@ static bool handle_str(request_walker_contexct_t &ctx) {
 
 static bool handle_class_key(request_walker_contexct_t &ctx) {
     if (!ctx.enough(1)) return false;
-    ctx.key_scratch.resize(ctx.key_scratch.size()+1);
-    if (!cps_db::dbkey_from_class_key(ctx.key_scratch[++ctx.key_scratch_len],cps_api_object_key(ctx._cur->_object))) return false;
-    ctx.set_current_entry(&ctx.key_scratch[ctx.key_scratch_len][0],ctx.key_scratch[ctx.key_scratch_len].size());
+    auto &_key_space = ctx.alloc_key();
+
+    if (!cps_db::dbkey_from_class_key(_key_space,cps_api_object_key(ctx._cur->_object))) return false;
+    ctx.set_current_entry(&_key_space[0],_key_space.size());
+
     return true;
 }
 
 static bool handle_instance_key(request_walker_contexct_t &ctx) {
     if (!ctx.enough(1)) return false;
-    ctx.key_scratch.resize(ctx.key_scratch.size()+1);
-    if (!cps_db::dbkey_from_instance_key(ctx.key_scratch[++ctx.key_scratch_len],ctx._cur->_object,false)) return false;
-    ctx.set_current_entry(&ctx.key_scratch[ctx.key_scratch_len][0],ctx.key_scratch[ctx.key_scratch_len].size());
-    return true;
-}
+    auto &_key_space = ctx.alloc_key();
 
-static bool handle_object(request_walker_contexct_t &ctx) {
-    if (!handle_instance_key(ctx)) return false;
-    if (!ctx.enough(2)) return false;
-
-    ctx.set_current_entry("object",strlen("object"));
-
-    const char *d = (const char*)(const void *)cps_api_object_array(ctx._cur->_object);
-    size_t dl = cps_api_object_to_array_len(ctx._cur->_object);
-
-    ctx.set_current_entry(d,dl);
+    if (!cps_db::dbkey_from_instance_key(_key_space,ctx._cur->_object,false)) return false;
+    ctx.set_current_entry(&_key_space[0],_key_space.size());
     return true;
 }
 
 static bool handle_object_data(request_walker_contexct_t &ctx) {
     if (!ctx.enough(1)) return false;
 
-    const char *d = (const char*)(const void *)cps_api_object_array(ctx._cur->_object);
+    const char *d = (const char *)(const void *)cps_api_object_array(ctx._cur->_object);
     size_t dl = cps_api_object_to_array_len(ctx._cur->_object);
 
     ctx.set_current_entry(d,dl);
     return true;
+}
+
+static bool handle_object(request_walker_contexct_t &ctx) {
+    if (!handle_instance_key(ctx)) return false;
+
+    if (!ctx.enough(1)) return false;
+
+    static const char *_obj_name = "object";
+    static const size_t _obj_len = strlen("object");
+    ctx.set_current_entry(_obj_name,_obj_len);
+
+    return handle_object_data(ctx);
 }
 
 static bool handle_event_fields(request_walker_contexct_t &ctx) {
@@ -324,24 +343,54 @@ bool request_walker_contexct_t::set(cps_db::connection::db_operation_atom_t * ls
     size_t iter = 0;
     for ( ; iter < len_; ++iter ) {
         _cur = lst_+iter;
-        if (!_map->at((int)_cur->_atom_type)(*this)) return false;
+        if (!_map->at((int)_cur->_atom_type)(*this)) {
+            reset();
+            return false;
+        }
     }
     return true;
 }
 
+inline void SET_RC(cps_api_return_code_t *rc, cps_api_return_code_t val) {
+    if (rc!=nullptr) *rc = val;
 }
 
-bool cps_db::connection::writable(size_t timeoutms) {
+inline void SET_RC_FROM_ERRNO(cps_api_return_code_t *rc, int poll_rc) {
+    if (poll_rc==-1) SET_RC(rc,cps_api_ret_code_COMMUNICATION_ERROR);
+    if (poll_rc==0) SET_RC(rc,cps_api_ret_code_TIMEOUT);
+}
+
+}
+
+
+bool cps_db::connection::writable(size_t timeoutms, cps_api_return_code_t *rc) {
+    SET_RC(rc,cps_api_ret_code_ERR);
     int _rc = poll(&_wr,1,timeoutms);
-    return _rc==1 && (_wr.revents&POLLOUT)!=0;
+    SET_RC_FROM_ERRNO(rc,_rc);
+
+    bool _writable =(_rc==1 && (_wr.revents&POLLOUT)!=0);
+
+    if (_writable) SET_RC(rc,cps_api_ret_code_OK);
+    return _writable;
 }
 
-bool cps_db::connection::readable(size_t timeoutms) {
-    return poll(&_rd,1,timeoutms)==1 && (_rd.revents&POLLIN)!=0;
+bool cps_db::connection::readable(size_t timeoutms, cps_api_return_code_t *rc) {
+    SET_RC(rc,cps_api_ret_code_ERR);
+
+    int _rc = poll(&_rd,1,timeoutms);
+    SET_RC_FROM_ERRNO(rc,_rc);
+
+    bool _readable = _rc==1 && (_rd.revents&POLLIN)!=0;
+    if (_readable) SET_RC(rc,cps_api_ret_code_OK);
+
+    return _readable;
 }
 
-bool cps_db::connection::operation(db_operation_atom_t * lst_,size_t len_, bool force_push,size_t timeoutms) {
+bool cps_db::connection::operation(db_operation_atom_t * lst_,size_t len_,
+        bool force_push,size_t timeoutms, cps_api_return_code_t *rc) {
     request_walker_contexct_t ctx(lst_,len_);
+
+    SET_RC(rc,cps_api_ret_code_COMMUNICATION_ERROR);
 
     if (!ctx.valid()) {
         EV_LOGGING(CPS-DB-CONN,ERR,"CPS-DB-OP","The DB context is invalid.");
@@ -353,29 +402,38 @@ bool cps_db::connection::operation(db_operation_atom_t * lst_,size_t len_, bool 
 
     bool _success = false;
     ssize_t retry = _operation_retry_flags;
+
     do {
         if (redisAppendCommandArgv(static_cast<redisContext*>(_ctx),ctx.cmds_ptr - ctx.cmds,ctx.cmds,ctx.cmds_lens)==REDIS_OK) {
             _success = true; break;
         }
+
         EV_LOGGING(CPS-DB-CONN,ERR,"CPS-RED-CON-OP","Seems to be an issue with the REDIS request - (first entry: %s)",ctx.cmds[0]);
-        reconnect();
+        if (!reconnect()) {
+            return false;
+        }
     } while (retry-->0);
 
     if (!_success) return false;
+
+    SET_RC(rc,cps_api_ret_code_OK);
+
     if (!force_push) return true;
-    return flush(timeoutms);
+    return flush(timeoutms,rc);
 }
 
 
 
-bool cps_db::connection::flush(size_t timeoutms) {
+bool cps_db::connection::flush(size_t timeoutms, cps_api_return_code_t *rc) {
+    SET_RC(rc,cps_api_ret_code_COMMUNICATION_ERROR);
+
     int _is_done=0;
     while (_is_done==0) {
         if (!cps_api_db_is_local_node(_addr.c_str())) {
             if (timeoutms==_SELECT_MS_WAIT)timeoutms = _timeout_remote;
         }
-        if (!writable(timeoutms)) {
-            EV_LOGGING(CPS-DB-CONN,ERR,"FLUSH","Sending buffer full - terminating..");
+        if (!writable(timeoutms,rc)) {
+            EV_LOGGING(CPS-DB-CONN,ERR,"FLUSH","Sending buffer full - terminating.. (%d)",(timeoutms));
             reconnect(); return false;
         }
         if (_ctx==nullptr) //if the redis connection is not valid its not going to work
@@ -387,6 +445,7 @@ bool cps_db::connection::flush(size_t timeoutms) {
         }
         update_used();
     }
+    SET_RC(rc,cps_api_ret_code_OK);
     return true;
 }
 
@@ -403,12 +462,15 @@ static bool is_event_message(void *resp) {
     return false;
 }
 
-bool cps_db::connection::response(response_set &data_, size_t timeoutms) {
+bool cps_db::connection::response(response_set &data_, size_t timeoutms,
+        cps_api_return_code_t *rc, bool force_timeout_check) {
+    SET_RC(rc,cps_api_ret_code_COMMUNICATION_ERROR);
+
     if (_ctx==nullptr)
         return false;
 
     bool _rc = true;
-    if (!flush(timeoutms)) {
+    if (!flush(timeoutms,rc)) {
         _rc=false;
     }
     //clear all previous entries
@@ -423,9 +485,9 @@ bool cps_db::connection::response(response_set &data_, size_t timeoutms) {
         }
 
         if (reply==nullptr) {
-            if (!cps_api_db_is_local_node(_addr.c_str())) {
+            if (force_timeout_check || !cps_api_db_is_local_node(_addr.c_str())) {
                 if (timeoutms==_SELECT_MS_WAIT)timeoutms = _timeout_remote;
-                if (!readable(timeoutms)) {
+                if (!readable(timeoutms,rc)) {
                     _rc=false; continue;
                 }
             }
@@ -448,15 +510,18 @@ bool cps_db::connection::response(response_set &data_, size_t timeoutms) {
     if (_rc==false) {
         reconnect();
     }
+    SET_RC(rc,cps_api_ret_code_OK);
     return _rc;
 }
 
-bool cps_db::connection::command(db_operation_atom_t * lst,size_t len,response_set &set,size_t timeoutms) {
+bool cps_db::connection::command(db_operation_atom_t * lst,size_t len,
+        response_set &set,size_t timeoutms,
+        cps_api_return_code_t *rc) {
 
-    if (!operation(lst,len,true,timeoutms)) {
+    if (!operation(lst,len,true,timeoutms,rc)) {
         return false;
     }
-    return response(set,timeoutms);
+    return response(set,timeoutms,rc);
 }
 
 void cps_db::connection::update_used() {
@@ -467,16 +532,17 @@ bool cps_db::connection::used_within(uint64_t relative) {
     return std_time_is_expired(_last_used,relative);
 }
 
-bool cps_db::connection::has_event(bool &err) {
+bool cps_db::connection::has_event(bool &err, cps_api_return_code_t *rc) {
+    SET_RC(rc,cps_api_ret_code_COMMUNICATION_ERROR);
     if (_ctx==nullptr)
         return false;
 
     void *rep ;
-    int rc = REDIS_OK;
+    int _rc = REDIS_OK;
     err = false;
     do {
         //check redis contexct for already read in data
-        if ((rc=redisReaderGetReply(static_cast<redisContext*>(_ctx)->reader,&rep))==REDIS_OK) {
+        if ((_rc=redisReaderGetReply(static_cast<redisContext*>(_ctx)->reader,&rep))==REDIS_OK) {
             if (rep==nullptr) break;
             if (is_event_message(rep)) _pending_events.push_back(rep);
             else freeReplyObject(rep);
@@ -484,13 +550,18 @@ bool cps_db::connection::has_event(bool &err) {
             err = true;
             EV_LOGGING(CPS-DB-CONN,ERR,"DISCON","DB comm channel buffer seems to be corrupted or invalid.  Disconnect required");
         }
-    } while (rc==REDIS_OK);
+    } while (_rc==REDIS_OK);
+    if (!err) SET_RC(rc,cps_api_ret_code_OK);
+
     return _pending_events.size()>0;
 }
 
 #include "std_select_tools.h"
 
-bool cps_db::connection::get_event(response_set &data, bool &err_occured) {
+bool cps_db::connection::get_event(response_set &data, bool &err_occured,
+        cps_api_return_code_t *rc) {
+    SET_RC(rc,cps_api_ret_code_COMMUNICATION_ERROR);
+
     if (_ctx==nullptr)
         return false;
 
@@ -502,7 +573,7 @@ bool cps_db::connection::get_event(response_set &data, bool &err_occured) {
             if (!cps_api_db_is_local_node(_addr.c_str())) {
                 timeoutms = _timeout_remote;
             }
-            if ( !readable(timeoutms)) {
+            if (!readable(timeoutms,rc)) {
                 EV_LOGGING(CPS-DB-CONN,DEBUG,"DISCON","Read timeout while waiting for data - ignored");
                 break;
             }
@@ -513,7 +584,7 @@ bool cps_db::connection::get_event(response_set &data, bool &err_occured) {
                 break;
             }
             update_used();
-            if (!has_event(err_occured)) {
+            if (!has_event(err_occured,rc)) {
                 if (err_occured) EV_LOGGING(CPS-DB-CONN,DEBUG,"DISCON","event caching failure");
                 break;
             }
@@ -522,9 +593,11 @@ bool cps_db::connection::get_event(response_set &data, bool &err_occured) {
         if (_pending_events.size()>0) {
             data.add(*_pending_events.begin());
             _pending_events.erase(_pending_events.begin());
+            SET_RC(rc,cps_api_ret_code_OK);
             return true;
         }
     } while (0);
+    if (err_occured==false) SET_RC(rc,cps_api_ret_code_OK);
     return false;
 }
 

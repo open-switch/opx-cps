@@ -138,9 +138,11 @@ static auto bulk_get_req_from_array = [] (cps_db::connection &conn,std::vector<s
 
 }
 
-bool cps_db::merge_objects(cps_db::connection &conn, cps_api_object_list_t objs) {
+bool cps_db::merge_objects(cps_db::connection &conn, cps_api_object_list_t objs,
+		cps_api_return_code_t *rc) {
     pthread_once(&onceControl,__init);
 
+    cps_db::set_return_code(rc,cps_api_ret_code_COMMUNICATION_ERROR);
     cps_api_object_guard og(cps_api_object_create());
     if (!cps_db::cps_api_db_validate_connection(&conn)) return false;
     return cps_utils::cps_api_range_split(cps_api_object_list_size(objs),_IN_THE_PIPE,
@@ -149,9 +151,10 @@ bool cps_db::merge_objects(cps_db::connection &conn, cps_api_object_list_t objs)
             cps_api_object_guard og(cps_api_object_create());
 
             if (!bulk_send_req(conn,objs,start,mx,key_buff)) return false;
+
             for ( size_t ix = start ; ix < mx ; ++ix ) {
                 cps_api_object_t _orig = cps_api_object_list_get(objs,ix);
-                if (get_object_response(conn,og.get())) {
+                if (get_object_response(conn,og.get(),rc)) {
                     if (cps_api_object_attr_merge(og.get(),_orig,true)) {
                         if (cps_api_object_clone(_orig,og.get())) continue;
                     }
@@ -185,14 +188,16 @@ bool cps_db::get_objects_bulk(cps_db::connection &conn, std::vector<std::vector<
         });
 }
 
-bool cps_db::get_object_list(cps_db::connection &conn,cps_api_object_list_t objs) {
+bool cps_db::get_object_list(cps_db::connection &conn,cps_api_object_list_t objs,cps_api_return_code_t *rc) {
     pthread_once(&onceControl,__init);
+
+    cps_db::set_return_code(rc,cps_api_ret_code_COMMUNICATION_ERROR);
 
     cps_api_object_list_guard lg(cps_api_object_list_create());
 
     cps_api_object_guard og(cps_api_object_create());
     if (!cps_db::cps_api_db_validate_connection(&conn)) return false;
-    bool rc = cps_utils::cps_api_range_split(cps_api_object_list_size(objs),_IN_THE_PIPE,
+    bool _brc = cps_utils::cps_api_range_split(cps_api_object_list_size(objs),_IN_THE_PIPE,
             [&](size_t start, size_t mx) -> bool {
             std::vector<char> key_buff;
 
@@ -201,8 +206,9 @@ bool cps_db::get_object_list(cps_db::connection &conn,cps_api_object_list_t objs
             cps_api_object_guard og(cps_api_object_create());
 
             for ( size_t ix = start ; ix < mx ; ++ix ) {
-                if (!get_object_response(conn,og.get())) {
-                    continue;
+                if (!get_object_response(conn,og.get(),rc)) {
+                	if (rc!=nullptr && *rc==cps_api_ret_code_COMMUNICATION_ERROR) return false;
+
                 }
                 if (cps_api_object_list_append(lg.get(),og.get())) {
                     og.release();
@@ -210,9 +216,10 @@ bool cps_db::get_object_list(cps_db::connection &conn,cps_api_object_list_t objs
                     if (og.get()==nullptr) return false;
                 }
             }
+            cps_db::set_return_code(rc,cps_api_ret_code_OK);
             return true;
         });
-    if (!rc) return false;
+    if (!_brc) return false;
     cps_api_object_list_clear(objs,true);
     return (cps_api_object_list_merge(objs,lg.get()));
 }
@@ -239,8 +246,14 @@ bool cps_db::delete_object_list(cps_db::connection &conn,cps_api_object_list_t o
         });
 }
 
-bool cps_db::get_objects(cps_db::connection &conn,std::vector<char> &key,cps_api_object_list_t objs) {
+bool cps_db::get_objects(cps_db::connection &conn,std::vector<char> &key,cps_api_object_list_t objs,
+		cps_api_return_code_t *rc) {
     pthread_once(&onceControl,__init);
+
+    cps_api_return_code_t _trc = cps_api_ret_code_OK;
+    if (rc==nullptr) rc = &_trc;
+
+    cps_db::set_return_code(rc,cps_api_ret_code_COMMUNICATION_ERROR);
 
     cps_db::connection_request _query(ProcessDBCache(),conn.addr());
 
@@ -250,35 +263,41 @@ bool cps_db::get_objects(cps_db::connection &conn,std::vector<char> &key,cps_api
 
     size_t _count = 0;
 
-    bool rc = true;
+    bool _brc = true;
 
     cps_api_object_guard og(cps_api_object_create());
 
     auto _drain_queue = [&](size_t &mx) {
         for ( size_t ix = 0; ix < mx ; ++ix ) {
-            if (cps_db::get_object_response(_query.get(),og.get())) {
+            if (cps_db::get_object_response(_query.get(),og.get(),rc)) {
                 if (cps_api_object_list_append(objs,og.get())) {
                     og.release();
                     og.set(cps_api_object_create());
                     if (og.get()==nullptr) break;
                     continue;
                 }
+            } else {
+            	_brc=false;
+            	if (rc!=nullptr && *rc==cps_api_ret_code_COMMUNICATION_ERROR)
+            		break;
             }
         }
         mx = 0;
     };
 
     bool walked = walk_keys(conn, &key[0],key.size(),[&](const void *key, size_t len ){
-        if (!rc) return ;
+        if (!_brc) return ;
 
-        if (!cps_db::get_object_request(_query.get(),(const char *)key,len)) {
-            rc = false;
+        if (!cps_db::get_object_request(_query.get(),(const char *)key,len,rc)) {
+        	_brc = false;
+        	return;
         } else ++_count;
 
         if (_count < _IN_THE_PIPE) return;
+
         _drain_queue(_count);
     });
-    if (walked==false || !rc) return false;
+    if (walked==false || !_brc) return false;
 
     _drain_queue(_count);
     return true;

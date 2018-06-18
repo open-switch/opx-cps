@@ -25,6 +25,8 @@
 
 #include "cps_string_utils.h"
 
+#include "cps_api_core_utils.h"
+
 #include "std_tlv.h"
 #include "cps_api_object.h"
 #include "private/cps_api_object_internal.h"
@@ -572,25 +574,37 @@ bool cps_api_object_e_add(cps_api_object_t obj, cps_api_attr_id_t *id,
         uint64_t u64;
     } un;
 
+    bool _mismatch = false;
+    size_t _orig_len = 0;
+
     switch(type) {
     case cps_api_object_ATTR_T_U16:
         if (dlen!=sizeof(un.u16)) {
-            EV_LOGGING(DSAPI,ERR,"ADD-Invalid","Invalid parameters for add - size mismatch U16 %d vs %d.");
+            _orig_len = sizeof(un.u16);
+            _mismatch=true;
         }
         un.u16 = htole16(*(uint16_t*)data); data = &un.u16; break;
     case cps_api_object_ATTR_T_U32:
         if (dlen!=sizeof(un.u32)) {
-            EV_LOGGING(DSAPI,ERR,"ADD-Invalid","Invalid parameters for add - size mismatch U32 %d vs %d.");
+            _orig_len = sizeof(un.u32);
+            _mismatch=true;
         }
         un.u32 = htole32(*(uint32_t*)data); data = &un.u32; break;
     case cps_api_object_ATTR_T_U64:
         if (dlen!=sizeof(un.u64)) {
-            EV_LOGGING(DSAPI,ERR,"ADD-Invalid","Invalid parameters for add - size mismatch U64 %d vs %d.");
+            _orig_len = sizeof(un.u64);
+            _mismatch=true;
+
         }
         un.u64 = htole64(*(uint64_t*)data); data = &un.u64; break;
     default:
         //bin;
         break;
+    }
+    if (_mismatch) {
+        EV_LOGGING(DSAPI,ERR,"ADD-Invalid","Invalid parameters for add - "
+            "size mismatch U32 %d vs %d at %s", dlen,_orig_len,
+            cps_api_stacktrace().c_str());
     }
     if (id_size==1)
         return add_attribute((cps_api_object_internal_t*)obj,id[0],dlen,data);
