@@ -1,11 +1,7 @@
+/*Source file name -> dell-base-cps*/
 
 /*
-* source file : dell-base-cps.h
-*/
-
-
-/*
-* Copyright (c) 2015 Dell Inc.
+* Copyright (c) 2017 Dell Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License"); you may
 * not use this file except in compliance with the License. You may obtain
@@ -22,9 +18,11 @@
 #ifndef DELL_BASE_CPS_H
 #define DELL_BASE_CPS_H
 
+
 #include "cps_api_operation.h"
 #include <stdint.h>
 #include <stdbool.h>
+
 
 
 #define cps_api_obj_CAT_CPS (2) 
@@ -33,7 +31,17 @@
 
 
 
-/* Enumeration cps:config-type */
+/* Enumeration cps:group_type */
+
+/*Type of supported DB clusters*/
+typedef enum { 
+  CPS_GROUP_TYPE_NODAL = 1, /*Data resides on each node and is not duplicated by node group*/
+  CPS_GROUP_TYPE_GLOBAL = 2, /*Data is stored in a global database and replicated to a backup node*/
+  CPS_GROUP_TYPE_MIN=1,
+  CPS_GROUP_TYPE_MAX=2,
+} CPS_GROUP_TYPE_t;
+
+/* Object cps/node-group/node */
 
 typedef enum { 
 /*The name of the node entry. (an alias for the ip)*/
@@ -43,79 +51,7 @@ typedef enum {
 combinations are IPv4:port or [IPv6]:port*/
 /*type=string*/ 
   CPS_NODE_GROUP_NODE_IP = 131074,
-/*The IP addres and port of the stunnel client. Valid IP address/port
-combinations are IPv4:port or [IPv6]:port*/
-/*type=string*/ 
-  CPS_NODE_GROUP_NODE_TUNNEL_IP = 131104,
 } CPS_NODE_GROUP_NODE_t;
-/* Object cps/connection-entry */
-
-typedef enum { 
-
-/*type=string*/ 
-  CPS_CONNECTION_ENTRY_NAME = 131075,
-
-/*type=string*/ 
-  CPS_CONNECTION_ENTRY_IP = 131076,
-
-/*type=string*/ 
-  CPS_CONNECTION_ENTRY_GROUP = 131077,
-
-/*type=boolean*/ 
-  CPS_CONNECTION_ENTRY_CONNECTION_STATE = 131078,
-} CPS_CONNECTION_ENTRY_t;
-/* Object cps/db-instance */
-
-typedef enum { 
-/*Group name*/
-/*type=string*/ 
-  CPS_DB_INSTANCE_GROUP = 131079,
-/*Node name*/
-/*type=string*/ 
-  CPS_DB_INSTANCE_NODE_ID = 131097,
-/*System port where DB Instance was started for given group*/
-/*type=string*/ 
-  CPS_DB_INSTANCE_PORT = 131081,
-} CPS_DB_INSTANCE_t;
-/* Object cps/service-instance */
-
-typedef enum { 
-/*The service name or some type of string representation of the service instance.*/
-/*type=string*/ 
-  CPS_SERVICE_INSTANCE_NAME = 131111,
-/*Protocol specific connection information.  For instance, in the case of a UNIX domain socket connection this is the socket name.*/
-/*type=string*/ 
-  CPS_SERVICE_INSTANCE_CONNECTION_INFORMATION = 131112,
-/*The registered keys that are associated with the service.*/
-/*type=string*/ 
-  CPS_SERVICE_INSTANCE_REGISTERED_KEY = 131113,
-} CPS_SERVICE_INSTANCE_t;
-/* Object cps/node-details */
-
-typedef enum { 
-/*The name to use as a replacement for any of the alias attributes.*/
-/*type=string*/ 
-  CPS_NODE_DETAILS_NAME = 131082,
-/*A list of alias that can be convered back to the name.*/
-/*type=string*/ 
-  CPS_NODE_DETAILS_ALIAS = 131083,
-} CPS_NODE_DETAILS_t;
-/* Object cps/tunnel */
-
-typedef enum { 
-/*Group name*/
-/*type=string*/ 
-  CPS_TUNNEL_GROUP = 131099,
-/*Node name*/
-/*type=string*/ 
-  CPS_TUNNEL_NODE_ID = 131100,
-/*Ip address of the node.*/
-/*type=string*/ 
-  CPS_TUNNEL_IP = 131101,
-/*System port where tunneling from DB to other node occurs.*/
-/*type=string*/ 
-  CPS_TUNNEL_PORT = 131102,
-} CPS_TUNNEL_t;
 /* Object cps/object-group */
 
 typedef enum { 
@@ -186,7 +122,122 @@ Eg..1 in the get case, with 3 object filters, if there is no results or a failur
 CPS will ignore the error and continue.*/
 /*type=boolean*/ 
   CPS_OBJECT_GROUP_CONTINUE_ON_FAILURE = 131116,
+/*This field will hold a CPS internal sequence number.  This 
+number will be used to determine if duplicate events are being sent and
+to help track out of order events.*/
+/*type=uint64*/ 
+  CPS_OBJECT_GROUP_SEQUENCE = 131117,
+/*The thread ID of the person making the request or sending the event.
+This is used internally for debugging purposes only.*/
+/*type=uint64*/ 
+  CPS_OBJECT_GROUP_THREAD_ID = 131118,
+/*This is the timestamp of when the event is generated.*/
+/*type=uint64*/ 
+  CPS_OBJECT_GROUP_TIMESTAMP = 131119,
 } CPS_OBJECT_GROUP_t;
+/* Object cps/db-instance */
+
+typedef enum { 
+/*Group name*/
+/*type=string*/ 
+  CPS_DB_INSTANCE_GROUP = 131079,
+/*Node name*/
+/*type=string*/ 
+  CPS_DB_INSTANCE_NODE_ID = 131097,
+/*System port where DB Instance was started for given group*/
+/*type=string*/ 
+  CPS_DB_INSTANCE_PORT = 131081,
+} CPS_DB_INSTANCE_t;
+/* Object cps/service-instance */
+
+typedef enum { 
+/*The service name or some type of string representation of the service instance.*/
+/*type=string*/ 
+  CPS_SERVICE_INSTANCE_NAME = 131111,
+/*Protocol specific connection information.  For instance, in the case of a UNIX domain socket connection this is the socket name.*/
+/*type=string*/ 
+  CPS_SERVICE_INSTANCE_CONNECTION_INFORMATION = 131112,
+/*The registered keys that are associated with the service.*/
+/*type=string*/ 
+  CPS_SERVICE_INSTANCE_REGISTERED_KEY = 131113,
+} CPS_SERVICE_INSTANCE_t;
+/* Object cps/node-details */
+
+typedef enum { 
+/*The name to use as a replacement for any of the alias attributes.*/
+/*type=string*/ 
+  CPS_NODE_DETAILS_NAME = 131082,
+/*A list of alias that can be convered back to the name.*/
+/*type=string*/ 
+  CPS_NODE_DETAILS_ALIAS = 131083,
+} CPS_NODE_DETAILS_t;
+/* Object cps/connectivity-group/node */
+
+typedef enum { 
+/*The name of the node entry. (an alias for the ip)*/
+/*type=string*/ 
+  CPS_CONNECTIVITY_GROUP_NODE_NAME = 131120,
+/*The IP address and port of the element.  Valid IP address/port
+combinations are IPv4:port or [IPv6]:port*/
+/*type=string*/ 
+  CPS_CONNECTIVITY_GROUP_NODE_IP = 131121,
+/*The IP addres and port of the stunnel client. Valid IP address/port
+combinations are IPv4:port or [IPv6]:port*/
+/*type=string*/ 
+  CPS_CONNECTIVITY_GROUP_NODE_TUNNEL_IP = 131122,
+/*Timestamp when the node has connectivity established*/
+/*type=string*/ 
+  CPS_CONNECTIVITY_GROUP_NODE_TIMESTAMP = 131123,
+} CPS_CONNECTIVITY_GROUP_NODE_t;
+/* Object cps/connection-entry */
+
+typedef enum { 
+
+/*type=string*/ 
+  CPS_CONNECTION_ENTRY_NAME = 131075,
+
+/*type=string*/ 
+  CPS_CONNECTION_ENTRY_IP = 131076,
+
+/*type=string*/ 
+  CPS_CONNECTION_ENTRY_GROUP = 131077,
+
+/*type=boolean*/ 
+  CPS_CONNECTION_ENTRY_CONNECTION_STATE = 131078,
+} CPS_CONNECTION_ENTRY_t;
+/* Object cps/connectivity-group */
+
+typedef enum { 
+/*The name of the group.*/
+/*type=string*/ 
+  CPS_CONNECTIVITY_GROUP_NAME = 131124,
+/*Timestamp when the group was created*/
+/*type=string*/ 
+  CPS_CONNECTIVITY_GROUP_TIMESTAMP = 131125,
+
+/*type=binary*/ 
+  CPS_CONNECTIVITY_GROUP_NODE = 131126,
+/*Type of the group cluster*/
+/*type=enumeration*/ 
+  CPS_CONNECTIVITY_GROUP_TYPE = 131127,
+} CPS_CONNECTIVITY_GROUP_t;
+/* Object cps/connection-object */
+
+typedef enum { 
+/*Node name*/
+/*type=string*/ 
+  CPS_CONNECTION_OBJECT_NAME = 131128,
+/*The IP address and port of the element.  Valid IP address/port
+combinations are IPv4:port or [IPv6]:port*/
+/*type=string*/ 
+  CPS_CONNECTION_OBJECT_ADDR = 131129,
+/*System port where tunneling from DB to other node occurs*/
+/*type=string*/ 
+  CPS_CONNECTION_OBJECT_TUNNEL = 131130,
+/*Timestamp when the node has connectivity established*/
+/*type=string*/ 
+  CPS_CONNECTION_OBJECT_TIMESTAMP = 131131,
+} CPS_CONNECTION_OBJECT_t;
 /* Object cps/node-group */
 
 typedef enum { 
@@ -196,8 +247,8 @@ typedef enum {
 
 /*type=binary*/ 
   CPS_NODE_GROUP_NODE = 131089,
-
-/*type=uint32*/ 
+/*Type of the group cluster*/
+/*type=enumeration*/ 
   CPS_NODE_GROUP_TYPE = 131090,
 } CPS_NODE_GROUP_t;
 
@@ -218,6 +269,10 @@ joe or jain, you want to convert these aliases for the node back to 10.11.11.11:
   CPS_NODE_GROUP = 131092,
   CPS_NODE_GROUP_OBJ = 131092,
 
+/*This object is used to describe the mapping of a group ID to a list of node IP/port combinations.*/
+  CPS_CONNECTIVITY_GROUP = 131132,
+  CPS_CONNECTIVITY_GROUP_OBJ = 131132,
+
 /*These attributes are placed in objects by CPS infrastructure and provide additional information or change
 behaviour as needed.*/
   CPS_OBJECT_GROUP = 131093,
@@ -229,8 +284,8 @@ behaviour as needed.*/
   CPS_DB_INSTANCE = 131095,
   CPS_DB_INSTANCE_OBJ = 131095,
 
-  CPS_TUNNEL = 131103,
-  CPS_TUNNEL_OBJ = 131103,
+  CPS_CONNECTION_OBJECT = 131133,
+  CPS_CONNECTION_OBJECT_OBJ = 131133,
 
 /*This service is registered by the CPS infra and can be used to provide details about active registrations in the system.*/
   CPS_SERVICE_INSTANCE = 131114,

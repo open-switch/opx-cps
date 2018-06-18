@@ -144,6 +144,8 @@ static  void * _thread_function_(void * param) {
                     auto cb = (*cb_map)[ix].cb;
                     auto param = (*cb_map)[ix].context;
                     std_rw_unlock(&rw_lock);
+                    EV_LOGGING(CPS-EVT,INFO,"EVT-THREAD","Calling back application to handle %s",
+                            cps_api_object_to_c_string(obj).c_str());
                     bool _stop = (!cb(obj,param));
                     std_rw_rlock(&rw_lock);
                     if (_stop)  {

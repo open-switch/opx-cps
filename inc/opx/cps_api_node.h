@@ -22,12 +22,13 @@ extern "C" {
 
 #include "cps_api_object.h"
 #include "cps_api_errors.h"
+#include "dell-cps.h"
 
 #include <stddef.h>
 
 typedef enum {
-    cps_api_node_data_NODAL,                 /// Data resides on each node and is not duplicated by node group
-    cps_api_node_data_1_PLUS_1_REDUNDENCY    /// Data is stored in a global database and replicated to a backup node
+    cps_api_node_data_NODAL = CPS_GROUP_TYPE_NODAL,                 /// Data resides on each node and is not duplicated by node group
+    cps_api_node_data_1_PLUS_1_REDUNDENCY = CPS_GROUP_TYPE_GLOBAL    /// Data is stored in a global database and replicated to a backup node
 } cps_api_node_data_type_t;
 
 typedef struct {
