@@ -16,6 +16,7 @@ Lookup and binary-to-text translation, and object introspection is also availabl
 Applications define objects through (optionally YANG-based) object models. These object models are converted into binary (C accessible) object keys and object attributes that can be used in conjunction with the C-based CPS APIs. There are adaptions on top of CPS that allow these objects and APIs to be converted to different languages such as Python.
 
 With the object keys and attributes applications can:
+
 - Get a single or get multiple objects
 - Perform transactions
    - Create
@@ -26,7 +27,7 @@ With the object keys and attributes applications can:
 
 ## API documentation
 
-The CPS API is documented through Doxygen. To generate CPS Doxygen content, at the top level of your source directory (one level underneath `opx-cps`), run the `opx-cps/doc/cps_gen_doc.sh` command.  
+The CPS API is documented through Doxygen. To generate CPS Doxygen content, at the top-level of your source directory (one level underneath `opx-cps`), run the `opx-cps/doc/cps_gen_doc.sh` command.  
     
     git clone git@github.com:open-switch/opx-cps.git
     cd opx-cps
@@ -35,38 +36,37 @@ The CPS API is documented through Doxygen. To generate CPS Doxygen content, at t
 
 ## Packages
 
-- `libopx-cps1\_*version*\_*arch*.deb` — Utility libraries
+- `libopx-cps1_*version*_*arch*.deb` — Utility libraries
 
-- `libopx-cps-dev\_*version*\_*arch*.deb` — Exported header files
+- `libopx-cps-dev_*version*_*arch*.deb` — Exported header files
 
-- `python-opx-cps\_*version*\_*arch*.deb` — Python bindings
+- `python-opx-cps_*version*_*arch*.deb` — Python bindings
 
-- `opx-cps\_*version*\_*arch*.deb` — Service executables, configuration files, tool scripts 
+- `opx-cps_*version*_*arch*.deb` — Service executables, configuration files, tool scripts 
 
-- `opx-yang-utils-dev\_*version*\_*arch*.deb` — Tools to parse YANG files
+- `opx-yang-utils-dev_*version*_*arch*.deb` — Tools to parse YANG files
 
 See [Architecture](https://github.com/open-switch/opx-docs/wiki/Architecture) for more information on the CPS module.
 
-
 ## Debugging tools
 
-- `cps\_model\_info`
+- `cps_model_info`
 
-- `cps\_get\_oid`
+- `cps_get_oid`
 
-- `cps\_set\_oid`
+- `cps_set_oid`
 
-- `cps\_trace\_events`
+- `cps_trace_events`
 
-- `cps\_send\_events`
+- `cps_send_events`
 
-### cps\_model\_info 
+### cps_model_info 
 
-This tool is useful to get all information about CPS objects on the target. It is used to get the attributes of a specific CPS object, or first-level contents of a given YANG path of the CPS object (as defined in the YANG model).
+This tool is useful to get information about CPS objects on the target. It is used to get the attributes of a specific CPS object, or first-level contents of a given YANG path of the CPS object (as defined in the YANG model).
 
 #### Usage
 
-`cps\_model\_info` — CPS Object Path as defined in the YANG model
+`cps_model_info` — CPS object path as defined in the YANG model
 
 #### Examples
 
@@ -94,7 +94,7 @@ Process Owner:  base_nas_front_panel_ports.py
 
 base-if-phy/hardware-port
         Attribute Type =  list
-        Description =  This entity holds the details of which front panel port corresponds to a specific NPU/hardware port. This list is not dynamic and therefore will not change for a single instance of a product.
+        Description =  This entity holds the details of which front panel port corresponds to a specific NPU/hardware port. This list is not dynamic and will not change for a single instance of a product.
 
 Registered to CPS with qualifier:  target
 
@@ -113,11 +113,10 @@ Registered to CPS with qualifier:  target
 
 Process Owner:  base_nas
 
-
 base-if-phy/physical/hardware-port-id
         Attribute Type =  leaf
         Data Type =  uint32_t
-        Description =  This is the physical hardware port
+        Description =  Physical hardware port
 
 Registered to CPS with qualifier:  target
 
@@ -132,7 +131,7 @@ This tool is used to get data from a CPS Object Service provider.
 
 `cps\_get\_oid.py` — qualifier; CPS object path as defined in the YANG model
 
-CPS object path can be determined from the `cps\_model\_info` tool.
+CPS object path can be determined from the `cps_model_info` tool.
 
 Qualifier: target/observed/proposed
 
@@ -156,15 +155,15 @@ base-if-phy/physical/loopback = 0
 root@OPX:~#                             
 ```
 
-### cps\_set\_oid.py
+### cps_set_oid.py
 
 This tool is used to perform transactions on a given CPS object.
 
 #### Usage
 
-`cps\_set\_oid.py` — qualifier; operation; CPS Object Path as defined in the YANG model; CPS Object attr=value
+`cps_set_oid.py` — qualifier; operation; CPS Object Path as defined in the YANG model; CPS Object attr=value
 
-CPS object path and its attributes can be determined from the `cps\_model\_info` tool.
+CPS object path and its attributes can be determined from the `cps_model_info` tool.
 
 Qualifier: target/observed/proposed
 
@@ -176,17 +175,17 @@ Operation: create/set/delete
 root@OPX:/opt/dell/os10/bin# cps_set_oid.py target create base-if-phy/physical hardware-port-id=26 admin-state=2
 ```
 
-### cps\_trace\_events.py
+### cps_trace_events.py
 
 This tool is used to subscribe/listen for CPS events on the target.
 
 #### Usage
 
-`cps\_trace\_events.py` *qualifier* *CPS Object Path as defined in the YANG model*
+`cps_trace_events.py` — qualifier; CPS object path as defined in the YANG model
 
-CPS Object Path can be determined from the `cps\_model\_info` tool.
+CPS object path can be determined from the `cps_model_info` tool.
 
-#### Examples
+#### Example
 
 ```
 root@OPX:~# cps_trace_events.py observed dell-base-if-cmn/if/interfaces-state/interface
@@ -198,7 +197,6 @@ cps/connection-entry/ip = 127.0.0.1:6379
 cps/connection-entry/connection-state = 1
 cps/connection-entry/group = 127.0.0.1:6379
 
-
 2.19.44.2883618.2883611.2883586.
 Key: 2.19.44.2883618.2883611.2883586.
 if/interfaces-state/interface/name = e101-025-0
@@ -206,15 +204,15 @@ if/interfaces-state/interface/if-index = 41
 if/interfaces-state/interface/admin-status = 2
 ```                                                     
 
-### cps\_send\_event.py
+### cps_send_event.py
 
 This tool is used to publish/send CPS events on the target.
 
 #### Usage
 
-`cps\_send\_event.py` *operation* *qualifier* *CPS Object Path as defined in the YANG model* *CPS Object attr=value*
+`cps_send_event.py` — operation; qualifier; CPS object path as defined in the YANG model; CPS object attr=value
 
-CPS object path and its attributes can be determined from the `cps\_model\_info` tool.
+CPS object path and its attributes can be determined from the `cps_model_info` tool.
 
 Qualifier: target/observed/proposed
 
