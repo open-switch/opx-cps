@@ -11,9 +11,9 @@ A high-level list of CPS features include:
 - Database-like API (Get, Commit[add,delete,create,modify])
 - Publish/subscribe semantics supported
 
-Lookup and binary to text translation and object introspection is also available.
+Lookup and binary-to-text translation, and object introspection is also available.
 
-Applications define objects through (optionally YANG-based) object models. These object models are converted into binary (C accessible) object keys and object attributes that can be used in conjunction with the C-based CPS APIs. There are adaptions on top of CPS that allow these objects and APIs to be converted to different languages like Python.
+Applications define objects through (optionally YANG-based) object models. These object models are converted into binary (C accessible) object keys and object attributes that can be used in conjunction with the C-based CPS APIs. There are adaptions on top of CPS that allow these objects and APIs to be converted to different languages such as Python.
 
 With the object keys and attributes applications can:
 - Get a single or get multiple objects
@@ -25,6 +25,7 @@ With the object keys and attributes applications can:
 - Register and publish object messages
 
 ## API documentation
+
 The CPS API is documented through Doxygen. To generate CPS Doxygen content, at the top level of your source directory (one level underneath `opx-cps`), run the `opx-cps/doc/cps_gen_doc.sh` command.  
     
     git clone git@github.com:open-switch/opx-cps.git
@@ -60,11 +61,12 @@ See [Architecture](https://github.com/open-switch/opx-docs/wiki/Architecture) fo
 - `cps\_send\_events`
 
 ### cps\_model\_info 
+
 This tool is useful to get all information about CPS objects on the target. It is used to get the attributes of a specific CPS object, or first-level contents of a given YANG path of the CPS object (as defined in the YANG model).
 
 #### Usage
 
-`cps\_model\_info` *CPS Object Path as defined in the YANG model*
+`cps\_model\_info` — CPS Object Path as defined in the YANG model
 
 #### Examples
 
@@ -123,16 +125,18 @@ Process Owner:  base_nas
 ```
 
 ### cps\_get\_oid.py
+
 This tool is used to get data from a CPS Object Service provider.
 
 #### Usage
-`cps\_get\_oid.py` *qualifier* *CPS Object Path as defined in the YANG model*
 
-CPS Object Path can be determined from the `cps\_model\_info` tool.
+`cps\_get\_oid.py` — qualifier; CPS object path as defined in the YANG model
+
+CPS object path can be determined from the `cps\_model\_info` tool.
 
 Qualifier: target/observed/proposed
 
-#### Examples
+#### Example
 
 ```
 root@OPX:~# cps_get_oid.py target base-if-phy/physical hardware-port-id=125
@@ -152,27 +156,28 @@ base-if-phy/physical/loopback = 0
 root@OPX:~#                             
 ```
 
-
 ### cps\_set\_oid.py
-This tool is used to do transactions on a given CPS object.
+
+This tool is used to perform transactions on a given CPS object.
 
 #### Usage
 
-`cps\_set\_oid.py` *qualifier* *operation* *CPS Object Path as defined in the YANG model* *CPS Object attr=value*
+`cps\_set\_oid.py` — qualifier; operation; CPS Object Path as defined in the YANG model; CPS Object attr=value
 
-CPS Object Path and its attributes can be determined from the `cps\_model\_info` tool.
+CPS object path and its attributes can be determined from the `cps\_model\_info` tool.
 
 Qualifier: target/observed/proposed
 
 Operation: create/set/delete
 
-#### Examples
+#### Example
 
 ```
 root@OPX:/opt/dell/os10/bin# cps_set_oid.py target create base-if-phy/physical hardware-port-id=26 admin-state=2
 ```
 
 ### cps\_trace\_events.py
+
 This tool is used to subscribe/listen for CPS events on the target.
 
 #### Usage
@@ -209,16 +214,16 @@ This tool is used to publish/send CPS events on the target.
 
 `cps\_send\_event.py` *operation* *qualifier* *CPS Object Path as defined in the YANG model* *CPS Object attr=value*
 
-CPS Object Path and its attributes can be determined from the `cps\_model\_info` tool.
+CPS object path and its attributes can be determined from the `cps\_model\_info` tool.
 
 Qualifier: target/observed/proposed
 
 Operation: create/set/delete
 
-#### Examples
+#### Example
 
 ```
 root@OPX:/opt/dell/os10/bin# cps_send_event.py create observed  dell-base-if-cmn/if/interfaces-state/interface  if/interfaces-state/interface/name=e101-007-0 if/interfaces-state/interface/oper-status=2
 ```
 
-(c) 2017 Dell EMC
+(c) 2018 Dell Inc. or its subsidiaries. All Rights Reserved.
