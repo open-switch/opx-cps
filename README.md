@@ -123,13 +123,13 @@ Registered to CPS with qualifier:  target
 Process Owner:  base_nas
 ```
 
-### cps\_get\_oid.py
+### cps_get_oid.py
 
 This tool is used to get data from a CPS Object Service provider.
 
 #### Usage
 
-`cps\_get\_oid.py` — qualifier; CPS object path as defined in the YANG model
+`cps_get_oid.py` — qualifier; CPS object path as defined in the YANG model
 
 CPS object path can be determined from the `cps_model_info` tool.
 
