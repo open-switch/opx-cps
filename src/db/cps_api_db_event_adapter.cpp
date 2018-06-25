@@ -553,7 +553,7 @@ static cps_api_return_code_t _cps_api_wait_for_event(
                     uint64_t*_seq = (uint64_t*)cps_api_object_get_data(msg,CPS_OBJECT_GROUP_SEQUENCE);
                     if (_id!=nullptr && _seq!=nullptr) {
                         if (nh->_sequence_tracker[*_id]>=(*_seq)) {
-                            EV_LOGGING(CPS-DB-EV-CONN,WARNING,"EVT-RECV","Recieved a unusual sequence number %d:%d"
+                            EV_LOGGING(CPS-DB-EV-CONN,DEBUG,"EVT-RECV","Recieved a unusual sequence number %d:%d"
                                     , (int)*_id,(int)*_seq);
                         } else {
                             nh->_sequence_tracker[*_id]=*_seq;//don't increase in negative case
