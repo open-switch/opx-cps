@@ -271,7 +271,7 @@ def _validate_conn_objs():
     conn_objs = _get_connection_objs()
 
     for conn in conn_objs:
-        tunnel_pid_path = "/tmp/stunnel_"+conn+"_"+(conn_objs[conn]['ip']).split(":", -1)[0]+".pid"
+        tunnel_pid_path = "/tmp/stunnel_"+conn+"_"+(conn_objs[conn]['ip']).rsplit(":", 1)[0]+".pid"
         if os.path.isfile(tunnel_pid_path):
             with open(tunnel_pid_path, 'r') as fd:
                 pid = fd.read()
