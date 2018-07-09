@@ -74,6 +74,11 @@ class Locator:
             os.path.splitext(os.path.basename(filename))[0] + ".yin")
         if not os.path.exists(yin_file):
             create_yin_file(filename, yin_file)
+        else:
+            yang_file = search_path_for_file(filename)
+            if os.path.getmtime(yang_file) > os.path.getmtime(yin_file):
+                create_yin_file(filename, yin_file)
+
         return yin_file
 
     def get_openapi_file(self, filename):
