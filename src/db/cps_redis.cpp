@@ -337,6 +337,7 @@ bool cps_db::get_object_response(cps_db::connection &conn, cps_api_object_t obj,
             }
             cps_db::set_return_code(rc,cps_api_ret_code_CORRUPT);
          }
+        else cps_db::set_return_code(rc,cps_api_ret_code_RESPONSE_TYPE_INVALID);
      }
     return false;
 }

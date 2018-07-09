@@ -1,3 +1,16 @@
+opx-cps (3.6.3) unstable; urgency=medium
+
+  * Update: Validate connection objects as soon as the connectivity svc starts
+  * Update: Added missing call to cps_api_object_clone()
+  * Update: Modify log levels for DB disconnect logs
+  * Update: 1) Increased event flush timeout to be 15 secs
+            2) Log when the event flush timeout exceeds 2secs
+  * Update: Add fine tuned errors for cps get queries
+  * Update: Integrate Pyang plugin for OpenApi specification (swagger)
+
+ -- Dell EMC <ops-dev@lists.openswitch.net>  Mon, 9 Jul 2018 01:00:13 -0700
+
+
 opx-cps (3.6.2+opx5) unstable; urgency=medium
 
   * Update: Update connection cache on registering connectivity group events 

@@ -284,6 +284,9 @@ def _validate_conn_objs():
             # Delete the corresponding cps/connection-object
             delete_conn_obj(conn)
 
+    # Audit/Validate cps/connection-object every 30 secs
+    threading.Timer(30, _validate_conn_objs).start()
+
 def sig_handler(signum, frame):
     global signum_caught
     global __running
@@ -297,11 +300,11 @@ if __name__ == '__main__':
 
     signal.signal(signal.SIGTERM, sig_handler)
 
+    # Validate cps/connection-object
+    _validate_conn_objs()
+
     # Sync groups with connectivity objects
     _sync()
-
-    # Audit/Validate cps/connection-object every 30 secs
-    threading.Timer(30, _validate_conn_objs).start()
 
     # Register for cps/node-group events
     _register_ev("target", "cps/node-group")
