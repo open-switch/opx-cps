@@ -60,6 +60,7 @@ typedef enum {
     cps_api_ret_code_NO_EXIST=7,		    //!< returned when the queried object doesn't exist (applies to db cached objects)
     cps_api_ret_code_CORRUPT=8,				//!< returned when the entry exists but is corrupt and may need to be cleaned up
     cps_api_ret_code_PARAM_INVALID=9,		//!< returned if parameters to the function are invalid
+    cps_api_ret_code_RESPONSE_TYPE_INVALID=10,		//!< returned if redis response type is invalid
 
 } cps_api_return_code_enum_val_t;
 
