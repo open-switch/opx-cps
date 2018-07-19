@@ -1,3 +1,9 @@
+opx-cps (3.6.3+opx1) unstable; urgency=medium
+
+  * Update: Added manpages
+
+ -- Dell EMC <ops-dev@lists.openswitch.net>  Wed, 18 Jul 2018 05:20:00 -0700
+
 opx-cps (3.6.3) unstable; urgency=medium
 
   * Update: Validate connection objects as soon as the connectivity svc starts
