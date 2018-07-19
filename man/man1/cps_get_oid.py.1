@@ -1,0 +1,58 @@
+.TH cps_get_oid.oy "1" "2018-06-11" OPX "OPX utilities"
+.SH NAME
+cps_get_oid.py \- Get and display CPS API objects
+.SH SYNOPSIS
+.SY cps_get_oid.py
+.OP \-h
+.OP \-\-help
+.OP \-qua qualifier
+.OP \-d
+.I object
+.RI [ attr = value
+.IR .\|.\|. ]
+.YS
+.SH DESCRIPTION
+This command allows the user to get and display CPS API objects.  It performs a CPS API GET request for the given object, and prints the response in a human-readable form.
+.P
+The object \fIobject\fR is specified as a slash-separated pathname of the form a/b/c/..., much like a Unix pathname.  Object names are defined by the CPS API YANG models.
+.P
+A sequence of object attributes, in the form \fIattr\fR=\fIvalue\fR can be specified, to specify values for object attributes in the CPS API GET request.  Attributes names are of the same form as object names, a slash-separated pathname.
+.SH OPTIONS
+.TP
+.B \-h, \-\-help
+Print help text.
+.TP
+\fB\-qua\fR \fIqualifier\fR
+Specify the CPS API object qualifier in the request.  The qualifier is a string, and must be one of the following: target, observed, proposed, realtime, registration, running, or startup.  If this option is not given, the default qualifier is target.
+.TP
+.B \-d
+Print additional details about the objects parsed and sent to the backend.
+.SH EXAMPLE
+.nf
+.eo
+# Get a specific platform entity, namely, PSU in slot 1
+
+root@OPX:~# cps_get_oid.py -qua observed base-pas/entity base-pas/entity/entity-type=1 base-pas/entity/slot=1
+
+============base-pas/entity==========
+
+base-pas/entity/present = 0
+base-pas/entity/insertion-timestamp = 1528396869
+base-pas/entity/oper-status = 1
+base-pas/entity/slot = 1
+base-pas/entity/entity-type = 1
+base-pas/entity/name = PSU 1
+base-pas/entity/slot = 1
+base-pas/entity/fault-type = 1
+base-pas/entity/entity-type = 1
+base-pas/entity/insertion-cnt = 1
+base-pas/entity/admin-status = 1
+------------------------------------------------
+.ec
+.fi
+.SH REPORTING BUGS
+To report any OPX software bugs, please refer to https://github.com/open-switch/opx-docs/wiki/Report-bugs.
+.SH COPYRIGHT
+Copyright \(co 2018 Dell Inc. and its subsidiaries. All Rights Reserved.
+.SH SEE ALSO
+cps_model_info(1)
