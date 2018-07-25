@@ -186,8 +186,8 @@ static PyObject * py_cps_info(PyObject *self, PyObject *args) {
         py_cps_util_set_item_to_dict(names.get(),lst[ix].details->name,
                 PyString_FromString(buff));
     }
-    names.release();
-    ids.release();
+    names.decref();
+    ids.decref();
 
     return d.release();
 }
