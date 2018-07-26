@@ -695,15 +695,23 @@ void cps_api_object_list_destroy(cps_api_object_list_t list, bool delete_all_obj
 
 bool cps_api_object_list_append_copy(cps_api_object_list_t list, cps_api_object_t obj, bool clone) {
     STD_ASSERT(list!=NULL);
-    register _cps_api_list_type_t * p = (_cps_api_list_type_t*)list;
-
     cps_api_object_t _ref = nullptr;
-    if (clone) _ref = cps_api_object_create();
-    else _ref = cps_api_object_reference(obj,false);
+    if (obj==nullptr) return false;
+    if (clone) {
+        _ref = cps_api_object_create();
+        if ((_ref != nullptr) && !cps_api_object_clone(_ref, obj)) {
+            cps_api_object_delete(_ref);
+            return false;
+        }
+    }
+    else
+        _ref = cps_api_object_reference(obj,false);
+
     if (_ref==nullptr&&obj!=nullptr) return false;
 
     bool _rc = false;
     try {
+           register _cps_api_list_type_t * p = (_cps_api_list_type_t*)list;
            p->push_back(_ref);
            _ref = nullptr;
            _rc = true;

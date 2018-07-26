@@ -145,7 +145,7 @@ namespace cps_db {
     static inline bool get_object(cps_db::connection &conn, const std::vector<char> &key,
     		cps_api_object_t obj,cps_api_return_code_t *rc=nullptr) {
 
-    	if(get_object_request(conn,&key[0],key.size())) {
+    	if(get_object_request(conn,&key[0],key.size(),rc)) {
             return get_object_response(conn,obj,rc);
         }
 

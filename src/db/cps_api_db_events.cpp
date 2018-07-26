@@ -56,7 +56,7 @@ static size_t _MUTEX_ERROR_RETRY_DELAY= 5;
 static size_t _LOG_INTERVAL = 1000;
 static size_t _TOTAL_MAX_INFLIGHT_EVENTS = 100000;
 static size_t _TOTAL_MAX_INFLIGHT_EVENTS_REDLINE = _TOTAL_MAX_INFLIGHT_EVENTS*2;
-static size_t _event_flush_timeout=3000;
+static size_t _event_flush_timeout=15000;
 
 static _cps_event_flush _flush_on_exit;
 
@@ -217,7 +217,7 @@ static bool _drain_connection(cps_db::connection &conn, size_t amount) {
         cps_db::response_set resp;
         if (!conn.response(resp,_event_flush_timeout,&_rc,true)) {
             conn.reconnect();
-            EV_LOGGING(CPS-DB-EV-CONN,INFO,"DRAIN-EV","Draining failed - remaining %d",amount);
+            EV_LOGGING(CPS-DB-EV-CONN,ERR,"DRAIN-EV","Draining failed - remaining %d",amount);
             return false;
         }
         if (_unittest_true_on_simulated_fail()) {

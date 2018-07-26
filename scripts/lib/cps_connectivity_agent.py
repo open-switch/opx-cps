@@ -271,7 +271,7 @@ def _validate_conn_objs():
     conn_objs = _get_connection_objs()
 
     for conn in conn_objs:
-        tunnel_pid_path = "/tmp/stunnel_"+conn+"_"+(conn_objs[conn]['ip']).split(":6379", -1)[0]+".pid"
+        tunnel_pid_path = "/tmp/stunnel_"+conn+"_"+(conn_objs[conn]['ip']).rsplit(":", 1)[0]+".pid"
         if os.path.isfile(tunnel_pid_path):
             with open(tunnel_pid_path, 'r') as fd:
                 pid = fd.read()
@@ -283,6 +283,9 @@ def _validate_conn_objs():
         else:
             # Delete the corresponding cps/connection-object
             delete_conn_obj(conn)
+
+    # Audit/Validate cps/connection-object every 30 secs
+    threading.Timer(30, _validate_conn_objs).start()
 
 def sig_handler(signum, frame):
     global signum_caught
@@ -297,11 +300,11 @@ if __name__ == '__main__':
 
     signal.signal(signal.SIGTERM, sig_handler)
 
+    # Validate cps/connection-object
+    _validate_conn_objs()
+
     # Sync groups with connectivity objects
     _sync()
-
-    # Audit/Validate cps/connection-object every 30 secs
-    threading.Timer(30, _validate_conn_objs).start()
 
     # Register for cps/node-group events
     _register_ev("target", "cps/node-group")
