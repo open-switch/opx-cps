@@ -1,3 +1,12 @@
+opx-cps (3.6.3+opx3) unstable; urgency=medium
+
+  * Update: stunnel security improvements
+  * Update: fix stunnel client config to accept connections only from localhost
+  * Update: Fix stunnel pid file name during validation of connection objects
+  * Update: Fix parsing stunnel pid file name
+
+ -- Dell EMC <ops-dev@lists.openswitch.net>  Fri, 10 Aug 2018 05:20:00 -0700
+
 opx-cps (3.6.3+opx2) unstable; urgency=medium
 
   * Update: Revert openapi code not applicable for OPX

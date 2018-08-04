@@ -93,7 +93,7 @@ class TunnelConfigManager():
             # Service specific socket options
             f.write("[redis - "+node+" ]\n")
             f.write("client = yes \n")
-            f.write("accept = :::"+port+" \n")
+            f.write("accept = 127.0.0.1:"+port+" \n")
             f.write("connect = "+self.ip_str+":"+default_server_port+" \n")
             f.write("cert = "+default_cert+"\n")
             f.write("TIMEOUTconnect = "+default_timeout_connect+"\n")
