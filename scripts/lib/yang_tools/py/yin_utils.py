@@ -20,9 +20,8 @@ import file_utils
 import general_utils
 
 import os
-
-import sys
 import subprocess
+import tempfile
 
 import copy
 
@@ -38,32 +37,35 @@ class Locator:
         self.context = context
         self._loaded_nodes = {}
 
-    def find_subdir(self,base, name):
-        target = os.path.join(base,name)
+    def find_subdir(self, base, name):
+        target = os.path.join(base, name)
 
         if os.path.exists(target):
             return target
 
-        for i in os.listdir(base):
-            if i==name:
-                return os.path.join(base,i)
-            rel = os.path.join(base,i)
-            if os.path.isdir(rel):
-                try:
-                    rc = find_subdir(rel,name)
-                    if rc!='':
+        try:
+            entries = os.listdir(base)
+        except OSError:
+            pass
+        else:
+            for i in entries:
+                rel = os.path.join(base, i)
+                if os.path.isdir(rel):
+                    rc = self.find_subdir(rel, name)
+                    if rc != '':
                         return rc
-                except:
-                    pass
         return ''
 
    #### directory to store the OpenApi specification json files
     def mkdirOas(self):
-        p = subprocess.Popen(['ar_tool.py','sysroot'],stdout=subprocess.PIPE)
-        root = p.communicate()[0].strip()
-        workspace = os.path.join(root,'workspace')
-        sysroot = self.find_subdir(workspace, 'sysroot')
-        oasdir = sysroot + '/var/www/html'
+        oasdir = os.getenv('YANG_OASDIR')
+        if oasdir is None:
+            p = subprocess.Popen(['ar_tool.py', 'sysroot'],
+                                 stdout=subprocess.PIPE)
+            root = p.communicate()[0].strip()
+            workspace = os.path.join(root, 'workspace')
+            sysroot = self.find_subdir(workspace, 'sysroot')
+            oasdir = sysroot + '/var/www/html'
         if not os.path.exists(oasdir):
             os.makedirs(oasdir)
         return oasdir
