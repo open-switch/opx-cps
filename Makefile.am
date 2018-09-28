@@ -23,7 +23,7 @@ libopx_cps_api_common_la_SOURCES = \
 	src/non-core/cps_api_operation_tools.cpp	\
 	src/cps_api_object_attr.cpp	\
 	src/cps_api_operation_common.cpp	\
-	src/cps_api_events.cpp	\	
+	src/cps_api_events.cpp  \
 	src/cps_api_key.cpp	\
         src/cps_api_key_utils.cpp \
 	src/cps_api_operation_debug.cpp	\
@@ -32,7 +32,6 @@ libopx_cps_api_common_la_SOURCES = \
 	src/cps_api_operation_service.cpp	\
 	src/cps_ns.cpp	\
 	src/cps_api_client_ipc.cpp	\
-	src/cps_api_service.cpp	\
 	src/non-core/cps_api_object_tools.cpp	\
 	src/cps_api_object.cpp  \
   src/metadata/dell-cps.cpp \

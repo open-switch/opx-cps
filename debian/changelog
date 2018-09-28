@@ -1,3 +1,10 @@
+opx-cps (3.6.3+opx4) unstable; urgency=medium
+
+  * Bugfix: Source code for service must not be included in library
+  * Bugfix: Service must be of systemd service type 'notify'
+
+ -- Dell EMC <ops-dev@lists.openswitch.net>  Fri, 28 Sep 2018 14:00:00 -0800
+
 opx-cps (3.6.3+opx3) unstable; urgency=medium
 
   * Update: stunnel security improvements
