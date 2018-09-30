@@ -23,11 +23,23 @@
 #include "std_user_perm.h"
 #include "event_log.h"
 
+<<<<<<< HEAD
 #include <execinfo.h> 
 #include <utility>
 
 #define CPS_USER_ID "_opx_cps"
 #define CPS_USER_GRPUP "_opx_cps"
+||||||| merged common ancestors
+#define CPS_USER_ID "cpsuser"
+#define CPS_USER_GRPUP "cpsusers"
+=======
+#include <execinfo.h>
+#include <utility>
+
+
+#define CPS_USER_ID "cpsuser"
+#define CPS_USER_GRPUP "cpsusers"
+>>>>>>> integration
 
 void cps_api_set_cps_file_perms(const char *path) {
     if (std_user_chmod(path,"o-rwx")!=STD_ERR_OK) {

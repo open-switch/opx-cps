@@ -182,8 +182,8 @@ static PyObject * py_cps_info(PyObject *self, PyObject *args) {
         py_cps_util_set_item_to_dict(names.get(),lst[ix].details->name,
                 PyString_FromString(buff));
     }
-    names.release();
-    ids.release();
+    names.decref();
+    ids.decref();
 
     return d.release();
 }
@@ -523,6 +523,7 @@ PyDoc_STRVAR(CPS_FN_DOC(py_cps_node_set_ownership_type), "set_ownership_type(key
     "@type - ownership type(service,service-cache,db)\n"
     "@return - True if successful otherwise False");
 
+<<<<<<< HEAD
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_sync), "sync(dest_obj, src_obj,callbacks)\n\n"
    "Sync the source object with destination object\n"
    "@dest_obj - Destination object\n"
@@ -539,6 +540,26 @@ PyDoc_STRVAR(CPS_FN_DOC(py_cps_reconcile), "reconcile(src_objs,dest_obj,callback
    "             and its callback function as its value\n"
    "@return - True if successful otherwise False");
 
+||||||| merged common ancestors
+=======
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_sync), "sync(dest_obj, src_obj,callbacks)\n\n"
+   "Sync the source object with destination object\n"
+   "@dest_obj - Destination object\n"
+   "@src_obj - Source object\n"
+   "@callbacks - Python dictionary with 'sync' and 'error' as key\n"
+   "             and its callback function as its value\n"
+   "@return - True if successful otherwise False");
+
+PyDoc_STRVAR(CPS_FN_DOC(py_cps_reconcile), "reconcile(src_objs,dest_obj,callbacks)\n\n"
+   "Reconcile/compare the list of source objects with entries in DB\n"
+   "@src_objs - List of source objects\n"
+   "@dest_obj - Dest object with class key"
+   "@callbacks - Python dictionary with 'sync' and 'error' as key\n"
+   "             and its callback function as its value\n"
+   "@return - True if successful otherwise False");
+
+
+>>>>>>> integration
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_api_db_commit), "db_commit(object,previous,publish)\n\n"
     "Stores the object into the database and return the previous object (optional)\n"
     "@object - An object (in the form of a dictionary) that will be updated.\n"

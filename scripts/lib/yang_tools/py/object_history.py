@@ -313,6 +313,41 @@ class YangHistory_HistoryFile:
     """
     Responsible fro opening loading, adding to and closing yang history files.
 
+<<<<<<< HEAD
+    The history files maintain the previously allocated IDs.
+    """
+
+    LATEST_FILE_VERSION = 2
+||||||| merged common ancestors
+                    if filename in found_names:
+                        continue
+                        # print("Error.. found two instances of " + filename + " at "+dirpath)
+                        # print("other files found are:")
+                        # print f
+                        # sys.exit(1)
+
+                    f.append(os.path.join(dirpath, filename))
+                    found_names.append(filename)
+        for i in f:
+            self.get_global_enums(i)
+
+    staticmethod(get_global_enums)
+    staticmethod(load_all_globals)
+
+    def __init__(self, context, filename, category):
+        """This will initialize the module history file. """
+        self.context = context
+        self.the_name = filename
+        self.output_file = os.path.join(self.context['history']['output'],os.path.basename(filename))
+        self.the_dict = dict()
+        self.module = IndexTracker(1)
+
+        self.load_all_globals()
+        self.category = category
+        self.the_dict[category] = enum_tracker_int(self.module, category)
+        self.the_dict[self.GLOBAL_SECTION] = enum_tracker_int(
+            self.GLOBAL_enums.indexer, self.GLOBAL_SECTION)
+=======
     The history files maintain the previously allocated IDs.
     """
 
@@ -321,11 +356,24 @@ class YangHistory_HistoryFile:
     def __get_hist_version(self):
         """
         This function will find a way to determine the version of the yhist file.
+>>>>>>> integration
+
+<<<<<<< HEAD
+    def __get_hist_version(self):
+        """
+        This function will find a way to determine the version of the yhist file.
 
         note: implemention of the actual version check could be placed as a static function
         of the class for the appropriate version
         """
         _file_version = None
+||||||| merged common ancestors
+=======
+        note: implemention of the actual version check could be placed as a static function
+        of the class for the appropriate version
+        """
+        _file_version = None
+>>>>>>> integration
         try:
             with open(self._filename, "r") as _file:
                 _open = 0
@@ -347,6 +395,11 @@ class YangHistory_HistoryFile:
         except:
             pass
 
+<<<<<<< HEAD
+        if _file_version is None:
+            return YangHistory_HistoryFile.LATEST_FILE_VERSION
+||||||| merged common ancestors
+=======
         if _file_version is None:
             return YangHistory_HistoryFile.LATEST_FILE_VERSION
 
@@ -404,6 +457,126 @@ class YangHistory_HistoryFile:
 
         for _enum_type in self._data['items'].keys():
             _id_monitor = {}
+            
+            for _enum_name in self._data['items'][_enum_type].keys():
+                #this API will 
+                ##1 init the enum name if not present
+                _value = self._data['items'][_enum_type][_enum_name]                
+                if _value in _id_monitor:
+                    raise Exception('Seems like there is a issue with the configuration for %s in \
+                        %s the offending value is %s - appears to be reaused' % (_enum_name,self._filename,_value))
+                _enum_tag ="++"+_enum_name 
+                _id_monitor[_value] = _enum_tag
+                ##2 validate/add the enum 
+                self.add_enum(_enum_type, _enum_name, None)  
+
+    def __get_indexer(self, enum_type):
+        if enum_type == self._category:
+            return Model_Element_IndexTracker(self._data['items'][enum_type], self._category, self._data['global']['range-start'])
+
+        return Model_Enum_IndexTracker(self._data['items'][enum_type], self._category, 0)
+
+    def __valid_value(self, enum_type, enum_name):
+        value = self._data['items'][enum_type][enum_name]
+
+        if enum_type == self._category:
+            if value < self._data['global']['range-start'] or value >= self._data['global']['range-end']:
+                raise Exception(
+                    "Invalid value %d for enum %s " %
+                    (value, enum_type))
+
+    def add_enum(self, enum_type, enum_name, enum_value):
+        if enum_type not in self._data['items']:
+            self._data['items'][enum_type] = {}
+
+        if '..indexer..' not in self._data['items'][enum_type]:
+            self._data['items'][enum_type][
+                '..indexer..'] = self.__get_indexer(enum_type)
+
+        _indexer = self._data['items'][enum_type]['..indexer..']
+
+        __current_value = _indexer.get_element_value(enum_name)
+>>>>>>> integration
+
+<<<<<<< HEAD
+        return _file_version
+||||||| merged common ancestors
+    def get_global(self, name):
+        return self.the_dict[self.GLOBAL_SECTION].get_value(name, None)
+=======
+        _value = _indexer.add_element(enum_name, enum_value)
+>>>>>>> integration
+
+<<<<<<< HEAD
+    def __init__(self, context, filename, category=None):
+        """
+            Create a history object loaded from a file provided.
+            @context contains program details/context
+            @filename the name of the file to load or write
+            @category the category of this file
+        """
+        self._context = context
+        self._filename = filename
+        self._category = category
+        self._data = YangHistory_ConfigFile_Base.empty_config_file()
+
+        self._filename_version = self.__get_hist_version()
+
+        if self._filename_version == 1:
+            _cfg = YangHistory_ConfigFile_v1(self._filename)
+        else:
+            _cfg = YangHistory_ConfigFile_v2(self._filename)
+
+        self._data = _cfg.get()
+
+        if 'category' in self._data['global'] and category is None:
+            self._category = self._data['global']['category']
+            category = self._category
+
+        if self._category is None:
+            raise Exception('No category provided - for %s' % filename)
+
+        self._data['global']['category'] = self._category
+
+        if self._data['global']['range-start'] != 0:
+            self._category_value = self._data['global']['id']
+            _cat = self._context['history'][
+                    'category'].set_category(
+                        category, self._category_value,False)
+            if _cat != self._category_value:
+                self._data['global']['range-start'] = 0;
+
+        if self._data['global']['range-start'] == 0:
+            self._category_value = self._context[
+                'history']['category'].get_category(category)
+            self._data['global']['id'] = self._category_value
+            self._data['global']['range-start'] = self._category_value << 16
+            self._data['global']['range-end'] = (
+                self._category_value + 1) << 16
+            self._data['items'].clear()
+            self._modified = True
+||||||| merged common ancestors
+    def get_enum(self, name, requested, parent=None):
+        if parent is None:
+            parent = self.category
+=======
+        self.__valid_value(enum_type, enum_name)
+        if _value != __current_value:
+            self._modified = True
+        return _value
+
+    def write(self):
+        if self._modified:
+            _cfg = YangHistory_ConfigFile_v2(self._filename);
+            _cfg.store(self._data, lambda key: key == '..indexer..')
+            self._modified = False
+>>>>>>> integration
+        else:
+<<<<<<< HEAD
+            self._modified = False
+
+        for _enum_type in self._data['items'].keys():
+            _id_monitor = {}
 
             for _enum_name in self._data['items'][_enum_type].keys():
                 #this API will
@@ -416,11 +589,51 @@ class YangHistory_HistoryFile:
                 _id_monitor[_value] = _enum_tag
                 ##2 validate/add the enum
                 self.add_enum(_enum_type, _enum_name, None)
+||||||| merged common ancestors
+            if parent not in self.the_dict:
+                self.the_dict[parent] = enum_tracker_int(
+                    IndexTracker(None), parent)
+=======
+            if self._context['debug']:
+                print ("Indexes haven't changed and therefore no output")
 
+
+import collections
+
+class YangHistory_CategoryParser:
+
+    @staticmethod
+    def __get_cfg_parser():
+        _config = ConfigParser.ConfigParser(None,collections.OrderedDict)
+        _config.optionxform = str
+        return _config
+
+    def _scan_hist(self):
+        for i in os.listdir(self._context['history']['sources']):
+            if '.yhist' not in i:
+                continue
+            _file = os.path.join(self._context['history']['sources'], i)
+
+            #use parsed history file to update the category mapping
+            YangHistory_HistoryFile(self._context, _file)
+
+    def _load_file_values(self):
+        _config = YangHistory_CategoryParser.__get_cfg_parser()
+>>>>>>> integration
+
+<<<<<<< HEAD
     def __get_indexer(self, enum_type):
         if enum_type == self._category:
             return Model_Element_IndexTracker(self._data['items'][enum_type], self._category, self._data['global']['range-start'])
+||||||| merged common ancestors
+        res = self.the_dict[parent].get_value(name, requested)
+        if parent == self.category:
+            res += (self.get_global(self.category) << 16)
+=======
+        _config.read(self._filename)
+>>>>>>> integration
 
+<<<<<<< HEAD
         return Model_Enum_IndexTracker(self._data['items'][enum_type], self._category, 0)
 
     def __valid_value(self, enum_type, enum_name):
@@ -450,8 +663,124 @@ class YangHistory_HistoryFile:
         if _value != __current_value:
             self._modified = True
         return _value
+||||||| merged common ancestors
+        return res
+=======
+        self.__range_start = long(_config.get('range', 'start'))
+        self.__range_end = long(_config.get('range', 'end'))
+
+        for _elem, _value in _config.items('reserved'):
+            self._index.add_element(_elem, long(_value),False)
+        try:
+            self._auto_gen_enums = bool(_config.get('range', 'auto-generate'))
+        except:
+            self._auto_gen_enums = False
+
+        self._modified = False
+
+        #now load any history files
+        self._scan_hist()
+
+    def _init_file_values(self):
+        self.__range_start = 0
+        self.__range_end = 0
+        self._auto_gen_enums = True
+        self._modified = False
+
+    def __init__(self, context, filename, fail_if_missing=False):
+        """
+        This will initialize the module history file.
+        @context contains the context of the appliation.  Essentially a map of objects that contain application details
+        @filename the name of the history file to parse
+        @catagory the catagory if known
+        """
+        self._categories = {}
+        self._index = Model_Element_IndexTracker(
+            self._categories, 'global', 0)
+        self._context = context
+        self._filename = filename
+        self._write_file = True
+        self._context['history']['category'] = self
+
+        _init_file = not os.path.exists(filename)
+
+        _write_override = self._write_file
+
+        if fail_if_missing == False and _init_file == True:
+            self._write_file = False
+
+        #if the file exists.. see if we should regen it
+        if not _init_file:
+            _stat = os.stat(filename)
+            if _stat.st_size == 0:
+                _init_file = True
+                fail_if_missing = False
+
+        if _init_file:
+            if fail_if_missing:
+                raise Exception(
+                    'Could not open configuration file %s for reading' %
+                    filename)
+            self._init_file_values()
+        else:
+            self._load_file_values()
+
+        self._scan_hist()
+
+    @staticmethod
+    def init_file(filename, range_start, range_end, values, auto_gen_enums):
+        """
+        Initialize a file from a range start, range end and list/iteratiable tuples(name,value)
+        Generally speaking - one category is reserved per yang file
+        @range_start the start of the range of numbers
+        @range_end the last number in the available range
+        @values an interatable set of tuples (name,value)
+        """
+        _config = YangHistory_CategoryParser.__get_cfg_parser()
+
+        _config.add_section('range')
+        _config.add_section('reserved')
+
+        _min = -1
+        _max = -1
+
+        for _elem, _value in values:
+            if _value < _min and i>=0: _min = _value
+            if _value > _max: _max = _value
+            if len(_elem)>0: _config.set('reserved', _elem, str(_value))
+
+        if range_start == 0 and _min != -1:
+            range_start = _min
+        if range_end < _max and _max != -1:
+            range_end = _max
+
+        _config.set('range', 'start', range_start)
+        _config.set('range', 'end', range_end)
+        _config.set('range', 'auto-generate', auto_gen_enums)
+
+        with open(filename, 'w') as f:
+            _config.write(f)
+
+    def _get_next_free(self):
+        if self._auto_gen_enums:
+            _max = 0
+            for i in self._categories.itervalues():
+                i = int(i)
+                if i > _max:
+                    _max = i
+            return _max + 1
+
+        for i in range(self.__range_start, self.__range_end):
+            if i in self._categories.itervalues():
+                continue
+            return i
+        raise Exception(
+            'No space left in category range for model.  Please specify manually or update %s' %
+            self._filename)
+>>>>>>> integration
 
     def write(self):
+<<<<<<< HEAD
         if self._modified:
             _cfg = YangHistory_ConfigFile_v2(self._filename);
             _cfg.store(self._data, lambda key: key == '..indexer..')
@@ -633,6 +962,51 @@ class YangHistory_CategoryParser:
             return self._categories[name]
 
         return self.set_category(name, None)
+||||||| merged common ancestors
+        self.the_name = self.output_file
+        print "Writing history to " + self.the_name
+        with open(self.the_name, "w") as f:
+            f.write("# writing " + self.the_name + "\n")
+            writer = IndexFile(f)
+            for k in sorted(self.the_dict.keys()):
+                writer.write(self.the_dict[k])
+=======
+        """Write out the category tracker file"""
+        if self._write_file is False:
+            return
+
+        if self._modified is True:
+            YangHistory_CategoryParser.init_file(self._filename,
+                        self.__range_start, self.__range_end, self._categories.iteritems(), self._auto_gen_enums)
+        else:
+            if self._context['debug']:
+                print ("Indexes haven't changed and therefore no output")
+
+    def set_category(self, name, value, overwrite_if_exists=True):
+        if value is None and name not in self._categories:
+            value = self._get_next_free()
+
+        #default to the config file before previously requested
+        if value is not None:
+            if ( name not in self._categories ) or \
+                    ( name in self._categories  and \
+                      self._categories[name] != value ):
+                #if overwriting enabled
+                if overwrite_if_exists or name not in self._categories:
+                    self._modified = True
+                    self._categories[name] = value
+
+        return self._categories[name]
+
+    def get_category(self, name):
+        """
+        Get the existing value for a category or create a new entry and use the category value
+        """
+        if name in self._categories:
+            return self._categories[name]
+
+        return self.set_category(name, None)
+>>>>>>> integration
 
 
 def init(context, file, category):

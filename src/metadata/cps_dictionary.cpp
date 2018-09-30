@@ -30,7 +30,14 @@
 #include "cps_string_utils.h"
 #include "std_mutex_lock.h"
 #include "event_log.h"
+<<<<<<< HEAD
 #include "std_utils.h"
+||||||| merged common ancestors
+=======
+#include "std_utils.h"
+
+
+>>>>>>> integration
 
 #include <unordered_map>
 #include <memory>
@@ -92,6 +99,7 @@ using cps_class_map_enums_t = std::unordered_map<std::string,CPSEnum>;
 using cps_class_map_id_to_enum_t = std::unordered_map<cps_api_attr_id_t,std::string>;
 using cps_class_map_key_to_map_element = cps_api_key_cache<cps_class_map_node_details_int_t*>;
 
+
 struct _key_characteristics {
     CPS_API_OBJECT_OWNER_TYPE_t _owner_type=CPS_API_OBJECT_SERVICE;
     bool _automated_event=false;
@@ -100,6 +108,7 @@ struct _key_characteristics {
 using cps_class_map_key_to_type = cps_api_key_cache<_key_characteristics>;
 
 static std_mutex_lock_create_static_init_rec(lock);
+<<<<<<< HEAD
 static auto _class_def = new cps_class_map_type_t;
 static auto _str_map = new cps_class_map_string_t;
 static auto _enum_map = new cps_class_map_enums_t;
@@ -114,6 +123,31 @@ using _cps_param_cb_list_t = std::vector<std::function<void(const char*)>>;
 static auto * _parameter_handlers = new _cps_param_cb_list_t();
 static auto * _parameter_handler_map = new std::unordered_map<std::string,_cps_param_cb_list_t>();
 
+||||||| merged common ancestors
+static cps_class_map_type_t _class_def;
+static cps_class_map_string_t _str_map;
+static cps_class_map_enums_t _enum_map;
+static cps_class_map_id_to_enum_t _attr_id_to_enum;
+static cps_class_map_key_to_map_element _key_to_map_element;
+static cps_class_map_key_to_type _key_storage_type;
+=======
+static auto _class_def = new cps_class_map_type_t;
+static auto _str_map = new cps_class_map_string_t;
+static auto _enum_map = new cps_class_map_enums_t;
+static auto _attr_id_to_enum = new cps_class_map_id_to_enum_t;
+static auto _key_to_map_element = new cps_class_map_key_to_map_element;
+static auto  *_key_storage_type = new cps_class_map_key_to_type;
+
+
+static std_mutex_lock_create_static_init_rec(_parameter_lock);
+static auto * _cps_parameters = new std::unordered_map<std::string,std::string>;
+
+using _cps_param_cb_list_t = std::vector<std::function<void(const char*)>>;
+static auto * _parameter_handlers = new _cps_param_cb_list_t();
+static auto * _parameter_handler_map = new std::unordered_map<std::string,_cps_param_cb_list_t>();
+
+
+>>>>>>> integration
 const static size_t NO_OFFSET=0;
 
 void cps_api_add_flag_set_handler(const char * what, std::function<void(const char*)> handler) {
@@ -148,6 +182,73 @@ void cps_api_update_ssize_on_param_change(const char * param, ssize_t *value_to_
     std::string _val = cps_api_get_library_flag_value(param);
     if (_val.size()>0) __trigger_param_callback(param);
 }
+
+std::string cps_api_get_library_flag_value(const char * flag) {
+    std_mutex_simple_lock_guard lg(&_parameter_lock);
+    auto _it = _cps_parameters->find(flag);
+    if (_it==_cps_parameters->end()) return std::string();
+    return _it->second;
+}
+
+bool cps_api_get_library_flags(const char * flag, char *val, size_t val_size) {
+    std_mutex_simple_lock_guard lg(&_parameter_lock);
+    auto _it = _cps_parameters->find(val);
+    if (_it==_cps_parameters->end()) return false;
+    safestrncpy(val,_it->second.c_str(),val_size);
+    return true;
+}
+
+cps_api_return_code_t cps_api_set_library_flags(const char * flag, const char *val) {
+    {
+    std_mutex_simple_lock_guard lg(&_parameter_lock);
+
+    if (val!=nullptr) {
+        try {
+            (*_cps_parameters)[flag] = val;
+        } catch (...) {
+            EV_LOGGING(CPS,ERR,"CPS-Parameters","Failed to update flag %s - alloc failed",flag);
+            return cps_api_ret_code_ERR;
+        }
+    }
+    }
+    __trigger_param_callback(flag);
+    return cps_api_ret_code_OK;
+
+}
+
+void cps_api_add_flag_set_handler(const char * what, std::function<void(const char*)> handler) {
+    std_mutex_simple_lock_guard lg(&_parameter_lock);
+    if (what==nullptr) _parameter_handlers->emplace_back(handler);
+    else (*_parameter_handler_map)[what].emplace_back(handler);
+}
+
+static void __trigger_param_callback(const char *param) {
+    std::remove_reference<decltype(*_parameter_handlers)>::type _generic_handlers, _specific_handlers;
+    {
+    std_mutex_simple_lock_guard lg(&_parameter_lock);
+    _generic_handlers = *_parameter_handlers;
+    _specific_handlers = (*_parameter_handler_map)[param];
+    }
+    for (auto callback : _specific_handlers) {
+        callback(param);
+    }
+    for (auto callback : _generic_handlers) {
+        callback(param);
+    }
+}
+
+void cps_api_update_ssize_on_param_change(const char * param, ssize_t *value_to_set)  {
+    std::function<void(const char *)> _handler = [value_to_set](const char *param){
+        std::string _val = cps_api_get_library_flag_value(param);
+        if (_val.size()==0) return ;
+        *value_to_set = strtol(_val.c_str(),nullptr,10);
+    };
+    cps_api_add_flag_set_handler(param,_handler);
+
+    std::string _val = cps_api_get_library_flag_value(param);
+    if (_val.size()>0) __trigger_param_callback(param);
+}
+
 
 std::string cps_api_get_library_flag_value(const char * flag) {
     std_mutex_simple_lock_guard lg(&_parameter_lock);

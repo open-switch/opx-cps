@@ -20,10 +20,55 @@ import file_utils
 import general_utils
 
 import os
+<<<<<<< HEAD
 
 import sys
 import subprocess
+||||||| merged common ancestors
+import subprocess
+import sys
+=======
+import tempfile
 
+import copy
+
+import xml.etree.ElementTree as ET
+
+class Locator:
+    def __init__(self, context, dirs_as_string=None):
+        if dirs_as_string:
+            self.tmpdir = dirs_as_string
+        else:
+            self.tmpdir = tempfile.mkdtemp()
+
+        self.context = context
+        self._loaded_nodes = {}
+
+
+    def get_yin_file(self, filename):
+        yin_file = os.path.join(
+            self.tmpdir,
+            os.path.splitext(os.path.basename(filename))[0] + ".yin")
+        if not os.path.exists(yin_file):
+            create_yin_file(filename, yin_file)
+        else:
+            yang_file = search_path_for_file(filename)
+            if os.path.getmtime(yang_file) > os.path.getmtime(yin_file):
+                create_yin_file(filename, yin_file)
+
+        return yin_file
+
+
+    def _nodes_from_yin(self,filename):
+        '@type yang_file: string'
+        '@rtype ET.Element'
+
+        _file = None
+        with open(filename, 'r') as f:
+            _file = f.read()
+>>>>>>> integration
+
+<<<<<<< HEAD
 import copy
 
 import xml.etree.ElementTree as ET
@@ -139,6 +184,47 @@ class yin_files:
 
     def __copy_nodes(self,yang_file):
         return copy.deepcopy(self.__nodes[yang_file])
+||||||| merged common ancestors
+=======
+        if _file.find('<module ') != -1 and _file.find('xmlns:ywx=') == -1:
+            pos = _file.find('<module ') + len('<module ')
+            lhs = _file[:pos] + 'xmlns:ywx="http://localhost/ignore/" '
+            rhs = _file[pos:]
+            _file = lhs + rhs
+
+        try:
+            return ET.fromstring(_file)
+        except Exception as ex:
+            pass
+        return None
+
+    def get_yin_nodes(self,filename):
+        """
+        Given a yin file name - load it and store in dictionary
+        """
+        if filename not in self._loaded_nodes:
+            self._loaded_nodes[filename] = self._nodes_from_yin(filename)
+        return copy.deepcopy(self._loaded_nodes[filename])
+
+
+class yin_files:
+    def __init__(self,context):
+        self.__map = {}
+        self.__context = context
+        self.__nodes={}
+
+    def __yin_name(self,yang_name):
+        """
+        Take a file name and return a path to a yin file.  If none exists.. create
+        @yang_name just the name of a yang file (no directory expected)
+        """
+        yang_name = os.path.basename(yang_name)
+        return self.__context.get_tmp_filename(yang_name.replace('.yang','.yin'))
+
+
+    def __copy_nodes(self,yang_file):
+        return copy.deepcopy(self.__nodes[yang_file])
+>>>>>>> integration
 
 
 
