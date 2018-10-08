@@ -55,22 +55,11 @@ bool cps_db::ping(cps_db::connection &conn, size_t timeoutms) {
     else if(r.is_ok()) {
         ret = r.get_str();
     }
-<<<<<<< HEAD
-||||||| merged common ancestors
-    return r.is_ok() ?
-            strcasecmp((const char *)r.get_str(),"PONG")==0 :
-            false;
-}
-=======
 
     if(ret)  return (strcasecmp((const char *)ret,"PONG")==0) ;
     return false;
 }
->>>>>>> integration
 
-    if(ret)  return (strcasecmp((const char *)ret,"PONG")==0) ;
-    return false;
-}
 
 bool cps_db::make_slave(cps_db::connection &conn,std::string ip) {
     cps_db::connection::db_operation_atom_t e[3];
@@ -182,15 +171,8 @@ cps_db::response_set::~response_set() {
     clear();
 }
 
-<<<<<<< HEAD
-bool cps_db::delete_object(cps_db::connection &conn,const char *key, size_t key_len,cps_api_return_code_t*rc) {
-||||||| merged common ancestors
-
-bool cps_db::delete_object(cps_db::connection &conn,const char *key, size_t key_len) {
-=======
 
 bool cps_db::delete_object(cps_db::connection &conn,const char *key, size_t key_len,cps_api_return_code_t*rc) {
->>>>>>> integration
     cps_db::connection::db_operation_atom_t e[2];
     e[0].from_string("DEL");
     e[1].from_string(key,key_len);
@@ -316,22 +298,8 @@ bool cps_db::set_object_request(cps_db::connection &conn, cps_api_object_t obj, 
 }
 
 bool cps_db::set_object_response(cps_db::connection &conn) {
-<<<<<<< HEAD
-
-||||||| merged common ancestors
-    cps_db::response_set rs;
-=======
->>>>>>> integration
     cps_db::response_set resp;
-<<<<<<< HEAD
-
     if (conn.response(resp)) {
-||||||| merged common ancestors
-
-    if (conn.response(resp,false)) {
-=======
-    if (conn.response(resp)) {
->>>>>>> integration
         //this level of validation is really not needed since all respnses are valid (no fail besides connection)
         cps_db::response r = resp.get_response(0);
         return r.is_int() && (r.get_int()==0 || r.get_int()==1);
@@ -351,30 +319,7 @@ bool cps_db::get_object_request(cps_db::connection &conn, const char*key, size_t
 bool cps_db::get_object_response(cps_db::connection &conn, cps_api_object_t obj,
         cps_api_return_code_t *rc) {
     cps_db::response_set resp;
- 
-    if (conn.response(resp,cps_db::connection::_SELECT_MS_WAIT,rc)) {
-         response r = resp.get_response(0);
 
-<<<<<<< HEAD
-        if (r.is_nill()) {    //if nill - then doesn't exist
-            cps_db::set_return_code(rc,cps_api_ret_code_NO_EXIST);
-            return false;
-        }
-
-        cps_db::set_return_code(rc,cps_api_ret_code_ERR);
-
-        if (r.is_str()) {
-            if (cps_api_array_to_object(r.get_str(),r.get_str_len(),obj)) {
-                cps_db::set_return_code(rc,cps_api_ret_code_OK);
-                return true;
-            }
-            cps_db::set_return_code(rc,cps_api_ret_code_CORRUPT);
-||||||| merged common ancestors
-    if (conn.response(resp,false)) {
-        response r = resp.get_response(0);
-        if (r.is_str() && cps_api_array_to_object(r.get_str(),r.get_str_len(),obj)) {
-            return true;
-=======
     if (conn.response(resp,cps_db::connection::_SELECT_MS_WAIT,rc)) {
         response r = resp.get_response(0);
 
@@ -391,7 +336,6 @@ bool cps_db::get_object_response(cps_db::connection &conn, cps_api_object_t obj,
                 return true;
             }
             cps_db::set_return_code(rc,cps_api_ret_code_CORRUPT);
->>>>>>> integration
         }
         else cps_db::set_return_code(rc,cps_api_ret_code_RESPONSE_TYPE_INVALID);
     }

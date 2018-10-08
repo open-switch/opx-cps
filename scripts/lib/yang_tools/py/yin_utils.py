@@ -20,14 +20,6 @@ import file_utils
 import general_utils
 
 import os
-<<<<<<< HEAD
-
-import sys
-import subprocess
-||||||| merged common ancestors
-import subprocess
-import sys
-=======
 import tempfile
 
 import copy
@@ -66,85 +58,6 @@ class Locator:
         _file = None
         with open(filename, 'r') as f:
             _file = f.read()
->>>>>>> integration
-
-<<<<<<< HEAD
-import copy
-
-import xml.etree.ElementTree as ET
-
-class Locator:
-    def __init__(self, context, dirs_as_string=None):
-        if dirs_as_string:
-            self.tmpdir = dirs_as_string
-        else:
-            self.tmpdir = tempfile.mkdtemp()
-
-        self.context = context
-        self._loaded_nodes = {}
-
-    def find_subdir(self,base, name):
-        target = os.path.join(base,name)
-
-        if os.path.exists(target):
-            return target
-
-        for i in os.listdir(base):
-            if i==name:
-                return os.path.join(base,i)
-            rel = os.path.join(base,i)
-            if os.path.isdir(rel):
-                try:
-                    rc = find_subdir(rel,name)
-                    if rc!='':
-                        return rc
-                except:
-                    pass
-        return ''
-
-   #### directory to store the OpenApi specification json files
-    def mkdirOas(self):
-        p = subprocess.Popen(['ar_tool.py','sysroot'],stdout=subprocess.PIPE)
-        root = p.communicate()[0].strip()
-        workspace = os.path.join(root,'workspace')
-        sysroot = self.find_subdir(workspace, 'sysroot')
-        oasdir = sysroot + '/var/www/html'
-        if not os.path.exists(oasdir):
-            os.makedirs(oasdir)
-        return oasdir
-
-    def get_yin_file(self, filename):
-        yin_file = os.path.join(
-            self.tmpdir,
-            os.path.splitext(os.path.basename(filename))[0] + ".yin")
-        if not os.path.exists(yin_file):
-            create_yin_file(filename, yin_file)
-        else:
-            yang_file = search_path_for_file(filename)
-            if os.path.getmtime(yang_file) > os.path.getmtime(yin_file):
-                create_yin_file(filename, yin_file)
-
-        return yin_file
-
-    def get_openapi_file(self, filename):
-        yang_file = os.path.splitext(os.path.basename(filename))[0]
-        print(yang_file)
-        exempted_yang_models = ['mtest','dell-support-assist','lists','ietf-netconf-acm','dell-system-common','dell-yang-types','iana-afn-safi','iana-crypt-hash','iana-if-type','ietf-inet-types','ietf-ip','ietf-routing-types','ietf-yang-types']
-        if yang_file not in exempted_yang_models: 
-            openapi_file = os.path.join(
-                self.mkdirOas(),
-                os.path.splitext(os.path.basename(filename))[0] + ".json")
-            if not os.path.exists(openapi_file):
-                create_openapi_file(filename, openapi_file)
-            return openapi_file
-
-    def _nodes_from_yin(self,filename):
-        '@type yang_file: string'
-        '@rtype ET.Element'
-
-        _file = None
-        with open(filename, 'r') as f:
-            _file = f.read()
 
         if _file.find('<module ') != -1 and _file.find('xmlns:ywx=') == -1:
             pos = _file.find('<module ') + len('<module ')
@@ -184,47 +97,6 @@ class yin_files:
 
     def __copy_nodes(self,yang_file):
         return copy.deepcopy(self.__nodes[yang_file])
-||||||| merged common ancestors
-=======
-        if _file.find('<module ') != -1 and _file.find('xmlns:ywx=') == -1:
-            pos = _file.find('<module ') + len('<module ')
-            lhs = _file[:pos] + 'xmlns:ywx="http://localhost/ignore/" '
-            rhs = _file[pos:]
-            _file = lhs + rhs
-
-        try:
-            return ET.fromstring(_file)
-        except Exception as ex:
-            pass
-        return None
-
-    def get_yin_nodes(self,filename):
-        """
-        Given a yin file name - load it and store in dictionary
-        """
-        if filename not in self._loaded_nodes:
-            self._loaded_nodes[filename] = self._nodes_from_yin(filename)
-        return copy.deepcopy(self._loaded_nodes[filename])
-
-
-class yin_files:
-    def __init__(self,context):
-        self.__map = {}
-        self.__context = context
-        self.__nodes={}
-
-    def __yin_name(self,yang_name):
-        """
-        Take a file name and return a path to a yin file.  If none exists.. create
-        @yang_name just the name of a yang file (no directory expected)
-        """
-        yang_name = os.path.basename(yang_name)
-        return self.__context.get_tmp_filename(yang_name.replace('.yang','.yin'))
-
-
-    def __copy_nodes(self,yang_file):
-        return copy.deepcopy(self.__nodes[yang_file])
->>>>>>> integration
 
 
 
@@ -252,20 +124,6 @@ def create_yin_file(yang_file, yin_file):
     print("Opening %s yang file and placing it in %s" %(yang_file,yin_file))
     general_utils.run_cmd(['pyang', '-o', yin_file, '-f', 'yin', yang_file])
 
-### create OpenApi specification from yang file
-def create_openapi_file(yang_file, openapi_file):
-    yang_file = search_path_for_file(yang_file)
-    try :
-        print("Creating openapi spec %s from %s yang file " %(openapi_file,yang_file))
-        general_utils.run_cmd(['pyang', '-f', 'swagger', yang_file, '-o', openapi_file])
-        if os.path.isfile(openapi_file):
-            with open(openapi_file, 'r') as file:
-                openapi = file.read()
-            openapi = openapi.replace("/\"","\"")
-            with open(openapi_file, 'w') as file:
-                file.write(openapi)
-    except Exception as e:
-        print(e)
 
 def get_node_text(namespace, node):
     node = node.find(namespace + 'text')
