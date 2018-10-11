@@ -110,3 +110,5 @@ cps_la_LIBADD=libopx_cps_api_common.la  libopx_cps_class_map.la
 
 systemdconfdir=/lib/systemd/system
 systemdconf_DATA = $(top_srcdir)/scripts/init/opx-cps.service $(top_srcdir)/scripts/init/opx-cps-db.service
+
+man1_MANS = man/man1/cps_set_oid.py.1 man/man1/cps_trace_events.py.1 man/man1/cps_get_oid.py.1 man/man1/cps_model_info.1
