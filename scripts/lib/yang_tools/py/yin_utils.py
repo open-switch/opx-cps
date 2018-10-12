@@ -22,14 +22,9 @@ import general_utils
 import os
 import tempfile
 
-<<<<<<< HEAD
-||||||| merged common ancestors
-import sys
-=======
 import sys
 import subprocess
 
->>>>>>> feature/common-history
 import copy
 
 import xml.etree.ElementTree as ET
@@ -44,10 +39,6 @@ class Locator:
         self.context = context
         self._loaded_nodes = {}
 
-<<<<<<< HEAD
-
-||||||| merged common ancestors
-=======
     def find_subdir(self,base, name):
         target = os.path.join(base,name)
 
@@ -78,7 +69,6 @@ class Locator:
             os.makedirs(oasdir)
         return oasdir
 
->>>>>>> feature/common-history
     def get_yin_file(self, filename):
         yin_file = os.path.join(
             self.tmpdir,
@@ -92,15 +82,11 @@ class Locator:
 
         return yin_file
 
-<<<<<<< HEAD
-
-||||||| merged common ancestors
-=======
     def get_openapi_file(self, filename):
         yang_file = os.path.splitext(os.path.basename(filename))[0]
         print(yang_file)
         exempted_yang_models = ['mtest','dell-support-assist','lists','ietf-netconf-acm','dell-system-common','dell-yang-types','iana-afn-safi','iana-crypt-hash','iana-if-type','ietf-inet-types','ietf-ip','ietf-routing-types','ietf-yang-types']
-        if yang_file not in exempted_yang_models: 
+        if yang_file not in exempted_yang_models:
             openapi_file = os.path.join(
                 self.mkdirOas(),
                 os.path.splitext(os.path.basename(filename))[0] + ".json")
@@ -108,7 +94,6 @@ class Locator:
                 create_openapi_file(filename, openapi_file)
             return openapi_file
 
->>>>>>> feature/common-history
     def _nodes_from_yin(self,filename):
         '@type yang_file: string'
         '@rtype ET.Element'

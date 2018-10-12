@@ -324,45 +324,9 @@ class CPSObject:
                         l.append(types.from_data(attr_path, i))
                 return l
             elif isinstance(self.obj['data'][attr_path], dict):
-<<<<<<< HEAD
-                for key,val in self.obj['data'][attr_path].items():
-                    if isinstance(val, dict):
-                        path_prefix = attr_path + '/'
-                        prefix_len = len(path_prefix)
-                        sub_map = {}
-                        for sub_key,sub_val in val.items():
-                            if len(sub_key) > prefix_len and sub_key[0:prefix_len] == path_prefix:
-                                sub_path = sub_key[prefix_len:]
-                            else:
-                                sub_path = sub_key
-                            sub_map[sub_path] = types.from_data(sub_key, sub_val)
-                        d[key] = sub_map
-                    else:
-                        d[key] = types.from_data(key, val)
-                return d
-            elif len(self.obj['data'][attr_path]) == 0:
-                return None
-||||||| merged common ancestors
-                for key,val in self.obj['data'][attr_path].items():
-                    if isinstance(val, dict):
-                        path_prefix = attr_path + '/'
-                        prefix_len = len(path_prefix)
-                        sub_map = {}
-                        for sub_key,sub_val in val.items():
-                            if len(sub_key) > prefix_len and sub_key[0:prefix_len] == path_prefix:
-                                sub_path = sub_key[prefix_len:]
-                            else:
-                                sub_path = sub_key
-                            sub_map[sub_path] = types.from_data(sub_key, sub_val)
-                        d[key] = sub_map
-                    else:
-                        d[key] = types.from_data(key, val)
-                return d
-=======
                 return self.get_data_dict(attr_path, self.obj['data'][attr_path])
             elif len(self.obj['data'][attr_path]) == 0:
                 return None
->>>>>>> integration
             return types.from_data(self.generate_path(attr),
                                    self.obj['data'][self.generate_path(attr)])
 
@@ -386,7 +350,6 @@ class CPSObject:
                  key), val)
         return converted_dict
 
-<<<<<<< HEAD
     def set_error_string(self, return_code, msg, *args ):
 		"""
 		This function will set the error string and erro code within an object.
@@ -397,7 +360,7 @@ class CPSObject:
 		self.add_attr("cps/object-group/return-code",return_code)
 		_str = msg.format(*args)
 		self.add_attr("cps/object-group/return-string",_str)
-		
+
     def set_wildcard(self,enabled):
     	"""
     	This function will set the wildcard attribute within an object to the value specified
@@ -409,55 +372,8 @@ class CPSObject:
     	"""
     	This function will set the exact match attribute within an object triggering behaviour
     	that will use the attributes within the object to search/monitor events.
-    	@use_exact_match a boolean value that will be True if exact match filter is needed or false if not    			
-    	"""    	
-    	self.add_attr('cps/object-group/exact-match',use_exact_match)
-||||||| merged common ancestors
-=======
-    def set_error_string(self, return_code, msg, *args ):
-		"""
-		This function will set the error string and erro code within an object.
-		@return_code the return code being set in the object
-		@msg is the string formatting
-		@*args is the variable length list of parameters to the formating
-		"""
-		self.add_attr("cps/object-group/return-code",return_code)
-		_str = msg.format(*args)
-		self.add_attr("cps/object-group/return-string",_str)
-		
-    def set_wildcard(self,enabled):
+    	@use_exact_match a boolean value that will be True if exact match filter is needed or false if not
     	"""
-    	This function will set the wildcard attribute within an object to the value specified
-    	@enabled is the boolean value to set as wildcard (eg.. True)
-    	"""
-    	self.add_attr('cps/object-group/wildcard-search',enabled)
->>>>>>> integration
-
-<<<<<<< HEAD
-    def set_get_next(self,use_get_next):
-        """
-        This function will set the get next attribute within an object to the specified value
-        @use_get_next a boolean value that will be True if get next filter is needed or false if not
-
-        """
-        self.add_attr('cps/object-group/get-next',use_get_next)
-
-    def set_number_of_entries(self,count):
-        """
-        This function will set the number of entries attribute within an object to the specified value
-        @count number of entries required to be set
-        """
-        self.add_attr('cps/object-group/number-of-entries',count)
-
-    	
-||||||| merged common ancestors
-=======
-    def set_exact_match(self,use_exact_match):
-    	"""
-    	This function will set the exact match attribute within an object triggering behaviour
-    	that will use the attributes within the object to search/monitor events.
-    	@use_exact_match a boolean value that will be True if exact match filter is needed or false if not    			
-    	"""    	
     	self.add_attr('cps/object-group/exact-match',use_exact_match)
 
     def set_get_next(self,use_get_next):
@@ -475,8 +391,7 @@ class CPSObject:
         """
         self.add_attr('cps/object-group/number-of-entries',count)
 
-    	
->>>>>>> integration
+
 def clone(self, obj):
     """
     Clones a new object from a given object.

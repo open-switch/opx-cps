@@ -78,7 +78,6 @@ class context:
 
         context['temp-dir'] = context['temp-dir-obj'].get_path()
         context['yin-loader'] = yin_utils.Locator(context, context['temp-dir'])
-        context['openapi-spec'] = yin_utils.Locator(context, context['temp-dir'])
 
         context['debug'] = 0
         if len(self.get_arg('debug')) > 0:
@@ -138,7 +137,6 @@ class context:
 
     def get_yang_nodes(self, yang_file):
         _yin_file = self.__details['yin-loader'].get_yin_file(yang_file)
-        _oas_file = self.__details['openapi-spec'].get_openapi_file(yang_file)
         return self.__details['yin-loader'].get_yin_nodes(_yin_file)
 
     def log(self, msg_type, msg, *args):
