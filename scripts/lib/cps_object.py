@@ -285,6 +285,30 @@ class CPSObject:
         else:
             print "No keys found"
 
+    def get_data_dict(self, attr_path, val):
+        path_prefix = attr_path + '/'
+        prefix_len = len(path_prefix)
+        d_map = {}
+
+        if isinstance(val, dict):
+            for k,v in val.items():
+                if len(k) > prefix_len and k[0:prefix_len] == path_prefix:
+                    sub_path = k[prefix_len:]
+                else:
+                    sub_path = k
+
+                if sub_path.isdigit():
+                    attr = attr_path
+                elif attr_path == "cps/key_data":
+                    attr = sub_path
+                else:
+                    attr = attr_path+'/'+sub_path
+                d_map[sub_path] = self.get_data_dict(attr, v)
+
+            return d_map
+        else:
+            return types.from_data(self.generate_path(attr_path), val)
+
     def get_attr_data(self, attr):
         """
         Get the user readable attribute value for the given attribute id. If the attribute
@@ -293,7 +317,6 @@ class CPSObject:
         """
         attr_path = self.generate_path(attr)
         l = []
-        d = {}
         if attr_path in self.obj['data']:
             if isinstance(self.obj['data'][attr_path], list):
                 for i in self.obj['data'][attr_path]:
@@ -301,21 +324,7 @@ class CPSObject:
                         l.append(types.from_data(attr_path, i))
                 return l
             elif isinstance(self.obj['data'][attr_path], dict):
-                for key,val in self.obj['data'][attr_path].items():
-                    if isinstance(val, dict):
-                        path_prefix = attr_path + '/'
-                        prefix_len = len(path_prefix)
-                        sub_map = {}
-                        for sub_key,sub_val in val.items():
-                            if len(sub_key) > prefix_len and sub_key[0:prefix_len] == path_prefix:
-                                sub_path = sub_key[prefix_len:]
-                            else:
-                                sub_path = sub_key
-                            sub_map[sub_path] = types.from_data(sub_key, sub_val)
-                        d[key] = sub_map
-                    else:
-                        d[key] = types.from_data(key, val)
-                return d
+                return self.get_data_dict(attr_path, self.obj['data'][attr_path])
             elif len(self.obj['data'][attr_path]) == 0:
                 return None
             return types.from_data(self.generate_path(attr),
@@ -326,7 +335,7 @@ class CPSObject:
                 return types.from_data(attr_path,
                                        self.obj['data']['cps/key_data'][attr_path])
 
-        raise ValueError(attr + "does not exist in the obect")
+        raise ValueError("Could not find attribute '" + attr + "' in the CPS object")
 
     def convert_to_ba_dict(self, data_dict):
         """
@@ -351,7 +360,7 @@ class CPSObject:
 		self.add_attr("cps/object-group/return-code",return_code)
 		_str = msg.format(*args)
 		self.add_attr("cps/object-group/return-string",_str)
-		
+
     def set_wildcard(self,enabled):
     	"""
     	This function will set the wildcard attribute within an object to the value specified
@@ -363,8 +372,8 @@ class CPSObject:
     	"""
     	This function will set the exact match attribute within an object triggering behaviour
     	that will use the attributes within the object to search/monitor events.
-    	@use_exact_match a boolean value that will be True if exact match filter is needed or false if not    			
-    	"""    	
+    	@use_exact_match a boolean value that will be True if exact match filter is needed or false if not
+    	"""
     	self.add_attr('cps/object-group/exact-match',use_exact_match)
 
     def set_get_next(self,use_get_next):
@@ -382,7 +391,7 @@ class CPSObject:
         """
         self.add_attr('cps/object-group/number-of-entries',count)
 
-    	
+
 def clone(self, obj):
     """
     Clones a new object from a given object.

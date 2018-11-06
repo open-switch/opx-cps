@@ -23,8 +23,9 @@
 #include "std_user_perm.h"
 #include "event_log.h"
 
-#include <execinfo.h> 
+#include <execinfo.h>
 #include <utility>
+
 
 #define CPS_USER_ID "_opx_cps"
 #define CPS_USER_GRPUP "_opx_cps"

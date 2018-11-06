@@ -367,11 +367,9 @@ static void *__thread_main_loop(void *param) {
         _cps_event_queue_list_t _current ;
         std::swap(*_events,_current);
 
-
         std_mutex_unlock(&__mutex);
 
         if (!_process_list(_current)) {    //need to handle the case of the system never working.. need to throw away events at some point
-            
             _must_lock_mutex(&__mutex);
             if (_events->size() > (_TOTAL_MAX_INFLIGHT_EVENTS_REDLINE)) {
                 //shrink it down to size of event list and the size of the new list
@@ -393,8 +391,7 @@ static void *__thread_main_loop(void *param) {
 
             }
             _events->insert(_events->begin(),_current.begin(),_current.end());
-        
-            continue;    //inc/opxase we add additional logic below during health update
+            continue;    //incase we add additional logic below during health update
                         //skip back to the top
         }
 
@@ -407,11 +404,11 @@ static void *__thread_main_loop(void *param) {
 
 bool cps_db::publish(cps_db::connection &conn, cps_api_object_t obj) {
     pthread_once(&__one_time_only,__cps_api_event_thread_push_init);
-    
+
     cps_api_object_guard og(cps_api_object_create());
     if (og.get()==nullptr) return false;
     cps_api_object_clone(og.get(),obj);
-    
+
     bool _success = false;
 
     _must_lock_mutex(&__mutex);

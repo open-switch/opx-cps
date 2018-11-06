@@ -83,6 +83,7 @@ std::string cps_class_ids_to_string(const cps_api_attr_id_t *ids, size_t len) {
     return std::move(s);
 }
 
+
 std::string cps_key_to_string(const cps_api_key_t * key) {
     const static size_t BUFF_LEN=1024;
     char buff[BUFF_LEN];

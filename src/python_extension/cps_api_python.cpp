@@ -182,8 +182,8 @@ static PyObject * py_cps_info(PyObject *self, PyObject *args) {
         py_cps_util_set_item_to_dict(names.get(),lst[ix].details->name,
                 PyString_FromString(buff));
     }
-    names.release();
-    ids.release();
+    names.decref();
+    ids.decref();
 
     return d.release();
 }
@@ -538,6 +538,7 @@ PyDoc_STRVAR(CPS_FN_DOC(py_cps_reconcile), "reconcile(src_objs,dest_obj,callback
    "@callbacks - Python dictionary with 'sync' and 'error' as key\n"
    "             and its callback function as its value\n"
    "@return - True if successful otherwise False");
+
 
 PyDoc_STRVAR(CPS_FN_DOC(py_cps_api_db_commit), "db_commit(object,previous,publish)\n\n"
     "Stores the object into the database and return the previous object (optional)\n"
