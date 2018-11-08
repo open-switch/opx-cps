@@ -32,6 +32,8 @@
 #include "event_log.h"
 #include "std_utils.h"
 
+
+
 #include <unordered_map>
 #include <memory>
 #include <functional>
@@ -92,6 +94,7 @@ using cps_class_map_enums_t = std::unordered_map<std::string,CPSEnum>;
 using cps_class_map_id_to_enum_t = std::unordered_map<cps_api_attr_id_t,std::string>;
 using cps_class_map_key_to_map_element = cps_api_key_cache<cps_class_map_node_details_int_t*>;
 
+
 struct _key_characteristics {
     CPS_API_OBJECT_OWNER_TYPE_t _owner_type=CPS_API_OBJECT_SERVICE;
     bool _automated_event=false;
@@ -107,6 +110,7 @@ static auto _attr_id_to_enum = new cps_class_map_id_to_enum_t;
 static auto _key_to_map_element = new cps_class_map_key_to_map_element;
 static auto  *_key_storage_type = new cps_class_map_key_to_type;
 
+
 static std_mutex_lock_create_static_init_rec(_parameter_lock);
 static auto * _cps_parameters = new std::unordered_map<std::string,std::string>;
 
@@ -114,7 +118,9 @@ using _cps_param_cb_list_t = std::vector<std::function<void(const char*)>>;
 static auto * _parameter_handlers = new _cps_param_cb_list_t();
 static auto * _parameter_handler_map = new std::unordered_map<std::string,_cps_param_cb_list_t>();
 
+
 const static size_t NO_OFFSET=0;
+
 
 void cps_api_add_flag_set_handler(const char * what, std::function<void(const char*)> handler) {
     std_mutex_simple_lock_guard lg(&_parameter_lock);
@@ -148,6 +154,7 @@ void cps_api_update_ssize_on_param_change(const char * param, ssize_t *value_to_
     std::string _val = cps_api_get_library_flag_value(param);
     if (_val.size()>0) __trigger_param_callback(param);
 }
+
 
 std::string cps_api_get_library_flag_value(const char * flag) {
     std_mutex_simple_lock_guard lg(&_parameter_lock);
@@ -522,6 +529,7 @@ void cps_api_obj_set_auto_event(cps_api_key_t *key, bool automated_events) {
         p->_automated_event = automated_events;
     }
 }
+
 
 std::string cps_api_object_attr_data_to_string(cps_api_attr_id_t id, const void * data, size_t len ) {
     CPS_CLASS_DATA_TYPE_t _type = CPS_CLASS_DATA_TYPE_T_BIN;

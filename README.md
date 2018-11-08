@@ -169,7 +169,7 @@ Operation: create/set/delete
 #### Examples
 
 ```
-root@OPX:/opt/dell/os10/bin# cps_set_oid.py target create base-if-phy/physical hardware-port-id=26 admin-state=2
+root@OPX:/usr/bin# cps_set_oid.py target create base-if-phy/physical hardware-port-id=26 admin-state=2
 ```
 
 ### cps\_trace\_events.py
@@ -218,7 +218,7 @@ Operation: create/set/delete
 #### Examples
 
 ```
-root@OPX:/opt/dell/os10/bin# cps_send_event.py create observed  dell-base-if-cmn/if/interfaces-state/interface  if/interfaces-state/interface/name=e101-007-0 if/interfaces-state/interface/oper-status=2
+root@OPX:/usr/bin# cps_send_event.py create observed  dell-base-if-cmn/if/interfaces-state/interface  if/interfaces-state/interface/name=e101-007-0 if/interfaces-state/interface/oper-status=2
 ```
 
 (c) 2017 Dell EMC

@@ -68,8 +68,8 @@ void __system_parameters(std_config_node_t node, void *user_data) {
 
     if (_flag==nullptr || _value==nullptr) {
         EV_LOGGING(CPS,TRACE,"CPS-META","Can't parse entry - missing data "
-        	   "Flag:%s Val:%s",_flag==nullptr? "missing" : "present",
-        	   _value==nullptr? "missing" : "present");
+        		"Flag:%s Val:%s",_flag==nullptr? "missing" : "present",
+        				_value==nullptr? "missing" : "present");
         return;
     }
 

@@ -60,6 +60,7 @@ bool cps_db::ping(cps_db::connection &conn, size_t timeoutms) {
     return false;
 }
 
+
 bool cps_db::make_slave(cps_db::connection &conn,std::string ip) {
     cps_db::connection::db_operation_atom_t e[3];
     e[0].from_string("SLAVEOF");
@@ -169,6 +170,7 @@ void cps_db::response_set::clear() {
 cps_db::response_set::~response_set() {
     clear();
 }
+
 
 bool cps_db::delete_object(cps_db::connection &conn,const char *key, size_t key_len,cps_api_return_code_t*rc) {
     cps_db::connection::db_operation_atom_t e[2];
@@ -296,9 +298,7 @@ bool cps_db::set_object_request(cps_db::connection &conn, cps_api_object_t obj, 
 }
 
 bool cps_db::set_object_response(cps_db::connection &conn) {
-
     cps_db::response_set resp;
-
     if (conn.response(resp)) {
         //this level of validation is really not needed since all respnses are valid (no fail besides connection)
         cps_db::response r = resp.get_response(0);
@@ -319,9 +319,9 @@ bool cps_db::get_object_request(cps_db::connection &conn, const char*key, size_t
 bool cps_db::get_object_response(cps_db::connection &conn, cps_api_object_t obj,
         cps_api_return_code_t *rc) {
     cps_db::response_set resp;
- 
+
     if (conn.response(resp,cps_db::connection::_SELECT_MS_WAIT,rc)) {
-         response r = resp.get_response(0);
+        response r = resp.get_response(0);
 
         if (r.is_nill()) {    //if nill - then doesn't exist
             cps_db::set_return_code(rc,cps_api_ret_code_NO_EXIST);

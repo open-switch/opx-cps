@@ -1,3 +1,13 @@
+opx-cps (3.6.3+opx4) unstable; urgency=medium
+
+  * Feature: Static L2 VxLAN Support
+  * Bugfix: Fix stunnel client config to accept connections only from localhost
+  * Bugfix: Fix parsing stunnel pid file name
+  * Update: Integrate Pyang plugin for OpenApi specification (swagger)
+  * Update: Yang tool Support Yang Model names with 'nvo' prefix
+
+ -- Dell EMC <ops-dev@lists.openswitch.net>  Tue, 06 Nov 2018 11:59:13 -0700
+
 opx-cps (3.6.3+opx3) unstable; urgency=medium
 
   * Update: stunnel security improvements
@@ -34,19 +44,19 @@ opx-cps (3.6.3) unstable; urgency=medium
 
 opx-cps (3.6.2+opx5) unstable; urgency=medium
 
-  * Update: Update connection cache on registering connectivity group events 
+  * Update: Update connection cache on registering connectivity group events
             and reduce the audit time to update connection caches from 1 min to 3 secs
   * Update: Add support to parse and set cps library flags from platform specific XML files
-  * Update: Remove redundant API - load_aliases() API is primarily used to fill _alias_map 
-            which is a map between node name and its IP address. This functionality is anyways 
+  * Update: Remove redundant API - load_aliases() API is primarily used to fill _alias_map
+            which is a map between node name and its IP address. This functionality is anyways
             fulfilled by load_group() API. Hence removing the redundant function
   * Bugfix: Bug-Not able to configure vlt-port-channel in Primary, Fix-Create stunnel for IPv6 loopback address
   * Update: Connectivity agent to establish/maintain tunnel connectivity between nodes in case of multi-node communication
   * Bugfix: Conditional assert in case of events publish failure
   * Update: Switch to common-util con-var timed wait and avoid nanosec overflow failure
-  * Update: Add additional error handling around syncing data to the REDIS socket. Add a timeout check to the drain connections 
+  * Update: Add additional error handling around syncing data to the REDIS socket. Add a timeout check to the drain connections
             to ensure we don't miss events and updating the size when we switch connections mid flight in processing events.
-  * Update: Modify the event service to use the std_mutex and add additional error handling around failure to aquire locks. 
+  * Update: Modify the event service to use the std_mutex and add additional error handling around failure to aquire locks.
             This should ensure more stable error handling when we are doing things at high speed/low resources
   * Update: Yang tool Support Yang Model names with 'nvo' prefix
   * Update: Python hooks for cps get/set library flags

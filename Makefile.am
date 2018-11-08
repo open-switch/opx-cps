@@ -20,45 +20,45 @@ metadata_SCRIPTS = scripts/lib/cpsmetadata/*
 lib_LTLIBRARIES = libopx_cps_api_common.la libopx_cps_class_map.la
 
 libopx_cps_api_common_la_SOURCES = \
-	src/non-core/cps_api_operation_tools.cpp	\
-	src/cps_api_object_attr.cpp	\
-	src/cps_api_operation_common.cpp	\
-	src/cps_api_events.cpp	\	
-	src/cps_api_key.cpp	\
-        src/cps_api_key_utils.cpp \
-	src/cps_api_operation_debug.cpp	\
-	src/cps_api_utils.cpp	\
-	src/cps_string_utils.cpp	\
-	src/cps_api_operation_service.cpp	\
-	src/cps_ns.cpp	\
-	src/cps_api_client_ipc.cpp	\
-	src/cps_api_service.cpp	\
-	src/non-core/cps_api_object_tools.cpp	\
-	src/cps_api_object.cpp  \
-  src/metadata/dell-cps.cpp \
-  src/non-core/cps_api_node.cpp \
-  src/cps_api_vector_utils.cpp \
-  src/metadata/cps_api_metadata_import.cpp \
-  src/metadata/cps_api_string_mapping.cpp \
-  src/metadata/cps_class_map_query.cpp \
-  src/metadata/cps_dictionary.cpp \
-  src/metadata/cps_dictionary_loader.cpp \
-  src/db/cps_api_db_connection.cpp \
-  src/db/cps_api_db_event_adapter.cpp \
-  src/db/cps_api_db_events.cpp \
-  src/db/cps_api_db_direct.cpp \
-  src/db/cps_api_db_init.cpp \
-  src/db/cps_api_db_node_set.cpp \
-  src/db/cps_api_db_object_key.cpp \
-  src/db/cps_api_db_operations.cpp \
-  src/db/cps_api_db_response.cpp \
-  src/db/cps_api_db_pipeline.cpp \
-  src/db/cps_api_core_utils.cpp \
-  src/db/cps_redis.cpp \
-  src/db/cps_api_db_connection_tools.cpp \
-  src/cps_api_select_utils.cpp \
-  src/non-core/cps_api_db_interface_tools.cpp 
-  
+          src/non-core/cps_api_operation_tools.cpp	\
+          src/cps_api_object_attr.cpp	\
+          src/cps_api_operation_common.cpp	\
+          src/cps_api_events.cpp	\
+          src/cps_api_key.cpp	\
+          src/cps_api_key_utils.cpp \
+          src/cps_api_operation_debug.cpp	\
+          src/cps_api_utils.cpp	\
+          src/cps_string_utils.cpp	\
+          src/cps_api_operation_service.cpp	\
+          src/cps_ns.cpp	\
+          src/cps_api_client_ipc.cpp	\
+          src/cps_api_service.cpp	\
+          src/non-core/cps_api_object_tools.cpp	\
+          src/cps_api_object.cpp  \
+          src/metadata/dell-cps.cpp \
+          src/non-core/cps_api_node.cpp \
+          src/cps_api_vector_utils.cpp \
+          src/metadata/cps_api_metadata_import.cpp \
+          src/metadata/cps_api_string_mapping.cpp \
+          src/metadata/cps_class_map_query.cpp \
+          src/metadata/cps_dictionary.cpp \
+          src/metadata/cps_dictionary_loader.cpp \
+          src/db/cps_api_db_connection.cpp \
+          src/db/cps_api_db_event_adapter.cpp \
+          src/db/cps_api_db_events.cpp \
+          src/db/cps_api_db_direct.cpp \
+          src/db/cps_api_db_init.cpp \
+          src/db/cps_api_db_node_set.cpp \
+          src/db/cps_api_db_object_key.cpp \
+          src/db/cps_api_db_operations.cpp \
+          src/db/cps_api_db_response.cpp \
+          src/db/cps_api_db_pipeline.cpp \
+          src/db/cps_api_core_utils.cpp \
+          src/db/cps_redis.cpp \
+          src/db/cps_api_db_connection_tools.cpp \
+          src/cps_api_select_utils.cpp \
+          src/non-core/cps_api_db_interface_tools.cpp
+
 
 #Unit tests that will be merged into the config file at a later daye
 #src/unit_test/cps_api_operation_unittest.cpp
@@ -109,6 +109,8 @@ cps_la_CXXFLAGS=-I$(top_srcdir)/src/python_extension -I$(top_srcdir)/inc/opx -I$
 cps_la_LIBADD=libopx_cps_api_common.la  libopx_cps_class_map.la
 
 systemdconfdir=/lib/systemd/system
-systemdconf_DATA = $(top_srcdir)/scripts/init/opx-cps.service $(top_srcdir)/scripts/init/opx-cps-db.service
+systemdconf_DATA = $(top_srcdir)/scripts/init/opx-cps.service \
+	$(top_srcdir)/scripts/init/opx-cps-db.service \
+	$(top_srcdir)/scripts/init/opx-cps-connectivity.service
 
 man1_MANS = man/man1/cps_set_oid.py.1 man/man1/cps_trace_events.py.1 man/man1/cps_get_oid.py.1 man/man1/cps_model_info.1

@@ -1,0 +1,18 @@
+#!/bin/bash -e
+
+./cps_api_db_unittest -a
+./cps_api_events_unittest -a
+./cps_api_operation_unittest -a
+./cps_api_key_unittest -a
+./cps_class_map_unittest -a
+./cps_api_key_cache_unittest -a
+./cps_api_registration_unittest -a
+
+if [ $(dpkg-query -W -f='${Status}' python-pytest 2>/dev/null | grep -c "ok installed") -eq 0 ];
+then
+echo "Install pytest"
+apt-get update
+apt-get install -y python-pytest
+fi
+
+pytest -s ./test_cps_connectivity_agent.py

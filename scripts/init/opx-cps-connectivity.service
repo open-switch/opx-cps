@@ -16,14 +16,14 @@
 
 
 [Unit]
-Description=This service is responsible for managing db instances
+Description=This service is responsible for managing tunnel instances
 After=opx-cps.service
 Wants=opx-cps.service
 DefaultDependencies=no
 
 [Service]
 EnvironmentFile=/etc/opx/opx-environment
-ExecStart=/usr/bin/python /usr/lib/opx/cps_db_manager.py
+ExecStart=/usr/bin/python /usr/lib/opx/cps_connectivity_agent.py
 
 # Resource Limitations
 LimitNOFILE=16384
