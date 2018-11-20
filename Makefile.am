@@ -32,7 +32,6 @@ libopx_cps_api_common_la_SOURCES = \
           src/cps_api_operation_service.cpp	\
           src/cps_ns.cpp	\
           src/cps_api_client_ipc.cpp	\
-          src/cps_api_service.cpp	\
           src/non-core/cps_api_object_tools.cpp	\
           src/cps_api_object.cpp  \
           src/metadata/dell-cps.cpp \
@@ -60,7 +59,7 @@ libopx_cps_api_common_la_SOURCES = \
           src/non-core/cps_api_db_interface_tools.cpp
 
 
-#Unit tests that will be merged into the config file at a later daye
+#Unit tests that will be merged into the config file at a later date
 #src/unit_test/cps_api_operation_unittest.cpp
 #src/unit_test/cps_api_events_unittest.cpp
 #src/unit_test/cps_api_object_unittest.cpp
