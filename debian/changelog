@@ -1,3 +1,10 @@
+opx-cps (3.6.3+opx5) unstable; urgency=medium
+
+  * Bugfix: Source code for service must not be included in library
+  * Bugfix: Service must be of systemd service type 'notify'
+
+ -- Dell EMC <ops-dev@lists.openswitch.net>  Tue, 20 Nov 2018 11:59:13 -0700
+
 opx-cps (3.6.3+opx4) unstable; urgency=medium
 
   * Feature: Static L2 VxLAN Support
