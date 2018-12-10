@@ -1,3 +1,18 @@
+#
+# Copyright (c) 2018 Dell Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+#
+# THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR
+# CONDITIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT
+# LIMITATION ANY IMPLIED WARRANTIES OR CONDITIONS OF TITLE, FITNESS
+# FOR A PARTICULAR PURPOSE, MERCHANTABLITY OR NON-INFRINGEMENT.
+#
+# See the Apache Version 2.0 License for specific language governing
+# permissions and limitations under the License.
+#
 #!/usr/bin/python
 
 import os
@@ -6,7 +21,7 @@ import sys
 
 def find_subdir(base, name):
     target = os.path.join(base,name)
-    
+
     if os.path.exists(target):
         return target
 
@@ -48,7 +63,7 @@ def main():
 
     p = subprocess.Popen(['ar_tool.py','sysroot'],stdout=subprocess.PIPE)
     root = p.communicate()[0].strip()
-    relative = os.getcwd()    
+    relative = os.getcwd()
     relative = relative[len(root)+1:]
 
     print ('Module - '+relative)
@@ -56,7 +71,7 @@ def main():
     workspace = os.path.join(root,'workspace')
     sysroot = find_subdir(workspace,'sysroot')
     sysroot_dev = find_subdir(workspace,'sysroot-dev')
-    
+
     buildroot = find_subdir(workspace,'build')
     app_buildroot = os.path.join(buildroot,relative)
     app_sysroot = find_subdir(app_buildroot,'sysroot')
@@ -67,15 +82,15 @@ def main():
 
     app_sos = find_subdir(buildroot,relative+'_sos')
     app_apps = find_subdir(buildroot,relative+'_apps')
-    
+
     _lib_path=app_sos+":"+app_sysroot_lib+":"+sysroot_dev+"/usr/lib/x86_64-linux-gnu"+':'+sysroot+"/usr/lib/opx"+':'+sysroot+'/usr/lib/opx/cpsmetadata'
 
     print('Libs... '+_lib_path)
-    
+
     if app == 'python':
         run_program(['/usr/bin/python'],_lib_path,_lib_path,_lib_path)
         sys.exit(0);
-     
+
     bin=''
     for i in [ app_apps, app_sysroot_bin,app_sysroot_tests ] :
         _dir = find_subdir(i,app)
