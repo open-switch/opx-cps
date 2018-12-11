@@ -1,3 +1,4 @@
+#!/usr/bin/python
 #
 # Copyright (c) 2018 Dell Inc.
 #
@@ -13,7 +14,7 @@
 # See the Apache Version 2.0 License for specific language governing
 # permissions and limitations under the License.
 #
-#!/usr/bin/python
+
 import sys
 import time
 import cps

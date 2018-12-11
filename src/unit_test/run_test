@@ -1,3 +1,4 @@
+#!/bin/bash -e
 #
 # Copyright (c) 2018 Dell Inc.
 #
@@ -13,7 +14,6 @@
 # See the Apache Version 2.0 License for specific language governing
 # permissions and limitations under the License.
 #
-#!/bin/bash -e
 
 ./cps_api_db_unittest -a
 ./cps_api_events_unittest -a
