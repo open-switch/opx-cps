@@ -1,6 +1,3 @@
-© 2018 OpenSwitch project. All information is contributed to and made available by OPX under the Creative Commons
-Attribution 4.0 International License (available at http://creativecommons.org/licenses/by/4.0/).
-
 # opx-cps
 This repository contains the CPS object library files, and provides a microservice data-centric API allowing applications to communicate with each other between threads, processes, or diverse locations.
 
@@ -224,4 +221,5 @@ Operation: create/set/delete
 root@OPX:/usr/bin# cps_send_event.py create observed  dell-base-if-cmn/if/interfaces-state/interface  if/interfaces-state/interface/name=e101-007-0 if/interfaces-state/interface/oper-status=2
 ```
 
-(c) 2017 Dell EMC
+© 2018 OpenSwitch project. All information is contributed to and made available by OPX under the Creative Commons
+Attribution 4.0 International License (available at http://creativecommons.org/licenses/by/4.0/).
