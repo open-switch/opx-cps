@@ -1,3 +1,6 @@
+© 2018 OpenSwitch project. All information is contributed to and made available by OPX under the Creative Commons
+Attribution 4.0 International License (available at http://creativecommons.org/licenses/by/4.0/).
+
 # opx-cps
 This repository contains the CPS object library files, and provides a microservice data-centric API allowing applications to communicate with each other between threads, processes, or diverse locations.
 
@@ -25,8 +28,8 @@ With the object keys and attributes applications can:
 - Register and publish object messages
 
 ## API documentation
-The CPS API is documented through Doxygen. To generate CPS Doxygen content, at the top level of your source directory (one level underneath `opx-cps`), run the `opx-cps/doc/cps_gen_doc.sh` command.  
-    
+The CPS API is documented through Doxygen. To generate CPS Doxygen content, at the top level of your source directory (one level underneath `opx-cps`), run the `opx-cps/doc/cps_gen_doc.sh` command.
+
     git clone git@github.com:open-switch/opx-cps.git
     cd opx-cps
     (cd .. ; sh -x opx-cps/doc/cps_gen_doc.sh )
@@ -40,7 +43,7 @@ The CPS API is documented through Doxygen. To generate CPS Doxygen content, at t
 
 - `python-opx-cps\_*version*\_*arch*.deb` — Python bindings
 
-- `opx-cps\_*version*\_*arch*.deb` — Service executables, configuration files, tool scripts 
+- `opx-cps\_*version*\_*arch*.deb` — Service executables, configuration files, tool scripts
 
 - `opx-yang-utils-dev\_*version*\_*arch*.deb` — Tools to parse YANG files
 
@@ -59,7 +62,7 @@ See [Architecture](https://github.com/open-switch/opx-docs/wiki/Architecture) fo
 
 - `cps\_send\_events`
 
-### cps\_model\_info 
+### cps\_model\_info
 This tool is useful to get all information about CPS objects on the target. It is used to get the attributes of a specific CPS object, or first-level contents of a given YANG path of the CPS object (as defined in the YANG model).
 
 #### Usage
@@ -149,7 +152,7 @@ base-if-phy/physical/port-id = 125
 base-if-phy/physical/phy-media = 1
 base-if-phy/physical/front-panel-number = 25
 base-if-phy/physical/loopback = 0
-root@OPX:~#                             
+root@OPX:~#
 ```
 
 
@@ -199,7 +202,7 @@ Key: 2.19.44.2883618.2883611.2883586.
 if/interfaces-state/interface/name = e101-025-0
 if/interfaces-state/interface/if-index = 41
 if/interfaces-state/interface/admin-status = 2
-```                                                     
+```
 
 ### cps\_send\_event.py
 
