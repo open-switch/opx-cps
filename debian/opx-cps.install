@@ -2,5 +2,4 @@ lib/systemd/*
 usr/bin/*
 usr/lib/opx/*.py
 usr/lib/opx/cpsmetadata/*
-etc/redis/*
 usr/share/man/*

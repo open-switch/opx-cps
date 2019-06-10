@@ -239,6 +239,11 @@ module dell-base-cps {
     	description "This is the timestamp of when the event is generated.";
     	type uint64;
     }
+    
+    leaf user-timestamp-nsec {
+        description "This is a user-defined timestamp in nano-seconds that can be inserted into an object.";
+        type uint64;
+    }
   }
 
   list connection-entry {

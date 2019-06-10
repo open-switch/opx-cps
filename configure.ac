@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2018 Dell Inc.
+# Copyright (c) 2019 Dell Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -15,9 +15,8 @@
 #
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
-
 AC_PREREQ([2.69])
-AC_INIT([opx-cps], [3.6.3+opx7], [ops-dev@lists.openswitch.net])
+AC_INIT([opx-cps], [3.6.4], [ops-dev@lists.openswitch.net])
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 AC_CONFIG_SRCDIR([.])
 AC_CONFIG_HEADERS([config.h])

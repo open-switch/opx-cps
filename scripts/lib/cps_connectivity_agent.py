@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright (c) 2018 Dell Inc.
+# Copyright (c) 2019 Dell Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -148,6 +148,18 @@ def _get_connection_objs():
     
     return conn_objs
 
+#This function modifies the embedded instance to a number
+#TEMPORARY FIX FOR 10.4.2. NEED TO FIND THE ACTUAL ROOT CAUSE OF THE PROBLEM.
+def _embedded_obj_hack(re):
+    for attr in re['data'].keys():
+        if isinstance(re['data'][attr], dict):
+            tmp, l = {}, list(range(len(re['data'][attr])))
+            for k in re['data'][attr].keys():
+                i = l[-1]
+                tmp[str(i)] = re['data'][attr][k]
+                l.remove(i)
+            re['data'][attr] = tmp
+
 def _get_node_group_objs():
     # Get all cps/node-group objects
     obj = cps_object.CPSObject(qual="target", module="cps/node-group")
@@ -157,6 +169,7 @@ def _get_node_group_objs():
     node_group_objs = []
     for r in node_grp_objs:
         grp = {}
+        _embedded_obj_hack(r)
         grp = cps_convert_attr_data(r)
         node_group_objs.append(grp)
 
@@ -199,6 +212,7 @@ def _sync():
             for node_index in grp['cps/node-group/node']:
                 
                 node = grp['cps/node-group/node'][node_index]
+
                 l = {'name': node['name'], 'ip': node['ip'], 'timestamp':  '{:%Y-%b-%d %H:%M:%S:%f}'.format(datetime.datetime.now())}
 
                 if node['ip'] == default_redis_addrv4:

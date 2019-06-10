@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2018 Dell Inc.
+# Copyright (c) 2019 Dell Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -304,6 +304,7 @@ class COutputFormat:
         for i in module:
             if i.find('dell') == -1 \
                 and i.find('opx') == -1 \
+                and i.find('open') == -1 \
                 and i.find('nvo') == -1:
                 #for now as not all models are being built
                 #have to customize the list of included headers - reducing to the following set

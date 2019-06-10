@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Dell Inc.
+ * Copyright (c) 2019 Dell Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -67,6 +67,20 @@ bool cps_api_filter_is_getnext(cps_api_object_t obj) {
     if (p==nullptr) return false;
     return *p;
 
+}
+
+bool cps_api_object_set_timestamp(cps_api_object_t obj, uint64_t timestamp)
+{
+    return cps_api_object_attr_add_u64(obj, CPS_OBJECT_GROUP_USER_TIMESTAMP_NSEC, timestamp);
+}
+
+uint64_t cps_api_object_get_timestamp(cps_api_object_t obj)
+{
+    cps_api_object_attr_t attr = cps_api_object_attr_get(obj, CPS_OBJECT_GROUP_USER_TIMESTAMP_NSEC);
+    if (attr != NULL) {
+            return (uint64_t)cps_api_object_attr_data_u64(attr);
+    }
+    return (uint64_t)0;
 }
 
 void cps_api_key_set_qualifier(cps_api_key_t *key, cps_api_qualifier_t qual) {
@@ -140,7 +154,7 @@ static bool _cps_api_get_clone(cps_api_get_params_t * dest, cps_api_get_params_t
     size_t mx = src->key_count;
     for ( ; ix < mx ; ++ix ) {
         cps_api_object_t obj = cps_api_object_list_create_obj_and_append(dest->filters);
-        if (obj==NULL) return cps_api_ret_code_INTERNAL_FAILURE;
+        if (obj==NULL) return false;
         cps_api_key_copy(cps_api_object_key(obj),src->keys+ix);
     }
 
@@ -242,20 +256,27 @@ cps_api_return_code_t cps_api_commit(cps_api_transaction_params_t * param) {
         ///TODO until the performance fix is updated - made the temporary fix
         bool _is_db_handled = cps_api_obj_get_ownership_type(o)!=CPS_API_OBJECT_SERVICE;
 
-        if (cps_api_obj_get_ownership_type(o)!=CPS_API_OBJECT_SERVICE) {
+        if (_is_db_handled) {
             rc = cps_api_db_operation_commit(param,ix);
         } else {
-            rc=cps_api_process_commit_request(param,ix);
+            rc = cps_api_process_commit_request(param,ix);
         }
 
         //trickly logic start... if the operation failed... and if want to continue - reset the return code to OK
         if (rc!=cps_api_ret_code_OK) {
-            EV_LOG(ERR,DSAPI,0,"COMMIT","Failed to commit request at %d out of %d",ix, (int)mx);
-        	if (!cps_api_obj_attr_get_bool(o,CPS_OBJECT_GROUP_CONTINUE_ON_FAILURE)) {
-        		break;
-        	} else {
-        		rc=cps_api_ret_code_OK;
-        	}
+            bool continue_on_fail = cps_api_obj_attr_get_bool(
+                    o,CPS_OBJECT_GROUP_CONTINUE_ON_FAILURE);
+            char obj_str[1024];
+            EV_LOG(ERR,DSAPI,0,"COMMIT",
+                    "Error %d: commit %zu/%zu failed, type %d, %s (%s)",
+                    rc, ix+1, mx, cps_api_obj_get_ownership_type(o),
+                    continue_on_fail ? "continue" : "break",
+                    cps_api_object_to_string(o, obj_str, sizeof(obj_str)));
+            if (!continue_on_fail) {
+                break;
+            }
+            // override fail rc, reset to OK
+            rc=cps_api_ret_code_OK;
         } else {
         	//if return was ok, publish event
         	if (!_is_db_handled && cps_api_obj_has_auto_events(o) && cps_api_object_type_operation(cps_api_object_key(o))!=cps_api_oper_ACTION) {
@@ -413,7 +434,7 @@ bool cps_api_attr_create_escaped(cps_api_object_ATTR_TYPE_t type, void *buff, si
     switch(type) {
         case cps_api_object_ATTR_T_U16:
             if(len != sizeof(uint16_t))
-                return false; 
+                return false;
             un.u16 = htole16(*(uint16_t*)buff); *((uint16_t *)buff) = un.u16; break;
         case cps_api_object_ATTR_T_U32:
             if(len != sizeof(uint32_t))

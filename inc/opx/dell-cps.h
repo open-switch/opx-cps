@@ -1,7 +1,7 @@
 /*Source file name -> dell-base-cps*/
 
 /*
-* Copyright (c) 2018 Dell Inc.
+* Copyright (c) 2019 Dell Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License"); you may
 * not use this file except in compliance with the License. You may obtain
@@ -134,6 +134,9 @@ This is used internally for debugging purposes only.*/
 /*This is the timestamp of when the event is generated.*/
 /*type=uint64*/ 
   CPS_OBJECT_GROUP_TIMESTAMP = 131119,
+/*This is a user-defined timestamp in nano-seconds that can be inserted into an object.*/
+/*type=uint64*/
+  CPS_OBJECT_GROUP_USER_TIMESTAMP_NSEC = 131134,
 } CPS_OBJECT_GROUP_t;
 /* Object cps/db-instance */
 
