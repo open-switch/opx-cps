@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Dell Inc.
+ * Copyright (c) 2019 Dell Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -290,6 +290,7 @@ cps_api_return_code_t cps_api_process_get_request(cps_api_get_params_t *param, s
         }
 
         uint32_t op;
+        bool op_valid=false;
         do {
             if (param->timeout > 0) {
                 fd_set rset;
@@ -303,6 +304,7 @@ cps_api_return_code_t cps_api_process_get_request(cps_api_get_params_t *param, s
             }
             size_t len;
             if (!cps_api_receive_header(handle,op,len)) break;
+            op_valid = true;
             if (op == cps_api_msg_o_RETURN_CODE) {
                 cps_api_receive_data(handle, &rc, sizeof(rc));
                 break;
@@ -315,7 +317,7 @@ cps_api_return_code_t cps_api_process_get_request(cps_api_get_params_t *param, s
             } else break;
         } while (op == cps_api_msg_o_GET_RESP);
 
-        if (op!=cps_api_msg_o_GET_DONE) break; //leave an error code
+        if (!op_valid || op!=cps_api_msg_o_GET_DONE) break; //leave an error code
         rc = cps_api_ret_code_OK;
     } while (0);
 

@@ -1,6 +1,6 @@
 
 /*
- * Copyright (c) 2018 Dell Inc.
+ * Copyright (c) 2019 Dell Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -277,7 +277,13 @@ bool cps_db::get_objects(cps_db::connection &conn,std::vector<char> &key,cps_api
                     continue;
                 }
             } else {
-            	_brc=false;
+                if ((rc!=nullptr) && (*rc == cps_api_ret_code_NO_EXIST)) {
+                    EV_LOGGING(CPS-DB-CONN,INFO, "DB-COMM",
+                            "Ignoring the case where object doesnt "
+                            "exist in the DB");
+                } else {
+                    _brc=false;
+                }
             	if (rc!=nullptr && *rc==cps_api_ret_code_COMMUNICATION_ERROR)
             		break;
             }

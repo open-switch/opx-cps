@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Dell Inc.
+ * Copyright (c) 2019 Dell Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -139,7 +139,7 @@ void print_obj(cps_api_object_t obj) {
 }
 
 TEST(cps_api_object,initialize) {
-	__init_class_map();
+    __init_class_map();
 }
 
 TEST(cps_api_object,add_delete_test) {
@@ -192,37 +192,38 @@ TEST(cps_api_object,add_delete_test) {
 }
 
 void __cps_api_obj_tool_attr_callback_ll ( void * contect, void *attrs[], size_t sizes[],
-		size_t number_of_attrs, bool *stop) {
-	printf("Found %d attributes\n",(int)number_of_attrs);
-	for (size_t ix = 0; ix < number_of_attrs ; ++ix ) {
-		printf("Data %s len %d\n",(char*)attrs[ix],(int)sizes[ix]);
-	}
+        size_t number_of_attrs, bool *stop) {
+    printf("Found %d attributes\n",(int)number_of_attrs);
+    for (size_t ix = 0; ix < number_of_attrs ; ++ix ) {
+        printf("Data %s len %d\n",(char*)attrs[ix],(int)sizes[ix]);
+    }
 }
 
 TEST(cps_api_object,object_attr_callback) {
 
-	cps_api_object_guard og(cps_api_obj_tool_create(cps_api_qualifier_TARGET,CPS_NODE_DETAILS,true));
+    cps_api_object_guard og(cps_api_obj_tool_create(cps_api_qualifier_TARGET,CPS_NODE_DETAILS,true));
 
-	cps_api_object_attr_add(og.get(),CPS_NODE_DETAILS_ALIAS,"ACliff",7);
-	cps_api_object_attr_add(og.get(),CPS_NODE_DETAILS_ALIAS,"BCliff",7);
-	cps_api_object_attr_add(og.get(),CPS_NODE_DETAILS_ALIAS,"CCliff",7);
-	cps_api_object_attr_add(og.get(),CPS_NODE_DETAILS_ALIAS,"DCliff",7);
-	cps_api_object_attr_add(og.get(),CPS_NODE_DETAILS_ALIAS,"ECliff",7);
-	cps_api_object_attr_add(og.get(),CPS_NODE_DETAILS_ALIAS,"FCliff",7);
+    cps_api_object_attr_add(og.get(),CPS_NODE_DETAILS_ALIAS,"ACliff",7);
+    cps_api_object_attr_add(og.get(),CPS_NODE_DETAILS_ALIAS,"BCliff",7);
+    cps_api_object_attr_add(og.get(),CPS_NODE_DETAILS_ALIAS,"CCliff",7);
+    cps_api_object_attr_add(og.get(),CPS_NODE_DETAILS_ALIAS,"DCliff",7);
+    cps_api_object_attr_add(og.get(),CPS_NODE_DETAILS_ALIAS,"ECliff",7);
+    cps_api_object_attr_add(og.get(),CPS_NODE_DETAILS_ALIAS,"FCliff",7);
 
-	cps_api_object_attr_add(og.get(),CPS_NODE_DETAILS_NAME,"Cliff",6);
+    cps_api_object_attr_add(og.get(),CPS_NODE_DETAILS_NAME,"Cliff",6);
 
-	cps_api_object_attr_add(og.get(),0,"Cliff1",7);
-	cps_api_object_attr_add(og.get(),1,"Cliff2",7);
-	cps_api_object_attr_add(og.get(),2,"Cliff3",7);
+    cps_api_object_attr_add(og.get(),0,"Cliff1",7);
+    cps_api_object_attr_add(og.get(),1,"Cliff2",7);
+    cps_api_object_attr_add(og.get(),2,"Cliff3",7);
 
-	cps_api_obj_tool_attr_callback(og.get(),CPS_NODE_DETAILS_ALIAS,__cps_api_obj_tool_attr_callback_ll,nullptr);
+    cps_api_obj_tool_attr_callback(og.get(),CPS_NODE_DETAILS_ALIAS,__cps_api_obj_tool_attr_callback_ll,nullptr);
 
 }
 
 
 TEST(cps_api_object,create) {
     cps_api_object_list_t list = cps_api_object_list_create();
+    cps_api_object_list_guard lg (list);
 
     ASSERT_TRUE(cps_api_object_list_append(list, create_list()));
     ASSERT_TRUE(cps_api_object_list_append(list, create_list()));
@@ -239,21 +240,19 @@ TEST(cps_api_object,create) {
         print_obj(o);
 
         size_t al = cps_api_object_to_array_len(o);
-        void * p = malloc(al);
+        std::unique_ptr<char[]> pc (new char [al]);
+        void * p = pc.get();
         memcpy(p, cps_api_object_array(o),al);
 
         ASSERT_TRUE((memcmp(p, cps_api_object_array(o), al)== 0));
 
         cps_api_object_t obj = cps_api_object_create();
+        cps_api_object_guard og(obj);
         if (cps_api_array_to_object(p, al, obj)) {
             ASSERT_TRUE((memcmp(cps_api_object_array(obj), cps_api_object_array(o), al)==0));
             print_obj(obj);
-            cps_api_object_delete(obj);
         }
-        free(p);
     }
-
-    cps_api_object_list_destroy(list, true);
 }
 
 TEST(cps_api_object,ram_based) {
@@ -401,18 +400,18 @@ TEST(cps_api_object,cps_api_object_iterators) {
     for ( cps_api_object_it_begin(o.get(),&it) ;
             cps_api_object_it_valid(&it) ;
             cps_api_object_it_next(&it) ) {
-    	size_t val = cps_api_object_attr_data_u32(it.attr);
-    	if (val&1) {
-			cps_api_object_delete_it(o.get(),&it);
-			cps_api_object_it_begin(o.get(),&it);
-    	}
+        size_t val = cps_api_object_attr_data_u32(it.attr);
+        if (val&1) {
+            cps_api_object_delete_it(o.get(),&it);
+            cps_api_object_it_begin(o.get(),&it);
+        }
     }
 
     for ( cps_api_object_it_begin(o.get(),&it) ;
             cps_api_object_it_valid(&it) ;
             cps_api_object_it_next(&it) ) {
-    	size_t val = cps_api_object_attr_data_u32(it.attr);
-    	ASSERT_EQ(val&1,0) ;
+        size_t val = cps_api_object_attr_data_u32(it.attr);
+        ASSERT_EQ(val&1,0) ;
     }
     cps_api_object_print(o.get());
 }
@@ -480,26 +479,26 @@ TEST(cps_api_object,cps_obj_escape_chars) {
     __init_class_map();
     cps_api_object_guard og(cps_api_object_create());
     cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),BASE_IP_IPV6,cps_api_qualifier_TARGET);
-    
+
     char name[20] = "Cliff*ord";
     char name_escaped[40];
-    size_t name_escaped_len = 40;    
+    size_t name_escaped_len = 40;
     cps_api_attr_create_escaped(cps_api_object_ATTR_T_BIN, name, strlen(name), name_escaped, &name_escaped_len);
     cps_api_object_attr_add(og.get(),BASE_IP_IPV6_NAME,name_escaped,name_escaped_len);
-    
+
     char wildcard_val[2] = "*";
     size_t wildcard_val_len = 1;
     cps_api_object_attr_add(og.get(),BASE_IP_IPV4_NAME,wildcard_val,wildcard_val_len);
-    
-    
+
+
     uint32_t data = 298;
     char data_escaped[8];
-    size_t data_escaped_len = 8;    
-    cps_api_attr_create_escaped(cps_api_object_ATTR_T_U32, &data, sizeof(uint32_t), data_escaped, &data_escaped_len);    
+    size_t data_escaped_len = 8;
+    cps_api_attr_create_escaped(cps_api_object_ATTR_T_U32, &data, sizeof(uint32_t), data_escaped, &data_escaped_len);
     cps_api_object_attr_add(og.get(),BASE_IP_IPV6_IFINDEX,data_escaped,data_escaped_len);
-    
-    cps_api_filter_wildcard_attrs(og.get(),true);    
-    cps_api_object_print(og.get());    
+
+    cps_api_filter_wildcard_attrs(og.get(),true);
+    cps_api_object_print(og.get());
 }
 
 int main(int argc, char **argv) {

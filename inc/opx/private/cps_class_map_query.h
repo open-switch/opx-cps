@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Dell Inc.
+ * Copyright (c) 2019 Dell Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -44,8 +44,7 @@
 #include <functional>
 
 /** @cond HIDDEN_SYMBOLS */
-#define CPS_DEF_CLASS_MAP_STARTING "/usr/lib"
-#define CPS_DEF_SEARCH_PATH "/usr/lib/opx"        //the location of the generated class
+#define CPS_DEF_SEARCH_PATH "/usr/lib/opx:/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu:/usr/lib:/lib"        //the locations of the generated class
 #define CPS_DEF_SEARCH_PATH_CFG "/etc/opx"
 #define CPS_DEF_META_SEARCH_PATHS  CPS_DEF_SEARCH_PATH ":" CPS_DEF_SEARCH_PATH_CFG ":"
 

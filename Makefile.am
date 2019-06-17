@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2018 Dell Inc.
+# Copyright (c) 2019 Dell Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -18,9 +18,6 @@ ACLOCAL_AMFLAGS=-I m4
 SUBDIRS = inc
 
 #Script files
-
-data_cpsdir = $(sysconfdir)/redis
-data_cps_DATA = config/etc/redis/redis.conf
 
 bin_SCRIPTS = scripts/bin/*
 

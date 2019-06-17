@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright (c) 2018 Dell Inc.
+# Copyright (c) 2019 Dell Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -21,10 +21,12 @@ import socket
 import subprocess
 import event_log as ev
 
-default_cert = "/etc/stunnel/redis-stunnel.pem"
+default_cert = "/etc/stunnel/redis-stunnel.crt"
+default_key = "/etc/stunnel/redis-stunnel.key"
 default_server_port = "41000"
 stunnel_config_path = "/tmp/"
 stunnel_path = '/usr/bin/stunnel4 '
+stunnel_server_config = '/etc/stunnel/redis-server.conf'
 config_file_map = {}
 default_timeout_connect = "2"
 default_timeout_busy = "4"
@@ -96,10 +98,19 @@ class TunnelConfigManager():
             f.write("accept = 127.0.0.1:"+port+" \n")
             f.write("connect = "+self.ip_str+":"+default_server_port+" \n")
             f.write("cert = "+default_cert+"\n")
+            f.write("key = "+default_key+"\n")
             f.write("TIMEOUTconnect = "+default_timeout_connect+"\n")
             f.write("TIMEOUTbusy = "+default_timeout_busy+"\n")
             f.write("TIMEOUTidle = "+default_timeout_idle+"\n")
             f.write("retry = "+default_retry+"\n")
+
+            if self.ip_str != '::1':
+                # Handle enabling global access to stunnel port
+                cmd = ['sed', '-i', '/^accept/s/::1/::/', stunnel_server_config]
+                subprocess.call(cmd)
+                # Reload stunnel server process
+                cmd = ['systemctl', 'reload', 'stunnel4.service']
+                subprocess.call(cmd)
 
         except Exception as e:
             if os.path.exists(self.fname):

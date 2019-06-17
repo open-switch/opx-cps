@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Dell Inc.
+ * Copyright (c) 2019 Dell Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -294,6 +294,9 @@ static bool _process_list(_cps_event_queue_list_t &current) {
         if (current_addr!=_addr) {
             if (!_change_connection(current_addr,_addr,conn,_sent)) {
                 _halted = true;
+                // Dequeue object since _addr is not in connection cache
+                cps_api_object_delete(_obj);
+                std::get<1>(it) = nullptr;
                 break;
             }
             _sent = 0;

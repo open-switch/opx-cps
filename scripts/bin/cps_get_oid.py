@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright (c) 2018 Dell Inc.
+# Copyright (c) 2019 Dell Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -34,7 +34,7 @@ if __name__ == '__main__':
         o = cps_object.CPSObject(obj=entry)
         if (_cur_key!=o.get_key()):
             _cur_key = o.get_key()
-            print('\n============%s==========\n' % cps.name_from_key(_cur_key, 1))
+            print('\n============%s==========' % _cur_key)
 
         cps_utils.print_obj(o.get(),show_key=False)
         print "------------------------------------------------"

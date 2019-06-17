@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Dell Inc.
+ * Copyright (c) 2019 Dell Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -38,7 +38,7 @@ std::vector<cps_api_key_t*> lst;
 std::vector<cps_api_key_t*> missing;
 
 struct entry {
-    cps_api_key_t key;
+    cps_api_key_t key = {0};
     uint64_t ix;
 };
 
@@ -80,6 +80,8 @@ TEST(cps_api_key_cache,test_key_inserts) {
             char b1[100];
             missing.push_back(lst[ix]);
             entry e;
+            cps_api_key_copy(&e.key,lst[ix]);
+            e.ix = ix;
             _missing_cache.insert(lst[ix],e);
             printf("Skipping.. %s\n",cps_api_key_print(lst[ix],b1,sizeof(b1)));
             ASSERT_TRUE(_missing_cache.find(lst[ix],e,true));

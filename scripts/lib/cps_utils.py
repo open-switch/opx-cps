@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2018 Dell Inc.
+# Copyright (c) 2019 Dell Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -221,7 +221,7 @@ class CPSLibInit:
         libs = []
         path = os.getenv("LD_LIBRARY_PATH")
         if path is None:
-            path = '/usr/lib/opx'
+            path = '/usr/lib/python'
         for i in path.split(':'):
             print "Searching " + i
             files = os.listdir(i)

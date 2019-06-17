@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Dell Inc.
+ * Copyright (c) 2019 Dell Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -39,6 +39,7 @@
 
 #include "gtest/gtest.h"
 #include <mutex>
+#include <time.h>
 
 static size_t cnt=0;
 static bool _first_time = false;
@@ -50,6 +51,7 @@ bool _cps_api_event_term2(cps_api_object_t object,void * context) {
      _first_time=true;
      _mutex.lock();
      printf("2 ---- %d(%d) - Obj %s\n",0,(int)cnt,cps_api_object_to_string(object,buff,sizeof(buff)));
+     printf("Timestamp: %" PRIu64 "\n", cps_api_object_get_timestamp(object));
      ++cnt;
      _mutex.unlock();
      return true;
@@ -60,6 +62,8 @@ bool _cps_api_event_term1(cps_api_object_t object,void * context) {
     _first_time=true;
     _mutex.lock();
     printf("1 ---- %d(%d) - Obj %s\n",0,(int)cnt,cps_api_object_to_string(object,buff,sizeof(buff)));
+
+    printf("Timestamp: %" PRIu64 "\n", cps_api_object_get_timestamp(object));
     ++cnt;
     _mutex.unlock();
     return true;
@@ -81,6 +85,13 @@ void fire_event(cps_api_attr_id_t id, size_t cnt) {
     cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),id,cps_api_qualifier_TARGET);
     cps_api_object_attr_add_u32(og.get(),1,cnt);
     cps_api_event_thread_publish(og.get());
+}
+
+uint64_t now_nsec()
+{
+    struct timespec now_time;
+    clock_gettime(CLOCK_MONOTONIC, &now_time);
+    return ((uint64_t)now_time.tv_sec * 1000000000) + now_time.tv_nsec;
 }
 
 TEST(cps_api_events,event_thread) {
@@ -114,6 +125,11 @@ TEST(cps_api_events,event_thread) {
             cps_api_key_from_attr_with_qual(cps_api_object_key(og.get()),ids[_ix],cps_api_qualifier_TARGET);
             cps_api_object_attr_add_u32(og.get(),1,(repeat_cnt*mx)+_ix);
 
+            struct timespec now;
+            if (0 == clock_gettime(CLOCK_REALTIME, &now))
+            {
+                cps_api_object_set_timestamp(og.get(), now_nsec());
+            }
             cps_api_event_thread_publish(og.get());
         }
     }

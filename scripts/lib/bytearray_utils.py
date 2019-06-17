@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright (c) 2018 Dell Inc.
+# Copyright (c) 2019 Dell Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -76,7 +76,7 @@ def to_ba(val, datatype):
 
     length = pack_len_map[datatype]
     s = bytearray(length)
-    s[0:length] = struct.pack(pack_type_map[datatype], int(val))
+    s[0:length] = struct.pack(pack_type_map[datatype], float(val) if datatype == 'double' else int(val))
     return s
 
 
@@ -299,6 +299,9 @@ type_to_ba = {
 
 
 def value_to_ba(typ, val):
+    # Float type sometimes is not resolved to double
+    if type(val) == (float):
+        typ = 'double'
     if typ in type_to_ba:
         return type_to_ba[typ](typ, val)
     return bytearray(val)
